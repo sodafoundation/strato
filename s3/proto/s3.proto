@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service S3 {
+	rpc GetObject(GetObjectRequest) returns (GetObjectResponse) {}
+}
+
+message GetObjectRequest {
+	string id = 1;
+}
+
+message GetObjectResponse {
+	string id = 1;
+	string name = 2;
+}

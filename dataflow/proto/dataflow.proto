@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service DataFlow {
+	rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse) {}
+}
+
+message GetPolicyRequest {
+	string id = 1;
+}
+
+message GetPolicyResponse {
+	string id = 1;
+	string name = 2;
+}

@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+
+  api:
+    image: opensdsio/go-panda/api
+    ports:
+      - 8089:8089
+    environment:
+      MICRO_SERVER_ADDRESS: ":8089"
+      MICRO_REGISTRY: "mdns"
+
+  backend:
+    image: opensdsio/go-panda/backend
+    environment:
+      MICRO_REGISTRY: "mdns"
+
+  s3:
+    image: opensdsio/go-panda/s3
+    environment:
+      MICRO_REGISTRY: "mdns"
+
+  dataflow:
+    image: opensdsio/go-panda/dataflow
+    environment:
+      MICRO_REGISTRY: "mdns"

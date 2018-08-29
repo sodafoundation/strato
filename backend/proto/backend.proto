@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service Backend {
+	rpc GetBackend(GetBackendRequest) returns (GetBackendResponse) {}
+}
+
+message GetBackendRequest {
+	string id = 1;
+}
+
+message GetBackendResponse {
+	string id = 1;
+	string name = 2;
+}
