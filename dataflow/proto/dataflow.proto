@@ -2,13 +2,38 @@ syntax = "proto3";
 
 service DataFlow {
 	rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse) {}
+	rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse) {}
+}
+
+message Schedule {
+    string type = 1;
+    repeated string days = 2;
+    string  time_point = 3;
+}
+
+message Policy {
+	string id = 1;
+	string name = 2;
+	string tenant = 3;
+	string description = 4;
+	Schedule sched = 5;
 }
 
 message GetPolicyRequest {
-	string id = 1;
+	string name = 1;
+	string tenant = 2;
 }
 
 message GetPolicyResponse {
-	string id = 1;
-	string name = 2;
+	int32 err_code = 1;
+	repeated Policy pols = 2;
 }
+
+message CreatePolicyRequest {
+	Policy pol = 1;
+}
+
+message CreatePolicyResponse {
+	int32 err_code = 1;
+}
+

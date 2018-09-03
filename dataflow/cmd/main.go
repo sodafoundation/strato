@@ -13,12 +13,12 @@ func main() {
 		micro.Name("dataflow"),
 	)
 
-	micro.NewService()
-
 	service.Init()
 
 	pb.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService())
 	if err := service.Run(); err != nil {
 		fmt.Println(err)
 	}
+
+
 }
