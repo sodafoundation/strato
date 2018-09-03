@@ -18,8 +18,133 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type Schedule struct {
+	Type                 string   `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Days                 []string `protobuf:"bytes,2,rep,name=days,proto3" json:"days,omitempty"`
+	TimePoint            string   `protobuf:"bytes,3,opt,name=time_point,json=timePoint,proto3" json:"time_point,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Schedule) Reset()         { *m = Schedule{} }
+func (m *Schedule) String() string { return proto.CompactTextString(m) }
+func (*Schedule) ProtoMessage()    {}
+func (*Schedule) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dataflow_75b6bc25c9319d90, []int{0}
+}
+func (m *Schedule) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Schedule.Unmarshal(m, b)
+}
+func (m *Schedule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Schedule.Marshal(b, m, deterministic)
+}
+func (dst *Schedule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Schedule.Merge(dst, src)
+}
+func (m *Schedule) XXX_Size() int {
+	return xxx_messageInfo_Schedule.Size(m)
+}
+func (m *Schedule) XXX_DiscardUnknown() {
+	xxx_messageInfo_Schedule.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Schedule proto.InternalMessageInfo
+
+func (m *Schedule) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *Schedule) GetDays() []string {
+	if m != nil {
+		return m.Days
+	}
+	return nil
+}
+
+func (m *Schedule) GetTimePoint() string {
+	if m != nil {
+		return m.TimePoint
+	}
+	return ""
+}
+
+type Policy struct {
+	Id                   string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name                 string    `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Tenant               string    `protobuf:"bytes,3,opt,name=tenant,proto3" json:"tenant,omitempty"`
+	Description          string    `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Sched                *Schedule `protobuf:"bytes,5,opt,name=sched,proto3" json:"sched,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *Policy) Reset()         { *m = Policy{} }
+func (m *Policy) String() string { return proto.CompactTextString(m) }
+func (*Policy) ProtoMessage()    {}
+func (*Policy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dataflow_75b6bc25c9319d90, []int{1}
+}
+func (m *Policy) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Policy.Unmarshal(m, b)
+}
+func (m *Policy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Policy.Marshal(b, m, deterministic)
+}
+func (dst *Policy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Policy.Merge(dst, src)
+}
+func (m *Policy) XXX_Size() int {
+	return xxx_messageInfo_Policy.Size(m)
+}
+func (m *Policy) XXX_DiscardUnknown() {
+	xxx_messageInfo_Policy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Policy proto.InternalMessageInfo
+
+func (m *Policy) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *Policy) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Policy) GetTenant() string {
+	if m != nil {
+		return m.Tenant
+	}
+	return ""
+}
+
+func (m *Policy) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *Policy) GetSched() *Schedule {
+	if m != nil {
+		return m.Sched
+	}
+	return nil
+}
+
 type GetPolicyRequest struct {
-	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Tenant               string   `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -29,7 +154,7 @@ func (m *GetPolicyRequest) Reset()         { *m = GetPolicyRequest{} }
 func (m *GetPolicyRequest) String() string { return proto.CompactTextString(m) }
 func (*GetPolicyRequest) ProtoMessage()    {}
 func (*GetPolicyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dataflow_9f1421f30e31620b, []int{0}
+	return fileDescriptor_dataflow_75b6bc25c9319d90, []int{2}
 }
 func (m *GetPolicyRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetPolicyRequest.Unmarshal(m, b)
@@ -49,26 +174,33 @@ func (m *GetPolicyRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetPolicyRequest proto.InternalMessageInfo
 
-func (m *GetPolicyRequest) GetId() string {
+func (m *GetPolicyRequest) GetName() string {
 	if m != nil {
-		return m.Id
+		return m.Name
+	}
+	return ""
+}
+
+func (m *GetPolicyRequest) GetTenant() string {
+	if m != nil {
+		return m.Tenant
 	}
 	return ""
 }
 
 type GetPolicyResponse struct {
-	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	ErrCode              int32     `protobuf:"varint,1,opt,name=err_code,json=errCode,proto3" json:"err_code,omitempty"`
+	Pols                 []*Policy `protobuf:"bytes,2,rep,name=pols,proto3" json:"pols,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
 func (m *GetPolicyResponse) Reset()         { *m = GetPolicyResponse{} }
 func (m *GetPolicyResponse) String() string { return proto.CompactTextString(m) }
 func (*GetPolicyResponse) ProtoMessage()    {}
 func (*GetPolicyResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dataflow_9f1421f30e31620b, []int{1}
+	return fileDescriptor_dataflow_75b6bc25c9319d90, []int{3}
 }
 func (m *GetPolicyResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetPolicyResponse.Unmarshal(m, b)
@@ -88,36 +220,129 @@ func (m *GetPolicyResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetPolicyResponse proto.InternalMessageInfo
 
-func (m *GetPolicyResponse) GetId() string {
+func (m *GetPolicyResponse) GetErrCode() int32 {
 	if m != nil {
-		return m.Id
+		return m.ErrCode
 	}
-	return ""
+	return 0
 }
 
-func (m *GetPolicyResponse) GetName() string {
+func (m *GetPolicyResponse) GetPols() []*Policy {
 	if m != nil {
-		return m.Name
+		return m.Pols
 	}
-	return ""
+	return nil
+}
+
+type CreatePolicyRequest struct {
+	Pol                  *Policy  `protobuf:"bytes,1,opt,name=pol,proto3" json:"pol,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreatePolicyRequest) Reset()         { *m = CreatePolicyRequest{} }
+func (m *CreatePolicyRequest) String() string { return proto.CompactTextString(m) }
+func (*CreatePolicyRequest) ProtoMessage()    {}
+func (*CreatePolicyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dataflow_75b6bc25c9319d90, []int{4}
+}
+func (m *CreatePolicyRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreatePolicyRequest.Unmarshal(m, b)
+}
+func (m *CreatePolicyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreatePolicyRequest.Marshal(b, m, deterministic)
+}
+func (dst *CreatePolicyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreatePolicyRequest.Merge(dst, src)
+}
+func (m *CreatePolicyRequest) XXX_Size() int {
+	return xxx_messageInfo_CreatePolicyRequest.Size(m)
+}
+func (m *CreatePolicyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreatePolicyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreatePolicyRequest proto.InternalMessageInfo
+
+func (m *CreatePolicyRequest) GetPol() *Policy {
+	if m != nil {
+		return m.Pol
+	}
+	return nil
+}
+
+type CreatePolicyResponse struct {
+	ErrCode              int32    `protobuf:"varint,1,opt,name=err_code,json=errCode,proto3" json:"err_code,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreatePolicyResponse) Reset()         { *m = CreatePolicyResponse{} }
+func (m *CreatePolicyResponse) String() string { return proto.CompactTextString(m) }
+func (*CreatePolicyResponse) ProtoMessage()    {}
+func (*CreatePolicyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dataflow_75b6bc25c9319d90, []int{5}
+}
+func (m *CreatePolicyResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreatePolicyResponse.Unmarshal(m, b)
+}
+func (m *CreatePolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreatePolicyResponse.Marshal(b, m, deterministic)
+}
+func (dst *CreatePolicyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreatePolicyResponse.Merge(dst, src)
+}
+func (m *CreatePolicyResponse) XXX_Size() int {
+	return xxx_messageInfo_CreatePolicyResponse.Size(m)
+}
+func (m *CreatePolicyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreatePolicyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreatePolicyResponse proto.InternalMessageInfo
+
+func (m *CreatePolicyResponse) GetErrCode() int32 {
+	if m != nil {
+		return m.ErrCode
+	}
+	return 0
 }
 
 func init() {
+	proto.RegisterType((*Schedule)(nil), "Schedule")
+	proto.RegisterType((*Policy)(nil), "Policy")
 	proto.RegisterType((*GetPolicyRequest)(nil), "GetPolicyRequest")
 	proto.RegisterType((*GetPolicyResponse)(nil), "GetPolicyResponse")
+	proto.RegisterType((*CreatePolicyRequest)(nil), "CreatePolicyRequest")
+	proto.RegisterType((*CreatePolicyResponse)(nil), "CreatePolicyResponse")
 }
 
-func init() { proto.RegisterFile("dataflow.proto", fileDescriptor_dataflow_9f1421f30e31620b) }
+func init() { proto.RegisterFile("dataflow.proto", fileDescriptor_dataflow_75b6bc25c9319d90) }
 
-var fileDescriptor_dataflow_9f1421f30e31620b = []byte{
-	// 140 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4b, 0x49, 0x2c, 0x49,
-	0x4c, 0xcb, 0xc9, 0x2f, 0xd7, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x57, 0x52, 0xe2, 0x12, 0x70, 0x4f,
-	0x2d, 0x09, 0xc8, 0xcf, 0xc9, 0x4c, 0xae, 0x0c, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x11, 0xe2,
-	0xe3, 0x62, 0xca, 0x4c, 0x91, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c, 0x62, 0xca, 0x4c, 0x51, 0x32,
-	0xe7, 0x12, 0x44, 0x52, 0x53, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x8a, 0xae, 0x48, 0x48, 0x88, 0x8b,
-	0x25, 0x2f, 0x31, 0x37, 0x55, 0x82, 0x09, 0x2c, 0x02, 0x66, 0x1b, 0x39, 0x70, 0x71, 0xb8, 0x24,
-	0x96, 0x24, 0xba, 0xe5, 0xe4, 0x97, 0x0b, 0x99, 0x70, 0x71, 0xc2, 0x0d, 0x11, 0x12, 0xd4, 0x43,
-	0xb7, 0x54, 0x4a, 0x48, 0x0f, 0xc3, 0x0e, 0x25, 0x86, 0x24, 0x36, 0xb0, 0x2b, 0x8d, 0x01, 0x01,
-	0x00, 0x00, 0xff, 0xff, 0x9b, 0x33, 0x64, 0x73, 0xb7, 0x00, 0x00, 0x00,
+var fileDescriptor_dataflow_75b6bc25c9319d90 = []byte{
+	// 339 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4d, 0x4f, 0xe3, 0x30,
+	0x10, 0x86, 0x9b, 0xf4, 0x33, 0xd3, 0x55, 0xb5, 0x9d, 0xed, 0xae, 0xd2, 0xae, 0x10, 0x91, 0x4f,
+	0x3d, 0x45, 0x50, 0xb8, 0xc2, 0xa5, 0x08, 0x0e, 0x5c, 0x4a, 0xf8, 0x01, 0x95, 0x89, 0x07, 0x61,
+	0x29, 0x8d, 0x8d, 0xe3, 0xaa, 0xea, 0x89, 0x23, 0x7f, 0x1b, 0x39, 0x29, 0x55, 0x0a, 0x95, 0xb8,
+	0x4d, 0x9e, 0xe4, 0x7d, 0xfd, 0x78, 0x14, 0x18, 0x08, 0x6e, 0xf9, 0x73, 0xa6, 0x36, 0xb1, 0x36,
+	0xca, 0x2a, 0xf6, 0x00, 0xbd, 0xc7, 0xf4, 0x85, 0xc4, 0x3a, 0x23, 0x44, 0x68, 0xd9, 0xad, 0xa6,
+	0xd0, 0x8b, 0xbc, 0x69, 0x90, 0x94, 0xb3, 0x63, 0x82, 0x6f, 0x8b, 0xd0, 0x8f, 0x9a, 0x8e, 0xb9,
+	0x19, 0x4f, 0x00, 0xac, 0x5c, 0xd1, 0x52, 0x2b, 0x99, 0xdb, 0xb0, 0x59, 0x7e, 0x1d, 0x38, 0xb2,
+	0x70, 0x80, 0xbd, 0x7b, 0xd0, 0x59, 0xa8, 0x4c, 0xa6, 0x5b, 0x1c, 0x80, 0x2f, 0xc5, 0xae, 0xcf,
+	0x97, 0xc2, 0xb5, 0xe5, 0x7c, 0x45, 0xa1, 0x5f, 0x9d, 0xe0, 0x66, 0xfc, 0x07, 0x1d, 0x4b, 0x39,
+	0xdf, 0x37, 0xed, 0x9e, 0x30, 0x82, 0xbe, 0xa0, 0x22, 0x35, 0x52, 0x5b, 0xa9, 0xf2, 0xb0, 0x55,
+	0xbe, 0xac, 0x23, 0x3c, 0x85, 0x76, 0xe1, 0xdc, 0xc3, 0x76, 0xe4, 0x4d, 0xfb, 0xb3, 0x20, 0xfe,
+	0xbc, 0x49, 0x52, 0x71, 0x76, 0x0d, 0xbf, 0xef, 0xc8, 0x56, 0x2e, 0x09, 0xbd, 0xae, 0xa9, 0xb0,
+	0x7b, 0x05, 0xef, 0xa8, 0x82, 0x5f, 0x57, 0x60, 0xf7, 0x30, 0xac, 0xe5, 0x0b, 0xad, 0xf2, 0x82,
+	0x70, 0x0c, 0x3d, 0x32, 0x66, 0x99, 0x2a, 0x51, 0x95, 0xb4, 0x93, 0x2e, 0x19, 0x33, 0x57, 0x82,
+	0xf0, 0x3f, 0xb4, 0xb4, 0xca, 0xaa, 0x65, 0xf5, 0x67, 0xdd, 0x78, 0x97, 0x2c, 0x21, 0x3b, 0x83,
+	0x3f, 0x73, 0x43, 0xdc, 0xd2, 0xa1, 0xcf, 0x18, 0x9a, 0x5a, 0x65, 0x65, 0x53, 0x2d, 0xe2, 0x18,
+	0x3b, 0x87, 0xd1, 0x61, 0xe2, 0x47, 0x83, 0xd9, 0x1b, 0xf4, 0x6e, 0xb8, 0xe5, 0xb7, 0x99, 0xda,
+	0xe0, 0x25, 0x04, 0x7b, 0x7b, 0x1c, 0xc6, 0x5f, 0x37, 0x31, 0xc1, 0xf8, 0xdb, 0xe5, 0x58, 0x03,
+	0xaf, 0xe0, 0x57, 0xfd, 0x50, 0x1c, 0xc5, 0x47, 0xac, 0x27, 0x7f, 0xe3, 0x63, 0x66, 0xac, 0xf1,
+	0xd4, 0x29, 0x7f, 0xab, 0x8b, 0x8f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x4f, 0x0b, 0xa0, 0x3f, 0x68,
+	0x02, 0x00, 0x00,
 }

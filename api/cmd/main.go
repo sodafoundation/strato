@@ -38,8 +38,10 @@ func main() {
 	ws.Route(ws.GET("/objects/{id}").To(handler.GetObject)).
 		Doc("Get object details")
 
-	ws.Route(ws.GET("/policies/{id}").To(handler.GetPolicy)).
+	ws.Route(ws.GET("/policies/{name}").To(handler.GetPolicy)).
 		Doc("Get policy details")
+	ws.Route(ws.POST("/policies/{name}").To(handler.CreatePolicy)).
+		Doc("Create policy details")
 
 	wc.Add(ws)
 	webService.Handle("/", wc)
