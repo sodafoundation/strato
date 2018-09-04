@@ -2,9 +2,10 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/client"
 	"github.com/micro/go-web"
-	service "github.com/opensds/go-panda/api/pkg"
+	"github.com/opensds/go-panda/api/pkg/backend"
+	"github.com/opensds/go-panda/api/pkg/dataflow"
+	"github.com/opensds/go-panda/api/pkg/s3"
 
 	"github.com/micro/go-log"
 	//	_ "github.com/micro/go-plugins/client/grpc"
@@ -19,29 +20,18 @@ func main() {
 		web.Name(serviceName),
 		web.Version("v0.1.0"),
 	)
-
 	webService.Init()
-	handler := service.NewAPIService(client.DefaultClient)
 
 	wc := restful.NewContainer()
 	ws := new(restful.WebService)
+	ws.Path("/v1")
+	ws.Doc("OpenSDS Multi-Cloud API")
+	ws.Consumes(restful.MIME_JSON)
+	ws.Produces(restful.MIME_JSON)
 
-	ws.
-		Path("/v1").
-		Doc("OpenSDS Multi-Cloud API").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON)
-
-	ws.Route(ws.GET("/backends/{id}").To(handler.GetBackend)).
-		Doc("Get backend details")
-
-	ws.Route(ws.GET("/objects/{id}").To(handler.GetObject)).
-		Doc("Get object details")
-
-	ws.Route(ws.GET("/policies/{name}").To(handler.GetPolicy)).
-		Doc("Get policy details")
-	ws.Route(ws.POST("/policies/{name}").To(handler.CreatePolicy)).
-		Doc("Create policy details")
+	backend.RegisterRouter(ws)
+	s3.RegisterRouter(ws)
+	dataflow.RegisterRouter(ws)
 
 	wc.Add(ws)
 	webService.Handle("/", wc)
