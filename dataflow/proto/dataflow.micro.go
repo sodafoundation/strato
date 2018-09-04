@@ -8,8 +8,12 @@ It is generated from these files:
 	dataflow.proto
 
 It has these top-level messages:
+	Schedule
+	Policy
 	GetPolicyRequest
 	GetPolicyResponse
+	CreatePolicyRequest
+	CreatePolicyResponse
 */
 package dataflow
 
@@ -43,6 +47,7 @@ var _ server.Option
 
 type DataFlowService interface {
 	GetPolicy(ctx context.Context, in *GetPolicyRequest, opts ...client.CallOption) (*GetPolicyResponse, error)
+	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...client.CallOption) (*CreatePolicyResponse, error)
 }
 
 type dataFlowService struct {
@@ -73,15 +78,27 @@ func (c *dataFlowService) GetPolicy(ctx context.Context, in *GetPolicyRequest, o
 	return out, nil
 }
 
+func (c *dataFlowService) CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...client.CallOption) (*CreatePolicyResponse, error) {
+	req := c.c.NewRequest(c.name, "DataFlow.CreatePolicy", in)
+	out := new(CreatePolicyResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for DataFlow service
 
 type DataFlowHandler interface {
 	GetPolicy(context.Context, *GetPolicyRequest, *GetPolicyResponse) error
+	CreatePolicy(context.Context, *CreatePolicyRequest, *CreatePolicyResponse) error
 }
 
 func RegisterDataFlowHandler(s server.Server, hdlr DataFlowHandler, opts ...server.HandlerOption) error {
 	type dataFlow interface {
 		GetPolicy(ctx context.Context, in *GetPolicyRequest, out *GetPolicyResponse) error
+		CreatePolicy(ctx context.Context, in *CreatePolicyRequest, out *CreatePolicyResponse) error
 	}
 	type DataFlow struct {
 		dataFlow
@@ -96,4 +113,8 @@ type dataFlowHandler struct {
 
 func (h *dataFlowHandler) GetPolicy(ctx context.Context, in *GetPolicyRequest, out *GetPolicyResponse) error {
 	return h.DataFlowHandler.GetPolicy(ctx, in, out)
+}
+
+func (h *dataFlowHandler) CreatePolicy(ctx context.Context, in *CreatePolicyRequest, out *CreatePolicyResponse) error {
+	return h.DataFlowHandler.CreatePolicy(ctx, in, out)
 }

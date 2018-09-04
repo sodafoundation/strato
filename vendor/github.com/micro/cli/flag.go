@@ -157,7 +157,13 @@ func (f StringSliceFlag) Apply(set *flag.FlagSet) {
 					s = strings.TrimSpace(s)
 					newVal.Set(s)
 				}
-				f.Value = newVal
+
+				if f.Value != nil {
+					*f.Value = *newVal
+				} else {
+					f.Value = newVal
+				}
+
 				break
 			}
 		}
