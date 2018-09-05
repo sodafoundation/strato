@@ -2,7 +2,7 @@ package policy
 
 import (
 	"regexp"
-	"fmt"
+	"github.com/micro/go-log"
 	"github.com/opensds/go-panda/dataflow/pkg/db"
 	. "github.com/opensds/go-panda/dataflow/pkg/type"
 )
@@ -10,28 +10,29 @@ import (
 func Create(pol *Policy) ErrCode{
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", pol.Name)
 	if !m {
-		fmt.Printf("Invalid policy name[%s], err:%v\n", pol.Name,err)
+		log.Logf("Invalid policy name[%s], err:%v\n", pol.Name,err)
 		return ERR_INVALID_POLICY_NAME
 	}
 	//TO-DO check validation of policy
 	return db.DbAdapter.CreatePolicy(pol)
 }
 
-func Delete(name string, tenantname string) ErrCode{
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
+func Delete(id string, tenantname string) ErrCode{
+	/*m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
 	if !m {
-		fmt.Printf("Invalid policy name[%s], err:%v\n", name,err)
+		//log.Logf("Invalid policy name[%s], err:%v\n", name,err)
+		log.Logf("Delete policy end, err = %d.", err)
 		return ERR_INVALID_POLICY_NAME
-	}
+	}*/
 
-	return db.DbAdapter.DeletePolicy(name, tenantname)
+	return db.DbAdapter.DeletePolicy(id, tenantname)
 }
 
 //When update policy, policy id must be provided
 func Update(pol *Policy) ErrCode{
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", pol.Name)
 	if !m {
-		fmt.Printf("Invalid policy name[%s], err:%v\n", pol.Name, err)
+		log.Logf("Invalid policy name[%s], err:%v\n", pol.Name, err)
 		return ERR_INVALID_POLICY_NAME
 	}
 	//TO-DO check validation of policy
@@ -43,13 +44,13 @@ func Update(pol *Policy) ErrCode{
 func Get(name string, tenant string) ([]Policy, ErrCode){
 	m, err := regexp.MatchString("[[:alnum:]-_.]*", name)
 	if !m {
-		fmt.Printf("Invalid policy name[%s],err:%v\n", name, err)
+		log.Logf("Invalid policy name[%s],err:%v\n", name, err)
 		return nil,ERR_INVALID_POLICY_NAME
 	}
 
 	pols,errcode := db.DbAdapter.GetPolicy(name, tenant)
 	if len(pols) == 0{
-		fmt.Printf("Get nothing, policy name is %s, tenant is %s\n.", name, tenant)
+		log.Logf("Get nothing, policy name is %s, tenant is %s\n.", name, tenant)
 	}
 
 	return pols,errcode

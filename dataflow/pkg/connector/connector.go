@@ -17,14 +17,8 @@ func Create(conn *Connector) ErrCode {
 	return db.DbAdapter.CreateConnector(conn)
 }
 
-func Delete(name string, tenant string) ErrCode {
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
-	if !m {
-		fmt.Printf("Invalid connector name[%s],err:%v\n", name,err)
-		return ERR_INVALID_CONN_NAME
-	}
-
-	return db.DbAdapter.DeleteConnector(name, tenant)
+func Delete(id string, tenant string) ErrCode {
+	return db.DbAdapter.DeleteConnector(id, tenant)
 }
 
 func Update(conn *Connector) ErrCode {

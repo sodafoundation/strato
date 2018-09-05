@@ -74,6 +74,8 @@ func (s *APIService) GetPolicy(request *restful.Request, response *restful.Respo
 	}
 
 	//For debug -- begin
+	log.Logf("Get policy reponse:%v",res)
+	log.Logf("res.ErrCode:%d",res.ErrCode)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())

@@ -3,6 +3,17 @@ syntax = "proto3";
 service DataFlow {
 	rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse) {}
 	rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse) {}
+	rpc UpdatePolicy(UpdatePolicyRequest) returns (UpdatePolicyResponse) {}
+	rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse) {}
+	rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse) {}
+	rpc CreateConnector(CreateConnectorRequest) returns (CreateConnectorResponse) {}
+	rpc UpdateConnector(UpdateConnectorRequest) returns (UpdateConnectorResponse) {}
+	rpc DeleteConnector(DeleteConnectorRequest) returns (DeleteConnectorResponse) {}
+	rpc GetPlan(GetPlanRequest) returns (GetPlanResponse) {}
+	rpc CreatePlan(CreatePlanRequest) returns (CreatePlanResponse) {}
+	rpc UpdatePlan(UpdatePlanRequest) returns (UpdatePlanResponse) {}
+	rpc DeletePlan(DeletePlanRequest) returns (DeletePlanResponse) {}
+	rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
 }
 
 message Schedule {
@@ -25,7 +36,7 @@ message GetPolicyRequest {
 }
 
 message GetPolicyResponse {
-	int32 err_code = 1;
+	int64 err_code = 1;
 	repeated Policy pols = 2;
 }
 
@@ -34,6 +45,149 @@ message CreatePolicyRequest {
 }
 
 message CreatePolicyResponse {
-	int32 err_code = 1;
+	int64 err_code = 1;
 }
 
+message UpdatePolicyRequest {
+	Policy pol = 1;
+}
+
+message UpdatePolicyResponse {
+	int64 err_code = 1;
+}
+
+message DeletePolicyRequest {
+	string id = 1;
+}
+
+message DeletePolicyResponse {
+	int64 err_code = 1;
+}
+
+message Connector {
+	string id = 1;
+	string name = 2;
+	bool selfDef = 3;
+	string bucketName = 4;
+	string storType = 5;
+	string storLocation = 6;
+	string accessKey = 7;
+	string secreteKey = 8;
+	string userName = 9;
+	string passwd = 10;
+	string tenant = 11;
+}
+
+message CreateConnectorRequest {
+	Connector conn = 1;
+	string tenant = 2;
+}
+
+message CreateConnectorResponse {
+	int64 err_code = 1;
+}
+
+message GetConnectorRequest {
+	string name = 1;
+	string tenant = 2;
+}
+
+message GetConnectorResponse {
+	int64 err_code = 1;
+	repeated Connector conns = 2;
+}
+
+message UpdateConnectorRequest {
+	Connector conn = 1;
+	string tenant = 2;
+}
+
+message UpdateConnectorResponse {
+	int64 err_code = 1;
+}
+
+message DeleteConnectorRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message DeleteConnectorResponse {
+	int64 err_code = 1;
+}
+
+message Plan {
+	string id = 1;
+	string name = 2;
+	string description = 3;
+	string type = 4;
+	string policyId = 5;
+	string policyName = 6;
+	string sourceConnId = 7;
+	string sourceConnName = 8;
+	string destConnId = 9;
+	string destConnName = 10;
+	string sourceDir = 11;
+	string destDir = 12;
+	bool overWrite = 13;
+	bool remainSource = 14;
+	string tenant = 15;
+}
+
+message CreatePlanRequest {
+	Plan plan = 1;
+	string tenant = 2;
+}
+
+message CreatePlanResponse {
+	int64 err_code = 1;
+}
+
+message GetPlanRequest {
+	string name = 1;
+	string tenant = 2;
+}
+
+message GetPlanResponse {
+	int64 err_code = 1;
+	repeated Plan plans = 2;
+}
+
+message UpdatePlanRequest {
+	Plan plan = 1;
+	string tenant = 2;
+}
+
+message UpdatePlanResponse {
+	int64 err_code = 1;
+}
+
+message DeletePlanRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message DeletePlanResponse {
+	int64 err_code = 1;
+}
+
+message Job {
+	string id = 1;
+	string type = 2;
+	string planName = 3;
+	string planId = 4;
+	string description = 5; //describe statistic information, such as total objs, finished objs
+	string sourceLocation = 6;
+	string destLocation = 7;
+	int64  createTime = 8;
+	int64  endTime = 9;
+}
+
+message GetJobRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message GetJobResponse {
+	int64 err_code = 1;
+	repeated Job jobs = 2;
+}

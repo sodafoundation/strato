@@ -96,14 +96,14 @@ func Create(plan *Plan) ErrCode {
 	}
 
 	plan.Id = ""
-	plan.IsSched = false //set to be false as default
-	plan.SchedServer = "" // set to be null as default
+	//plan.IsSched = false //set to be false as default
+	//plan.SchedServer = "" // set to be null as default
 	plan.LastSchedTime = 0 //set to be 0 as default
 
 	//Check logic validity
 	if plan.DestConnId != "" {
 		if bson.IsObjectIdHex(plan.DestConnId) {
-			plan.DestConnRef = mgo.DBRef{tblConnector,plan.DestConnId, dataBaseName}
+			plan.DestConnRef = mgo.DBRef{tblConnector,bson.ObjectIdHex(plan.DestConnId), dataBaseName}
 		}else {
 			fmt.Printf("Invalid destination connector:%s\n", plan.DestConnId)
 			return ERR_NO_DEST_SRC_CONN_INVALID
@@ -112,7 +112,7 @@ func Create(plan *Plan) ErrCode {
 
 	if plan.SourceConnId != "" {
 		if bson.IsObjectIdHex(plan.SourceConnId) {
-			plan.SourceConnRef = mgo.DBRef{tblConnector,plan.SourceConnId, dataBaseName}
+			plan.SourceConnRef = mgo.DBRef{tblConnector,bson.ObjectIdHex(plan.SourceConnId), dataBaseName}
 		}else {
 			fmt.Printf("Invalid destination connector:%s\n", plan.DestConnId)
 			return ERR_NO_DEST_SRC_CONN_INVALID
@@ -121,7 +121,7 @@ func Create(plan *Plan) ErrCode {
 
 	if plan.PolicyId != "" {
 		if bson.IsObjectIdHex(plan.PolicyId) {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, plan.PolicyId, dataBaseName}
+			plan.PolicyRef = mgo.DBRef{tblPolicy, bson.ObjectIdHex(plan.PolicyId), dataBaseName}
 		}else {
 			fmt.Printf("Invalid policy:%s\n", plan.PolicyId)
 			return ERR_POLICY_NOT_EXIST
@@ -132,14 +132,8 @@ func Create(plan *Plan) ErrCode {
 	return db.DbAdapter.CreatePlan(plan)
 }
 
-func Delete(name string, tenant string) ErrCode {
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s],err:%v\n", name,err)
-		return ERR_INVALID_PLAN_NAME
-	}
-	bson.NewObjectId()
-	return db.DbAdapter.DeleteConnector(name, tenant)
+func Delete(id string, tenant string) ErrCode {
+	return db.DbAdapter.DeletePlan(id, tenant)
 }
 
 func Update(plan *Plan) ErrCode {
@@ -156,8 +150,8 @@ func Update(plan *Plan) ErrCode {
 	}
 
 	plan.Id = oldPlan.Id
-	plan.IsSched = oldPlan.IsSched //set to be false as default
-	plan.SchedServer = oldPlan.SchedServer // set to be null as default
+	//plan.IsSched = oldPlan.IsSched //set to be false as default
+	//plan.SchedServer = oldPlan.SchedServer // set to be null as default
 	plan.LastSchedTime = oldPlan.LastSchedTime //set to be 0 as default
 	plan.PolicyRef = mgo.DBRef{"policy", plan.PolicyId, "test"}
 	plan.DestConnRef = mgo.DBRef{"connector", plan.DestConnId, "test"}
@@ -192,57 +186,6 @@ func Update(plan *Plan) ErrCode {
 
 	return db.DbAdapter.UpdatePlan(plan)
 }
-
-/*func Update(plan *Plan) ErrCode {
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s],err:", plan.Name,err)
-		return ERR_INVALID_PLAN_NAME
-	}
-	//TO-DO check validation of tenant
-	oldPlan, errcode := db.DbAdapter.GetPlan(plan.Name, plan.Tenant)
-	if errcode != ERR_OK || len(oldPlan) == 0{
-		fmt.Printf("Update plan failed, err: connot get the plan(%v).\n",errcode)
-		retErr := errcode
-		if len(oldPlan) == 0 {
-			retErr = ERR_PLAN_NOT_EXIST
-		}
-		return retErr
-	}
-
-	plan.Id = oldPlan[0].Id
-	plan.IsSched = oldPlan[0].IsSched //set to be false as default
-	plan.SchedServer = oldPlan[0].SchedServer // set to be null as default
-	plan.LastSchedTime = oldPlan[0].LastSchedTime //set to be 0 as default
-
-	//Check logic validity
-	if plan.DestConnName != "" {
-		destConn,err := connector.Get(plan.DestConnName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_DEST_CONN_NOT_EXIST
-		} else {
-			plan.DestConnRef = mgo.DBRef{tblConnector,destConn[0].Id,dataBaseName}
-		}
-	}
-	if plan.SourceConnName != "" {
-		srcConn,err := connector.Get(plan.SourceConnName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_SRC_CONN_NOT_EXIST
-		} else {
-			plan.SourceConnRef = mgo.DBRef{tblConnector,srcConn[0].Id, dataBaseName}
-		}
-	}
-	if plan.PolicyName != "" {
-		pol,err := policy.Get(plan.PolicyName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_POLICY_NOT_EXIST
-		} else {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, pol[0].Id, dataBaseName}
-		}
-	}
-
-	return db.DbAdapter.UpdatePlan(plan)
-}*/
 
 func Get(name string, tenant string) ([]Plan, ErrCode) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]*", name)
@@ -325,11 +268,7 @@ func Run(id string, tenant string) ErrCode {
 			fmt.Printf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
 				job.PlanName, job.SourceLocation, job.DestLocation)
 		}
-
-
 	}
-
-
 
 	return ERR_OK
 }
