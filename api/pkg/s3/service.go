@@ -8,115 +8,100 @@ import (
 	"github.com/micro/go-micro/client"
 	//	"github.com/micro/go-micro/errors"
 	"encoding/json"
-
-	"github.com/opensds/go-panda/backend/proto"
-	"github.com/opensds/go-panda/dataflow/proto"
 	"github.com/opensds/go-panda/s3/proto"
 	"golang.org/x/net/context"
 )
 
 const (
-	backendService  = "backend"
-	s3Service       = "s3"
-	dataflowService = "dataflow"
+	s3Service = "s3"
 )
 
 type APIService struct {
-	backendClient  backend.BackendService
-	s3Client       s3.S3Service
-	dataflowClient dataflow.DataFlowService
+	s3Client  s3.S3Service
 }
 
 func NewAPIService(c client.Client) *APIService {
 	return &APIService{
-		backendClient:  backend.NewBackendService(backendService, c),
-		s3Client:       s3.NewS3Service(s3Service, c),
-		dataflowClient: dataflow.NewDataFlowService(dataflowService, c),
+		s3Client: s3.NewS3Service(s3Service, c),
 	}
 }
 
-func (s *APIService) GetBackend(request *restful.Request, response *restful.Response) {
-	id := request.PathParameter("id")
-	log.Logf("Received request for backend details: %s", id)
-	ctx := context.Background()
-	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
+func IsQuery(request *restful.Request, name string) bool {
+	params := request.Request.URL.Query()
+	if params == nil {
+		return false
 	}
-
-	log.Log("Get backend details successfully.")
-	response.WriteEntity(res)
+	if _, ok := params[name]; ok {
+		return true
+	}
+	return false
 }
 
-func (s *APIService) GetObject(request *restful.Request, response *restful.Response) {
-	id := request.PathParameter("id")
-	log.Logf("Received request for object details: %s", id)
+
+func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
+	bucketName := request.PathParameter("bucketName")
+	acl := request.QueryParameter("acl")
+	versioning := request.QueryParameter("versioning")
+	website := request.QueryParameter("website")
+	cors := request.QueryParameter("cors")
+	replication := request.QueryParameter("replication")
+	lifecycle := request.QueryParameter("lifecycle")
+	
+	log.Logf("Received request for bucket details: %s", bucketName)
 	ctx := context.Background()
-	res, err := s.s3Client.GetObject(ctx, &s3.GetObjectRequest{Id: id})
+	if IsQuery(request, "acl") {
+		//TODO
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+	} else if IsQuery(request, "versioning") {
+		//TODO
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+	} else if IsQuery(request, "website") {
+		//TODO
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+	} else if IsQuery(request, "cors") {
+		//TODO
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+		
+	} else if IsQuery(request, "replication") {
+		//TODO
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+		
+	} else if IsQuery(request, "lifecycle") {
+		//TODO
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+		
+	} else {
+		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
+		if err != nil {
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Log("Get object details successfully.")
+		response.WriteEntity(res)
+	}
+}
+
+func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
+
+}
+
+func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
+
+}
+
+
+
+func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
+	objectKey := request.PathParameter("objectKey")
+	bucketName := request.PathParameter("bucketName")
+	log.Logf("Received request for object details: %s %s", bucketName, objectKey)
+	ctx := context.Background()
+	res, err := s.s3Client.GetObject(ctx, &s3.Object{ObjectKey: objectKey,BucketName: bucketName})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Log("Get object details successfully.")
-	response.WriteEntity(res)
-}
-
-func (s *APIService) GetPolicy(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	log.Logf("Received request for policy[name=%s] details.", name)
-	ctx := context.Background()
-	res, err := s.dataflowClient.GetPolicy(ctx, &dataflow.GetPolicyRequest{Name: name})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-
-	//For debug -- begin
-	jsons, errs := json.Marshal(res)
-	if errs != nil {
-		log.Logf(errs.Error())
-	} else {
-		log.Logf("res: %s.\n", jsons)
-	}
-	//For debug -- end
-
-	log.Log("Get policy details successfully.")
-	response.WriteEntity(res)
-}
-
-func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Response) {
-	//name := request.PathParameter("name")
-	log.Logf("Received request for create policy.\n")
-	ctx := context.Background()
-	pol := dataflow.Policy{}
-	err := request.ReadEntity(&pol)
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		log.Logf("Read request body failed, err:%v.\n", err)
-		return
-	}
-
-	//For debug --begin
-	jsons, errs := json.Marshal(pol)
-	if errs != nil {
-		log.Logf(errs.Error())
-	} else {
-		log.Logf("Req body: %s.\n", jsons)
-	}
-	//For debug --end
-
-	//name,_ := request.BodyParameter("name")
-	//tenant,_ := request.BodyParameter("tenant")
-	//desc,_ := request.BodyParameter("description")
-
-	res, err := s.dataflowClient.CreatePolicy(ctx, &dataflow.CreatePolicyRequest{Pol: &pol})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-
-	log.Log("Get policy details successfully.")
 	response.WriteEntity(res)
 }

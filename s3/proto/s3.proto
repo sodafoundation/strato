@@ -1,14 +1,192 @@
 syntax = "proto3";
 
 service S3 {
-	rpc GetObject(GetObjectRequest) returns (GetObjectResponse) {}
+	
+	rpc ListBuckets(BaseRequest) returns (ListBucketsResponse) {}
+	rpc CreateBucket(Bucket) returns (BaseResponse) {}
+	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
+	rpc GetBucket(Bucket) returns (Bucket) {}
+	rpc ListObjects(Object) returns (ListObjectResponse) {}
+	rpc PutObject(Object) returns (BaseResponse) {}
+	rpc GetObject(Object) returns (Object) {}
+	rpc DeleteObject(Object) returns (BaseResponse) {}
 }
 
-message GetObjectRequest {
-	string id = 1;
+
+
+message ACL {
+	string canned = 1;
+	repeated string FULL_CONTROL = 2;
+	repeated string WRITE = 3;
+	repeated string WRITE_ACP = 4;
+	repeated string READ = 5;
+	repeated string READ_ACP = 6;
 }
 
-message GetObjectResponse {
+message ServerSideEncryption {
+	string cryptScheme = 1;
+	string algorithm = 2;
+	string masterKeyId = 3;
+	bool mandtory = 4;
+}
+
+message VersioningConfiguration {
+	string Status = 1;
+	string MfaDelete = 2;
+}
+
+message RedirectAllRequestsTo {
+	string hostName = 1;
+	repeated string protocol = 2;
+}
+
+message Redirect {
+	string protocol = 1;
+	string hostName = 2;
+	string replaceKeyPrefixWith = 3;
+	string replaceKeyWith = 4;
+	string httpRedirectCode = 5;
+}
+
+message Condition {
+	string keyPrefixEquals = 1;
+	string httpErrorCodeReturnedEquals = 2;
+}
+
+message RoutingRules {
+	Redirect redirect = 1; 
+	Condition condition = 2;
+}
+
+message WebsiteConfiguration {
+	string indexDocument = 1;
+	string errorDocument = 2;
+	RedirectAllRequestsTo redirectAllRequestsTo = 3;
+	repeated RoutingRules routingRules = 4;
+}
+
+message CORSConfiguration {
 	string id = 1;
-	string name = 2;
+	string allowedMethods = 2;
+	string allowedOrigins = 3;
+	string allowedHeaders = 4;
+	string maxAgeSeconds = 5;
+	string exposedHeaders = 6;
+}
+
+message Destination {
+	string bucket = 1;
+	string storageClass = 2;
+}
+
+message ReplicationRole {
+	string id = 1;
+	string prefix = 2;
+	bool enabled = 3;
+	Destination destination = 4;
+}
+
+message ReplicationConfiguration {
+	string role = 1;
+	repeated ReplicationRole rules = 2;
+}
+
+message Tag {
+	string key = 1;
+	string val = 2;
+}
+
+message LifecycleFilter {
+	string prefix = 1;
+	repeated Tag tags = 2;
+}
+
+message Action {
+	string name = 1;
+	string day = 2;
+	string deleteMarker = 4;
+}
+
+message LifecycleRole {
+	string id = 1;
+	string status = 2;
+	LifecycleFilter filter = 3;
+	repeated Action actions = 4;
+}
+
+message ReplicationInfo {
+	string status = 1;
+	string backend = 2;
+	string storageClass = 3;
+}
+
+message Bucket {
+	string name = 1;
+	string owner = 2;
+	string ownerDisplayName = 3;
+	ACL acl = 4;
+	string creationDate = 5;
+	bool transient = 6;
+	bool deleted = 7;
+	ServerSideEncryption serverSideEncryption = 8;
+	VersioningConfiguration versioningConfiguration = 9;
+	string backend = 10;
+	WebsiteConfiguration websiteConfiguration = 11;
+	CORSConfiguration cors = 12;
+	ReplicationConfiguration replicationConfiguration = 13;
+	repeated LifecycleRole lifecycleConfiguration = 14;
+}
+
+message Partion {
+	string key = 1;
+	string partNumber = 2;
+	string size = 3;
+	string etag = 4;
+	string lastModified = 5;
+}
+
+message Object {
+	string objectKey = 1;
+	string bucketName = 2;
+	string owner = 3;
+	string ownerDisplayName = 4;
+	string cacheControl = 5;
+	string contentDisposition = 6;
+	string contentEncoding = 7;
+	string expires = 8;
+	string contentLength = 9;
+	string contentType = 10;
+	string contentMd5 = 11;
+	string versionId = 12;
+	string serverVersionId = 13;
+	string storageClass = 14;
+	ServerSideEncryption serverSideEncryption = 15;
+	string websiteRedirectLocation = 16;
+	ACL acl = 17;
+	string backend = 18;
+	string isNull = 19;
+	string nullVersionId = 20;
+	string isDeleteMarker = 21;
+	repeated ReplicationInfo replicationInfo = 22;
+	string size = 23;
+	repeated Partion partions =24;
+}
+
+
+message ListBucketsResponse {
+	repeated Bucket buckets = 1;
+}
+
+
+message ListObjectResponse {
+	repeated Object listObjects = 1;
+}
+
+message BaseResponse {
+	string errorCode = 1;
+	string msg = 2;
+}
+
+message BaseRequest {
+	string id = 1;
 }
