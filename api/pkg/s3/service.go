@@ -7,7 +7,6 @@ import (
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	//	"github.com/micro/go-micro/errors"
-	"encoding/json"
 	"github.com/opensds/go-panda/s3/proto"
 	"golang.org/x/net/context"
 )
@@ -40,35 +39,23 @@ func IsQuery(request *restful.Request, name string) bool {
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
-	acl := request.QueryParameter("acl")
-	versioning := request.QueryParameter("versioning")
-	website := request.QueryParameter("website")
-	cors := request.QueryParameter("cors")
-	replication := request.QueryParameter("replication")
-	lifecycle := request.QueryParameter("lifecycle")
 	
 	log.Logf("Received request for bucket details: %s", bucketName)
 	ctx := context.Background()
 	if IsQuery(request, "acl") {
 		//TODO
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 	} else if IsQuery(request, "versioning") {
 		//TODO
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 	} else if IsQuery(request, "website") {
 		//TODO
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 	} else if IsQuery(request, "cors") {
 		//TODO
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 		
 	} else if IsQuery(request, "replication") {
 		//TODO
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 		
 	} else if IsQuery(request, "lifecycle") {
 		//TODO
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 		
 	} else {
 		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
