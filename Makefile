@@ -19,8 +19,7 @@ BUILD_DIR := $(BASE_DIR)/build
 
 all: build
 
-#build: api backend s3 dataflow
-build: api dataflow datamover
+build: api backend s3 dataflow datamover
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -44,11 +43,11 @@ docker: build
 	cp $(BUILD_DIR)/api api
 	docker build api -t opensdsio/go-panda/api:latest
 
-	#cp $(BUILD_DIR)/backend backend
-	#docker build backend -t opensdsio/go-panda/backend:latest
+	cp $(BUILD_DIR)/backend backend
+	docker build backend -t opensdsio/go-panda/backend:latest
 
-	#cp $(BUILD_DIR)/s3 s3
-	#docker build s3 -t opensdsio/go-panda/s3:latest
+	cp $(BUILD_DIR)/s3 s3
+	docker build s3 -t opensdsio/go-panda/s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
 	docker build dataflow -t opensdsio/go-panda/dataflow:latest
