@@ -19,7 +19,8 @@ BUILD_DIR := $(BASE_DIR)/build
 
 all: build
 
-build: api backend s3 dataflow
+#build: api backend s3 dataflow
+build: api dataflow datamover
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -36,19 +37,23 @@ s3: prebuild
 dataflow: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/dataflow github.com/opensds/go-panda/dataflow/cmd
 
+datamover: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/go-panda/datamover/cmd
 
 docker: build
 	cp $(BUILD_DIR)/api api
 	docker build api -t opensdsio/go-panda/api:latest
 
-	cp $(BUILD_DIR)/backend backend
-	docker build backend -t opensdsio/go-panda/backend:latest
+	#cp $(BUILD_DIR)/backend backend
+	#docker build backend -t opensdsio/go-panda/backend:latest
 
-	cp $(BUILD_DIR)/s3 s3
-	docker build s3 -t opensdsio/go-panda/s3:latest
+	#cp $(BUILD_DIR)/s3 s3
+	#docker build s3 -t opensdsio/go-panda/s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
 	docker build dataflow -t opensdsio/go-panda/dataflow:latest
 
+	cp $(BUILD_DIR)/datamover datamover
+	docker build datamover -t opensdsio/go-panda/datamover:latest
 clean:
 	rm -rf $(BUILD_DIR) 

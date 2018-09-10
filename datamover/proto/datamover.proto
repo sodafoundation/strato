@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+service datamover {
+	rpc Runjob(RunJobRequest) returns (RunJobResponse) {}
+}
+
+message KV {
+	string key = 1;
+	string value = 2;
+}
+
+message Filter {
+	string prefix = 1;
+	repeated KV tag = 2;
+}
+
+message Connector {
+	string storType = 1;
+	string bucketName = 2;
+	repeated KV connConfig = 3;
+}
+
+message RunJobRequest{
+	string id = 1;
+	Connector sourceConn = 2;
+	Connector destConn = 3;
+	Filter filt = 4;
+	bool overWrite = 5;
+	bool remainSource = 6;
+}
+
+message RunJobResponse {
+	string err = 1;
+}

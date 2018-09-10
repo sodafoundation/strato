@@ -18,15 +18,9 @@ It has these top-level messages:
 	UpdatePolicyResponse
 	DeletePolicyRequest
 	DeletePolicyResponse
+	KV
+	Filter
 	Connector
-	CreateConnectorRequest
-	CreateConnectorResponse
-	GetConnectorRequest
-	GetConnectorResponse
-	UpdateConnectorRequest
-	UpdateConnectorResponse
-	DeleteConnectorRequest
-	DeleteConnectorResponse
 	Plan
 	CreatePlanRequest
 	CreatePlanResponse
@@ -36,6 +30,8 @@ It has these top-level messages:
 	UpdatePlanResponse
 	DeletePlanRequest
 	DeletePlanResponse
+	RunPlanRequest
+	RunPlanResponse
 	Job
 	GetJobRequest
 	GetJobResponse
@@ -75,15 +71,12 @@ type DataFlowService interface {
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...client.CallOption) (*CreatePolicyResponse, error)
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...client.CallOption) (*UpdatePolicyResponse, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...client.CallOption) (*DeletePolicyResponse, error)
-	GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...client.CallOption) (*GetConnectorResponse, error)
-	CreateConnector(ctx context.Context, in *CreateConnectorRequest, opts ...client.CallOption) (*CreateConnectorResponse, error)
-	UpdateConnector(ctx context.Context, in *UpdateConnectorRequest, opts ...client.CallOption) (*UpdateConnectorResponse, error)
-	DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, opts ...client.CallOption) (*DeleteConnectorResponse, error)
 	GetPlan(ctx context.Context, in *GetPlanRequest, opts ...client.CallOption) (*GetPlanResponse, error)
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...client.CallOption) (*CreatePlanResponse, error)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...client.CallOption) (*UpdatePlanResponse, error)
 	DeletePlan(ctx context.Context, in *DeletePlanRequest, opts ...client.CallOption) (*DeletePlanResponse, error)
 	GetJob(ctx context.Context, in *GetJobRequest, opts ...client.CallOption) (*GetJobResponse, error)
+	RunPlan(ctx context.Context, in *RunPlanRequest, opts ...client.CallOption) (*RunPlanResponse, error)
 }
 
 type dataFlowService struct {
@@ -144,46 +137,6 @@ func (c *dataFlowService) DeletePolicy(ctx context.Context, in *DeletePolicyRequ
 	return out, nil
 }
 
-func (c *dataFlowService) GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...client.CallOption) (*GetConnectorResponse, error) {
-	req := c.c.NewRequest(c.name, "DataFlow.GetConnector", in)
-	out := new(GetConnectorResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dataFlowService) CreateConnector(ctx context.Context, in *CreateConnectorRequest, opts ...client.CallOption) (*CreateConnectorResponse, error) {
-	req := c.c.NewRequest(c.name, "DataFlow.CreateConnector", in)
-	out := new(CreateConnectorResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dataFlowService) UpdateConnector(ctx context.Context, in *UpdateConnectorRequest, opts ...client.CallOption) (*UpdateConnectorResponse, error) {
-	req := c.c.NewRequest(c.name, "DataFlow.UpdateConnector", in)
-	out := new(UpdateConnectorResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dataFlowService) DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, opts ...client.CallOption) (*DeleteConnectorResponse, error) {
-	req := c.c.NewRequest(c.name, "DataFlow.DeleteConnector", in)
-	out := new(DeleteConnectorResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *dataFlowService) GetPlan(ctx context.Context, in *GetPlanRequest, opts ...client.CallOption) (*GetPlanResponse, error) {
 	req := c.c.NewRequest(c.name, "DataFlow.GetPlan", in)
 	out := new(GetPlanResponse)
@@ -234,6 +187,16 @@ func (c *dataFlowService) GetJob(ctx context.Context, in *GetJobRequest, opts ..
 	return out, nil
 }
 
+func (c *dataFlowService) RunPlan(ctx context.Context, in *RunPlanRequest, opts ...client.CallOption) (*RunPlanResponse, error) {
+	req := c.c.NewRequest(c.name, "DataFlow.RunPlan", in)
+	out := new(RunPlanResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for DataFlow service
 
 type DataFlowHandler interface {
@@ -241,15 +204,12 @@ type DataFlowHandler interface {
 	CreatePolicy(context.Context, *CreatePolicyRequest, *CreatePolicyResponse) error
 	UpdatePolicy(context.Context, *UpdatePolicyRequest, *UpdatePolicyResponse) error
 	DeletePolicy(context.Context, *DeletePolicyRequest, *DeletePolicyResponse) error
-	GetConnector(context.Context, *GetConnectorRequest, *GetConnectorResponse) error
-	CreateConnector(context.Context, *CreateConnectorRequest, *CreateConnectorResponse) error
-	UpdateConnector(context.Context, *UpdateConnectorRequest, *UpdateConnectorResponse) error
-	DeleteConnector(context.Context, *DeleteConnectorRequest, *DeleteConnectorResponse) error
 	GetPlan(context.Context, *GetPlanRequest, *GetPlanResponse) error
 	CreatePlan(context.Context, *CreatePlanRequest, *CreatePlanResponse) error
 	UpdatePlan(context.Context, *UpdatePlanRequest, *UpdatePlanResponse) error
 	DeletePlan(context.Context, *DeletePlanRequest, *DeletePlanResponse) error
 	GetJob(context.Context, *GetJobRequest, *GetJobResponse) error
+	RunPlan(context.Context, *RunPlanRequest, *RunPlanResponse) error
 }
 
 func RegisterDataFlowHandler(s server.Server, hdlr DataFlowHandler, opts ...server.HandlerOption) error {
@@ -258,15 +218,12 @@ func RegisterDataFlowHandler(s server.Server, hdlr DataFlowHandler, opts ...serv
 		CreatePolicy(ctx context.Context, in *CreatePolicyRequest, out *CreatePolicyResponse) error
 		UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, out *UpdatePolicyResponse) error
 		DeletePolicy(ctx context.Context, in *DeletePolicyRequest, out *DeletePolicyResponse) error
-		GetConnector(ctx context.Context, in *GetConnectorRequest, out *GetConnectorResponse) error
-		CreateConnector(ctx context.Context, in *CreateConnectorRequest, out *CreateConnectorResponse) error
-		UpdateConnector(ctx context.Context, in *UpdateConnectorRequest, out *UpdateConnectorResponse) error
-		DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, out *DeleteConnectorResponse) error
 		GetPlan(ctx context.Context, in *GetPlanRequest, out *GetPlanResponse) error
 		CreatePlan(ctx context.Context, in *CreatePlanRequest, out *CreatePlanResponse) error
 		UpdatePlan(ctx context.Context, in *UpdatePlanRequest, out *UpdatePlanResponse) error
 		DeletePlan(ctx context.Context, in *DeletePlanRequest, out *DeletePlanResponse) error
 		GetJob(ctx context.Context, in *GetJobRequest, out *GetJobResponse) error
+		RunPlan(ctx context.Context, in *RunPlanRequest, out *RunPlanResponse) error
 	}
 	type DataFlow struct {
 		dataFlow
@@ -295,22 +252,6 @@ func (h *dataFlowHandler) DeletePolicy(ctx context.Context, in *DeletePolicyRequ
 	return h.DataFlowHandler.DeletePolicy(ctx, in, out)
 }
 
-func (h *dataFlowHandler) GetConnector(ctx context.Context, in *GetConnectorRequest, out *GetConnectorResponse) error {
-	return h.DataFlowHandler.GetConnector(ctx, in, out)
-}
-
-func (h *dataFlowHandler) CreateConnector(ctx context.Context, in *CreateConnectorRequest, out *CreateConnectorResponse) error {
-	return h.DataFlowHandler.CreateConnector(ctx, in, out)
-}
-
-func (h *dataFlowHandler) UpdateConnector(ctx context.Context, in *UpdateConnectorRequest, out *UpdateConnectorResponse) error {
-	return h.DataFlowHandler.UpdateConnector(ctx, in, out)
-}
-
-func (h *dataFlowHandler) DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, out *DeleteConnectorResponse) error {
-	return h.DataFlowHandler.DeleteConnector(ctx, in, out)
-}
-
 func (h *dataFlowHandler) GetPlan(ctx context.Context, in *GetPlanRequest, out *GetPlanResponse) error {
 	return h.DataFlowHandler.GetPlan(ctx, in, out)
 }
@@ -329,4 +270,8 @@ func (h *dataFlowHandler) DeletePlan(ctx context.Context, in *DeletePlanRequest,
 
 func (h *dataFlowHandler) GetJob(ctx context.Context, in *GetJobRequest, out *GetJobResponse) error {
 	return h.DataFlowHandler.GetJob(ctx, in, out)
+}
+
+func (h *dataFlowHandler) RunPlan(ctx context.Context, in *RunPlanRequest, out *RunPlanResponse) error {
+	return h.DataFlowHandler.RunPlan(ctx, in, out)
 }
