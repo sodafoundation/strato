@@ -40,7 +40,7 @@ func IsQuery(request *restful.Request, name string) bool {
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	
-	log.Logf("Received request for bucket details: %s", bucketName)
+	log.Logf("Received request for create bucket: %s", bucketName)
 	ctx := context.Background()
 	if IsQuery(request, "acl") {
 		//TODO
@@ -63,12 +63,22 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
-		log.Log("Get object details successfully.")
+		log.Log("Create bucket successfully.")
 		response.WriteEntity(res)
 	}
 }
 
 func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
+	bucketName := request.PathParameter("bucketName")
+	ctx := context.Background()
+	log.Logf("Received request for bucket details: %s", bucketName)
+	res, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	log.Log("Get bucket successfully.")
+	response.WriteEntity(res)
 
 }
 
