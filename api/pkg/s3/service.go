@@ -77,7 +77,19 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Get bucket successfully.")
+
+	//For debug -- begin
+	log.Logf("Get policy reponse:%v",res)
+	log.Logf("res.ErrCode:%d",res.ErrCode)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("Get policy details successfully.")
 	response.WriteEntity(res)
 
 }

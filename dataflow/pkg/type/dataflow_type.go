@@ -6,10 +6,11 @@ import (
 	"time"
 )
 
-type ErrCode int32
+type ErrCode int64
 
 const (
-	ERR_OK ErrCode = iota
+	ERR_NOT_USED ErrCode = iota
+	ERR_OK
 	ERR_INNER_ERR
 	ERR_DB_ERR
 	ERR_INVALID_POLICY_NAME
@@ -23,6 +24,7 @@ const (
 	ERR_SRC_CONN_NOT_EXIST
 	ERR_IS_USED //Connector or policy is used by plan
 	ERR_RUN_PLAN_BUSY  //Plan is being scheduled
+	ERR_JOB_NOT_EXIST
 )
 
 const (
@@ -54,7 +56,7 @@ type Connector struct {
 	StorType   string		`json:"stor_type" bson:"store_type"`
 	StorLocation string		`json:"stor_location" bson:"stor_location"` //s3 location or nas path
 	//RemoteBucket string		`json:"remote_bucket" bson:"remote_bucket"`
-	AcessKey	string		`json:"ak" bson:"ak"`
+	AccessKey	string		`json:"ak" bson:"ak"`
 	SecreteKey	string 		`json:"sk" bson:"sk"`
 	UserName 	string		`json:"user_name" bson:"user_name"`
 	Passwd		string		`json:"passwd" bson:"passwd"`
@@ -70,8 +72,8 @@ type Plan struct {
 	Id bson.ObjectId		`json:"-" bson:"_id,omitempty"`
 	Name string 			`json:"name" bson:"name"`
 	Description string 		`json:"description" bson:"description"`
-	IsSched	bool			`json:"is_sched" bson:"is_sched"`
-	SchedServer string		`json:"sched_server" bson:"sched_server"`
+	//IsSched	bool			`json:"is_sched" bson:"is_sched"`
+	//SchedServer string		`json:"sched_server" bson:"sched_server"`
 	Type string				`json:"type" bson:"type"` //migration
 	SourceConnId  string	`json:"src_conn_id" bson:"src_conn_id"`
 	SourceConnRef	mgo.DBRef	`json:"src_conn_ref" bson:"src_conn_ref"`
@@ -105,12 +107,13 @@ type Job struct{
 	//SourceBackend string	`json:"source_backend" bson:"source_backend"`
 	//DestBackend string	`json:"dest_backend" bson:"dest_backend"`
 	CreateTime time.Time 	`json:"create_time" bson:"create_time"`
+	EndTime time.Time		`json:"end_time" bson:"end_time"`
 }
 
 type Backend struct{
 	Id bson.ObjectId 		`json:"-" bson:"_id,omitempty"`
 	Type string				`json:"type" bson:"type"` //aws-obj,azure-obj,hw-obj
 	Location string			`json:"location" bson:"location"`
-	AcessKey string			`json:"ak" bson:"ak"`
+	AccessKey string			`json:"ak" bson:"ak"`
 	SecreteKey string		`json:"sk" bson:"sk"`
 }

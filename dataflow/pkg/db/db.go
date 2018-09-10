@@ -48,7 +48,7 @@ func TestClear() error{
 type DBAdapter interface {
 	//Policy
 	CreatePolicy(pol *_type.Policy) _type.ErrCode
-	DeletePolicy(name string, tenant string) _type.ErrCode
+	DeletePolicy(id string, tenant string) _type.ErrCode
 	UpdatePolicy(pol *_type.Policy) _type.ErrCode
 	GetPolicy(name string, tenant string) ([]_type.Policy,_type.ErrCode)
 	GetPolicyById(id string, tenant string)(*_type.Policy,_type.ErrCode)
@@ -68,4 +68,5 @@ type DBAdapter interface {
 	UnlockSched(planId string) int
 	//Job
 	CreateJob(job *_type.Job) _type.ErrCode
+	GetJob(id string, tenant string) ([]_type.Job,_type.ErrCode)
 }
