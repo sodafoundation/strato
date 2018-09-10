@@ -4,27 +4,37 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"github.com/globalsign/mgo"
 	"time"
+	"errors"
 )
 
-type ErrCode int64
+var (
+	STOR_TYPE_OPENSDS = "opensds-obj"
+	STOR_TYPE_AWS_OBJ = "aws-obj"
+	STOR_TYPE_AZURE_OBJ = "azure-obj"
+	STOR_TYPE_HWCLOUD_OBJ = "hw-obj"
+)
 
-const (
-	ERR_NOT_USED ErrCode = iota
-	ERR_OK
-	ERR_INNER_ERR
-	ERR_DB_ERR
-	ERR_INVALID_POLICY_NAME
-	ERR_POLICY_NOT_EXIST
-	ERR_INVALID_CONN_NAME
-	ERR_CONN_NOT_EXIST
-	ERR_PLAN_NOT_EXIST
-	ERR_INVALID_PLAN_NAME
-	ERR_NO_DEST_SRC_CONN_INVALID
-	ERR_DEST_CONN_NOT_EXIST
-	ERR_SRC_CONN_NOT_EXIST
-	ERR_IS_USED //Connector or policy is used by plan
-	ERR_RUN_PLAN_BUSY  //Plan is being scheduled
-	ERR_JOB_NOT_EXIST
+var (
+	JOB_STATUS_QUEUEING = "queueing"
+)
+
+var (
+	//ERR_NOT_USED ErrCode = iota
+	//ERR_OK = errors.New("succeed")
+	ERR_INNER_ERR = errors.New("inner error")
+	ERR_DB_ERR = errors.New("database error")
+	ERR_INVALID_POLICY_NAME = errors.New("invalid policy name")
+	ERR_POLICY_NOT_EXIST = errors.New("policy does not exist")
+	ERR_INVALID_CONN_NAME = errors.New("invalid connector name")
+	ERR_CONN_NOT_EXIST = errors.New("connector does not esit")
+	ERR_PLAN_NOT_EXIST = errors.New("plan does not exist")
+	ERR_INVALID_PLAN_NAME = errors.New("invalid plan name")
+	//ERR_DEST_SRC_CONN_INVALID = "invalid source/destination connector"
+	ERR_DEST_CONN_NOT_EXIST = errors.New("invalid destination connector")
+	ERR_SRC_CONN_NOT_EXIST = errors.New("invalid source connector")
+	ERR_IS_USED_BY_PLAN = errors.New("is used by plan")//Connector or policy is used by plan
+	ERR_RUN_PLAN_BUSY  = errors.New("is scheduling")//Plan is being scheduled
+	ERR_JOB_NOT_EXIST = errors.New("job not exist")
 )
 
 const (
@@ -48,24 +58,20 @@ type Schedule struct {
 	TimePoint string		`json:"time_point" bson:"time_point"`
 }
 
+type KeyValue struct {
+	Key string
+	Value string
+}
+
 type Connector struct {
-	Id bson.ObjectId		`json:"-" bson:"_id,omitempty"`
-	Name string 			`json:"name" bson:"name"`
-	SelfDef bool			`json:"self_def" bson:"self_def"`
-	BucketName string 		`json:"bucket_name" bson:"bucket_name"`
-	StorType   string		`json:"stor_type" bson:"store_type"`
-	StorLocation string		`json:"stor_location" bson:"stor_location"` //s3 location or nas path
-	//RemoteBucket string		`json:"remote_bucket" bson:"remote_bucket"`
-	AccessKey	string		`json:"ak" bson:"ak"`
-	SecreteKey	string 		`json:"sk" bson:"sk"`
-	UserName 	string		`json:"user_name" bson:"user_name"`
-	Passwd		string		`json:"passwd" bson:"passwd"`
-	Tenant string 			`json:"tenant" bson:"tenant"`
+	StorType   string		`json:"stor_type" bson:"store_type"` //opensds-obj, aws-obj,azure-obj,ceph-obj,hw-obj,nas
+	BucketName string 		`json:"bucket_name" bson:"bucket_name"`//when StorType is opensds, need this
+	ConnConfig []KeyValue   `json:"conn_config" bson:"conn_config"`
 }
 
 type Filter struct {
 	Prefix string			`json:"prefix" bson:"prefix"`
-	BucketName string		`json:"bucket_name" bson:"bucket_name"`
+	Tag []KeyValue		    `json:"tag" bson:"tag"`
 }
 
 type Plan struct {
@@ -75,14 +81,9 @@ type Plan struct {
 	//IsSched	bool			`json:"is_sched" bson:"is_sched"`
 	//SchedServer string		`json:"sched_server" bson:"sched_server"`
 	Type string				`json:"type" bson:"type"` //migration
-	SourceConnId  string	`json:"src_conn_id" bson:"src_conn_id"`
-	SourceConnRef	mgo.DBRef	`json:"src_conn_ref" bson:"src_conn_ref"`
-	SourceConnName  string	`json:"src_conn_name" bson:"src_conn_name"`
-	DestConnId    string	`json:"dest_conn_id" bson:"dest_conn_id"`
-	DestConnRef 	mgo.DBRef	`json:"dest_conn_ref" bson:"dest_conn_ref"`
-	DestConnName    string	`json:"dest_conn_name" bson:"dest_conn_name"`
-	SourceDir	string		`json:"source_dir" bson:"source_dir"`
-	DestDir		string		`json:"dest_dir" bson:"dest_dir"`
+	SourceConn  Connector	`json:"src_conn" bson:"src_conn"`
+	DestConn  Connector	    `json:"dest_conn" bson:"dest_conn"`
+	Filt	Filter		    `json:"source_dir" bson:"source_dir"`
 	OverWrite	bool		`json:"over_write" bson:"over_write"`
 	RemainSource	bool	`json:"remain_source" bson:"remain_source"`
 	LastSchedTime	int64	`json:"last_sched_time" bson:"last_sched_time"`
@@ -100,14 +101,15 @@ type Job struct{
 	TotalCount int 			`json:"total_count" bson:"total_count"`
 	PassedCount int			`json:"passed_count" bson:"passed_count"`
 	TotalCapacity int64		`json:"total_capacity" bson:"passed_capacity"`
+	//when the plan related connector type is OPENSDS, then location should be bucket name
 	SourceLocation string	`json:"source_location" bson:"source_location"`
-	SourceBucket string		`json:"src_bucket" bson:"dest_bucket"`  //Bucket in OpenSDS
-	DestLocation string		`json:"source_location" bson:"source_location"`
-	DestBucket string		`json:"dest_bucket" bson:"dest_bucket"` //Bucket in OpenSDS
-	//SourceBackend string	`json:"source_backend" bson:"source_backend"`
-	//DestBackend string	`json:"dest_backend" bson:"dest_backend"`
+	DestLocation string		`json:"dest_location" bson:"dest_location"`
 	CreateTime time.Time 	`json:"create_time" bson:"create_time"`
 	EndTime time.Time		`json:"end_time" bson:"end_time"`
+	//OverWrite	bool		`json:"over_write" bson:"over_write"`
+	//RemainSource	bool	`json:"remain_source" bson:"remain_source"`
+	Status 	string			`json:"status" bson:"status"` //queueing,
+	Tenant string 			`json:"tenant" bson:"tenant"`
 }
 
 type Backend struct{
