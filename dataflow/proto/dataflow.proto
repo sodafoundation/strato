@@ -5,15 +5,12 @@ service DataFlow {
 	rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse) {}
 	rpc UpdatePolicy(UpdatePolicyRequest) returns (UpdatePolicyResponse) {}
 	rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse) {}
-	rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse) {}
-	rpc CreateConnector(CreateConnectorRequest) returns (CreateConnectorResponse) {}
-	rpc UpdateConnector(UpdateConnectorRequest) returns (UpdateConnectorResponse) {}
-	rpc DeleteConnector(DeleteConnectorRequest) returns (DeleteConnectorResponse) {}
 	rpc GetPlan(GetPlanRequest) returns (GetPlanResponse) {}
 	rpc CreatePlan(CreatePlanRequest) returns (CreatePlanResponse) {}
 	rpc UpdatePlan(UpdatePlanRequest) returns (UpdatePlanResponse) {}
 	rpc DeletePlan(DeletePlanRequest) returns (DeletePlanResponse) {}
 	rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
+	rpc RunPlan(RunPlanRequest) returns (RunPlanResponse) {}
 }
 
 message Schedule {
@@ -36,7 +33,7 @@ message GetPolicyRequest {
 }
 
 message GetPolicyResponse {
-	int64 err_code = 1;
+	string err = 1;
 	repeated Policy pols = 2;
 }
 
@@ -45,7 +42,7 @@ message CreatePolicyRequest {
 }
 
 message CreatePolicyResponse {
-	int64 err_code = 1;
+	string err = 1;
 }
 
 message UpdatePolicyRequest {
@@ -53,7 +50,7 @@ message UpdatePolicyRequest {
 }
 
 message UpdatePolicyResponse {
-	int64 err_code = 1;
+	string err = 1;
 }
 
 message DeletePolicyRequest {
@@ -61,59 +58,26 @@ message DeletePolicyRequest {
 }
 
 message DeletePolicyResponse {
-	int64 err_code = 1;
+	string err = 1;
+}
+
+message KV {
+	string key = 1;
+	string value = 2;
+}
+
+
+message Filter {
+	string prefix = 1;
+	repeated KV tag = 2;
 }
 
 message Connector {
-	string id = 1;
-	string name = 2;
-	bool selfDef = 3;
-	string bucketName = 4;
-	string storType = 5;
-	string storLocation = 6;
-	string accessKey = 7;
-	string secreteKey = 8;
-	string userName = 9;
-	string passwd = 10;
-	string tenant = 11;
+	string storType = 1;
+	string bucketName = 2;
+	repeated KV connConfig = 3;
 }
 
-message CreateConnectorRequest {
-	Connector conn = 1;
-	string tenant = 2;
-}
-
-message CreateConnectorResponse {
-	int64 err_code = 1;
-}
-
-message GetConnectorRequest {
-	string name = 1;
-	string tenant = 2;
-}
-
-message GetConnectorResponse {
-	int64 err_code = 1;
-	repeated Connector conns = 2;
-}
-
-message UpdateConnectorRequest {
-	Connector conn = 1;
-	string tenant = 2;
-}
-
-message UpdateConnectorResponse {
-	int64 err_code = 1;
-}
-
-message DeleteConnectorRequest {
-	string id = 1;
-	string tenant = 2;
-}
-
-message DeleteConnectorResponse {
-	int64 err_code = 1;
-}
 
 message Plan {
 	string id = 1;
@@ -122,15 +86,12 @@ message Plan {
 	string type = 4;
 	string policyId = 5;
 	string policyName = 6;
-	string sourceConnId = 7;
-	string sourceConnName = 8;
-	string destConnId = 9;
-	string destConnName = 10;
-	string sourceDir = 11;
-	string destDir = 12;
-	bool overWrite = 13;
-	bool remainSource = 14;
-	string tenant = 15;
+	Connector sourceConn = 7;
+	Connector destConn = 8;
+	Filter filt = 9;
+	bool overWrite = 10;
+	bool remainSource = 11;
+	string tenant = 12;
 }
 
 message CreatePlanRequest {
@@ -139,7 +100,7 @@ message CreatePlanRequest {
 }
 
 message CreatePlanResponse {
-	int64 err_code = 1;
+	string err = 1;
 }
 
 message GetPlanRequest {
@@ -148,7 +109,7 @@ message GetPlanRequest {
 }
 
 message GetPlanResponse {
-	int64 err_code = 1;
+	string err = 1;
 	repeated Plan plans = 2;
 }
 
@@ -158,7 +119,7 @@ message UpdatePlanRequest {
 }
 
 message UpdatePlanResponse {
-	int64 err_code = 1;
+	string err = 1;
 }
 
 message DeletePlanRequest {
@@ -167,7 +128,16 @@ message DeletePlanRequest {
 }
 
 message DeletePlanResponse {
-	int64 err_code = 1;
+	string err = 1;
+}
+
+message RunPlanRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message RunPlanResponse {
+	string err = 1;
 }
 
 message Job {
@@ -180,6 +150,8 @@ message Job {
 	string destLocation = 7;
 	int64  createTime = 8;
 	int64  endTime = 9;
+	bool overWrite = 10;
+	bool remainSource = 11;
 }
 
 message GetJobRequest {
@@ -188,6 +160,6 @@ message GetJobRequest {
 }
 
 message GetJobResponse {
-	int64 err_code = 1;
+	string err = 1;
 	repeated Job jobs = 2;
 }

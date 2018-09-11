@@ -26,6 +26,11 @@ services:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
 
+  datamover:
+    image: opensdsio/go-panda/datamover
+    environment:
+      MICRO_REGISTRY: "mdns"
+
   datastore:
     image: mongo
     ports:
