@@ -1,7 +1,19 @@
 syntax = "proto3";
 
 service Backend {
+	rpc CreateBackend(CreateBackendRequest) returns (CreateBackendResponse) {}
 	rpc GetBackend(GetBackendRequest) returns (GetBackendResponse) {}
+	rpc ListBackend(ListBackendRequest) returns (ListBackendResponse) {}
+	rpc UpdateBackend(UpdateBackendRequest) returns (UpdateBackendResponse) {}
+	rpc DeleteBackend(DeleteBackendRequest) returns (DeleteBackendResponse) {}
+}
+
+message CreateBackendRequest {
+	BackendDetail backend = 1;
+}
+
+message CreateBackendResponse {
+	BackendDetail backend = 1;
 }
 
 message GetBackendRequest {
@@ -9,6 +21,48 @@ message GetBackendRequest {
 }
 
 message GetBackendResponse {
+	BackendDetail backend = 1;
+}
+
+message ListBackendRequest {
+	int32 limit = 1;
+	string offset = 2;
+}
+
+message ListBackendResponse {
+	message Entry {
+		BackendDetail backend = 1;
+	}
+
+	repeated Entry entries = 1;
+	string next = 2;
+}
+
+message UpdateBackendRequest {
 	string id = 1;
-	string name = 2;
+	string access = 2;
+	string security = 3;
+}
+
+message UpdateBackendResponse {
+	BackendDetail backend = 1;
+}
+
+message DeleteBackendRequest {
+	string id = 1;
+}
+
+message DeleteBackendResponse {
+}
+
+message BackendDetail {
+	string id = 1;
+	string tenantId = 2;
+	string userId = 3;
+	string name = 4;
+	string type = 5;
+	string endpoint = 6;
+	string bucketName = 7;
+	string access = 8;
+	string security = 9;
 }

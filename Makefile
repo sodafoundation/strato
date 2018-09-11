@@ -38,16 +38,21 @@ dataflow: prebuild
 
 
 docker: build
+
 	cp $(BUILD_DIR)/api api
+	chmod 755 api/api
 	docker build api -t opensdsio/go-panda/api:latest
 
 	cp $(BUILD_DIR)/backend backend
+	chmod 755 backend/backend
 	docker build backend -t opensdsio/go-panda/backend:latest
 
 	cp $(BUILD_DIR)/s3 s3
+	chmod 755 s3/s3
 	docker build s3 -t opensdsio/go-panda/s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
+	chmod 755 dataflow/dataflow
 	docker build dataflow -t opensdsio/go-panda/dataflow:latest
 
 clean:
