@@ -65,29 +65,32 @@ func Update(plan *Plan) error {
 		return error
 	}
 
-	if plan.Name != "" {
-		curPlan.Name = plan.Name
+	if plan.Name == "" {
+		plan.Name = curPlan.Name
 	}
-	if !reflect.DeepEqual(plan.SourceConn, Connector{}) {
-		curPlan.SourceConn = plan.SourceConn
+	if reflect.DeepEqual(plan.SourceConn, Connector{}) {
+		plan.SourceConn = curPlan.SourceConn
 	}
-	if !reflect.DeepEqual(plan.DestConn, Connector{}) {
-		curPlan.DestConn = plan.DestConn
+	if reflect.DeepEqual(plan.DestConn, Connector{}) {
+		plan.DestConn = curPlan.DestConn
 	}
-	if !reflect.DeepEqual(plan.Filt, Filter{}) {
-		curPlan.Filt = plan.Filt
+	if reflect.DeepEqual(plan.Filt, Filter{}) {
+		plan.Filt = curPlan.Filt
 	}
 
 	if plan.PolicyId != "" {
 		if bson.IsObjectIdHex(plan.PolicyId) {
-			curPlan.PolicyRef = mgo.DBRef{tblPolicy, plan.PolicyId, dataBaseName}
+			plan.PolicyRef = mgo.DBRef{tblPolicy, plan.PolicyId, dataBaseName}
 		}else {
 			log.Logf("Invalid policy:%s\n", plan.PolicyId)
 			return ERR_POLICY_NOT_EXIST
 		}
+	}else if curPlan.PolicyId != ""{
+		plan.PolicyId = curPlan.PolicyId
+		plan.PolicyRef = curPlan.PolicyRef
 	}
 
-	return db.DbAdapter.UpdatePlan(curPlan)
+	return db.DbAdapter.UpdatePlan(plan)
 }
 
 func Get(name string, tenant string) ([]Plan, error) {
@@ -144,11 +147,11 @@ func buildConn(reqConn *datamover.Connector, conn *_type.Connector) {
 	}
 }
 
-func Run(id string, tenant string, mclient datamover.DatamoverService) error {
+func Run(id string, tenant string, mclient datamover.DatamoverService) (bson.ObjectId,error) {
 	//Get information from database
 	plan,err := db.DbAdapter.GetPlanByid(id, tenant)
 	if err != nil {
-		return err
+		return "",err
 	}
 
 	//scheduling must be mutual excluded among several schedulers
@@ -160,7 +163,7 @@ func Run(id string, tenant string, mclient datamover.DatamoverService) error {
 			defer db.DbAdapter.UnlockSched(string(plan.Id.Hex()))
 			break
 		}else if ret == LockBusy{
-			return ERR_RUN_PLAN_BUSY
+			return "",ERR_RUN_PLAN_BUSY
 		} else {
 			//Try to lock again, try three times at most
 			ret = db.DbAdapter.LockSched(string(plan.Id.Hex()))
@@ -170,20 +173,20 @@ func Run(id string, tenant string, mclient datamover.DatamoverService) error {
 	//Get source location by source connector
 	srcLocation,err1 := getLocation(&plan.SourceConn)
 	if err1 != nil {
-		return err1
+		return "",err1
 	}
 
 	//Get destination location by destination connector
 	destLocation,err2 := getLocation(&plan.DestConn)
 	if err2 != nil {
-		return err2
+		return "",err2
 	}
 
 	ct := time.Now()
 	//Create job
 	job := Job{}
-	jobId := bson.NewObjectId()
-	job.Id = jobId
+	//obId := bson.NewObjectId()
+	//job.Id = jobId
 	job.Type = plan.Type
 	job.PlanId = string(plan.Id.Hex())
 	job.PlanName = plan.Name
@@ -208,10 +211,9 @@ func Run(id string, tenant string, mclient datamover.DatamoverService) error {
 		req.DestConn = &destConn
 		go sendJob(&req, mclient)
 	}else {
-		//TODO: It should be considered that what if some job add to database succeed, but the others failed.
 		log.Logf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
 			job.PlanName, job.SourceLocation, job.DestLocation)
 	}
 
-	return nil
+	return job.Id, nil
 }

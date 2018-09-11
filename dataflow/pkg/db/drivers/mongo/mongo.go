@@ -307,7 +307,6 @@ func (ad *adapter)CreatePlan(plan *Plan) error{
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollPlan)
-	err := c.Insert(&plan)
 
 	//Get Lock, Create plan may depended on policy or connector
 	ret := lock(ss, lockManager, maxLockSec)
@@ -328,9 +327,23 @@ func (ad *adapter)CreatePlan(plan *Plan) error{
 		return errcode
 	}
 
-	if err != nil {
-		log.Logf("Insert plan into database failed, err:%v\n", err)
-		return ERR_DB_ERR
+	//Create plan id
+	plan.Id = bson.NewObjectId()
+	err := c.Insert(plan)
+	for i := 0; i < 3; i++ {
+		if mgo.IsDup(err) {
+			log.Logf("Add plan into database failed, duplicate id:%s\n", string(plan.Id.Hex()))
+			plan.Id = bson.NewObjectId()
+			err = c.Insert(plan)
+		}else {
+			if err == nil {
+				log.Logf("Add plan into database succeed, job id:%v\n", string(plan.Id.Hex()))
+				return nil
+			}else {
+				log.Logf("Add plan into database failed, err:%v\n", err)
+				return ERR_DB_ERR
+			}
+		}
 	}
 
 	return nil
@@ -509,6 +522,7 @@ func (ad *adapter) CreateJob(job *Job) error {
 	defer ss.Close()
 
 	c := ss.DB(DataBaseName).C(CollJob)
+	job.Id = bson.NewObjectId()
 	err := c.Insert(&job)
 	for i := 0; i < 3; i++ {
 		if mgo.IsDup(err) {
