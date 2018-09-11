@@ -50,22 +50,91 @@ func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackend
 
 func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendRequest, out *pb.GetBackendResponse) error {
 	log.Log("Received GetBackend request.")
-	out.Backend.Id = "c506cd4b-9048-43bc-97ef-0d7dec369b42"
-	out.Backend.Name = "GetBackend." + in.Id
+	res, err := db.Repo.GetBackend(in.Id)
+	if err != nil {
+		log.Logf("Failed to get backend: %v", err)
+		return err
+	}
+	out.Backend = &pb.BackendDetail{
+		Id:         res.Id.Hex(),
+		Name:       res.Name,
+		TenantId:   res.TenantId,
+		UserId:     res.UserId,
+		Type:       res.Type,
+		Endpoint:   res.Endpoint,
+		BucketName: res.BucketName,
+		Access:     res.Access,
+		Security:   res.Security,
+	}
+	log.Log("Get backend successfully.")
 	return nil
 }
 
 func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequest, out *pb.ListBackendResponse) error {
-	log.Log("Received ListBackend request.")
+	log.Logf("Received ListBackend request: %v", in)
+	res, err := db.Repo.ListBackend()
+	if err != nil {
+		log.Logf("Failed to list backend: %v", err)
+		return err
+	}
+
+	var backends []*pb.BackendDetail
+	for _, item := range res {
+		backends = append(backends, &pb.BackendDetail{
+			Id:         item.Id.Hex(),
+			Name:       item.Name,
+			TenantId:   item.TenantId,
+			UserId:     item.UserId,
+			Type:       item.Type,
+			Endpoint:   item.Endpoint,
+			BucketName: item.BucketName,
+			Access:     item.Access,
+			Security:   item.Security,
+		})
+	}
+	out.Backends = backends
+	log.Log("Get backend successfully.")
 	return nil
 }
 
 func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackendRequest, out *pb.UpdateBackendResponse) error {
 	log.Log("Received UpdateBackend request.")
+	backend, err := db.Repo.GetBackend(in.Id)
+	if err != nil {
+		log.Logf("Failed to get backend: %v", err)
+		return err
+	}
+
+	backend.Access = in.Access
+	backend.Security = in.Security
+	res, err := db.Repo.UpdateBackend(backend)
+	if err != nil {
+		log.Logf("Failed to update backend: %v", err)
+		return err
+	}
+
+	out.Backend = &pb.BackendDetail{
+		Id:         res.Id.Hex(),
+		Name:       res.Name,
+		TenantId:   res.TenantId,
+		UserId:     res.UserId,
+		Type:       res.Type,
+		Endpoint:   res.Endpoint,
+		BucketName: res.BucketName,
+		Access:     res.Access,
+		Security:   res.Security,
+	}
+	log.Log("Update backend successfully.")
 	return nil
 }
 
 func (b *backendService) DeleteBackend(ctx context.Context, in *pb.DeleteBackendRequest, out *pb.DeleteBackendResponse) error {
 	log.Log("Received DeleteBackend request.")
+	err := db.Repo.DeleteBackend(in.Id)
+	if err != nil {
+		log.Logf("Failed to delete backend: %v", err)
+		return err
+	}
+	log.Log("Delete backend successfully.")
 	return nil
 }

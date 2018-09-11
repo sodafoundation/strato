@@ -46,7 +46,7 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 	}
 
 	log.Log("Get backend details successfully.")
-	response.WriteEntity(res)
+	response.WriteEntity(res.Backend)
 }
 
 func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
@@ -82,7 +82,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	}
 
 	log.Log("Create backend successfully.")
-	response.WriteEntity(res)
+	response.WriteEntity(res.Backend)
 }
 
 func (s *APIService) UpdateBackend(request *restful.Request, response *restful.Response) {
@@ -104,13 +104,13 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 	}
 
 	log.Log("Update backend successfully.")
-	response.WriteEntity(res)
+	response.WriteEntity(res.Backend)
 }
 
 func (s *APIService) DeleteBackend(request *restful.Request, response *restful.Response) {
 	log.Logf("Received request for deleting backend: %s", request.PathParameter("id"))
 	ctx := context.Background()
-	res, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: request.PathParameter("id")})
+	_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: request.PathParameter("id")})
 	if err != nil {
 		log.Logf("Failed to delete backend: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -118,5 +118,5 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	}
 
 	log.Log("Delete backend successfully.")
-	response.WriteEntity(res)
+	response.WriteHeader(http.StatusOK)
 }

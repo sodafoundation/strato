@@ -54,7 +54,7 @@ func (repo *mongoRepository) CreateBackend(backend *model.Backend) (*model.Backe
 func (repo *mongoRepository) DeleteBackend(id string) error {
 	session := repo.session.Copy()
 	defer session.Close()
-	return session.DB(defaultDBName).C(defaultCollection).RemoveId(id)
+	return session.DB(defaultDBName).C(defaultCollection).RemoveId(bson.ObjectIdHex(id))
 }
 
 func (repo *mongoRepository) UpdateBackend(backend *model.Backend) (*model.Backend, error) {
@@ -73,19 +73,20 @@ func (repo *mongoRepository) GetBackend(id string) (*model.Backend, error) {
 	defer session.Close()
 
 	var backend = &model.Backend{}
-	err := session.DB(defaultDBName).C(defaultCollection).FindId(id).One(backend)
+	collection := session.DB(defaultDBName).C(defaultCollection)
+	err := collection.FindId(bson.ObjectIdHex(id)).One(backend)
 	if err != nil {
 		return nil, err
 	}
 	return backend, nil
 }
 
-func (repo *mongoRepository) ListBackend() (*[]model.Backend, error) {
+func (repo *mongoRepository) ListBackend() ([]*model.Backend, error) {
 	session := repo.session.Copy()
 	defer session.Close()
 
-	var backends = &[]model.Backend{}
-	err := session.DB(defaultDBName).C(defaultCollection).Find(nil).All(backends)
+	var backends []*model.Backend
+	err := session.DB(defaultDBName).C(defaultCollection).Find(nil).All(&backends)
 	if err != nil {
 		return nil, err
 	}

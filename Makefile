@@ -58,6 +58,7 @@ docker: build
 	docker build dataflow -t opensdsio/go-panda/dataflow:latest
 
 	cp $(BUILD_DIR)/datamover datamover
+	chmod 755 datamover/datamover
 	docker build datamover -t opensdsio/go-panda/datamover:latest
 clean:
-	rm -rf $(BUILD_DIR) 
+	rm -rf $(BUILD_DIR)

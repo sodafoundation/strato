@@ -14,7 +14,7 @@ type Repository interface {
 	DeleteBackend(id string) error
 	UpdateBackend(backend *model.Backend) (*model.Backend, error)
 	GetBackend(id string) (*model.Backend, error)
-	ListBackend() (*[]model.Backend, error)
+	ListBackend() ([]*model.Backend, error)
 	Close()
 }
 

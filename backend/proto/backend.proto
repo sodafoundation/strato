@@ -30,11 +30,7 @@ message ListBackendRequest {
 }
 
 message ListBackendResponse {
-	message Entry {
-		BackendDetail backend = 1;
-	}
-
-	repeated Entry entries = 1;
+	repeated BackendDetail backends = 1;
 	string next = 2;
 }
 
