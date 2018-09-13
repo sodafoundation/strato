@@ -91,8 +91,8 @@ message Plan {
 	Connector sourceConn = 7;
 	Connector destConn = 8;
 	Filter filt = 9;
-	string overWrite = 10;
-	string remainSource = 11;
+	bool overWrite = 10;
+	bool remainSource = 11;
 	string tenant = 12;
 }
 
@@ -154,9 +154,10 @@ message Job {
 	string sourceLocation = 6;
 	string destLocation = 7;
 	int64  createTime = 8;
-	int64  endTime = 9;
-	string overWrite = 10;
-	string remainSource = 11;
+	int64  startTime = 9;
+	int64  endTime = 10;
+	bool overWrite = 11;
+	bool remainSource = 12;
 }
 
 message GetJobRequest {

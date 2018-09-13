@@ -561,7 +561,7 @@ func (ad *adapter)GetJob(id string, tenant string) ([]Job, error){
 			return  nil,ERR_DB_ERR
 		}
 	}else {//get specific Connector
-		err := c.Find(bson.M{"name":bson.ObjectIdHex(id), "tenant":tenant}).All(&jobs)
+		err := c.Find(bson.M{"_id":bson.ObjectIdHex(id), "tenant":tenant}).All(&jobs)
 		if err == mgo.ErrNotFound || len(jobs) == 0{
 			log.Log("Connector not found.")
 			return  nil,ERR_JOB_NOT_EXIST

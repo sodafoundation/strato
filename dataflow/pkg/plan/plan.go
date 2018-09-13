@@ -18,6 +18,20 @@ var dataBaseName = "test"
 var tblConnector = "connector"
 var tblPolicy = "policy"
 
+
+func isEqual(src *Connector, dest *Connector) bool {
+	switch src.StorType {
+	case STOR_TYPE_OPENSDS:
+		if dest.StorType == STOR_TYPE_OPENSDS && src.BucketName == dest.BucketName {
+			return true
+		}else {
+			return false
+		}
+	default: //TODO: check according to StorType later.
+		return false
+	}
+}
+
 func Create(plan *Plan) error {
 	//Check parameter validity
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
@@ -27,9 +41,12 @@ func Create(plan *Plan) error {
 	}
 
 	plan.Id = ""
-	//plan.IsSched = false //set to be false as default
-	//plan.SchedServer = "" // set to be null as default
 	plan.LastSchedTime = 0 //set to be 0 as default
+
+	if isEqual(&plan.SourceConn, &plan.DestConn) {
+		log.Log("source connector is the same as destination connector.")
+		return ERR_DEST_SRC_CONN_EQUAL
+	}
 
 	if plan.PolicyId != "" {
 		if bson.IsObjectIdHex(plan.PolicyId) {
@@ -76,6 +93,10 @@ func Update(plan *Plan) error {
 	}
 	if reflect.DeepEqual(plan.Filt, Filter{}) {
 		plan.Filt = curPlan.Filt
+	}
+	if isEqual(&plan.SourceConn, &plan.DestConn) {
+		log.Log("source connector is the same as destination connector.")
+		return ERR_DEST_SRC_CONN_EQUAL
 	}
 
 	if plan.PolicyId != "" {
@@ -193,9 +214,9 @@ func Run(id string, tenant string, mclient datamover.DatamoverService) (bson.Obj
 	job.SourceLocation = srcLocation
 	job.DestLocation = destLocation
 	job.CreateTime = ct
-	job.Status = JOB_STATUS_QUEUEING
-	//job.OverWrite = plan.OverWrite
-	//job.RemainSource = plan.RemainSource
+	job.Status = JOB_STATUS_PENDING
+	job.OverWrite = plan.OverWrite
+	job.RemainSource = plan.RemainSource
 
 	//add job to database
 	errno := db.DbAdapter.CreateJob(&job)
