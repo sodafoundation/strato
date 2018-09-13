@@ -43,6 +43,7 @@ message CreatePolicyRequest {
 
 message CreatePolicyResponse {
 	string err = 1;
+	string polId = 2;
 }
 
 message UpdatePolicyRequest {
@@ -51,6 +52,7 @@ message UpdatePolicyRequest {
 
 message UpdatePolicyResponse {
 	string err = 1;
+	string polId =2 ;
 }
 
 message DeletePolicyRequest {
@@ -101,6 +103,7 @@ message CreatePlanRequest {
 
 message CreatePlanResponse {
 	string err = 1;
+	string planId = 2;
 }
 
 message GetPlanRequest {
@@ -120,6 +123,7 @@ message UpdatePlanRequest {
 
 message UpdatePlanResponse {
 	string err = 1;
+	string planId = 2;
 }
 
 message DeletePlanRequest {
@@ -138,6 +142,7 @@ message RunPlanRequest {
 
 message RunPlanResponse {
 	string err = 1;
+	string jobId = 2;
 }
 
 message Job {
@@ -149,9 +154,10 @@ message Job {
 	string sourceLocation = 6;
 	string destLocation = 7;
 	int64  createTime = 8;
-	int64  endTime = 9;
-	bool overWrite = 10;
-	bool remainSource = 11;
+	int64  startTime = 9;
+	int64  endTime = 10;
+	bool overWrite = 11;
+	bool remainSource = 12;
 }
 
 message GetJobRequest {
