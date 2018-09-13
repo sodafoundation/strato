@@ -32,7 +32,7 @@ message ListBackendRequest {
 
 message ListBackendResponse {
 	repeated BackendDetail backends = 1;
-	string next = 2;
+	int32 next = 2;
 }
 
 message UpdateBackendRequest {
