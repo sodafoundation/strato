@@ -16,7 +16,7 @@ const (
 )
 
 type APIService struct {
-	s3Client  s3.S3Service
+	s3Client s3.S3Service
 }
 
 func NewAPIService(c client.Client) *APIService {
@@ -36,10 +36,9 @@ func IsQuery(request *restful.Request, name string) bool {
 	return false
 }
 
-
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
-	
+
 	log.Logf("Received request for create bucket: %s", bucketName)
 	ctx := context.Background()
 	if IsQuery(request, "acl") {
@@ -50,13 +49,13 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		//TODO
 	} else if IsQuery(request, "cors") {
 		//TODO
-		
+
 	} else if IsQuery(request, "replication") {
 		//TODO
-		
+
 	} else if IsQuery(request, "lifecycle") {
 		//TODO
-		
+
 	} else {
 		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
 		if err != nil {
@@ -78,17 +77,6 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	//For debug -- begin
-	log.Logf("Get policy reponse:%v",res)
-	log.Logf("res.ErrCode:%d",res.ErrCode)
-	jsons, errs := json.Marshal(res)
-	if errs != nil {
-		log.Logf(errs.Error())
-	} else {
-		log.Logf("res: %s.\n", jsons)
-	}
-	//For debug -- end
-
 	log.Log("Get policy details successfully.")
 	response.WriteEntity(res)
 
@@ -98,14 +86,12 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 
 }
 
-
-
 func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
 	objectKey := request.PathParameter("objectKey")
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("Received request for object details: %s %s", bucketName, objectKey)
 	ctx := context.Background()
-	res, err := s.s3Client.GetObject(ctx, &s3.Object{ObjectKey: objectKey,BucketName: bucketName})
+	res, err := s.s3Client.GetObject(ctx, &s3.Object{ObjectKey: objectKey, BucketName: bucketName})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

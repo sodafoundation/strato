@@ -40,19 +40,25 @@ datamover: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/go-panda/datamover/cmd
 
 docker: build
+
 	cp $(BUILD_DIR)/api api
+	chmod 755 api/api
 	docker build api -t opensdsio/go-panda/api:latest
 
 	cp $(BUILD_DIR)/backend backend
+	chmod 755 backend/backend
 	docker build backend -t opensdsio/go-panda/backend:latest
 
 	cp $(BUILD_DIR)/s3 s3
+	chmod 755 s3/s3
 	docker build s3 -t opensdsio/go-panda/s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
+	chmod 755 dataflow/dataflow
 	docker build dataflow -t opensdsio/go-panda/dataflow:latest
 
 	cp $(BUILD_DIR)/datamover datamover
+	chmod 755 datamover/datamover
 	docker build datamover -t opensdsio/go-panda/datamover:latest
 clean:
-	rm -rf $(BUILD_DIR) 
+	rm -rf $(BUILD_DIR)

@@ -14,11 +14,13 @@ services:
     image: opensdsio/go-panda/backend
     environment:
       MICRO_REGISTRY: "mdns"
+      DB_HOST: "datastore:27017"
 
   s3:
     image: opensdsio/go-panda/s3
     environment:
       MICRO_REGISTRY: "mdns"
+      DB_HOST: "datastore:27017"
 
   dataflow:
     image: opensdsio/go-panda/dataflow
