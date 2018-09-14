@@ -2,18 +2,25 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	micro "github.com/micro/go-micro"
-	handler "github.com/opensds/go-panda/backend/pkg"
+	"github.com/opensds/go-panda/backend/pkg/db"
+	handler "github.com/opensds/go-panda/backend/pkg/service"
+	"github.com/opensds/go-panda/backend/pkg/utils/config"
 	pb "github.com/opensds/go-panda/backend/proto"
 )
 
 func main() {
+	dbHost := os.Getenv("DB_HOST")
+	db.Init(&config.Database{
+		Driver:   "mongodb",
+		Endpoint: dbHost})
+	defer db.Exit()
+
 	service := micro.NewService(
 		micro.Name("backend"),
 	)
-
-	micro.NewService()
 
 	service.Init()
 

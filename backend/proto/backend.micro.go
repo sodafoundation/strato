@@ -8,8 +8,17 @@ It is generated from these files:
 	backend.proto
 
 It has these top-level messages:
+	CreateBackendRequest
+	CreateBackendResponse
 	GetBackendRequest
 	GetBackendResponse
+	ListBackendRequest
+	ListBackendResponse
+	UpdateBackendRequest
+	UpdateBackendResponse
+	DeleteBackendRequest
+	DeleteBackendResponse
+	BackendDetail
 */
 package backend
 
@@ -42,7 +51,11 @@ var _ server.Option
 // Client API for Backend service
 
 type BackendService interface {
+	CreateBackend(ctx context.Context, in *CreateBackendRequest, opts ...client.CallOption) (*CreateBackendResponse, error)
 	GetBackend(ctx context.Context, in *GetBackendRequest, opts ...client.CallOption) (*GetBackendResponse, error)
+	ListBackend(ctx context.Context, in *ListBackendRequest, opts ...client.CallOption) (*ListBackendResponse, error)
+	UpdateBackend(ctx context.Context, in *UpdateBackendRequest, opts ...client.CallOption) (*UpdateBackendResponse, error)
+	DeleteBackend(ctx context.Context, in *DeleteBackendRequest, opts ...client.CallOption) (*DeleteBackendResponse, error)
 }
 
 type backendService struct {
@@ -63,6 +76,16 @@ func NewBackendService(name string, c client.Client) BackendService {
 	}
 }
 
+func (c *backendService) CreateBackend(ctx context.Context, in *CreateBackendRequest, opts ...client.CallOption) (*CreateBackendResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.CreateBackend", in)
+	out := new(CreateBackendResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *backendService) GetBackend(ctx context.Context, in *GetBackendRequest, opts ...client.CallOption) (*GetBackendResponse, error) {
 	req := c.c.NewRequest(c.name, "Backend.GetBackend", in)
 	out := new(GetBackendResponse)
@@ -73,15 +96,53 @@ func (c *backendService) GetBackend(ctx context.Context, in *GetBackendRequest, 
 	return out, nil
 }
 
+func (c *backendService) ListBackend(ctx context.Context, in *ListBackendRequest, opts ...client.CallOption) (*ListBackendResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.ListBackend", in)
+	out := new(ListBackendResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendService) UpdateBackend(ctx context.Context, in *UpdateBackendRequest, opts ...client.CallOption) (*UpdateBackendResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.UpdateBackend", in)
+	out := new(UpdateBackendResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendService) DeleteBackend(ctx context.Context, in *DeleteBackendRequest, opts ...client.CallOption) (*DeleteBackendResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.DeleteBackend", in)
+	out := new(DeleteBackendResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Backend service
 
 type BackendHandler interface {
+	CreateBackend(context.Context, *CreateBackendRequest, *CreateBackendResponse) error
 	GetBackend(context.Context, *GetBackendRequest, *GetBackendResponse) error
+	ListBackend(context.Context, *ListBackendRequest, *ListBackendResponse) error
+	UpdateBackend(context.Context, *UpdateBackendRequest, *UpdateBackendResponse) error
+	DeleteBackend(context.Context, *DeleteBackendRequest, *DeleteBackendResponse) error
 }
 
 func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server.HandlerOption) error {
 	type backend interface {
+		CreateBackend(ctx context.Context, in *CreateBackendRequest, out *CreateBackendResponse) error
 		GetBackend(ctx context.Context, in *GetBackendRequest, out *GetBackendResponse) error
+		ListBackend(ctx context.Context, in *ListBackendRequest, out *ListBackendResponse) error
+		UpdateBackend(ctx context.Context, in *UpdateBackendRequest, out *UpdateBackendResponse) error
+		DeleteBackend(ctx context.Context, in *DeleteBackendRequest, out *DeleteBackendResponse) error
 	}
 	type Backend struct {
 		backend
@@ -94,6 +155,22 @@ type backendHandler struct {
 	BackendHandler
 }
 
+func (h *backendHandler) CreateBackend(ctx context.Context, in *CreateBackendRequest, out *CreateBackendResponse) error {
+	return h.BackendHandler.CreateBackend(ctx, in, out)
+}
+
 func (h *backendHandler) GetBackend(ctx context.Context, in *GetBackendRequest, out *GetBackendResponse) error {
 	return h.BackendHandler.GetBackend(ctx, in, out)
+}
+
+func (h *backendHandler) ListBackend(ctx context.Context, in *ListBackendRequest, out *ListBackendResponse) error {
+	return h.BackendHandler.ListBackend(ctx, in, out)
+}
+
+func (h *backendHandler) UpdateBackend(ctx context.Context, in *UpdateBackendRequest, out *UpdateBackendResponse) error {
+	return h.BackendHandler.UpdateBackend(ctx, in, out)
+}
+
+func (h *backendHandler) DeleteBackend(ctx context.Context, in *DeleteBackendRequest, out *DeleteBackendResponse) error {
+	return h.BackendHandler.DeleteBackend(ctx, in, out)
 }

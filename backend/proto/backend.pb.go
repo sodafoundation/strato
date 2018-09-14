@@ -18,6 +18,82 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type CreateBackendRequest struct {
+	Backend              *BackendDetail `protobuf:"bytes,1,opt,name=backend,proto3" json:"backend,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *CreateBackendRequest) Reset()         { *m = CreateBackendRequest{} }
+func (m *CreateBackendRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateBackendRequest) ProtoMessage()    {}
+func (*CreateBackendRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{0}
+}
+func (m *CreateBackendRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateBackendRequest.Unmarshal(m, b)
+}
+func (m *CreateBackendRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateBackendRequest.Marshal(b, m, deterministic)
+}
+func (dst *CreateBackendRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateBackendRequest.Merge(dst, src)
+}
+func (m *CreateBackendRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateBackendRequest.Size(m)
+}
+func (m *CreateBackendRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateBackendRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateBackendRequest proto.InternalMessageInfo
+
+func (m *CreateBackendRequest) GetBackend() *BackendDetail {
+	if m != nil {
+		return m.Backend
+	}
+	return nil
+}
+
+type CreateBackendResponse struct {
+	Backend              *BackendDetail `protobuf:"bytes,1,opt,name=backend,proto3" json:"backend,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *CreateBackendResponse) Reset()         { *m = CreateBackendResponse{} }
+func (m *CreateBackendResponse) String() string { return proto.CompactTextString(m) }
+func (*CreateBackendResponse) ProtoMessage()    {}
+func (*CreateBackendResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{1}
+}
+func (m *CreateBackendResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateBackendResponse.Unmarshal(m, b)
+}
+func (m *CreateBackendResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateBackendResponse.Marshal(b, m, deterministic)
+}
+func (dst *CreateBackendResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateBackendResponse.Merge(dst, src)
+}
+func (m *CreateBackendResponse) XXX_Size() int {
+	return xxx_messageInfo_CreateBackendResponse.Size(m)
+}
+func (m *CreateBackendResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateBackendResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateBackendResponse proto.InternalMessageInfo
+
+func (m *CreateBackendResponse) GetBackend() *BackendDetail {
+	if m != nil {
+		return m.Backend
+	}
+	return nil
+}
+
 type GetBackendRequest struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -29,7 +105,7 @@ func (m *GetBackendRequest) Reset()         { *m = GetBackendRequest{} }
 func (m *GetBackendRequest) String() string { return proto.CompactTextString(m) }
 func (*GetBackendRequest) ProtoMessage()    {}
 func (*GetBackendRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_backend_b7754cea5cdc26f4, []int{0}
+	return fileDescriptor_backend_29127454573a9132, []int{2}
 }
 func (m *GetBackendRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBackendRequest.Unmarshal(m, b)
@@ -57,18 +133,17 @@ func (m *GetBackendRequest) GetId() string {
 }
 
 type GetBackendResponse struct {
-	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Backend              *BackendDetail `protobuf:"bytes,1,opt,name=backend,proto3" json:"backend,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *GetBackendResponse) Reset()         { *m = GetBackendResponse{} }
 func (m *GetBackendResponse) String() string { return proto.CompactTextString(m) }
 func (*GetBackendResponse) ProtoMessage()    {}
 func (*GetBackendResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_backend_b7754cea5cdc26f4, []int{1}
+	return fileDescriptor_backend_29127454573a9132, []int{3}
 }
 func (m *GetBackendResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBackendResponse.Unmarshal(m, b)
@@ -88,36 +163,433 @@ func (m *GetBackendResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetBackendResponse proto.InternalMessageInfo
 
-func (m *GetBackendResponse) GetId() string {
+func (m *GetBackendResponse) GetBackend() *BackendDetail {
+	if m != nil {
+		return m.Backend
+	}
+	return nil
+}
+
+type ListBackendRequest struct {
+	Limit                int32             `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset               int32             `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	Query                map[string]string `protobuf:"bytes,3,rep,name=query,proto3" json:"query,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *ListBackendRequest) Reset()         { *m = ListBackendRequest{} }
+func (m *ListBackendRequest) String() string { return proto.CompactTextString(m) }
+func (*ListBackendRequest) ProtoMessage()    {}
+func (*ListBackendRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{4}
+}
+func (m *ListBackendRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListBackendRequest.Unmarshal(m, b)
+}
+func (m *ListBackendRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListBackendRequest.Marshal(b, m, deterministic)
+}
+func (dst *ListBackendRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListBackendRequest.Merge(dst, src)
+}
+func (m *ListBackendRequest) XXX_Size() int {
+	return xxx_messageInfo_ListBackendRequest.Size(m)
+}
+func (m *ListBackendRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListBackendRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListBackendRequest proto.InternalMessageInfo
+
+func (m *ListBackendRequest) GetLimit() int32 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *ListBackendRequest) GetOffset() int32 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
+func (m *ListBackendRequest) GetQuery() map[string]string {
+	if m != nil {
+		return m.Query
+	}
+	return nil
+}
+
+type ListBackendResponse struct {
+	Backends             []*BackendDetail `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends,omitempty"`
+	Next                 int32            `protobuf:"varint,2,opt,name=next,proto3" json:"next,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *ListBackendResponse) Reset()         { *m = ListBackendResponse{} }
+func (m *ListBackendResponse) String() string { return proto.CompactTextString(m) }
+func (*ListBackendResponse) ProtoMessage()    {}
+func (*ListBackendResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{5}
+}
+func (m *ListBackendResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListBackendResponse.Unmarshal(m, b)
+}
+func (m *ListBackendResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListBackendResponse.Marshal(b, m, deterministic)
+}
+func (dst *ListBackendResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListBackendResponse.Merge(dst, src)
+}
+func (m *ListBackendResponse) XXX_Size() int {
+	return xxx_messageInfo_ListBackendResponse.Size(m)
+}
+func (m *ListBackendResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListBackendResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListBackendResponse proto.InternalMessageInfo
+
+func (m *ListBackendResponse) GetBackends() []*BackendDetail {
+	if m != nil {
+		return m.Backends
+	}
+	return nil
+}
+
+func (m *ListBackendResponse) GetNext() int32 {
+	if m != nil {
+		return m.Next
+	}
+	return 0
+}
+
+type UpdateBackendRequest struct {
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Access               string   `protobuf:"bytes,2,opt,name=access,proto3" json:"access,omitempty"`
+	Security             string   `protobuf:"bytes,3,opt,name=security,proto3" json:"security,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UpdateBackendRequest) Reset()         { *m = UpdateBackendRequest{} }
+func (m *UpdateBackendRequest) String() string { return proto.CompactTextString(m) }
+func (*UpdateBackendRequest) ProtoMessage()    {}
+func (*UpdateBackendRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{6}
+}
+func (m *UpdateBackendRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateBackendRequest.Unmarshal(m, b)
+}
+func (m *UpdateBackendRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateBackendRequest.Marshal(b, m, deterministic)
+}
+func (dst *UpdateBackendRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateBackendRequest.Merge(dst, src)
+}
+func (m *UpdateBackendRequest) XXX_Size() int {
+	return xxx_messageInfo_UpdateBackendRequest.Size(m)
+}
+func (m *UpdateBackendRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateBackendRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateBackendRequest proto.InternalMessageInfo
+
+func (m *UpdateBackendRequest) GetId() string {
 	if m != nil {
 		return m.Id
 	}
 	return ""
 }
 
-func (m *GetBackendResponse) GetName() string {
+func (m *UpdateBackendRequest) GetAccess() string {
+	if m != nil {
+		return m.Access
+	}
+	return ""
+}
+
+func (m *UpdateBackendRequest) GetSecurity() string {
+	if m != nil {
+		return m.Security
+	}
+	return ""
+}
+
+type UpdateBackendResponse struct {
+	Backend              *BackendDetail `protobuf:"bytes,1,opt,name=backend,proto3" json:"backend,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *UpdateBackendResponse) Reset()         { *m = UpdateBackendResponse{} }
+func (m *UpdateBackendResponse) String() string { return proto.CompactTextString(m) }
+func (*UpdateBackendResponse) ProtoMessage()    {}
+func (*UpdateBackendResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{7}
+}
+func (m *UpdateBackendResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateBackendResponse.Unmarshal(m, b)
+}
+func (m *UpdateBackendResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateBackendResponse.Marshal(b, m, deterministic)
+}
+func (dst *UpdateBackendResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateBackendResponse.Merge(dst, src)
+}
+func (m *UpdateBackendResponse) XXX_Size() int {
+	return xxx_messageInfo_UpdateBackendResponse.Size(m)
+}
+func (m *UpdateBackendResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateBackendResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateBackendResponse proto.InternalMessageInfo
+
+func (m *UpdateBackendResponse) GetBackend() *BackendDetail {
+	if m != nil {
+		return m.Backend
+	}
+	return nil
+}
+
+type DeleteBackendRequest struct {
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteBackendRequest) Reset()         { *m = DeleteBackendRequest{} }
+func (m *DeleteBackendRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteBackendRequest) ProtoMessage()    {}
+func (*DeleteBackendRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{8}
+}
+func (m *DeleteBackendRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteBackendRequest.Unmarshal(m, b)
+}
+func (m *DeleteBackendRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteBackendRequest.Marshal(b, m, deterministic)
+}
+func (dst *DeleteBackendRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteBackendRequest.Merge(dst, src)
+}
+func (m *DeleteBackendRequest) XXX_Size() int {
+	return xxx_messageInfo_DeleteBackendRequest.Size(m)
+}
+func (m *DeleteBackendRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteBackendRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteBackendRequest proto.InternalMessageInfo
+
+func (m *DeleteBackendRequest) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+type DeleteBackendResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteBackendResponse) Reset()         { *m = DeleteBackendResponse{} }
+func (m *DeleteBackendResponse) String() string { return proto.CompactTextString(m) }
+func (*DeleteBackendResponse) ProtoMessage()    {}
+func (*DeleteBackendResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{9}
+}
+func (m *DeleteBackendResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteBackendResponse.Unmarshal(m, b)
+}
+func (m *DeleteBackendResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteBackendResponse.Marshal(b, m, deterministic)
+}
+func (dst *DeleteBackendResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteBackendResponse.Merge(dst, src)
+}
+func (m *DeleteBackendResponse) XXX_Size() int {
+	return xxx_messageInfo_DeleteBackendResponse.Size(m)
+}
+func (m *DeleteBackendResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteBackendResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteBackendResponse proto.InternalMessageInfo
+
+type BackendDetail struct {
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId             string   `protobuf:"bytes,2,opt,name=tenantId,proto3" json:"tenantId,omitempty"`
+	UserId               string   `protobuf:"bytes,3,opt,name=userId,proto3" json:"userId,omitempty"`
+	Name                 string   `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Type                 string   `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
+	Region               string   `protobuf:"bytes,6,opt,name=region,proto3" json:"region,omitempty"`
+	Endpoint             string   `protobuf:"bytes,7,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	BucketName           string   `protobuf:"bytes,8,opt,name=bucketName,proto3" json:"bucketName,omitempty"`
+	Access               string   `protobuf:"bytes,9,opt,name=access,proto3" json:"access,omitempty"`
+	Security             string   `protobuf:"bytes,10,opt,name=security,proto3" json:"security,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *BackendDetail) Reset()         { *m = BackendDetail{} }
+func (m *BackendDetail) String() string { return proto.CompactTextString(m) }
+func (*BackendDetail) ProtoMessage()    {}
+func (*BackendDetail) Descriptor() ([]byte, []int) {
+	return fileDescriptor_backend_29127454573a9132, []int{10}
+}
+func (m *BackendDetail) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BackendDetail.Unmarshal(m, b)
+}
+func (m *BackendDetail) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BackendDetail.Marshal(b, m, deterministic)
+}
+func (dst *BackendDetail) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BackendDetail.Merge(dst, src)
+}
+func (m *BackendDetail) XXX_Size() int {
+	return xxx_messageInfo_BackendDetail.Size(m)
+}
+func (m *BackendDetail) XXX_DiscardUnknown() {
+	xxx_messageInfo_BackendDetail.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BackendDetail proto.InternalMessageInfo
+
+func (m *BackendDetail) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *BackendDetail) GetTenantId() string {
+	if m != nil {
+		return m.TenantId
+	}
+	return ""
+}
+
+func (m *BackendDetail) GetUserId() string {
+	if m != nil {
+		return m.UserId
+	}
+	return ""
+}
+
+func (m *BackendDetail) GetName() string {
 	if m != nil {
 		return m.Name
 	}
 	return ""
 }
 
-func init() {
-	proto.RegisterType((*GetBackendRequest)(nil), "GetBackendRequest")
-	proto.RegisterType((*GetBackendResponse)(nil), "GetBackendResponse")
+func (m *BackendDetail) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
 }
 
-func init() { proto.RegisterFile("backend.proto", fileDescriptor_backend_b7754cea5cdc26f4) }
+func (m *BackendDetail) GetRegion() string {
+	if m != nil {
+		return m.Region
+	}
+	return ""
+}
 
-var fileDescriptor_backend_b7754cea5cdc26f4 = []byte{
-	// 130 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4d, 0x4a, 0x4c, 0xce,
-	0x4e, 0xcd, 0x4b, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x57, 0x52, 0xe6, 0x12, 0x74, 0x4f, 0x2d,
-	0x71, 0x82, 0x88, 0x05, 0xa5, 0x16, 0x96, 0xa6, 0x16, 0x97, 0x08, 0xf1, 0x71, 0x31, 0x65, 0xa6,
-	0x48, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x06, 0x31, 0x65, 0xa6, 0x28, 0x59, 0x70, 0x09, 0x21, 0x2b,
-	0x2a, 0x2e, 0xc8, 0xcf, 0x2b, 0x4e, 0x45, 0x57, 0x25, 0x24, 0xc4, 0xc5, 0x92, 0x97, 0x98, 0x9b,
-	0x2a, 0xc1, 0x04, 0x16, 0x01, 0xb3, 0x8d, 0x9c, 0xb8, 0xd8, 0xa1, 0xda, 0x84, 0xcc, 0xb9, 0xb8,
-	0x10, 0x86, 0x08, 0x09, 0xe9, 0x61, 0x58, 0x2b, 0x25, 0xac, 0x87, 0x69, 0x8b, 0x12, 0x43, 0x12,
-	0x1b, 0xd8, 0xa5, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xd2, 0x36, 0xf6, 0x35, 0xba, 0x00,
-	0x00, 0x00,
+func (m *BackendDetail) GetEndpoint() string {
+	if m != nil {
+		return m.Endpoint
+	}
+	return ""
+}
+
+func (m *BackendDetail) GetBucketName() string {
+	if m != nil {
+		return m.BucketName
+	}
+	return ""
+}
+
+func (m *BackendDetail) GetAccess() string {
+	if m != nil {
+		return m.Access
+	}
+	return ""
+}
+
+func (m *BackendDetail) GetSecurity() string {
+	if m != nil {
+		return m.Security
+	}
+	return ""
+}
+
+func init() {
+	proto.RegisterType((*CreateBackendRequest)(nil), "CreateBackendRequest")
+	proto.RegisterType((*CreateBackendResponse)(nil), "CreateBackendResponse")
+	proto.RegisterType((*GetBackendRequest)(nil), "GetBackendRequest")
+	proto.RegisterType((*GetBackendResponse)(nil), "GetBackendResponse")
+	proto.RegisterType((*ListBackendRequest)(nil), "ListBackendRequest")
+	proto.RegisterMapType((map[string]string)(nil), "ListBackendRequest.QueryEntry")
+	proto.RegisterType((*ListBackendResponse)(nil), "ListBackendResponse")
+	proto.RegisterType((*UpdateBackendRequest)(nil), "UpdateBackendRequest")
+	proto.RegisterType((*UpdateBackendResponse)(nil), "UpdateBackendResponse")
+	proto.RegisterType((*DeleteBackendRequest)(nil), "DeleteBackendRequest")
+	proto.RegisterType((*DeleteBackendResponse)(nil), "DeleteBackendResponse")
+	proto.RegisterType((*BackendDetail)(nil), "BackendDetail")
+}
+
+func init() { proto.RegisterFile("backend.proto", fileDescriptor_backend_29127454573a9132) }
+
+var fileDescriptor_backend_29127454573a9132 = []byte{
+	// 515 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x4b, 0x8b, 0x13, 0x41,
+	0x10, 0x4e, 0x26, 0x9b, 0x57, 0x85, 0x2c, 0x5a, 0x79, 0x38, 0xcc, 0x61, 0x59, 0x5a, 0x90, 0xe0,
+	0xa1, 0x0f, 0x51, 0x70, 0xd9, 0x83, 0xac, 0xba, 0x22, 0x0b, 0x22, 0x38, 0xb0, 0x17, 0x6f, 0x93,
+	0x99, 0x5a, 0x19, 0x92, 0x9d, 0x99, 0x9d, 0xee, 0x11, 0x73, 0xf6, 0x1f, 0xf9, 0x1b, 0xfc, 0x61,
+	0xd2, 0x8f, 0x64, 0x33, 0x0f, 0x91, 0xdc, 0xfa, 0xab, 0xae, 0xae, 0xaa, 0xaf, 0xea, 0xab, 0x86,
+	0xf1, 0x2a, 0x08, 0xd7, 0x94, 0x44, 0x3c, 0xcb, 0x53, 0x99, 0xb2, 0x2b, 0x98, 0x7e, 0xc8, 0x29,
+	0x90, 0xf4, 0xde, 0x98, 0x7d, 0x7a, 0x28, 0x48, 0x48, 0x5c, 0x40, 0xdf, 0x3a, 0xba, 0xed, 0xf3,
+	0xf6, 0x62, 0xb4, 0x3c, 0xe5, 0xd6, 0xe3, 0x9a, 0x64, 0x10, 0x6f, 0xfc, 0xdd, 0x35, 0x7b, 0x07,
+	0xb3, 0x4a, 0x04, 0x91, 0xa5, 0x89, 0xa0, 0x23, 0x42, 0x3c, 0x87, 0xa7, 0x9f, 0x48, 0x56, 0x2a,
+	0x38, 0x05, 0x27, 0x36, 0x2f, 0x87, 0xbe, 0x13, 0x47, 0xec, 0x2d, 0xe0, 0xa1, 0xd3, 0xd1, 0x49,
+	0x7e, 0xb7, 0x01, 0x3f, 0xc7, 0xa2, 0x9a, 0x66, 0x0a, 0xdd, 0x4d, 0x7c, 0x1f, 0x4b, 0xfd, 0xbc,
+	0xeb, 0x1b, 0x80, 0x73, 0xe8, 0xa5, 0x77, 0x77, 0x82, 0xa4, 0xeb, 0x68, 0xb3, 0x45, 0xf8, 0x1a,
+	0xba, 0x0f, 0x05, 0xe5, 0x5b, 0xb7, 0x73, 0xde, 0x59, 0x8c, 0x96, 0x67, 0xbc, 0x1e, 0x91, 0x7f,
+	0x55, 0x0e, 0x1f, 0x13, 0x99, 0x6f, 0x7d, 0xe3, 0xec, 0x5d, 0x00, 0x3c, 0x1a, 0xf1, 0x09, 0x74,
+	0xd6, 0xb4, 0xb5, 0xcc, 0xd4, 0x51, 0xd5, 0xf0, 0x23, 0xd8, 0x14, 0xa4, 0x93, 0x0d, 0x7d, 0x03,
+	0x2e, 0x9d, 0x8b, 0x36, 0xbb, 0x85, 0x49, 0x29, 0x83, 0x65, 0xfd, 0x12, 0x06, 0x96, 0x96, 0x70,
+	0xdb, 0xba, 0x92, 0x2a, 0xed, 0xfd, 0x3d, 0x22, 0x9c, 0x24, 0xf4, 0x73, 0x47, 0x44, 0x9f, 0xd9,
+	0x37, 0x98, 0xde, 0x66, 0x51, 0x7d, 0xea, 0x95, 0x9e, 0xab, 0x36, 0x04, 0x61, 0x48, 0x42, 0xd8,
+	0xca, 0x2c, 0x42, 0x0f, 0x06, 0x82, 0xc2, 0x22, 0x8f, 0xa5, 0xea, 0x84, 0xba, 0xd9, 0x63, 0xa5,
+	0x87, 0x4a, 0xec, 0xa3, 0x47, 0xf5, 0x02, 0xa6, 0xd7, 0xb4, 0xa1, 0xff, 0x95, 0xc7, 0x9e, 0xc1,
+	0xac, 0xe2, 0x67, 0x52, 0xb1, 0x5f, 0x0e, 0x8c, 0x4b, 0xb1, 0x6b, 0xcc, 0x3c, 0x18, 0x48, 0x4a,
+	0x82, 0x44, 0xde, 0x44, 0x96, 0xdb, 0x1e, 0x2b, 0xd6, 0x85, 0xa0, 0xfc, 0x26, 0xb2, 0xdc, 0x2c,
+	0xd2, 0x9d, 0x0c, 0xee, 0xc9, 0x3d, 0xd1, 0x56, 0x7d, 0x56, 0x36, 0xb9, 0xcd, 0xc8, 0xed, 0x1a,
+	0x9b, 0x3a, 0xab, 0xf7, 0x39, 0x7d, 0x8f, 0xd3, 0xc4, 0xed, 0x99, 0xf7, 0x06, 0xa9, 0x9c, 0x94,
+	0x44, 0x59, 0x1a, 0x27, 0xd2, 0xed, 0x9b, 0x9c, 0x3b, 0x8c, 0x67, 0x00, 0xab, 0x22, 0x5c, 0x93,
+	0xfc, 0xa2, 0x32, 0x0c, 0xf4, 0xed, 0x81, 0xe5, 0x60, 0x12, 0xc3, 0x7f, 0x4e, 0x02, 0xca, 0x93,
+	0x58, 0xfe, 0x71, 0xa0, 0x6f, 0xbb, 0x80, 0x57, 0x30, 0x2e, 0x6d, 0x29, 0xce, 0x78, 0xd3, 0xde,
+	0x7b, 0x73, 0xde, 0xb8, 0xcc, 0xac, 0x85, 0x6f, 0x00, 0x1e, 0xf7, 0x0f, 0x91, 0xd7, 0x36, 0xd6,
+	0x9b, 0xf0, 0xfa, 0x82, 0xb2, 0x16, 0x5e, 0xc2, 0xe8, 0x40, 0xc3, 0x38, 0x69, 0xd8, 0x19, 0x6f,
+	0xca, 0x1b, 0x64, 0xce, 0x5a, 0xaa, 0xec, 0x92, 0x98, 0x70, 0xc6, 0x9b, 0x84, 0xeb, 0xcd, 0x79,
+	0xa3, 0xe6, 0x4c, 0x84, 0x92, 0x46, 0x70, 0xc6, 0x9b, 0xb4, 0xe5, 0xcd, 0x79, 0xb3, 0x94, 0x5a,
+	0xab, 0x9e, 0xfe, 0x29, 0x5f, 0xfd, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x7d, 0xa7, 0x2e, 0xe7, 0x3a,
+	0x05, 0x00, 0x00,
 }

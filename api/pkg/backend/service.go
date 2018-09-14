@@ -2,12 +2,12 @@ package backend
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	//	"github.com/micro/go-micro/errors"
-	"encoding/json"
 
 	"github.com/opensds/go-panda/backend/proto"
 	"github.com/opensds/go-panda/dataflow/proto"
@@ -36,87 +36,109 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func (s *APIService) GetBackend(request *restful.Request, response *restful.Response) {
+	log.Logf("Received request for backend details: %s", request.PathParameter("id"))
 	id := request.PathParameter("id")
-	log.Logf("Received request for backend details: %s", id)
 	ctx := context.Background()
 	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
 	if err != nil {
+		log.Logf("Failed to get backend details: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Log("Get backend details successfully.")
+	response.WriteEntity(res.Backend)
+}
+
+func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
+	log.Log("Received request for backend list.")
+	listBackendRequest := &backend.ListBackendRequest{}
+	if request.QueryParameter("limit") != "" {
+		limit, err := strconv.Atoi(request.QueryParameter("limit"))
+		if err != nil {
+			log.Logf("limit is invalid: %v", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		listBackendRequest.Limit = int32(limit)
+	}
+
+	if request.QueryParameter("offset") != "" {
+		offset, err := strconv.Atoi(request.QueryParameter("offset"))
+		if err != nil {
+			log.Logf("offset is invalid: %v", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		listBackendRequest.Offset = int32(offset)
+	}
+
+	ctx := context.Background()
+	res, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+	if err != nil {
+		log.Logf("Failed to list backends: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Log("List backends successfully.")
 	response.WriteEntity(res)
 }
 
-func (s *APIService) GetObject(request *restful.Request, response *restful.Response) {
-	id := request.PathParameter("id")
-	log.Logf("Received request for object details: %s", id)
-	ctx := context.Background()
-	res, err := s.s3Client.GetObject(ctx, &s3.GetObjectRequest{Id: id})
+func (s *APIService) CreateBackend(request *restful.Request, response *restful.Response) {
+	log.Log("Received request for creating backend.")
+	backendDetail := &backend.BackendDetail{}
+	err := request.ReadEntity(&backendDetail)
 	if err != nil {
+		log.Logf("Failed to read request body: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Log("Get object details successfully.")
-	response.WriteEntity(res)
+	ctx := context.Background()
+	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
+	if err != nil {
+		log.Logf("Failed to create backend: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Log("Create backend successfully.")
+	response.WriteEntity(res.Backend)
 }
 
-func (s *APIService) GetPolicy(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	log.Logf("Received request for policy[name=%s] details.", name)
-	ctx := context.Background()
-	res, err := s.dataflowClient.GetPolicy(ctx, &dataflow.GetPolicyRequest{Name: name})
+func (s *APIService) UpdateBackend(request *restful.Request, response *restful.Response) {
+	log.Logf("Received request for updating backend: %v", request.PathParameter("id"))
+	updateBackendRequest := backend.UpdateBackendRequest{Id: request.PathParameter("id")}
+	err := request.ReadEntity(&updateBackendRequest)
 	if err != nil {
+		log.Logf("Failed to read request body: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	//For debug -- begin
-	jsons, errs := json.Marshal(res)
-	if errs != nil {
-		log.Logf(errs.Error())
-	} else {
-		log.Logf("res: %s.\n", jsons)
+	ctx := context.Background()
+	res, err := s.backendClient.UpdateBackend(ctx, &updateBackendRequest)
+	if err != nil {
+		log.Logf("Failed to update backend: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
 	}
-	//For debug -- end
 
-	log.Log("Get policy details successfully.")
-	response.WriteEntity(res)
+	log.Log("Update backend successfully.")
+	response.WriteEntity(res.Backend)
 }
 
-func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Response) {
-	//name := request.PathParameter("name")
-	log.Logf("Received request for create policy.\n")
+func (s *APIService) DeleteBackend(request *restful.Request, response *restful.Response) {
+	log.Logf("Received request for deleting backend: %s", request.PathParameter("id"))
 	ctx := context.Background()
-	pol := dataflow.Policy{}
-	err := request.ReadEntity(&pol)
+	_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: request.PathParameter("id")})
 	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		log.Logf("Read request body failed, err:%v.\n", err)
-		return
-	}
-
-	//For debug --begin
-	jsons, errs := json.Marshal(pol)
-	if errs != nil {
-		log.Logf(errs.Error())
-	} else {
-		log.Logf("Req body: %s.\n", jsons)
-	}
-	//For debug --end
-
-	//name,_ := request.BodyParameter("name")
-	//tenant,_ := request.BodyParameter("tenant")
-	//desc,_ := request.BodyParameter("description")
-
-	res, err := s.dataflowClient.CreatePolicy(ctx, &dataflow.CreatePolicyRequest{Pol: &pol})
-	if err != nil {
+		log.Logf("Failed to delete backend: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Log("Get policy details successfully.")
-	response.WriteEntity(res)
+	log.Log("Delete backend successfully.")
+	response.WriteHeader(http.StatusOK)
 }

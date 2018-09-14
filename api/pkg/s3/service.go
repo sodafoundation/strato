@@ -33,7 +33,6 @@ func IsQuery(request *restful.Request, name string) bool {
 	}
 	return false
 }
-
 func HasHeader(request *restful.Request, name string) bool {
 	param := request.HeaderParameter(name)
 	if param == "" {
