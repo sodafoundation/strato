@@ -2,128 +2,40 @@ package plan
 
 import (
 	"regexp"
-	"fmt"
+	"github.com/micro/go-log"
 	"github.com/opensds/go-panda/dataflow/pkg/db"
 	"github.com/globalsign/mgo"
 	. "github.com/opensds/go-panda/dataflow/pkg/type"
 	"github.com/globalsign/mgo/bson"
+	"github.com/opensds/go-panda/datamover/proto"
+	"golang.org/x/net/context"
 	"time"
+	"reflect"
+	"github.com/opensds/go-panda/dataflow/pkg/type"
 )
 
 var dataBaseName = "test"
 var tblConnector = "connector"
 var tblPolicy = "policy"
-/*func checkParam(plan *Plan) error {
-	m, _ := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m {
-		fmt.Printf("Invalid plan name:", plan.Name)
-		return errors.New("Invalid plan name")
-	}
 
-	plan.IsSched = false //set to be false as default
-	plan.SchedServer = "" // set to be null as default
-	//plan.Type = "migration" //set to be migration as default
-	plan.LastSchedTime = 0 //set to be 0 as default
-
-	m, _ = regexp.MatchString("[[:alnum:]-_.]+", plan.SourceConnName)
-	if !m {
-		fmt.Printf("Invalid SourceConnName name name:", plan.SourceConnName)
-		return errors.New("Invalid Source Connector Name")
-	}
-	m, _ = regexp.MatchString("[[:alnum:]-_.]+", plan.DestConnName)
-	if !m {
-		fmt.Printf("Invalid DestConnName name name:", plan.DestConnName)
-		return errors.New("Invalid Destination Connector Name")
-	}
-
-	return nil
-}*/
-
-/*func Create(plan *Plan) ErrCode {
+func Create(plan *Plan) error {
 	//Check parameter validity
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s], err:%v", plan.Name, err)
-		return ERR_INVALID_PLAN_NAME
-	}
-	if (plan.DestConnName == "" || plan.SourceConnName == ""){
-		fmt.Println("Destination connector or source connector is not provided")
-		return ERR_NO_DEST_SRC_CONN_PROVIDED
-	}
-
-	plan.Id = ""
-	plan.IsSched = false //set to be false as default
-	plan.SchedServer = "" // set to be null as default
-	plan.LastSchedTime = 0 //set to be 0 as default
-
-	//Check logic validity
-	if plan.DestConnName != "" {
-		destConn,err := connector.Get(plan.DestConnName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_DEST_CONN_NOT_EXIST
-		} else {
-			fmt.Printf("%v\n", destConn[0])
-			plan.DestConnRef = mgo.DBRef{tblConnector,destConn[0].Id,dataBaseName}
-		}
-	}
-	if plan.SourceConnName != "" {
-		srcConn,err := connector.Get(plan.SourceConnName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_SRC_CONN_NOT_EXIST
-		} else {
-			plan.SourceConnRef = mgo.DBRef{tblConnector,srcConn[0].Id, dataBaseName}
-		}
-	}
-	if plan.PolicyName != "" {
-		pol,err := policy.Get(plan.PolicyName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_POLICY_NOT_EXIST
-		} else {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, pol[0].Id, dataBaseName}
-		}
-	}
-
-	//Add to database
-	return db.DbAdapter.CreatePlan(plan)
-}*/
-
-func Create(plan *Plan) ErrCode {
-	//Check parameter validity
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s], err:%v", plan.Name, err)
+	if !m || plan.Name == "all"{
+		log.Logf("Invalid plan name[%s], err:%v", plan.Name, err)
 		return ERR_INVALID_PLAN_NAME
 	}
 
 	plan.Id = ""
-	plan.IsSched = false //set to be false as default
-	plan.SchedServer = "" // set to be null as default
+	//plan.IsSched = false //set to be false as default
+	//plan.SchedServer = "" // set to be null as default
 	plan.LastSchedTime = 0 //set to be 0 as default
-
-	//Check logic validity
-	if plan.DestConnId != "" {
-		if bson.IsObjectIdHex(plan.DestConnId) {
-			plan.DestConnRef = mgo.DBRef{tblConnector,plan.DestConnId, dataBaseName}
-		}else {
-			fmt.Printf("Invalid destination connector:%s\n", plan.DestConnId)
-			return ERR_NO_DEST_SRC_CONN_INVALID
-		}
-	}
-
-	if plan.SourceConnId != "" {
-		if bson.IsObjectIdHex(plan.SourceConnId) {
-			plan.SourceConnRef = mgo.DBRef{tblConnector,plan.SourceConnId, dataBaseName}
-		}else {
-			fmt.Printf("Invalid destination connector:%s\n", plan.DestConnId)
-			return ERR_NO_DEST_SRC_CONN_INVALID
-		}
-	}
 
 	if plan.PolicyId != "" {
 		if bson.IsObjectIdHex(plan.PolicyId) {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, plan.PolicyId, dataBaseName}
+			plan.PolicyRef = mgo.DBRef{tblPolicy, bson.ObjectIdHex(plan.PolicyId), dataBaseName}
 		}else {
-			fmt.Printf("Invalid policy:%s\n", plan.PolicyId)
+			log.Logf("Invalid policy:%s\n", plan.PolicyId)
 			return ERR_POLICY_NOT_EXIST
 		}
 	}
@@ -132,144 +44,110 @@ func Create(plan *Plan) ErrCode {
 	return db.DbAdapter.CreatePlan(plan)
 }
 
-func Delete(name string, tenant string) ErrCode {
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s],err:%v\n", name,err)
-		return ERR_INVALID_PLAN_NAME
-	}
-	bson.NewObjectId()
-	return db.DbAdapter.DeleteConnector(name, tenant)
+func Delete(id string, tenant string) error {
+	return db.DbAdapter.DeletePlan(id, tenant)
 }
 
-func Update(plan *Plan) ErrCode {
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s],err:", plan.Name,err)
-		return ERR_INVALID_PLAN_NAME
-	}
-	//TO-DO check validation of tenant
-	oldPlan, errcode := db.DbAdapter.GetPlanByid(plan.Id.Hex(), plan.Tenant)
-	if errcode != ERR_OK {
-		fmt.Printf("Update plan failed, err: connot get the plan(%v).\n",errcode)
-		return errcode
-	}
-
-	plan.Id = oldPlan.Id
-	plan.IsSched = oldPlan.IsSched //set to be false as default
-	plan.SchedServer = oldPlan.SchedServer // set to be null as default
-	plan.LastSchedTime = oldPlan.LastSchedTime //set to be 0 as default
-	plan.PolicyRef = mgo.DBRef{"policy", plan.PolicyId, "test"}
-	plan.DestConnRef = mgo.DBRef{"connector", plan.DestConnId, "test"}
-	plan.SourceConnRef = mgo.DBRef{"connector", plan.SourceConnId, "test"}
-
-	if plan.DestConnId != "" {
-		if bson.IsObjectIdHex(plan.DestConnId) {
-			plan.DestConnRef = mgo.DBRef{tblConnector,plan.DestConnId, dataBaseName}
-		}else {
-			fmt.Printf("Invalid destination connector:%s\n", plan.DestConnId)
-			return ERR_NO_DEST_SRC_CONN_INVALID
+//1. cannot update type
+func Update(plan *Plan) error {
+	if plan.Name != "" {
+		m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
+		if !m || plan.Name == "all"{
+			log.Logf("Invalid plan name[%s],err:", plan.Name,err) //cannot use all as name
+			return ERR_INVALID_PLAN_NAME
 		}
 	}
 
-	if plan.SourceConnId != "" {
-		if bson.IsObjectIdHex(plan.SourceConnId) {
-			plan.SourceConnRef = mgo.DBRef{tblConnector,plan.SourceConnId, dataBaseName}
-		}else {
-			fmt.Printf("Invalid destination connector:%s\n", plan.DestConnId)
-			return ERR_NO_DEST_SRC_CONN_INVALID
-		}
+	//TOkkDO check validation of tenant
+	curPlan, error := db.DbAdapter.GetPlanByid(plan.Id.Hex(), plan.Tenant)
+	if error != nil {
+		log.Logf("Update plan failed, err: connot get the plan(%v).\n",error.Error())
+		return error
+	}
+
+	if plan.Name != "" {
+		curPlan.Name = plan.Name
+	}
+	if !reflect.DeepEqual(plan.SourceConn, Connector{}) {
+		curPlan.SourceConn = plan.SourceConn
+	}
+	if !reflect.DeepEqual(plan.DestConn, Connector{}) {
+		curPlan.DestConn = plan.DestConn
+	}
+	if !reflect.DeepEqual(plan.Filt, Filter{}) {
+		curPlan.Filt = plan.Filt
 	}
 
 	if plan.PolicyId != "" {
 		if bson.IsObjectIdHex(plan.PolicyId) {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, plan.PolicyId, dataBaseName}
+			curPlan.PolicyRef = mgo.DBRef{tblPolicy, plan.PolicyId, dataBaseName}
 		}else {
-			fmt.Printf("Invalid policy:%s\n", plan.PolicyId)
+			log.Logf("Invalid policy:%s\n", plan.PolicyId)
 			return ERR_POLICY_NOT_EXIST
 		}
 	}
 
-	return db.DbAdapter.UpdatePlan(plan)
+	return db.DbAdapter.UpdatePlan(curPlan)
 }
 
-/*func Update(plan *Plan) ErrCode {
-	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m {
-		fmt.Printf("Invalid plan name[%s],err:", plan.Name,err)
-		return ERR_INVALID_PLAN_NAME
-	}
-	//TO-DO check validation of tenant
-	oldPlan, errcode := db.DbAdapter.GetPlan(plan.Name, plan.Tenant)
-	if errcode != ERR_OK || len(oldPlan) == 0{
-		fmt.Printf("Update plan failed, err: connot get the plan(%v).\n",errcode)
-		retErr := errcode
-		if len(oldPlan) == 0 {
-			retErr = ERR_PLAN_NOT_EXIST
-		}
-		return retErr
-	}
-
-	plan.Id = oldPlan[0].Id
-	plan.IsSched = oldPlan[0].IsSched //set to be false as default
-	plan.SchedServer = oldPlan[0].SchedServer // set to be null as default
-	plan.LastSchedTime = oldPlan[0].LastSchedTime //set to be 0 as default
-
-	//Check logic validity
-	if plan.DestConnName != "" {
-		destConn,err := connector.Get(plan.DestConnName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_DEST_CONN_NOT_EXIST
-		} else {
-			plan.DestConnRef = mgo.DBRef{tblConnector,destConn[0].Id,dataBaseName}
-		}
-	}
-	if plan.SourceConnName != "" {
-		srcConn,err := connector.Get(plan.SourceConnName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_SRC_CONN_NOT_EXIST
-		} else {
-			plan.SourceConnRef = mgo.DBRef{tblConnector,srcConn[0].Id, dataBaseName}
-		}
-	}
-	if plan.PolicyName != "" {
-		pol,err := policy.Get(plan.PolicyName, plan.Tenant)
-		if err != ERR_OK {
-			return ERR_POLICY_NOT_EXIST
-		} else {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, pol[0].Id, dataBaseName}
-		}
-	}
-
-	return db.DbAdapter.UpdatePlan(plan)
-}*/
-
-func Get(name string, tenant string) ([]Plan, ErrCode) {
+func Get(name string, tenant string) ([]Plan, error) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]*", name)
 	if !m {
-		fmt.Printf("Invalid plan name[%s],err:%v]n", name,err)
+		log.Logf("Invalid plan name[%s],err:%v]n", name,err)
 		return nil,ERR_INVALID_PLAN_NAME
 	}
 
 	return db.DbAdapter.GetPlan(name, tenant)
 }
 
-func getSrcLocations(id string, tenant string) ([]string, string, ErrCode){
-	locs := []string{}
-	locs = append(locs, "test")
-	srcBucket := "" //If source connector is not self-defined, srcBucket should not be null
-	return locs,srcBucket,ERR_OK
+func getLocation(conn *Connector) (string, error){
+	switch conn.StorType {
+	case STOR_TYPE_OPENSDS:
+		return conn.BucketName,nil
+	default:
+		log.Logf("Unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
+		return "",ERR_INNER_ERR
+	}
 }
 
-func getDestLocation(id string, tenant string) (string, string, ErrCode) {
-	destBucket := "" //If destination connector is self-defined, destBucket should not be null
-	return "test",destBucket,ERR_OK
+func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) error{
+	ch := make(chan int)
+	go func (req *datamover.RunJobRequest){
+		ctx := context.Background()
+		_, err := mclient.Runjob(ctx, req)
+		if err != nil {
+			log.Logf("Run job failed, err:%v\n", err)
+			ch <- 1
+		}else {
+			log.Log("Run job succeed.")
+			ch <- 0
+		}
+	}(req)
+
+	select {
+	case n := <-ch:
+		log.Logf("Run job end, n=%d\n",n)
+	case <- time.After(1800*time.Second):
+		log.Log("Wait job timeout.")
+	}
+
+	return nil
 }
 
-func Run(id string, tenant string) ErrCode {
+func buildConn(reqConn *datamover.Connector, conn *_type.Connector) {
+	if conn.StorType == STOR_TYPE_OPENSDS {
+		reqConn.BucketName = conn.BucketName
+	}else {
+		for i := 0; i < len(conn.ConnConfig); i++ {
+			reqConn.ConnConfig = append(reqConn.ConnConfig, &datamover.KV{Key:conn.ConnConfig[i].Key, Value:conn.ConnConfig[i].Value})
+		}
+	}
+}
+
+func Run(id string, tenant string, mclient datamover.DatamoverService) error {
 	//Get information from database
 	plan,err := db.DbAdapter.GetPlanByid(id, tenant)
-	if err != ERR_OK {
+	if err != nil {
 		return err
 	}
 
@@ -289,47 +167,51 @@ func Run(id string, tenant string) ErrCode {
 		}
 	}
 
-	//Get source location by source connector, it could be more than one source location
-	locs,srcBucket,err1 := getSrcLocations(plan.SourceConnId, plan.Tenant)
-	if err1 != ERR_OK {
+	//Get source location by source connector
+	srcLocation,err1 := getLocation(&plan.SourceConn)
+	if err1 != nil {
 		return err1
 	}
 
 	//Get destination location by destination connector
-	dest,destBucket,err2 := getDestLocation(plan.DestConnId, plan.Tenant)
-	if err2 != ERR_OK {
+	destLocation,err2 := getLocation(&plan.DestConn)
+	if err2 != nil {
 		return err2
 	}
 
 	ct := time.Now()
-	for i := 0; i < len(locs); i++ {
-		//Create job
-		job := Job{}
-		//jobId := bson.NewObjectId()
-		//job.Id = jobId
-		job.Type = plan.Type
-		job.PlanId = string(plan.Id.Hex())
-		job.PlanName = plan.Name
-		job.SourceLocation = locs[i]
-		job.DestLocation = dest
-		job.SourceBucket = srcBucket
-		job.DestBucket = destBucket
-		job.CreateTime = ct
-		//add job to database
+	//Create job
+	job := Job{}
+	jobId := bson.NewObjectId()
+	job.Id = jobId
+	job.Type = plan.Type
+	job.PlanId = string(plan.Id.Hex())
+	job.PlanName = plan.Name
+	job.SourceLocation = srcLocation
+	job.DestLocation = destLocation
+	job.CreateTime = ct
+	job.Status = JOB_STATUS_QUEUEING
+	//job.OverWrite = plan.OverWrite
+	//job.RemainSource = plan.RemainSource
 
-		errno := db.DbAdapter.CreateJob(&job)
-		if errno == ERR_OK {
-			//Send job to kafka
-		}else {
-			//TO-DO: It should be considered that what if some job add to database succeed, but the others failed.
-			fmt.Printf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
-				job.PlanName, job.SourceLocation, job.DestLocation)
-		}
-
-
+	//add job to database
+	errno := db.DbAdapter.CreateJob(&job)
+	if errno == nil {
+		//TODO: change to send job to datamover by kafka
+		//This way send job is the temporary
+		req := datamover.RunJobRequest{Id:plan.Id.Hex(), OverWrite:plan.OverWrite, RemainSource:plan.RemainSource}
+		srcConn := datamover.Connector{StorType:plan.SourceConn.StorType}
+		buildConn(&srcConn, &plan.SourceConn)
+		req.SourceConn = &srcConn
+		destConn := datamover.Connector{StorType:plan.DestConn.StorType}
+		buildConn(&destConn, &plan.DestConn)
+		req.DestConn = &destConn
+		go sendJob(&req, mclient)
+	}else {
+		//TODO: It should be considered that what if some job add to database succeed, but the others failed.
+		log.Logf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
+			job.PlanName, job.SourceLocation, job.DestLocation)
 	}
 
-
-
-	return ERR_OK
+	return nil
 }

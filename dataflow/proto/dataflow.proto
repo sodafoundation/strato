@@ -3,6 +3,14 @@ syntax = "proto3";
 service DataFlow {
 	rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse) {}
 	rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse) {}
+	rpc UpdatePolicy(UpdatePolicyRequest) returns (UpdatePolicyResponse) {}
+	rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse) {}
+	rpc GetPlan(GetPlanRequest) returns (GetPlanResponse) {}
+	rpc CreatePlan(CreatePlanRequest) returns (CreatePlanResponse) {}
+	rpc UpdatePlan(UpdatePlanRequest) returns (UpdatePlanResponse) {}
+	rpc DeletePlan(DeletePlanRequest) returns (DeletePlanResponse) {}
+	rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
+	rpc RunPlan(RunPlanRequest) returns (RunPlanResponse) {}
 }
 
 message Schedule {
@@ -25,7 +33,7 @@ message GetPolicyRequest {
 }
 
 message GetPolicyResponse {
-	int32 err_code = 1;
+	string err = 1;
 	repeated Policy pols = 2;
 }
 
@@ -34,6 +42,124 @@ message CreatePolicyRequest {
 }
 
 message CreatePolicyResponse {
-	int32 err_code = 1;
+	string err = 1;
 }
 
+message UpdatePolicyRequest {
+	Policy pol = 1;
+}
+
+message UpdatePolicyResponse {
+	string err = 1;
+}
+
+message DeletePolicyRequest {
+	string id = 1;
+}
+
+message DeletePolicyResponse {
+	string err = 1;
+}
+
+message KV {
+	string key = 1;
+	string value = 2;
+}
+
+
+message Filter {
+	string prefix = 1;
+	repeated KV tag = 2;
+}
+
+message Connector {
+	string storType = 1;
+	string bucketName = 2;
+	repeated KV connConfig = 3;
+}
+
+
+message Plan {
+	string id = 1;
+	string name = 2;
+	string description = 3;
+	string type = 4;
+	string policyId = 5;
+	string policyName = 6;
+	Connector sourceConn = 7;
+	Connector destConn = 8;
+	Filter filt = 9;
+	bool overWrite = 10;
+	bool remainSource = 11;
+	string tenant = 12;
+}
+
+message CreatePlanRequest {
+	Plan plan = 1;
+	string tenant = 2;
+}
+
+message CreatePlanResponse {
+	string err = 1;
+}
+
+message GetPlanRequest {
+	string name = 1;
+	string tenant = 2;
+}
+
+message GetPlanResponse {
+	string err = 1;
+	repeated Plan plans = 2;
+}
+
+message UpdatePlanRequest {
+	Plan plan = 1;
+	string tenant = 2;
+}
+
+message UpdatePlanResponse {
+	string err = 1;
+}
+
+message DeletePlanRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message DeletePlanResponse {
+	string err = 1;
+}
+
+message RunPlanRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message RunPlanResponse {
+	string err = 1;
+}
+
+message Job {
+	string id = 1;
+	string type = 2;
+	string planName = 3;
+	string planId = 4;
+	string description = 5; //describe statistic information, such as total objs, finished objs
+	string sourceLocation = 6;
+	string destLocation = 7;
+	int64  createTime = 8;
+	int64  endTime = 9;
+	bool overWrite = 10;
+	bool remainSource = 11;
+}
+
+message GetJobRequest {
+	string id = 1;
+	string tenant = 2;
+}
+
+message GetJobResponse {
+	string err = 1;
+	repeated Job jobs = 2;
+}

@@ -48,5 +48,44 @@ func ReadBody(r *restful.Request) []byte {
 	if e != nil {
 		return nil
 	}
+<<<<<<< HEAD
 	return b
+=======
+
+	//For debug -- begin
+	log.Logf("Get policy reponse:%v",res)
+	log.Logf("res.ErrCode:%d",res.ErrCode)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("Get policy details successfully.")
+	response.WriteEntity(res)
+
+}
+
+func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
+
+}
+
+
+
+func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
+	objectKey := request.PathParameter("objectKey")
+	bucketName := request.PathParameter("bucketName")
+	log.Logf("Received request for object details: %s %s", bucketName, objectKey)
+	ctx := context.Background()
+	res, err := s.s3Client.GetObject(ctx, &s3.Object{ObjectKey: objectKey,BucketName: bucketName})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Log("Get object details successfully.")
+	response.WriteEntity(res)
+>>>>>>> 284ae9507f6388fd923acb05662914dd42d19d27
 }
