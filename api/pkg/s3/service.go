@@ -1,14 +1,12 @@
 package s3
 
 import (
-	"net/http"
-
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	//	"github.com/micro/go-micro/errors"
 	"github.com/opensds/go-panda/s3/proto"
-	"golang.org/x/net/context"
+	"io"
+	"io/ioutil"
 )
 
 const (
@@ -16,7 +14,7 @@ const (
 )
 
 type APIService struct {
-	s3Client  s3.S3Service
+	s3Client s3.S3Service
 }
 
 func NewAPIService(c client.Client) *APIService {
@@ -36,69 +34,19 @@ func IsQuery(request *restful.Request, name string) bool {
 	return false
 }
 
-
-func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
-	bucketName := request.PathParameter("bucketName")
-	
-	log.Logf("Received request for create bucket: %s", bucketName)
-	ctx := context.Background()
-	if IsQuery(request, "acl") {
-		//TODO
-	} else if IsQuery(request, "versioning") {
-		//TODO
-	} else if IsQuery(request, "website") {
-		//TODO
-	} else if IsQuery(request, "cors") {
-		//TODO
-		
-	} else if IsQuery(request, "replication") {
-		//TODO
-		
-	} else if IsQuery(request, "lifecycle") {
-		//TODO
-		
-	} else {
-		res, err := s.s3Client.CreateBucket(ctx, &s3.Bucket{Name: bucketName})
-		if err != nil {
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
-		log.Log("Create bucket successfully.")
-		response.WriteEntity(res)
+func HasHeader(request *restful.Request, name string) bool {
+	param := request.HeaderParameter(name)
+	if param == "" {
+		return false
 	}
+	return true
 }
 
-func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
-	bucketName := request.PathParameter("bucketName")
-	ctx := context.Background()
-	log.Logf("Received request for bucket details: %s", bucketName)
-	res, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
+func ReadBody(r *restful.Request) []byte {
+	var reader io.Reader = r.Request.Body
+	b, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil
 	}
-	log.Log("Get bucket successfully.")
-	response.WriteEntity(res)
-
-}
-
-func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
-
-}
-
-
-
-func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
-	objectKey := request.PathParameter("objectKey")
-	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for object details: %s %s", bucketName, objectKey)
-	ctx := context.Background()
-	res, err := s.s3Client.GetObject(ctx, &s3.Object{ObjectKey: objectKey,BucketName: bucketName})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-
-	log.Log("Get object details successfully.")
-	response.WriteEntity(res)
+	return b
 }

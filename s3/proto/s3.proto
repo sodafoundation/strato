@@ -140,7 +140,7 @@ message Bucket {
 message Partion {
 	string key = 1;
 	string partNumber = 2;
-	string size = 3;
+	int64 size = 3;
 	string etag = 4;
 	string lastModified = 5;
 }
@@ -168,8 +168,9 @@ message Object {
 	string nullVersionId = 20;
 	string isDeleteMarker = 21;
 	repeated ReplicationInfo replicationInfo = 22;
-	string size = 23;
+	int64 size = 23;
 	repeated Partion partions =24;
+	Tag tags = 25;
 }
 
 
