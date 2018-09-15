@@ -9,34 +9,23 @@ import (
 	"github.com/micro/go-micro/client"
 	"os"
 	"github.com/opensds/go-panda/datamover/pkg/db"
-	"github.com/globalsign/mgo/bson"
-	. "github.com/opensds/go-panda/dataflow/pkg/type"
+	flowtype "github.com/opensds/go-panda/dataflow/pkg/type"
 	 "github.com/opensds/go-panda/dataflow/pkg/utils"
-	"time"
 	"errors"
 	"github.com/opensds/go-panda/backend/proto"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"time"
+	"github.com/globalsign/mgo/bson"
+	. "github.com/opensds/go-panda/datamover/pkg/utils"
+	"github.com/opensds/go-panda/datamover/pkg/hw/obs"
+	"github.com/opensds/go-panda/datamover/pkg/amazon/s3"
 )
 
 var simuRoutines = 10
+var objSizeLimit int64 = 50 * 1024 * 1024 //The max object size that can be moved directly
 
 type DatamoverService struct{
 	s3client s3.S3Service
 	bkendclient backend.BackendService
-}
-
-type s3Cred struct {
-	ak string
-	sk string
-}
-
-func (myc *s3Cred) Retrieve() (credentials.Value,error){
-	cred := credentials.Value{AccessKeyID:myc.ak, SecretAccessKey:myc.sk}
-	return cred,nil
-}
-
-func (myc *s3Cred) IsExpired() bool {
-	return false
 }
 
 func NewDatamoverService() pb.DatamoverHandler {
@@ -50,21 +39,7 @@ func NewDatamoverService() pb.DatamoverHandler {
 	}
 }
 
-type LocationInfo struct {
-	storType string //aws-s3,azure-blob,hw-obs,etc.
-	region string
-	endPoint string
-	access string
-	security string
-	bakendId string
-}
 
-type SourceOject struct {
-	storType string //aws-s3,azure-blob,hw-obs,etc.
-	objKey string
-	backend string
-	size int64
-}
 
 //format of key:
 var locMap map[string]*LocationInfo
@@ -81,32 +56,6 @@ func (b *DatamoverService) doMove (ctx context.Context, objs []*SourceOject, cap
 	}
 }
 
-func moveAwsObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) error {
-	/*if obj.backend != srcLoca.bakendId {//for selfdefined connector, obj.backend would be ""
-		srcLoca = locMap[obj.backend]
-	}
-
-	s3c := s3Cred{ak:srcLoca.access, sk:srcLoca.security}
-	creds := credentials.NewCredentials(&s3c)
-	sess, err := session.NewSession(&aws.Config{
-		Region:aws.String(srcLoca.region),
-		Endpoint:aws.String(srcLoca.endPoint),
-		Credentials:creds,
-	})
-	if err != nil {
-		log.Logf("New session failed, err:%v\n", err)
-		return err
-	}
-	svc := awss3.New(sess)
-	result, err := svc.ListBuckets(nil)*/
-
-	return nil
-}
-
-func moveAzureObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) error {
-	return nil
-}
-
 func (b *DatamoverService) refreshBackendLocation(ctx context.Context, bkId string) (*LocationInfo,error) {
 	//TODO: use read/write lock to synchronize among routines
 	loca,exists := locMap[bkId]
@@ -119,8 +68,9 @@ func (b *DatamoverService) refreshBackendLocation(ctx context.Context, bkId stri
 		} else {
 			//TODO:use read/write lock to synchronize among routines
 			//TODO: set region to lcation
-			locMap[bkId] = &LocationInfo{storType:bk.Backend.Type, endPoint:bk.Backend.Endpoint,
-				access:bk.Backend.Access, security:bk.Backend.Security, bakendId:bkId}
+			locMap[bkId] = &LocationInfo{bk.Backend.Type, bk.Backend.Endpoint, bk.Backend.Endpoint,
+			bk.Backend.BucketName, bk.Backend.Access, bk.Backend.Security, bkId}
+			//locMap[bkId].region = ""
 			loca = locMap[bkId]
 			log.Fatalf("Refresh backend[id=%s,name=%s] successfully.\n", bk.Backend.Id, bk.Backend.Name)
 			return loca,nil
@@ -132,7 +82,7 @@ func (b *DatamoverService) refreshBackendLocation(ctx context.Context, bkId stri
 
 func (b *DatamoverService) getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo,error) {
 	switch conn.Type {
-	case STOR_TYPE_OPENSDS:{
+	case flowtype.STOR_TYPE_OPENSDS:{
 		bkname := conn.GetBucketName()
 		reqbk := s3.Bucket{Name:bkname}
 		rspbk,err := b.s3client.GetBucket(ctx, &reqbk)
@@ -150,19 +100,66 @@ func (b *DatamoverService) getConnLocation(ctx context.Context, conn *pb.Connect
 	}
 }
 
+func moveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) error {
+	buf := make([]byte, obj.Size)
+
+	var size int64 = 0
+	var err error = nil
+
+	//download
+	switch  srcLoca.StorType {
+	case flowtype.STOR_TYPE_HW_OBS:{
+		size, err = obsmover.DownloadHwObsObj(obj, srcLoca, buf)
+	}
+	case flowtype.STOR_TYPE_AWS_S3:{
+		size, err = s3mover.DownloadS3Obj(obj, srcLoca, buf)
+	}
+	default:{
+		log.Fatalf("Not support source backend type:%v\n", srcLoca.StorType)
+		err = errors.New("Not support source backend type.")
+	}
+	}
+
+	if err != nil {
+		log.Fatal("Download object failed.")
+		return err
+	}
+	log.Logf("Download object succeed, size=%d\n", size)
+
+	//upload
+	switch destLoca.StorType {
+	case flowtype.STOR_TYPE_HW_OBS:{
+		err = obsmover.UploadHwObsObj(obj, destLoca, buf)
+	}
+	case flowtype.STOR_TYPE_AWS_S3:{
+		err = s3mover.UploadS3Obj(obj, destLoca, buf)
+	}
+	default:
+		log.Fatalf("Not support destination backend type:%v\n", destLoca.StorType)
+		return errors.New("Not support destination backend type.")
+	}
+
+	return nil
+}
+
+func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) error {
+	return nil
+}
+
 func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo) {
 	succeed := true
+	if obj.Backend != srcLoca.BakendId {//for selfdefined connector, obj.backend and srcLoca.bakendId would be ""
+		//TODO: use read/wirte lock
+		srcLoca = locMap[obj.Backend]
+	}
 
 	//move object
-	loca := locMap[obj.backend]
-	var err error = nil
-	switch loca.storType {
-	case STOR_TYPE_AWS_OBJ:
-		err = moveAwsObj(obj, srcLoca, destLoca)
-	default: //TODO: need to support AWS,Azure,HWS,etc.
-		err = errors.New("Not support backend type.")
-		log.Fatalf("Not support backend type:%v\n", loca.storType)
+	var err error
+	if obj.Size < objSizeLimit {
+		err = moveObj(obj, srcLoca, destLoca)
+	}else {
+		err = multipartMoveObj(obj, srcLoca, destLoca)
 	}
 
 	if err != nil {
@@ -171,10 +168,13 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 
 	//TODO: what if update meatadata failed
 	//update metadata
+	if succeed {
+
+	}
 
 	if succeed {
 		//If migrate success, update capacity
-		capa <- obj.size
+		capa <- obj.Size
 	}else {
 		capa <- 0
 	}
@@ -185,7 +185,7 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 func (b *DatamoverService) getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*SourceOject, error){
 	switch conn.Type {
-	case STOR_TYPE_OPENSDS:{
+	case flowtype.STOR_TYPE_OPENSDS:{
 		obj := s3.Object{ObjectKey:filt.Prefix, BucketName:conn.BucketName}
 		objs,err := b.s3client.ListObjects(ctx, &obj)
 		totalObjs := len(objs.ListObjects)
@@ -195,18 +195,18 @@ func (b *DatamoverService) getSourceObjs(ctx context.Context, conn *pb.Connector
 		}
 		srcObjs := []*SourceOject{}
 		for i := 0; i < totalObjs; i++ {
-			obj := SourceOject{objKey:objs.ListObjects[i].ObjectKey,
-				backend:objs.ListObjects[i].Backend, size:objs.ListObjects[i].Size}
+			obj := SourceOject{ObjKey:objs.ListObjects[i].ObjectKey,
+				Backend:objs.ListObjects[i].Backend, Size:objs.ListObjects[i].Size}
 			//refresh source location if needed
-			if objs.ListObjects[i].Backend != defaultSrcLoca.bakendId {
+			if objs.ListObjects[i].Backend != defaultSrcLoca.BakendId {
 				//User defined specific backend, which is different from the default backend
 				loca,err := b.refreshBackendLocation(ctx, objs.ListObjects[i].Backend)
 				if err != nil {
 					return nil,err
 				}
-				obj.storType = loca.storType
+				obj.StorType = loca.StorType
 			}else {
-				obj.storType = defaultSrcLoca.storType
+				obj.StorType = defaultSrcLoca.StorType
 			}
 			srcObjs = append(srcObjs, &obj)
 		}
@@ -219,12 +219,11 @@ func (b *DatamoverService) getSourceObjs(ctx context.Context, conn *pb.Connector
 	}
 }
 
-
 func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out *pb.RunJobResponse) error {
 	log.Log("Runjob is called in datamover service.")
 	log.Logf("Request: %+v\n", in)
 
-	j := Job{Id:bson.ObjectIdHex(in.Id)}
+	j := flowtype.Job{Id:bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 
     //TODO:Check if source and destination connectors can access.
@@ -232,14 +231,14 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 	//Get source and destination location information
 	srcLoca, err := b.getConnLocation(ctx, in.DestConn)
 	if err != nil {
-		j.Status = JOB_STATUS_FAILED
+		j.Status = flowtype.JOB_STATUS_FAILED
 		j.EndTime = time.Now()
 		db.DbAdapter.UpdateJob(&j)
 		return err
 	}
 	destLoca, erro := b.getConnLocation(ctx, in.SourceConn)
 	if erro != nil {
-		j.Status = JOB_STATUS_FAILED
+		j.Status = flowtype.JOB_STATUS_FAILED
 		j.EndTime = time.Now()
 		db.DbAdapter.UpdateJob(&j)
 		return erro
@@ -252,15 +251,15 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 	if err != nil || totalObjs == 0{
 		log.Fatalf("List objects failed, err:%v\n", err)
 		//update database
-		j.Status = JOB_STATUS_FAILED
+		j.Status = flowtype.JOB_STATUS_FAILED
 		db.DbAdapter.UpdateJob(&j)
 		return err
 	}
 	for i := 0; i < totalObjs; i++ {
 		j.TotalCount++
-		j.TotalCapacity += objs[i].size
+		j.TotalCapacity += objs[i].Size
 	}
-	j.Status = JOB_STATUS_RUNNING
+	j.Status = flowtype.JOB_STATUS_RUNNING
 	db.DbAdapter.UpdateJob(&j)
 
 	//Make channel
@@ -279,6 +278,13 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 			capacity += c
 			count += 1
 			//TODO:update job in database, need to consider the update frequency
+			var deci int = totalObjs/10
+			if totalObjs < 100 || count == totalObjs || count%deci == 0 {
+				//update database
+				j.PassedCount = count
+				j.PassedCapacity = capacity
+				db.DbAdapter.UpdateJob(&j)
+			}
 		}
 		case <-time.After(86400*time.Second): { //86400 seconds equal one day, we don't provide to migrate to much objects in one plan
 			tmout = true
@@ -299,12 +305,21 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 	if count < totalObjs {
 		out.Err = "success"
 		ret = errors.New("failed")
-		j.Status = JOB_STATUS_FAILED
+		j.Status = flowtype.JOB_STATUS_FAILED
 	}else {
 		out.Err = "success"
-		j.Status = JOB_STATUS_SUCCEED
+		j.Status = flowtype.JOB_STATUS_SUCCEED
 	}
 
-	db.DbAdapter.UpdateJob(&j)
+	for i := 1; i <= 3; i++ {
+		err := db.DbAdapter.UpdateJob(&j)
+		if err == nil {
+			break
+		}
+		if i == 3 {
+			log.Fatalf("Update the finish status of job in database failed three times, no need to try more.")
+		}
+	}
+
 	return ret
 }
