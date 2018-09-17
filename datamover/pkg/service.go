@@ -40,7 +40,6 @@ func NewDatamoverService() pb.DatamoverHandler {
 }
 
 
-
 //format of key:
 var locMap map[string]*LocationInfo
 

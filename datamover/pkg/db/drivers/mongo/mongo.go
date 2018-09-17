@@ -6,7 +6,7 @@ import(
 	. "github.com/opensds/go-panda/dataflow/pkg/type"
 	"github.com/globalsign/mgo/bson"
 	"errors"
-	"github.com/micro/go-log"
+	"github.com/go-log/log"
 )
 
 var adap = &adapter{}
@@ -85,5 +85,6 @@ func (ad *adapter) UpdateJob(job *Job) error {
 	}
 
 	log.Logf("Update job in database successfully\n", err)
+
 	return nil
 }

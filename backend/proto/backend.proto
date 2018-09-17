@@ -26,12 +26,13 @@ message GetBackendResponse {
 
 message ListBackendRequest {
 	int32 limit = 1;
-	string offset = 2;
+	int32 offset = 2;
+	map<string, string> query = 3;
 }
 
 message ListBackendResponse {
 	repeated BackendDetail backends = 1;
-	string next = 2;
+	int32 next = 2;
 }
 
 message UpdateBackendRequest {
@@ -57,8 +58,9 @@ message BackendDetail {
 	string userId = 3;
 	string name = 4;
 	string type = 5;
-	string endpoint = 6;
-	string bucketName = 7;
-	string access = 8;
-	string security = 9;
+	string region = 6;
+	string endpoint = 7;
+	string bucketName = 8;
+	string access = 9;
+	string security = 10;
 }

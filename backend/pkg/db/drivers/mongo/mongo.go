@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"math"
 	"sync"
 
 	"github.com/globalsign/mgo"
@@ -81,12 +82,16 @@ func (repo *mongoRepository) GetBackend(id string) (*model.Backend, error) {
 	return backend, nil
 }
 
-func (repo *mongoRepository) ListBackend() ([]*model.Backend, error) {
+func (repo *mongoRepository) ListBackend(limit, offset int, query interface{}) ([]*model.Backend, error) {
+
 	session := repo.session.Copy()
 	defer session.Close()
 
+	if limit == 0 {
+		limit = math.MinInt32
+	}
 	var backends []*model.Backend
-	err := session.DB(defaultDBName).C(defaultCollection).Find(nil).All(&backends)
+	err := session.DB(defaultDBName).C(defaultCollection).Find(query).Skip(offset).Limit(limit).All(&backends)
 	if err != nil {
 		return nil, err
 	}

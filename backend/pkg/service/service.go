@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/micro/go-log"
 	"github.com/opensds/go-panda/backend/pkg/db"
@@ -22,6 +24,7 @@ func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackend
 		TenantId:   in.Backend.TenantId,
 		UserId:     in.Backend.UserId,
 		Type:       in.Backend.Type,
+		Region:     in.Backend.Region,
 		Endpoint:   in.Backend.Endpoint,
 		BucketName: in.Backend.BucketName,
 		Access:     in.Backend.Access,
@@ -38,6 +41,7 @@ func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackend
 		TenantId:   res.TenantId,
 		UserId:     res.UserId,
 		Type:       res.Type,
+		Region:     res.Region,
 		Endpoint:   res.Endpoint,
 		BucketName: res.BucketName,
 		Access:     res.Access,
@@ -61,6 +65,7 @@ func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendReques
 		TenantId:   res.TenantId,
 		UserId:     res.UserId,
 		Type:       res.Type,
+		Region:     res.Region,
 		Endpoint:   res.Endpoint,
 		BucketName: res.BucketName,
 		Access:     res.Access,
@@ -71,8 +76,16 @@ func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendReques
 }
 
 func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequest, out *pb.ListBackendResponse) error {
-	log.Logf("Received ListBackend request: %v", in)
-	res, err := db.Repo.ListBackend()
+	log.Log("Received ListBackend request.")
+	// (query *model.QueryField, sort *model.SortField, sortBy *model.SortBy, page *model.Pagination
+
+	if in.Limit < 0 || in.Offset < 0 {
+		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		log.Log(msg)
+		return errors.New(msg)
+	}
+
+	res, err := db.Repo.ListBackend(int(in.Limit), int(in.Offset), nil)
 	if err != nil {
 		log.Logf("Failed to list backend: %v", err)
 		return err
@@ -86,6 +99,7 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 			TenantId:   item.TenantId,
 			UserId:     item.UserId,
 			Type:       item.Type,
+			Region:     item.Region,
 			Endpoint:   item.Endpoint,
 			BucketName: item.BucketName,
 			Access:     item.Access,
@@ -93,6 +107,8 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 		})
 	}
 	out.Backends = backends
+	out.Next = in.Offset + int32(len(res))
+
 	log.Log("Get backend successfully.")
 	return nil
 }
@@ -105,6 +121,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 		return err
 	}
 
+	// TODO: check if access and security is valid.
 	backend.Access = in.Access
 	backend.Security = in.Security
 	res, err := db.Repo.UpdateBackend(backend)
@@ -119,6 +136,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 		TenantId:   res.TenantId,
 		UserId:     res.UserId,
 		Type:       res.Type,
+		Region:     res.Region,
 		Endpoint:   res.Endpoint,
 		BucketName: res.BucketName,
 		Access:     res.Access,

@@ -2,6 +2,7 @@ package backend
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
@@ -51,8 +52,29 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 
 func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
 	log.Log("Received request for backend list.")
+	listBackendRequest := &backend.ListBackendRequest{}
+	if request.QueryParameter("limit") != "" {
+		limit, err := strconv.Atoi(request.QueryParameter("limit"))
+		if err != nil {
+			log.Logf("limit is invalid: %v", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		listBackendRequest.Limit = int32(limit)
+	}
+
+	if request.QueryParameter("offset") != "" {
+		offset, err := strconv.Atoi(request.QueryParameter("offset"))
+		if err != nil {
+			log.Logf("offset is invalid: %v", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		listBackendRequest.Offset = int32(offset)
+	}
+
 	ctx := context.Background()
-	res, err := s.backendClient.ListBackend(ctx, &backend.ListBackendRequest{})
+	res, err := s.backendClient.ListBackend(ctx, listBackendRequest)
 	if err != nil {
 		log.Logf("Failed to list backends: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
