@@ -20,8 +20,24 @@ func (ad *adapter) CreateObject(in *pb.Object) S3Error {
 			log.Log("Add object to database failed, err:%v\n", err)
 			return InternalError
 		}
-	} else {
-		//TODO
+	} else if err != nil {
+		return InternalError
+	}
+
+	return NoError
+}
+
+func (ad *adapter) UpdateObject(in *pb.Object) S3Error {
+	ss := ad.s.Copy()
+	defer ss.Close()
+	c := ss.DB(DataBaseName).C(in.BucketName)
+	err := c.Update(bson.M{"name": in.ObjectKey}, in)
+	if err == mgo.ErrNotFound {
+		log.Log("Update object to database failed, err:%v\n", err)
+		return NoSuchObject
+	} else if err != nil {
+		log.Log("Update object to database failed, err:%v\n", err)
+		return InternalError
 	}
 
 	return NoError

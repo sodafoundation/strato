@@ -28,7 +28,8 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")
 
-	ctx := context.Background()
+	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
+
 	log.Logf("Received request for bucket details: %s", bucketName)
 
 	object := s3.Object{}
@@ -43,7 +44,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	s3err := client.PUT(request.Request.Body, &object)
+	s3err := client.PUT(request.Request.Body, &object, ctx)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return

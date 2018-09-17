@@ -18,8 +18,8 @@ func (err *S3Error) Error() error {
 var ERR_OK = 200
 var NoError = S3Error{Code: ERR_OK}
 var InternalError = S3Error{Code: 500, Description: "Internal error. Please retry"}
-var NoSuchBucket = S3Error{Code: 404, Description: "The specified bucket does not exists."}
-var NoSuchObject = S3Error{Code: 404, Description: "The specified bucket does not exists."}
-var BucketAlreadyExists = S3Error{Code: 409, Description: "The requested bucket name already exists. Bucket namespace is shared by all users in the system. Select a different name and retry."}
+var NoSuchBucket = S3Error{Code: 404, Description: "The specified bucket does not exist."}
+var NoSuchObject = S3Error{Code: 404, Description: "The specified object does not exist."}
+var BucketAlreadyExists = S3Error{Code: 409, Description: "The requested bucket name already exist. Bucket namespace is shared by all users in the system. Select a different name and retry."}
 
 var NoSuchBackend = S3Error{Code: 404, Description: "The specified backend does not exists."}

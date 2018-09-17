@@ -7,7 +7,8 @@ service S3 {
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
 	rpc GetBucket(Bucket) returns (Bucket) {}
 	rpc ListObjects(Object) returns (ListObjectResponse) {}
-	rpc PutObject(Object) returns (BaseResponse) {}
+	rpc CreateObject(Object) returns (BaseResponse) {}
+	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(Object) returns (Object) {}
 	rpc DeleteObject(Object) returns (BaseResponse) {}
 }

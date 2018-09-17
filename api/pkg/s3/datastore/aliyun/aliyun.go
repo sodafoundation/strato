@@ -1,6 +1,7 @@
 package aliyun
 
 import (
+	"context"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/micro/go-log"
 	. "github.com/opensds/go-panda/s3/pkg/exception"
@@ -16,11 +17,11 @@ func Init() *AliyunAdapter {
 	return adap
 }
 
-func (ad *AliyunAdapter) PUT(stream io.Reader, object *pb.Object) S3Error {
-	aliyunEndpoint := "oss-cn-beijing.aliyuncs.com"
+func (ad *AliyunAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
+	endpoint := "oss-cn-beijing.aliyuncs.com"
 	AccessKeyId := "LTAIyCcP4NYqQESb"
 	AccessKeySecret := "zDLE1lo8IziJfSOpg1NZnuqlZPXnj4"
-	client, err := oss.New(aliyunEndpoint, AccessKeyId, AccessKeySecret)
+	client, err := oss.New(endpoint, AccessKeyId, AccessKeySecret)
 	if err != nil {
 		log.Logf("Access aliyun failed:%v", err)
 		return S3Error{Code: 500, Description: "Access aliyun failed"}
@@ -32,13 +33,16 @@ func (ad *AliyunAdapter) PUT(stream io.Reader, object *pb.Object) S3Error {
 		return S3Error{Code: 500, Description: "Access bucket failed"}
 	}
 
-	newObjectKey := object.BucketName + "\\" + object.ObjectKey
+	if ctx.Value("operation") == "upload" {
+		newObjectKey := object.BucketName + "/" + object.ObjectKey
 
-	err = bucket.PutObject(newObjectKey, stream)
+		err = bucket.PutObject(newObjectKey, stream)
 
-	if err != nil {
-		log.Logf("Upload to aliyun failed:%v", err)
-		return S3Error{Code: 500, Description: "Upload to aliyun failed"}
+		if err != nil {
+			log.Logf("Upload to aliyun failed:%v", err)
+			return S3Error{Code: 500, Description: "Upload to aliyun failed"}
+		}
 	}
+
 	return NoError
 }

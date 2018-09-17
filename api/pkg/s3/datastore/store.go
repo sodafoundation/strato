@@ -1,8 +1,10 @@
 package datastore
 
 import (
+	"context"
 	"fmt"
 	"github.com/opensds/go-panda/api/pkg/s3/datastore/aliyun"
+	"github.com/opensds/go-panda/api/pkg/s3/datastore/aws"
 	"github.com/opensds/go-panda/api/pkg/s3/datastore/hws"
 	. "github.com/opensds/go-panda/s3/pkg/exception"
 	pb "github.com/opensds/go-panda/s3/proto"
@@ -21,6 +23,10 @@ func Init(backendType string) DataStoreAdapter {
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = hws.Init()
 		return StoreAdapter
+	case "aws":
+		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
+		StoreAdapter = aws.Init()
+		return StoreAdapter
 	default:
 		fmt.Printf("Can't find datastore driver %s!\n", backendType)
 	}
@@ -32,5 +38,5 @@ func Exit(backendType string) {
 }
 
 type DataStoreAdapter interface {
-	PUT(stream io.Reader, object *pb.Object) S3Error
+	PUT(stream io.Reader, object *pb.Object, context context.Context) S3Error
 }

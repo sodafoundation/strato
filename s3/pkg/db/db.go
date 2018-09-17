@@ -48,4 +48,5 @@ type DBAdapter interface {
 	GetBucketByName(name string, out *pb.Bucket) S3Error
 	ListBuckets(in *pb.BaseRequest) ([]pb.Bucket, S3Error)
 	CreateObject(in *pb.Object) S3Error
+	UpdateObject(in *pb.Object) S3Error
 }
