@@ -32,6 +32,7 @@ services:
     image: opensdsio/go-panda/datamover
     environment:
       MICRO_REGISTRY: "mdns"
+      DB_HOST: "datastore:27017"
 
   datastore:
     image: mongo

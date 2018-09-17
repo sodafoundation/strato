@@ -137,7 +137,12 @@ func getLocation(conn *Connector) (string, error){
 func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) error{
 	ch := make(chan int)
 	go func (req *datamover.RunJobRequest){
+		//TODO: call mclient.Runjob directly is a temporary way, need to use sending message to kafka replace it.
 		ctx := context.Background()
+		_, ok := ctx.Deadline()
+		if !ok {
+			ctx, _ = context.WithTimeout(ctx, 7200*time.Second)
+		}
 		_, err := mclient.Runjob(ctx, req)
 		if err != nil {
 			log.Logf("Run job failed, err:%v\n", err)
@@ -151,7 +156,7 @@ func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) e
 	select {
 	case n := <-ch:
 		log.Logf("Run job end, n=%d\n",n)
-	case <- time.After(1800*time.Second):
+	case <- time.After(86400*time.Second):
 		log.Log("Wait job timeout.")
 	}
 
@@ -224,10 +229,10 @@ func Run(id string, tenant string, mclient datamover.DatamoverService) (bson.Obj
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
 		req := datamover.RunJobRequest{Id:plan.Id.Hex(), OverWrite:plan.OverWrite, RemainSource:plan.RemainSource}
-		srcConn := datamover.Connector{StorType:plan.SourceConn.StorType}
+		srcConn := datamover.Connector{Type:plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn
-		destConn := datamover.Connector{StorType:plan.DestConn.StorType}
+		destConn := datamover.Connector{Type:plan.DestConn.StorType}
 		buildConn(&destConn, &plan.DestConn)
 		req.DestConn = &destConn
 		go sendJob(&req, mclient)
