@@ -99,6 +99,7 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 	//rsp := pb.CreatePolicyResponse{}
 	err := policy.Create(&pol)
 	if err == nil {
+		out.PolId = string(pol.Id.Hex())
 		out.Err = ""
 	}else {
 		out.Err = err.Error()
@@ -160,6 +161,7 @@ func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyR
 	err := policy.Update(&pol)
 	if err == nil {
 		out.Err = ""
+		out.PolId = string(pol.Id.Hex())
 	}else {
 		out.Err = err.Error()
 	}
@@ -275,6 +277,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 		if err == nil {
 			pl.DestConn = destConn
 		}else {
+			out.Err = err.Error()
 			return err
 		}
 	}else {
@@ -304,6 +307,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 	err := plan.Create(&pl)
 	if err == nil {
 		out.Err = ""
+		out.PlanId = string(pl.Id.Hex())
 	}else {
 		out.Err = err.Error()
 	}
@@ -380,7 +384,7 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 	err := plan.Update(&pl)
 	if err == nil {
 		out.Err = ""
-
+		out.PlanId = string(pl.Id.Hex())
 	}else {
 		out.Err = err.Error()
 	}
@@ -396,10 +400,12 @@ func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, ou
 	//TODO: how to get tenant
 	//tenant := in.Tenant
 	tenant := "tenant"
- 	err := plan.Run(id, tenant, b.datamoverClient)
+ 	jid, err := plan.Run(id, tenant, b.datamoverClient)
 	if err == nil {
+		out.JobId = string(jid.Hex())
 		out.Err = ""
 	}else {
+		out.JobId = ""
 		out.Err = err.Error()
 	}
 	log.Logf("Run plan err:%d.", out.Err)

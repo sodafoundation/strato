@@ -15,7 +15,10 @@ var (
 )
 
 var (
-	JOB_STATUS_QUEUEING = "queueing"
+	JOB_STATUS_PENDING = "pending"
+	JOB_STATUS_RUNNING = "rnning"
+	JOB_STATUS_SUCCEED = "succeed"
+	JOB_STATUS_FAILED =  "failed"
 )
 
 var (
@@ -29,7 +32,7 @@ var (
 	ERR_CONN_NOT_EXIST = errors.New("connector does not esit")
 	ERR_PLAN_NOT_EXIST = errors.New("plan does not exist")
 	ERR_INVALID_PLAN_NAME = errors.New("invalid plan name")
-	//ERR_DEST_SRC_CONN_INVALID = "invalid source/destination connector"
+	ERR_DEST_SRC_CONN_EQUAL = errors.New("source is the same as destination")
 	ERR_DEST_CONN_NOT_EXIST = errors.New("invalid destination connector")
 	ERR_SRC_CONN_NOT_EXIST = errors.New("invalid source connector")
 	ERR_IS_USED_BY_PLAN = errors.New("is used by plan")//Connector or policy is used by plan
@@ -105,9 +108,10 @@ type Job struct{
 	SourceLocation string	`json:"source_location" bson:"source_location"`
 	DestLocation string		`json:"dest_location" bson:"dest_location"`
 	CreateTime time.Time 	`json:"create_time" bson:"create_time"`
+	StartTime time.Time 	`json:"start_time" bson:"start_time"`
 	EndTime time.Time		`json:"end_time" bson:"end_time"`
-	//OverWrite	bool		`json:"over_write" bson:"over_write"`
-	//RemainSource	bool	`json:"remain_source" bson:"remain_source"`
+	OverWrite	bool		`json:"over_write" bson:"over_write"`
+	RemainSource	bool	`json:"remain_source" bson:"remain_source"`
 	Status 	string			`json:"status" bson:"status"` //queueing,
 	Tenant string 			`json:"tenant" bson:"tenant"`
 }
