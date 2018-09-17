@@ -2,10 +2,10 @@ package db
 
 import (
 	"fmt"
-	"github.com/opensds/go-panda/s3/pkg/db/drivers/mongo"
-	pb "github.com/opensds/go-panda/s3/proto"
-	. "github.com/opensds/go-panda/s3/pkg/exception"
 	. "github.com/opensds/go-panda/dataflow/pkg/utils"
+	"github.com/opensds/go-panda/s3/pkg/db/drivers/mongo"
+	. "github.com/opensds/go-panda/s3/pkg/exception"
+	pb "github.com/opensds/go-panda/s3/proto"
 )
 
 // DbAdapter is a global variable that controls database module.
@@ -27,7 +27,7 @@ func Init(db *Database) {
 	}
 }
 
-func Exit(db *Database){
+func Exit(db *Database) {
 	switch db.Driver {
 	case "etcd":
 		// C = etcd.Init(db.Driver, db.Crendential)
@@ -41,10 +41,12 @@ func Exit(db *Database){
 	}
 }
 
-
 type DBAdapter interface {
 	CreateBucket(bucket *pb.Bucket) S3Error
 	DeleteBucket(name string) S3Error
 	UpdateBucket(bucket *pb.Bucket) S3Error
 	GetBucketByName(name string, out *pb.Bucket) S3Error
+	ListBuckets(in *pb.BaseRequest) ([]pb.Bucket, S3Error)
+	CreateObject(in *pb.Object) S3Error
+	UpdateObject(in *pb.Object) S3Error
 }
