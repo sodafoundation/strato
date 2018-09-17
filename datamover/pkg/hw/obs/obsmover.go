@@ -1,7 +1,7 @@
 package obsmover
 
 import (
-	"github.com/hw/obs"
+	"obs"
 	"github.com/micro/go-log"
 	. "github.com/opensds/go-panda/datamover/pkg/utils"
 	"io"
