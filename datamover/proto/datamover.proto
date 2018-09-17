@@ -16,8 +16,8 @@ message Filter {
 
 message Connector {
 	string Type = 1; //opensds,aws,azure,hwcloud,etc.
-	string bucketName = 2;
-	repeated KV connConfig = 3;
+	string BucketName = 2;
+	repeated KV ConnConfig = 3;
 }
 
 message RunJobRequest{
