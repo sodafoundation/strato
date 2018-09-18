@@ -9,6 +9,7 @@ import (
 	"github.com/opensds/go-panda/s3/proto"
 	"golang.org/x/net/context"
 	"strings"
+	"time"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) *string {
@@ -21,7 +22,8 @@ func parseListBuckets(list *s3.ListBucketsResponse) *string {
 	temp.Xmlns = Xmlns
 	buckets := []Bucket{}
 	for _, value := range list.Buckets {
-		buckets = append(buckets, Bucket{Name: value.Name, CreationDate: value.CreationDate})
+		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
+		buckets = append(buckets, Bucket{Name: value.Name, CreationDate: creationDate})
 	}
 	temp.Buckets = buckets
 

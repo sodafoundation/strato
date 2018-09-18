@@ -6,11 +6,11 @@ service S3 {
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
 	rpc GetBucket(Bucket) returns (Bucket) {}
-	rpc ListObjects(Object) returns (ListObjectResponse) {}
+	rpc ListObjects(ListObjectsRequest) returns (ListObjectResponse) {}
 	rpc CreateObject(Object) returns (BaseResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
-	rpc GetObject(Object) returns (Object) {}
-	rpc DeleteObject(Object) returns (BaseResponse) {}
+	rpc GetObject(GetObjectInput) returns (Object) {}
+	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
 }
 
 
@@ -126,7 +126,7 @@ message Bucket {
 	string owner = 2;
 	string ownerDisplayName = 3;
 	ACL acl = 4;
-	string creationDate = 5;
+    int64 creationDate = 5;
 	bool transient = 6;
 	bool deleted = 7;
 	ServerSideEncryption serverSideEncryption = 8;
@@ -143,7 +143,15 @@ message Partion {
 	string partNumber = 2;
 	int64 size = 3;
 	string etag = 4;
-	string lastModified = 5;
+	int64 lastModified = 5;
+}
+
+message Version {
+    string versionid = 1;
+    string etag = 2;
+    string isLatest = 3;
+    int64 lastModified = 4;
+    int64 size = 5;
 }
 
 message Object {
@@ -158,20 +166,18 @@ message Object {
 	string contentLength = 9;
 	string contentType = 10;
 	string contentMd5 = 11;
-	string versionId = 12;
-	string serverVersionId = 13;
-	string storageClass = 14;
-	ServerSideEncryption serverSideEncryption = 15;
-	string websiteRedirectLocation = 16;
-	ACL acl = 17;
-	string backend = 18;
-	string isNull = 19;
-	string nullVersionId = 20;
-	string isDeleteMarker = 21;
-	repeated ReplicationInfo replicationInfo = 22;
-	int64 size = 23;
-	repeated Partion partions =24;
-	Tag tags = 25;
+	repeated Version versions = 12;
+	string storageClass = 13;
+	ServerSideEncryption serverSideEncryption = 14;
+	string websiteRedirectLocation = 15;
+	ACL acl = 16;
+	string backend = 17;
+	string isNull = 18;
+	string isDeleteMarker = 19;
+	repeated ReplicationInfo replicationInfo = 20;
+	int64 size = 21;
+	repeated Partion partions =22;
+	Tag tags = 23;
 }
 
 
@@ -180,10 +186,6 @@ message ListBucketsResponse {
 }
 
 
-message ListObjectResponse {
-	repeated Object listObjects = 1;
-}
-
 message BaseResponse {
 	string errorCode = 1;
 	string msg = 2;
@@ -191,4 +193,27 @@ message BaseResponse {
 
 message BaseRequest {
 	string id = 1;
+}
+
+message ListObjectsRequest {
+    // Bucket is a required field
+    string Bucket = 1;
+    string Delimiter = 2;
+    string Owner = 3;
+}
+
+message ListObjectResponse {
+	repeated Object ListObjects = 1;
+}
+
+message DeleteObjectInput {
+    string Bucket = 1;
+    string Key = 2;
+    string Versionid = 3;
+}
+
+message GetObjectInput {
+    string Bucket = 1;
+    string Key = 2;
+    string Versionid = 3;
 }

@@ -49,4 +49,6 @@ type DBAdapter interface {
 	ListBuckets(in *pb.BaseRequest) ([]pb.Bucket, S3Error)
 	CreateObject(in *pb.Object) S3Error
 	UpdateObject(in *pb.Object) S3Error
+	DeleteObject(in *pb.DeleteObjectInput) S3Error
+	ListObjects(in *pb.ListObjectsRequest) ([]pb.Object, S3Error)
 }

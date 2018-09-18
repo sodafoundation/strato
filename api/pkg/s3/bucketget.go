@@ -13,7 +13,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
-	res, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

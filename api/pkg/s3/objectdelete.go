@@ -9,15 +9,17 @@ import (
 	//	"github.com/micro/go-micro/errors"
 )
 
-func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
+func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
+	objectKey := request.PathParameter("objectKey")
+
 	ctx := context.Background()
-	log.Logf("Received request for bucket details: %s", bucketName)
-	res, err := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
+	log.Logf("Received request for object details: %s", objectKey)
+	res, err := s.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Delete bucket successfully.")
+	log.Logf("Delete object %s successfully.", objectKey)
 	response.WriteEntity(res)
 }

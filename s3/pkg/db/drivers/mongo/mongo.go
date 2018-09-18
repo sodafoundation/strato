@@ -5,8 +5,8 @@ import (
 )
 
 var adap = &adapter{}
-var DataBaseName = "__metadatastore"
-var BucketMD = "__metadatastore__bucket"
+var DataBaseName = "metadatastore"
+var BucketMD = "metadatabucket"
 
 func Init(host string) *adapter {
 	//fmt.Println("edps:", deps)
