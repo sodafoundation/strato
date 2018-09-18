@@ -4,30 +4,37 @@ import (
 	"context"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/micro/go-log"
+	backendpb "github.com/opensds/go-panda/backend/proto"
 	. "github.com/opensds/go-panda/s3/pkg/exception"
 	pb "github.com/opensds/go-panda/s3/proto"
 	"io"
 )
 
 type AliyunAdapter struct {
+	backend *backendpb.BackendDetail
+	client  *oss.Client
 }
 
-func Init() *AliyunAdapter {
-	adap := &AliyunAdapter{}
+func Init(backend *backendpb.BackendDetail) *AliyunAdapter {
+	endpoint := backend.Endpoint
+	AccessKeyId := backend.Access
+	AccessKeySecret := backend.Security
+
+	client, err := oss.New(endpoint, AccessKeyId, AccessKeySecret)
+	if err != nil {
+		log.Logf("Access aliyun failed:%v", err)
+		return nil
+	}
+
+	adap := &AliyunAdapter{backend: backend, client: client}
 	return adap
 }
 
 func (ad *AliyunAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
-	endpoint := "oss-cn-beijing.aliyuncs.com"
-	AccessKeyId := "LTAIyCcP4NYqQESb"
-	AccessKeySecret := "zDLE1lo8IziJfSOpg1NZnuqlZPXnj4"
-	client, err := oss.New(endpoint, AccessKeyId, AccessKeySecret)
-	if err != nil {
-		log.Logf("Access aliyun failed:%v", err)
-		return S3Error{Code: 500, Description: "Access aliyun failed"}
-	}
 
-	bucket, err := client.Bucket("testwb01")
+	bucketName := ad.backend.BucketName
+
+	bucket, err := ad.client.Bucket(bucketName)
 	if err != nil {
 		log.Logf("Access bucket failed:%v", err)
 		return S3Error{Code: 500, Description: "Access bucket failed"}
@@ -43,6 +50,22 @@ func (ad *AliyunAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Co
 			return S3Error{Code: 500, Description: "Upload to aliyun failed"}
 		}
 	}
+
+	return NoError
+}
+
+func (ad *AliyunAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
+
+	newObjectKey := object.Bucket + "/" + object.Key
+	bucketName := ad.backend.BucketName
+
+	bucket, err := ad.client.Bucket(bucketName)
+	if err != nil {
+		log.Logf("Access bucket failed:%v", err)
+		return S3Error{Code: 500, Description: "Access bucket failed"}
+	}
+
+	bucket.DeleteObject(newObjectKey)
 
 	return NoError
 }

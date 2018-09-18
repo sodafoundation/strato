@@ -6,6 +6,7 @@ import (
 	"net/http"
 	//	"github.com/micro/go-micro/errors"
 	"github.com/opensds/go-panda/api/pkg/s3/datastore"
+	backendpb "github.com/opensds/go-panda/backend/proto"
 	. "github.com/opensds/go-panda/s3/pkg/exception"
 	"github.com/opensds/go-panda/s3/proto"
 	"golang.org/x/net/context"
@@ -18,7 +19,15 @@ func _getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdap
 	if err != nil {
 		return nil
 	}
-	client := datastore.Init(buekct.Backend)
+	backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: buekct.Backend})
+	if backendErr != nil {
+		log.Logf("Get backend %s failed.", buekct.Backend)
+		return nil
+	}
+	log.Logf("Get backend %v", *backendRep.Backend)
+
+	backend := backendRep.Backend
+	client := datastore.Init(backend)
 	return client
 }
 
@@ -50,7 +59,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	res, err := s.s3Client.PutObject(ctx, &object)
+	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

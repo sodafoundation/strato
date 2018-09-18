@@ -4,22 +4,26 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/client"
 	//	"github.com/micro/go-micro/errors"
+	"github.com/opensds/go-panda/backend/proto"
 	"github.com/opensds/go-panda/s3/proto"
 	"io"
 	"io/ioutil"
 )
 
 const (
-	s3Service = "s3"
+	s3Service      = "s3"
+	backendService = "backend"
 )
 
 type APIService struct {
-	s3Client s3.S3Service
+	s3Client      s3.S3Service
+	backendClient backend.BackendService
 }
 
 func NewAPIService(c client.Client) *APIService {
 	return &APIService{
-		s3Client: s3.NewS3Service(s3Service, c),
+		s3Client:      s3.NewS3Service(s3Service, c),
+		backendClient: backend.NewBackendService(backendService, c),
 	}
 }
 

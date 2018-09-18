@@ -5,14 +5,18 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/micro/go-log"
+	backendpb "github.com/opensds/go-panda/backend/proto"
 	. "github.com/opensds/go-panda/s3/pkg/exception"
 	pb "github.com/opensds/go-panda/s3/proto"
 	"io"
 )
 
 type AwsAdapter struct {
+	backend *backendpb.BackendDetail
+	session *session.Session
 }
 type s3Cred struct {
 	ak string
@@ -28,23 +32,15 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
-func Init() *AwsAdapter {
-	adap := &AwsAdapter{}
-	return adap
-}
+func Init(backend *backendpb.BackendDetail) *AwsAdapter {
+	endpoint := backend.Endpoint
+	AccessKeyID := backend.Access
+	AccessKeySecret := backend.Security
+	region := backend.Region
 
-func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
-	endpoint := "obs.cn-north-1.myhwclouds.com"
-	AccessKeyId := "4X7JQDFTCKUNWFBRYZVC"
-	AccessKeySecret := "9hr0ekZgg6vZHulEekTVfWuu1lnPFvpVAJQNHXdn"
-	region := "cn-north-1"
-
-	s3aksk := s3Cred{ak: AccessKeyId, sk: AccessKeySecret}
+	s3aksk := s3Cred{ak: AccessKeyID, sk: AccessKeySecret}
 	creds := credentials.NewCredentials(&s3aksk)
 
-	newObjectKey := object.BucketName + "/" + object.ObjectKey
-
-	bucket := "obs-wbtest"
 	disableSSL := true
 	sess, err := session.NewSession(&aws.Config{
 		Region:      &region,
@@ -53,13 +49,22 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		DisableSSL:  &disableSSL,
 	})
 	if err != nil {
-		log.Logf("New session failed, err:%v\n", err)
-		return InternalError
+		return nil
 	}
 
+	adap := &AwsAdapter{backend: backend, session: sess}
+	return adap
+}
+
+func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
+
+	bucket := ad.backend.BucketName
+
+	newObjectKey := object.BucketName + "/" + object.ObjectKey
+
 	if ctx.Value("operation") == "upload" {
-		uploader := s3manager.NewUploader(sess)
-		out, err := uploader.Upload(&s3manager.UploadInput{
+		uploader := s3manager.NewUploader(ad.session)
+		_, err := uploader.Upload(&s3manager.UploadInput{
 			Bucket: &bucket,
 			Key:    &newObjectKey,
 			Body:   stream,
@@ -69,7 +74,24 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			log.Logf("Upload to aliyun failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to aliyun failed"}
 		}
-		object.ServerVersionId = *out.VersionID
+	}
+
+	return NoError
+}
+
+func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
+
+	bucket := ad.backend.BucketName
+
+	newObjectKey := object.Bucket + "/" + object.Key
+
+	svc := awss3.New(ad.session)
+	deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &newObjectKey}
+
+	_, err := svc.DeleteObject(&deleteInput)
+	if err != nil {
+		log.Logf("Delete object failed, err:%v\n", err)
+		return InternalError
 	}
 
 	return NoError
