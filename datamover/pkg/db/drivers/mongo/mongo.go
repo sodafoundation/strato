@@ -6,7 +6,7 @@ import(
 	. "github.com/opensds/go-panda/dataflow/pkg/type"
 	"github.com/globalsign/mgo/bson"
 	"errors"
-	"github.com/go-log/log"
+	"github.com/micro/go-log"
 )
 
 var adap = &adapter{}
@@ -71,15 +71,19 @@ func (ad *adapter) UpdateJob(job *Job) error {
 	if job.PassedCount != 0 {
 		j.PassedCount = job.PassedCount
 	}
+	if job.PassedCapacity != 0 {
+		j.PassedCapacity = job.PassedCapacity
+	}
 	if job.Status != "" {
 		j.Status = job.Status
 	}
 
 	err = c.Update(bson.M{"_id":j.Id}, &j)
 	if err != nil {
-		log.Logf("Update job in database failed, err:%v\n", err)
+		log.Fatalf("Update job in database failed, err:%v\n", err)
 		return errors.New("Update job in database failed.")
 	}
 
+	log.Logf("Update job in database successfully\n", err)
 	return nil
 }
