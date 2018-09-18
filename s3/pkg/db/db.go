@@ -46,9 +46,10 @@ type DBAdapter interface {
 	DeleteBucket(name string) S3Error
 	UpdateBucket(bucket *pb.Bucket) S3Error
 	GetBucketByName(name string, out *pb.Bucket) S3Error
-	ListBuckets(in *pb.BaseRequest) ([]pb.Bucket, S3Error)
+	ListBuckets(in *pb.BaseRequest, out *[]pb.Bucket) S3Error
 	CreateObject(in *pb.Object) S3Error
 	UpdateObject(in *pb.Object) S3Error
 	DeleteObject(in *pb.DeleteObjectInput) S3Error
-	ListObjects(in *pb.ListObjectsRequest) ([]pb.Object, S3Error)
+	GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error
+	ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
 }

@@ -5,31 +5,11 @@ import (
 	"github.com/micro/go-log"
 	"net/http"
 	//	"github.com/micro/go-micro/errors"
-	"github.com/opensds/go-panda/api/pkg/s3/datastore"
-	backendpb "github.com/opensds/go-panda/backend/proto"
 	. "github.com/opensds/go-panda/s3/pkg/exception"
 	"github.com/opensds/go-panda/s3/proto"
 	"golang.org/x/net/context"
 	"strconv"
 )
-
-func _getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
-	ctx := context.Background()
-	buekct, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		return nil
-	}
-	backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: buekct.Backend})
-	if backendErr != nil {
-		log.Logf("Get backend %s failed.", buekct.Backend)
-		return nil
-	}
-	log.Logf("Get backend %v", *backendRep.Backend)
-
-	backend := backendRep.Backend
-	client := datastore.Init(backend)
-	return client
-}
 
 //ObjectPut -
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
@@ -44,7 +24,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	object := s3.Object{}
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
-	size, err := strconv.ParseInt(contentLenght, 10, 64)
+	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
 
 	client := _getBackendClient(s, bucketName)
@@ -59,11 +39,19 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	res, err := s.s3Client.CreateObject(ctx, &object)
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
+	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	if objectMD != nil {
+		//TODO update
+
+	} else {
+		res, err := s.s3Client.CreateObject(ctx, &object)
+		if err != nil {
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Log("Upload object successfully.")
+		response.WriteEntity(res)
 	}
-	log.Log("Upload object successfully.")
-	response.WriteEntity(res)
+
 }

@@ -3,6 +3,7 @@ package s3
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	. "github.com/opensds/go-panda/s3/pkg/exception"
 	"github.com/opensds/go-panda/s3/proto"
 	"golang.org/x/net/context"
 	"net/http"
@@ -15,7 +16,16 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 
 	ctx := context.Background()
 	log.Logf("Received request for object details: %s", objectKey)
-	res, err := s.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName})
+	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
+	client := _getBackendClient(s, bucketName)
+
+	s3err := client.DELETE(&deleteInput, ctx)
+	if s3err.Code != ERR_OK {
+		response.WriteError(http.StatusInternalServerError, s3err.Error())
+		return
+	}
+
+	res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

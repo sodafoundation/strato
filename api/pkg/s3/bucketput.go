@@ -36,6 +36,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			bucket.Backend = createBucketConf.LocationConstraint
 		}
 	}
+
 	res, err := s.s3Client.CreateBucket(ctx, &bucket)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
