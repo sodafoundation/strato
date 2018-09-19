@@ -108,12 +108,12 @@ func moveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) er
 
 	//download
 	switch  srcLoca.StorType {
-	case flowtype.STOR_TYPE_HW_OBS:{
+	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		size, err = obsmover.DownloadHwObsObj(obj, srcLoca, buf)
-	}
-	case flowtype.STOR_TYPE_AWS_S3:{
+	case flowtype.STOR_TYPE_AWS_S3:
 		size, err = s3mover.DownloadS3Obj(obj, srcLoca, buf)
-	}
 	default:{
 		log.Fatalf("Not support source backend type:%v\n", srcLoca.StorType)
 		err = errors.New("Not support source backend type.")
@@ -128,12 +128,12 @@ func moveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) er
 
 	//upload
 	switch destLoca.StorType {
-	case flowtype.STOR_TYPE_HW_OBS:{
+	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		err = obsmover.UploadHwObsObj(obj, destLoca, buf)
-	}
-	case flowtype.STOR_TYPE_AWS_S3:{
+	case flowtype.STOR_TYPE_AWS_S3:
 		err = s3mover.UploadS3Obj(obj, destLoca, buf)
-	}
 	default:
 		log.Fatalf("Not support destination backend type:%v\n", destLoca.StorType)
 		return errors.New("Not support destination backend type.")
@@ -146,6 +146,8 @@ func downloadRange(obj *SourceOject, srcLoca *LocationInfo, buf []byte, start in
 	switch srcLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return s3mover.DownloadRangeS3(obj.Obj.ObjectKey, srcLoca, buf, start, end)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", srcLoca.StorType)
@@ -158,6 +160,8 @@ func multiPartUploadInit(obj *SourceOject, destLoca *LocationInfo) (svc *s3.S3, 
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return s3mover.MultiPartUploadInitS3(obj.Obj.ObjectKey, destLoca)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
@@ -170,6 +174,8 @@ func uploadPartS3(obj *SourceOject, destLoca *LocationInfo, svc *s3.S3, uploadId
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return s3mover.UploadPartS3(obj.Obj.ObjectKey, destLoca, svc, uploadId, upBytes, buf, partNumber)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
@@ -182,6 +188,8 @@ func abortMultipartUpload(objKey string, destLoca *LocationInfo, svc *s3.S3, upl
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return s3mover.AbortMultipartUpload(objKey, destLoca, svc, uploadId)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
@@ -194,6 +202,8 @@ func completeMultipartUpload(objKey string, destLoca *LocationInfo, svc *s3.S3, 
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return s3mover.CompleteMultipartUploadS3(objKey, destLoca, svc, uploadId, completeParts)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
@@ -263,7 +273,34 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 	}
 
 	return err
-	return nil
+}
+
+func (b *DatamoverService) deleteObj(ctx context.Context, obj *SourceOject, loca *LocationInfo) error {
+	var err error = nil
+	switch loca.StorType {
+	case flowtype.STOR_TYPE_AWS_S3:
+		s3mover.DeleteObj(obj, loca)
+	case flowtype.STOR_TYPE_HW_OBS:
+	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
+		err = obsmover.DeleteObj(obj, loca)
+	default:
+		log.Logf("Delete object[objkey:%s] from backend storage failed.\n", obj.Obj.ObjectKey)
+		err = errors.New("Unspport storage type.")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	//delete metadata
+	delMetaReq := osdss3.DeleteObjectInput{Bucket:loca.BucketName, Key:obj.Obj.ObjectKey}
+	_, err = b.s3client.DeleteObject(ctx, &delMetaReq)
+	if err != nil {
+		log.Logf("Delete object metadata of obj [objKey:%s] failed.\n", obj.Obj.ObjectKey)
+	}
+
+	return err
 }
 
 func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
@@ -287,17 +324,19 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 	}
 
 	//TODO: what if update meatadata failed
-	//update metadata
+	//add object metadata to the destination bucket
 	if succeed {
-
+		_,err := b.s3client.CreateObject(ctx, obj.Obj)
+		if err != nil {
+			log.Logf("Add object metadata of obj [objKey:%s] failed.\n", obj.Obj.ObjectKey)
+		}
 	}
 
 	//Delete source data if needed
 	//TODO: what if delete failed
 	if !remainSource {
-
+		b.deleteObj(ctx, obj, srcLoca)
 	}
-
 
 	if succeed {
 		//If migrate success, update capacity

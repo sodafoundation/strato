@@ -246,3 +246,35 @@ func CompleteMultipartUploadS3(objKey string, destLoca *LocationInfo, svc *s3.S3
 
 	return err
 }
+
+func DeleteObj(obj *SourceOject, loca *LocationInfo) error {
+	s3c := s3Cred{ak:loca.Access, sk:loca.Security}
+	creds := credentials.NewCredentials(&s3c)
+	sess, err := session.NewSession(&aws.Config{
+		Region:aws.String(loca.Region),
+		Endpoint:aws.String(loca.EndPoint),
+		Credentials:creds,
+	})
+	if err != nil {
+		log.Fatalf("New session failed, err:%v\n", err)
+		return err
+	}
+
+	svc := s3.New(sess)
+	_, err = svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(loca.BucketName), Key: aws.String(obj.Obj.ObjectKey)})
+	if err != nil {
+		log.Logf("Unable to delete object %q from bucket %q, %v", obj, loca.BucketName, err)
+	}
+
+	err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+		Bucket: aws.String(loca.BucketName),
+		Key:    aws.String(obj.Obj.ObjectKey),
+	})
+	if err != nil {
+		log.Logf("Error occurred while waiting for object %q to be deleted, %v", obj)
+	}
+
+	log.Logf("Object %q successfully deleted\n", obj)
+	return err
+}
+
