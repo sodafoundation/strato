@@ -12,7 +12,7 @@ import (
 func DownloadHwObsObj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size int64, err error){
 	input := &obs.GetObjectInput{}
 	input.Bucket = srcLoca.BucketName
-	input.Key = obj.ObjKey
+	input.Key = obj.Obj.ObjectKey
 	obsClient,err := obs.New(srcLoca.Access, srcLoca.Security, srcLoca.EndPoint)
 	if err != nil {
 		return 0,err
@@ -54,7 +54,7 @@ func DownloadHwObsObj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size
 func UploadHwObsObj(obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
 	input := &obs.PutObjectInput{}
 	input.Bucket = destLoca.BucketName
-	input.Key = obj.ObjKey
+	input.Key = obj.Obj.ObjectKey
 	obsClient,err := obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
 		return err

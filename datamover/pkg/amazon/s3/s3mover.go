@@ -55,7 +55,7 @@ func UploadS3Obj (obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
 	})*/
 	_,err = uploader.Upload(&s3manager.UploadInput{
 		Bucket:aws.String(destLoca.BucketName),
-		Key:aws.String(obj.ObjKey),
+		Key:aws.String(obj.Obj.ObjectKey),
 		Body:reader,
 	})
 	if err != nil {
@@ -95,7 +95,7 @@ func DownloadS3Obj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size in
 	})*/
 	numBytes, err := downLoader.Download(writer, &s3.GetObjectInput{
 		Bucket:aws.String(srcLoca.BucketName),
-		Key:aws.String(obj.ObjKey),
+		Key:aws.String(obj.Obj.ObjectKey),
 	})
 
 	if err != nil {
