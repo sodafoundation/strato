@@ -74,6 +74,7 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			log.Logf("Upload to aliyun failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to aliyun failed"}
 		}
+
 	}
 
 	return NoError
@@ -93,6 +94,8 @@ func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 		log.Logf("Delete object failed, err:%v\n", err)
 		return InternalError
 	}
+
+	log.Logf("Delete object %s from aws successfully.\n", newObjectKey)
 
 	return NoError
 }

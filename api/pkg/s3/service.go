@@ -69,7 +69,6 @@ func _getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdap
 		log.Logf("Get backend %s failed.", buekct.Backend)
 		return nil
 	}
-	log.Logf("Get backend %v", *backendRep.Backend)
 
 	backend := backendRep.Backend
 	client := datastore.Init(backend)

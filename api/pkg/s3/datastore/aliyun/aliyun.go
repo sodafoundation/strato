@@ -65,7 +65,12 @@ func (ad *AliyunAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Contex
 		return S3Error{Code: 500, Description: "Access bucket failed"}
 	}
 
-	bucket.DeleteObject(newObjectKey)
+	deleteErr := bucket.DeleteObject(newObjectKey)
+	if deleteErr != nil {
+		log.Logf("Delete object failed:%v", err)
+		return S3Error{Code: 500, Description: "Delete object failed"}
+	}
 
+	log.Logf("Delete object %s from aliyun successfully.\n", newObjectKey)
 	return NoError
 }

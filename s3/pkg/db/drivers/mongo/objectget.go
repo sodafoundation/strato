@@ -13,14 +13,14 @@ func (ad *adapter) GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error {
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.Bucket)
 
-	log.Log("Find objects from database...... \n")
+	log.Log("Find object from database...... \n")
 
-	err := c.Find(bson.M{"ObjectKey": in.Key}).One(&out)
+	err := c.Find(bson.M{"objectkey": in.Key}).One(&out)
 	if err == mgo.ErrNotFound {
 		log.Log("Object does not exist.")
 		return NoSuchObject
 	} else if err != nil {
-		log.Log("Find objects from database failed, err:%v\n", err)
+		log.Log("Find object from database failed, err:%v\n", err)
 		return InternalError
 	}
 

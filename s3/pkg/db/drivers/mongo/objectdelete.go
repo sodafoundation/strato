@@ -15,12 +15,12 @@ func (ad *adapter) DeleteObject(in *pb.DeleteObjectInput) S3Error {
 
 	//Delete it from database
 	c := ss.DB(DataBaseName).C(in.Bucket)
-	err := c.Remove(bson.M{"objectKey": in.Key})
+	_, err := c.RemoveAll(bson.M{"objectkey": in.Key})
 	if err == mgo.ErrNotFound {
-		log.Log("Delete bucket failed, err:the specified bucket does not exist.")
-		return NoSuchBucket
+		log.Logf("Delete object %s failed, err:the specified object does not exist.", in.Key)
+		return NoSuchObject
 	} else if err != nil {
-		log.Log("Delete bucket from database failed,err:%v.\n", err)
+		log.Log("Delete object %s from database failed,err:%v.\n", in.Key, err)
 		return InternalError
 	}
 	return NoError

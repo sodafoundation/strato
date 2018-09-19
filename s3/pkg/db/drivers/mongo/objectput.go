@@ -13,7 +13,7 @@ func (ad *adapter) CreateObject(in *pb.Object) S3Error {
 	defer ss.Close()
 	out := pb.Object{}
 	c := ss.DB(DataBaseName).C(in.BucketName)
-	err := c.Find(bson.M{"name": in.ObjectKey}).One(out)
+	err := c.Find(bson.M{"objectkey": in.ObjectKey}).One(out)
 	if err == mgo.ErrNotFound {
 		err := c.Insert(&in)
 		if err != nil {
@@ -31,7 +31,7 @@ func (ad *adapter) UpdateObject(in *pb.Object) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.BucketName)
-	err := c.Update(bson.M{"name": in.ObjectKey}, in)
+	err := c.Update(bson.M{"objectkey": in.ObjectKey}, in)
 	if err == mgo.ErrNotFound {
 		log.Log("Update object to database failed, err:%v\n", err)
 		return NoSuchObject
