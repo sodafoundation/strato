@@ -54,11 +54,16 @@ type Policy struct {
 	Tenant string 			`json:"tenant" bson:"tenant"`
 }
 
+const (
+	ScheduleTypeCron  = "cron"
+)
+
 type Schedule struct {
 	//Id bson.ObjectId		`json:"-" bson:"_id,omitempty"`
 	Type string 			`json:"type" bson:"type"`
-	Day []string			`json:"day" bson:"day"`
-	TimePoint string		`json:"time_point" bson:"time_point"`
+	Day []string			`json:"day,omitempty" bson:"day,omitempty"`
+	TimePoint string		`json:"time_point,omitempty" bson:"time_point,omitempty"`
+	TriggerProperties string `json:"trigger_properties" bson:"trigger_properties"`
 }
 
 type KeyValue struct {
@@ -96,8 +101,14 @@ type Plan struct {
 	Tenant string 			`json:"tenant" bson:"tenant"`
 }
 
+const (
+	TriggerTypeManual = "manual"
+	TriggerTypeAuto = "auto"
+)
+
 type Job struct{
 	Id bson.ObjectId 		`json:"-" bson:"_id"`  //make index on id, it cnanot be duplicate
+	TriggerType string 		`json:"trigger_type" bson:"trigger_type"`
 	Type string 			`json:"type" bson:"type"` //migration
 	PlanName string			`json:"plan_name" bson:"plan_name"`
 	PlanId string			`json:"plan_id" bson:"plan_id"`
