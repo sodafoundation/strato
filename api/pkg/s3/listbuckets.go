@@ -18,12 +18,15 @@ func parseListBuckets(list *s3.ListBucketsResponse) *string {
 		return nil
 	}
 	temp := ListAllMyBucketsResult{}
+
+	log.Logf("Parse ListBuckets: %v", list.Buckets)
 	//default xmlns
 	temp.Xmlns = Xmlns
 	buckets := []Bucket{}
 	for _, value := range list.Buckets {
 		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
-		buckets = append(buckets, Bucket{Name: value.Name, CreationDate: creationDate})
+		bucket := Bucket{Name: value.Name, CreationDate: creationDate}
+		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
 

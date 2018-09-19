@@ -7,19 +7,18 @@ import (
 	pb "github.com/opensds/go-panda/s3/proto"
 )
 
-func (ad *adapter) ListBuckets(in *pb.BaseRequest) ([]pb.Bucket, S3Error) {
+func (ad *adapter) ListBuckets(in *pb.BaseRequest, out *[]pb.Bucket) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
-	buckets := []pb.Bucket{}
 	c := ss.DB(DataBaseName).C(BucketMD)
 
 	log.Log("Find buckets from database...... \n")
 
-	err := c.Find(bson.M{"owner": in.Id}).All(&buckets)
+	err := c.Find(bson.M{"owner": in.Id}).All(out)
 	if err != nil {
 		log.Log("Find buckets from database failed, err:%v\n", err)
-		return buckets, InternalError
+		return InternalError
 	}
 
-	return buckets, NoError
+	return NoError
 }

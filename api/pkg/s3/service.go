@@ -4,7 +4,11 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/client"
 	//	"github.com/micro/go-micro/errors"
+	"context"
+	"github.com/micro/go-log"
+	"github.com/opensds/go-panda/api/pkg/s3/datastore"
 	"github.com/opensds/go-panda/backend/proto"
+	backendpb "github.com/opensds/go-panda/backend/proto"
 	"github.com/opensds/go-panda/s3/proto"
 	"io"
 	"io/ioutil"
@@ -52,4 +56,22 @@ func ReadBody(r *restful.Request) []byte {
 		return nil
 	}
 	return b
+}
+
+func _getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
+	ctx := context.Background()
+	buekct, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	if err != nil {
+		return nil
+	}
+	backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: buekct.Backend})
+	if backendErr != nil {
+		log.Logf("Get backend %s failed.", buekct.Backend)
+		return nil
+	}
+	log.Logf("Get backend %v", *backendRep.Backend)
+
+	backend := backendRep.Backend
+	client := datastore.Init(backend)
+	return client
 }
