@@ -15,7 +15,6 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"github.com/opensds/go-panda/dataflow/pkg/job"
 	"github.com/opensds/go-panda/datamover/proto"
-	"github.com/micro/go-micro/client"
 	"errors"
 )
 
@@ -23,12 +22,12 @@ type dataflowService struct{
 	datamoverClient datamover.DatamoverService
 }
 
-func NewDataFlowService() pb.DataFlowHandler {
+func NewDataFlowService(datamover datamover.DatamoverService) pb.DataFlowHandler {
 	host := os.Getenv("DB_HOST")
 	dbstor := Database{Credential:"unkonwn", Driver:"mongodb", Endpoint:host}
 	db.Init(&dbstor)
 
-	return &dataflowService{datamoverClient:datamover.NewDatamoverService("datamover", client.DefaultClient)}
+	return &dataflowService{datamoverClient: datamover}
 }
 
 func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest, out *pb.GetPolicyResponse) error {
@@ -58,7 +57,7 @@ func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest
 			for j := 0; j < len(pols[i].Schedule.Day); j++ {
 				sched.Days = append(sched.Days, pols[i].Schedule.Day[j])
 			}
-			p.Sched = &sched
+			p.Schedule = &sched
 			out.Pols = append(out.Pols, &p)
 		}
 	}
@@ -82,10 +81,11 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 	//pol.Tenant = in.Pol.GetTenant()
 	pol.Tenant = "tenant"
 	pol.Description = in.Pol.GetDescription()
-	if in.Pol.GetSched() != nil {
-		pol.Schedule.Day = in.Pol.Sched.Days
-		pol.Schedule.TimePoint = in.Pol.Sched.TimePoint
-		pol.Schedule.Type = in.Pol.Sched.Type
+	if in.Pol.GetSchedule() != nil {
+		pol.Schedule.Day = in.Pol.Schedule.Days
+		pol.Schedule.TimePoint = in.Pol.Schedule.TimePoint
+		pol.Schedule.Type = in.Pol.Schedule.Type
+		pol.Schedule.TriggerProperties = in.Pol.Schedule.TiggerProperties
 	}else {
 		out.Err = "Get schedule failed."
 		return errors.New("Get schedule failed.")
@@ -151,10 +151,10 @@ func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyR
 	//pol.Tenant = in.Pol.GetTenant()
 	pol.Tenant = "tenant"
 	pol.Description = in.Pol.GetDescription()
-	if in.Pol.GetSched() != nil {
-		pol.Schedule.Day = in.Pol.Sched.Days
-		pol.Schedule.TimePoint = in.Pol.Sched.TimePoint
-		pol.Schedule.Type = in.Pol.Sched.Type
+	if in.Pol.GetSchedule() != nil {
+		pol.Schedule.Day = in.Pol.Schedule.Days
+		pol.Schedule.TimePoint = in.Pol.Schedule.TimePoint
+		pol.Schedule.Type = in.Pol.Schedule.Type
 	}
 
 	//rsp := pb.CreatePolicyResponse{}
@@ -304,7 +304,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 
 	//rsp := pb.CreatePolicyResponse{}
 	log.Logf("plan:%+v\n", pl)
-	err := plan.Create(&pl)
+	err := plan.Create(&pl, b.datamoverClient)
 	if err == nil {
 		out.Err = ""
 		out.PlanId = string(pl.Id.Hex())
@@ -381,7 +381,7 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 
 	//TODO: Check validation of input parameter
 
-	err := plan.Update(&pl)
+	err := plan.Update(&pl, b.datamoverClient)
 	if err == nil {
 		out.Err = ""
 		out.PlanId = string(pl.Id.Hex())

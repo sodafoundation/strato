@@ -17,6 +17,7 @@ message Schedule {
     string type = 1;
     repeated string days = 2;
     string  time_point = 3;
+	string  tigger_properties = 4;
 }
 
 message Policy {
@@ -24,7 +25,7 @@ message Policy {
 	string name = 2;
 	string tenant = 3;
 	string description = 4;
-	Schedule sched = 5;
+	Schedule schedule = 5;
 }
 
 message GetPolicyRequest {
