@@ -12,6 +12,8 @@ var (
 	STOR_TYPE_AWS_S3 = "aws-obj"
 	STOR_TYPE_AZURE_BLOB = "azure-obj"
 	STOR_TYPE_HW_OBS = "hw-obj"
+	STOR_TYPE_HW_FUSIONSTORAGE = "hw-fusionstorage"
+	STOR_TYPE_HW_FUSIONCLOUD = "hw-fusioncloud"
 )
 
 var (

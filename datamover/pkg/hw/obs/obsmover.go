@@ -10,13 +10,14 @@ import (
 )
 
 func DownloadHwObsObj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size int64, err error){
-	input := &obs.GetObjectInput{}
-	input.Bucket = srcLoca.BucketName
-	input.Key = obj.Obj.ObjectKey
 	obsClient,err := obs.New(srcLoca.Access, srcLoca.Security, srcLoca.EndPoint)
 	if err != nil {
 		return 0,err
 	}
+
+	input := &obs.GetObjectInput{}
+	input.Bucket = srcLoca.BucketName
+	input.Key = obj.Obj.ObjectKey
 
 	output, err := obsClient.GetObject(input)
 	if err == nil {
@@ -52,19 +53,41 @@ func DownloadHwObsObj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size
 }
 
 func UploadHwObsObj(obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
-	input := &obs.PutObjectInput{}
-	input.Bucket = destLoca.BucketName
-	input.Key = obj.Obj.ObjectKey
 	obsClient,err := obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
 		return err
 	}
+
+	input := &obs.PutObjectInput{}
+	input.Bucket = destLoca.BucketName
+	input.Key = obj.Obj.ObjectKey
 	input.Body = bytes.NewReader(buf)
 	output, err := obsClient.PutObject(input)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	}else {
 		fmt.Printf("RequestId:%s, ETag:%s\n", output.RequestId, output.ETag)
+	}
+
+	return err
+}
+
+func DeleteObj(obj *SourceOject, loca *LocationInfo) error {
+	obsClient,err := obs.New(loca.Access, loca.Security, loca.EndPoint)
+	if err != nil {
+		log.Logf("New client failed when delete obj[objKey:%s] in storage backend[type:hws], err:%v\n", obj.Obj.ObjectKey, err)
+		return err
+	}
+
+	input := &obs.DeleteObjectInput{}
+	input.Bucket = loca.BucketName
+	input.Key = obj.Obj.ObjectKey
+
+	output, err := obsClient.DeleteObject(input)
+	if err == nil {
+		log.Logf("Delete object[objKey:%s] in storage backend succeed, RequestId:%s\n", obj.Obj.ObjectKey, output.RequestId)
+	}else {
+		log.Logf("Delete object[objKey:%s] in storage backend failed, err:%v\n", obj.Obj.ObjectKey, err)
 	}
 
 	return err
