@@ -62,5 +62,6 @@ func (ad *OBSAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 		return InternalError
 	}
 
+	log.Logf("Delete object %s from obs successfully.\n", newObjectKey)
 	return NoError
 }

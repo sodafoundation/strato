@@ -19,7 +19,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
-	log.Logf("Received request for bucket details: %s", bucketName)
+	log.Logf("Received request for create bucket: %s", bucketName)
 
 	object := s3.Object{}
 	object.ObjectKey = objectKey

@@ -19,12 +19,10 @@ func (b *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 	if err.Code != ERR_OK {
 		return err.Error()
 	}
-	log.Logf("ListBuckets:%v", buckets)
 	for j := 0; j < len(buckets); j++ {
 		out.Buckets = append(out.Buckets, &buckets[j])
 	}
 
-	log.Logf("ListBuckets:%v", out.Buckets)
 	return nil
 }
 
@@ -68,15 +66,12 @@ func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	objects := []pb.Object{}
 	err := db.DbAdapter.ListObjects(in, &objects)
 
-	log.Logf("ListObjects:%v", objects)
 	if err.Code != ERR_OK {
 		return err.Error()
 	}
 	for j := 0; j < len(objects); j++ {
 		out.ListObjects = append(out.ListObjects, &objects[j])
 	}
-	log.Logf("ListObjects:%v", out.ListObjects)
-
 	return nil
 }
 
@@ -108,7 +103,7 @@ func (b *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *p
 }
 
 func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.BaseResponse) error {
-	log.Log("PutObject is called in s3 service.")
+	log.Log("DeleteObject is called in s3 service.")
 	err := db.DbAdapter.DeleteObject(in)
 	if err.Code != ERR_OK {
 		return err.Error()
