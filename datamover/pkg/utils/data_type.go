@@ -1,5 +1,7 @@
 package utils
 
+import "github.com/opensds/go-panda/s3/proto"
+
 type LocationInfo struct {
 	StorType string //aws-s3,azure-blob,hw-obs,etc.
 	Region string
@@ -12,7 +14,5 @@ type LocationInfo struct {
 
 type SourceOject struct {
 	StorType string //aws-s3,azure-blob,hw-obs,etc.
-	ObjKey string
-	Backend string
-	Size int64
+	Obj *s3.Object
 }

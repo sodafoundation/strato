@@ -101,7 +101,7 @@ func (b *DatamoverService) getConnLocation(ctx context.Context, conn *pb.Connect
 }
 
 func moveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) error {
-	buf := make([]byte, obj.Size)
+	buf := make([]byte, obj.Obj.Size)
 
 	var size int64 = 0
 	var err error = nil
@@ -146,7 +146,7 @@ func downloadRange(obj *SourceOject, srcLoca *LocationInfo, buf []byte, start in
 	switch srcLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
-		return s3mover.DownloadRangeS3(obj.ObjKey, srcLoca, buf, start, end)
+		return s3mover.DownloadRangeS3(obj.Obj.ObjectKey, srcLoca, buf, start, end)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", srcLoca.StorType)
 	}
@@ -158,7 +158,7 @@ func multiPartUploadInit(obj *SourceOject, destLoca *LocationInfo) (svc *s3.S3, 
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
-		return s3mover.MultiPartUploadInitS3(obj.ObjKey, destLoca)
+		return s3mover.MultiPartUploadInitS3(obj.Obj.ObjectKey, destLoca)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
 	}
@@ -170,7 +170,7 @@ func uploadPartS3(obj *SourceOject, destLoca *LocationInfo, svc *s3.S3, uploadId
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
-		return s3mover.UploadPartS3(obj.ObjKey, destLoca, svc, uploadId, upBytes, buf, partNumber)
+		return s3mover.UploadPartS3(obj.Obj.ObjectKey, destLoca, svc, uploadId, upBytes, buf, partNumber)
 	default:
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
 	}
@@ -203,8 +203,8 @@ func completeMultipartUpload(objKey string, destLoca *LocationInfo, svc *s3.S3, 
 }
 
 func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) error {
-	partCount := int64(obj.Size / PART_SIZE)
-	if obj.Size%PART_SIZE != 0 {
+	partCount := int64(obj.Obj.Size / PART_SIZE)
+	if obj.Obj.Size%PART_SIZE != 0 {
 		partCount++
 	}
 
@@ -218,7 +218,7 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 		offset := int64(i) * PART_SIZE
 		currPartSize := PART_SIZE
 		if i+1 == partCount {
-			currPartSize = obj.Size - offset
+			currPartSize = obj.Obj.Size - offset
 			buf = nil
 			buf = make([]byte, currPartSize)
 		}
@@ -246,7 +246,7 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 
 		completePart, err1 := uploadPartS3(obj, destLoca, svc, uploadId, currPartSize, buf, partNumber)
 		if err1 != nil {
-			err := abortMultipartUpload(obj.ObjKey, destLoca, svc, uploadId)
+			err := abortMultipartUpload(obj.Obj.ObjectKey, destLoca, svc, uploadId)
 			if err != nil {
 				fmt.Printf("Abort s3 multipart upload failed, err:%v\n", err)
 			}
@@ -255,7 +255,7 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 		completeParts = append(completeParts, completePart)
 	}
 
-	err := completeMultipartUpload(obj.ObjKey, destLoca, svc, uploadId, completeParts)
+	err := completeMultipartUpload(obj.Obj.ObjectKey, destLoca, svc, uploadId, completeParts)
 	if err != nil {
 		fmt.Println(err.Error())
 	}else {
@@ -269,14 +269,14 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo, remainSource bool) {
 	succeed := true
-	if obj.Backend != srcLoca.BakendId {//for selfdefined connector, obj.backend and srcLoca.bakendId would be ""
+	if obj.Obj.Backend != srcLoca.BakendId {//for selfdefined connector, obj.backend and srcLoca.bakendId would be ""
 		//TODO: use read/wirte lock
-		srcLoca = locMap[obj.Backend]
+		srcLoca = locMap[obj.Obj.Backend]
 	}
 
 	//move object
 	var err error
-	if obj.Size < ObjSizeLimit {
+	if obj.Obj.Size < ObjSizeLimit {
 		err = moveObj(obj, srcLoca, destLoca)
 	}else {
 		err = multipartMoveObj(obj, srcLoca, destLoca)
@@ -301,7 +301,7 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 
 	if succeed {
 		//If migrate success, update capacity
-		capa <- obj.Size
+		capa <- obj.Obj.Size
 	}else {
 		capa <- 0
 	}
@@ -313,17 +313,20 @@ func (b *DatamoverService) getSourceObjs(ctx context.Context, conn *pb.Connector
 	defaultSrcLoca *LocationInfo) ([]*SourceOject, error){
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:{
-		obj := osdss3.Object{ObjectKey:filt.Prefix, BucketName:conn.BucketName}
-		objs,err := b.s3client.ListObjects(ctx, &obj)
+		//obj := osdss3.Object{ObjectKey:filt.Prefix, BucketName:conn.BucketName}
+		//TODO:need to support filter
+		req := osdss3.ListObjectsRequest{Bucket:conn.BucketName}
+		objs,err := b.s3client.ListObjects(ctx, &req)
 		totalObjs := len(objs.ListObjects)
 		if err != nil || totalObjs == 0{
 			log.Fatalf("List objects failed, err:%v\n", err)
 			return nil, err
 		}
 		srcObjs := []*SourceOject{}
+		storType := ""
 		for i := 0; i < totalObjs; i++ {
-			obj := SourceOject{ObjKey:objs.ListObjects[i].ObjectKey,
-				Backend:objs.ListObjects[i].Backend, Size:objs.ListObjects[i].Size}
+			//obj := SourceOject{ObjKey:objs.ListObjects[i].ObjectKey,
+				//Backend:objs.ListObjects[i].Backend, Size:objs.ListObjects[i].Size}
 			//refresh source location if needed
 			if objs.ListObjects[i].Backend != defaultSrcLoca.BakendId {
 				//User defined specific backend, which is different from the default backend
@@ -331,11 +334,14 @@ func (b *DatamoverService) getSourceObjs(ctx context.Context, conn *pb.Connector
 				if err != nil {
 					return nil,err
 				}
-				obj.StorType = loca.StorType
+				storType = loca.StorType
 			}else {
-				obj.StorType = defaultSrcLoca.StorType
+				storType = defaultSrcLoca.StorType
 			}
-			srcObjs = append(srcObjs, &obj)
+			srcObj := SourceOject{}
+			srcObj.StorType = storType
+			srcObj.Obj = objs.ListObjects[i]
+			srcObjs = append(srcObjs, &srcObj)
 		}
 		return srcObjs,nil
 	}
@@ -384,7 +390,7 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 	}
 	for i := 0; i < totalObjs; i++ {
 		j.TotalCount++
-		j.TotalCapacity += objs[i].Size
+		j.TotalCapacity += objs[i].Obj.Size
 	}
 	j.Status = flowtype.JOB_STATUS_RUNNING
 	db.DbAdapter.UpdateJob(&j)
