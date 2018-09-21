@@ -1,2 +1,2 @@
-# go-panda
-Multiple Cloud Data Controller 
+# multi-cloud
+Gelato: OpenSDS Multi-Cloud Data Control
