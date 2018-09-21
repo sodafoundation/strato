@@ -25,40 +25,40 @@ prebuild:
 	mkdir -p  $(BUILD_DIR)
 
 api: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/api github.com/opensds/go-panda/api/cmd
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/api github.com/opensds/multi-cloud/api/cmd
 
 backend: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/backend github.com/opensds/go-panda/backend/cmd
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/backend github.com/opensds/multi-cloud/backend/cmd
 
 s3: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/s3 github.com/opensds/go-panda/s3/cmd
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/s3 github.com/opensds/multi-cloud/s3/cmd
 
 dataflow: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/dataflow github.com/opensds/go-panda/dataflow/cmd
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/dataflow github.com/opensds/multi-cloud/dataflow/cmd
 
 datamover: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/go-panda/datamover/cmd
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/multi-cloud/datamover/cmd
 
 docker: build
 
 	cp $(BUILD_DIR)/api api
 	chmod 755 api/api
-	docker build api -t opensdsio/go-panda/api:latest
+	docker build api -t opensdsio/multi-cloud/api:latest
 
 	cp $(BUILD_DIR)/backend backend
 	chmod 755 backend/backend
-	docker build backend -t opensdsio/go-panda/backend:latest
+	docker build backend -t opensdsio/multi-cloud/backend:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
-	docker build s3 -t opensdsio/go-panda/s3:latest
+	docker build s3 -t opensdsio/multi-cloud/s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
 	chmod 755 dataflow/dataflow
-	docker build dataflow -t opensdsio/go-panda/dataflow:latest
+	docker build dataflow -t opensdsio/multi-cloud/dataflow:latest
 
 	cp $(BUILD_DIR)/datamover datamover
 	chmod 755 datamover/datamover
-	docker build datamover -t opensdsio/go-panda/datamover:latest
+	docker build datamover -t opensdsio/multi-cloud/datamover:latest
 clean:
 	rm -rf $(BUILD_DIR)

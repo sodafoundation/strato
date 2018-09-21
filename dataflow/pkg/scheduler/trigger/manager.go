@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"errors"
 
-	"github.com/opensds/go-panda/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/micro/go-log"
-	"github.com/opensds/go-panda/dataflow/pkg/type"
+	"github.com/opensds/multi-cloud/dataflow/pkg/type"
 )
 
 var mgr *Manager

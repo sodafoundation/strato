@@ -1,16 +1,31 @@
+// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package s3mover
 
 import (
+	"bytes"
+	"errors"
+	"strconv"
+
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/aws"
-	"bytes"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3"
-	. "github.com/opensds/go-panda/datamover/pkg/utils"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/micro/go-log"
-	"strconv"
-	"errors"
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
 type s3Cred struct {
@@ -18,18 +33,18 @@ type s3Cred struct {
 	sk string
 }
 
-func (myc *s3Cred) Retrieve() (credentials.Value,error){
-	cred := credentials.Value{AccessKeyID:myc.ak, SecretAccessKey:myc.sk}
-	return cred,nil
+func (myc *s3Cred) Retrieve() (credentials.Value, error) {
+	cred := credentials.Value{AccessKeyID: myc.ak, SecretAccessKey: myc.sk}
+	return cred, nil
 }
 
 func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
-func UploadS3Obj (obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
+func UploadS3Obj(obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
 	//s3c := s3Cred{ak:"4X7JQDFTCKUNWFBRYZVC", sk:"9hr0ekZgg6vZHulEekTVfWuu1lnPFvpVAJQNHXdn"}
-	s3c := s3Cred{ak:destLoca.Access, sk:destLoca.Security}
+	s3c := s3Cred{ak: destLoca.Access, sk: destLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	/*sess, err := session.NewSession(&aws.Config{
 		Region:aws.String("cn-north-1"),
@@ -37,9 +52,9 @@ func UploadS3Obj (obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
 		Credentials:creds,
 	})*/
 	sess, err := session.NewSession(&aws.Config{
-		Region:aws.String(destLoca.Region),
-		Endpoint:aws.String(destLoca.EndPoint),
-		Credentials:creds,
+		Region:      aws.String(destLoca.Region),
+		Endpoint:    aws.String(destLoca.EndPoint),
+		Credentials: creds,
 	})
 	if err != nil {
 		log.Fatalf("New session failed, err:%v\n", err)
@@ -53,10 +68,10 @@ func UploadS3Obj (obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
 		Key:aws.String("mykey"),
 		Body:reader,
 	})*/
-	_,err = uploader.Upload(&s3manager.UploadInput{
-		Bucket:aws.String(destLoca.BucketName),
-		Key:aws.String(obj.Obj.ObjectKey),
-		Body:reader,
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(destLoca.BucketName),
+		Key:    aws.String(obj.Obj.ObjectKey),
+		Body:   reader,
 	})
 	if err != nil {
 		log.Fatalf("upload failed, err:%v\n", err)
@@ -70,7 +85,7 @@ func UploadS3Obj (obj *SourceOject, destLoca *LocationInfo, buf []byte) error {
 func DownloadS3Obj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
 
 	//s3c := s3Cred{ak:"4X7JQDFTCKUNWFBRYZVC", sk:"9hr0ekZgg6vZHulEekTVfWuu1lnPFvpVAJQNHXdn"}
-	s3c := s3Cred{ak:srcLoca.Access, sk:srcLoca.Security}
+	s3c := s3Cred{ak: srcLoca.Access, sk: srcLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	/*sess, err := session.NewSession(&aws.Config{
 		Region:aws.String("cn-north-1"),
@@ -78,9 +93,9 @@ func DownloadS3Obj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size in
 		Credentials:creds,
 	})*/
 	sess, err := session.NewSession(&aws.Config{
-		Region:aws.String(srcLoca.Region),
-		Endpoint:aws.String(srcLoca.EndPoint),
-		Credentials:creds,
+		Region:      aws.String(srcLoca.Region),
+		Endpoint:    aws.String(srcLoca.EndPoint),
+		Credentials: creds,
 	})
 	if err != nil {
 		log.Fatalf("New session failed, err:%v\n", err)
@@ -94,22 +109,22 @@ func DownloadS3Obj(obj *SourceOject, srcLoca *LocationInfo, buf []byte) (size in
 		Key:aws.String("objectkey"),
 	})*/
 	numBytes, err := downLoader.Download(writer, &s3.GetObjectInput{
-		Bucket:aws.String(srcLoca.BucketName),
-		Key:aws.String(obj.Obj.ObjectKey),
+		Bucket: aws.String(srcLoca.BucketName),
+		Key:    aws.String(obj.Obj.ObjectKey),
 	})
 
 	if err != nil {
 		log.Fatalf("download faild, err:%v\n", err)
-	}else {
+	} else {
 		log.Log("downlad succeed, bytes:%d\n", numBytes)
 	}
 
 	return numBytes, err
 }
 
-func DownloadRangeS3(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error){
+func DownloadRangeS3(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
 	//s3c := s3Cred{ak:"4X7JQDFTCKUNWFBRYZVC", sk:"9hr0ekZgg6vZHulEekTVfWuu1lnPFvpVAJQNHXdn"}
-	s3c := s3Cred{ak:srcLoca.Access, sk:srcLoca.Security}
+	s3c := s3Cred{ak: srcLoca.Access, sk: srcLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	/*sess, err := session.NewSession(&aws.Config{
 		Region:aws.String("cn-north-1"),
@@ -117,9 +132,9 @@ func DownloadRangeS3(objKey string, srcLoca *LocationInfo, buf []byte, start int
 		Credentials:creds,
 	})*/
 	sess, err := session.NewSession(&aws.Config{
-		Region:aws.String(srcLoca.Region),
-		Endpoint:aws.String(srcLoca.EndPoint),
-		Credentials:creds,
+		Region:      aws.String(srcLoca.Region),
+		Endpoint:    aws.String(srcLoca.EndPoint),
+		Credentials: creds,
 	})
 	if err != nil {
 		log.Fatalf("New session failed, err:%v\n", err)
@@ -133,8 +148,8 @@ func DownloadRangeS3(objKey string, srcLoca *LocationInfo, buf []byte, start int
 		Key:aws.String("zsf-test"),
 	}*/
 	getObjInput := s3.GetObjectInput{
-		Bucket:aws.String(srcLoca.BucketName),
-		Key:aws.String(objKey),
+		Bucket: aws.String(srcLoca.BucketName),
+		Key:    aws.String(objKey),
 	}
 	strStart := strconv.FormatInt(start, 10)
 	strEnd := strconv.FormatInt(end, 10)
@@ -145,55 +160,55 @@ func DownloadRangeS3(objKey string, srcLoca *LocationInfo, buf []byte, start int
 
 	if err != nil {
 		log.Fatalf("download faild, err:%v\n", err)
-	}else {
+	} else {
 		log.Logf("downlad succeed, bytes:%d\n", numBytes)
 	}
 
-	return numBytes,err
+	return numBytes, err
 }
 
 func MultiPartUploadInitS3(objKey string, destLoca *LocationInfo) (svc *s3.S3, uploadId string, err error) {
-	s3c := s3Cred{ak:destLoca.Access, sk:destLoca.Security}
+	s3c := s3Cred{ak: destLoca.Access, sk: destLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	//cfg := aws.NewConfig().WithRegion("cn-north-1").WithCredentials(creds).WithEndpoint("obs.cn-north-1.myhwclouds.com")
 	sess, err := session.NewSession(&aws.Config{
-		Region:aws.String(destLoca.Region),
-		Endpoint:aws.String(destLoca.EndPoint),
-		Credentials:creds,
+		Region:      aws.String(destLoca.Region),
+		Endpoint:    aws.String(destLoca.EndPoint),
+		Credentials: creds,
 	})
 	if err != nil {
 		log.Logf("New session failed, err:%v\n", err)
-		return nil,"",err
+		return nil, "", err
 	}
 
 	svc = s3.New(sess)
 	multiUpInput := &s3.CreateMultipartUploadInput{
-		Bucket:aws.String(destLoca.BucketName),
-		Key:aws.String(objKey),
+		Bucket: aws.String(destLoca.BucketName),
+		Key:    aws.String(objKey),
 	}
 	resp, err := svc.CreateMultipartUpload(multiUpInput)
 	if err != nil {
 		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
-		return nil,"", errors.New("Init s3 multipart upload failed.")
-	}else {
+		return nil, "", errors.New("Init s3 multipart upload failed.")
+	} else {
 		log.Logf("Init s3 multipart upload succeed, UploadId:%s\n", resp.UploadId)
 	}
 
 	return svc, *resp.UploadId, nil
 }
 
-func UploadPartS3(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId string, upBytes int64, buf []byte, partNumber int64)(*s3.CompletedPart, error) {
+func UploadPartS3(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId string, upBytes int64, buf []byte, partNumber int64) (*s3.CompletedPart, error) {
 	tries := 1
 	upPartInput := &s3.UploadPartInput{
-		Body:bytes.NewReader(buf),
-		Bucket:aws.String(destLoca.BucketName),
-		Key:aws.String(objKey),
-		PartNumber:aws.Int64(partNumber),
-		UploadId:aws.String(uploadId),
-		ContentLength:aws.Int64(upBytes),
+		Body:          bytes.NewReader(buf),
+		Bucket:        aws.String(destLoca.BucketName),
+		Key:           aws.String(objKey),
+		PartNumber:    aws.Int64(partNumber),
+		UploadId:      aws.String(uploadId),
+		ContentLength: aws.Int64(upBytes),
 	}
 
-	log.Logf("len(buf)=%d, upBytes=%d,uploadId=%s,partNumber=%d\n", len(buf), upBytes, uploadId,partNumber)
+	log.Logf("len(buf)=%d, upBytes=%d,uploadId=%s,partNumber=%d\n", len(buf), upBytes, uploadId, partNumber)
 
 	for tries <= 3 {
 		upRes, err := svc.UploadPart(upPartInput)
@@ -203,12 +218,12 @@ func UploadPartS3(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId st
 				return nil, err
 			}
 			log.Logf("Retrying to upload part#%d\n", partNumber)
-		}else {
+		} else {
 			log.Logf("Uploaded part #%d\n", partNumber)
 			return &s3.CompletedPart{
-				ETag:upRes.ETag,
-				PartNumber:aws.Int64(partNumber),
-			},nil
+				ETag:       upRes.ETag,
+				PartNumber: aws.Int64(partNumber),
+			}, nil
 		}
 	}
 
@@ -218,29 +233,29 @@ func UploadPartS3(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId st
 func AbortMultipartUpload(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId string) error {
 	log.Logf("Aborting multipart upload for uploadId#%s.\n", uploadId)
 	abortInput := &s3.AbortMultipartUploadInput{
-		Bucket: aws.String(destLoca.BucketName),
-		Key:aws.String(objKey),
-		UploadId:aws.String(uploadId),
+		Bucket:   aws.String(destLoca.BucketName),
+		Key:      aws.String(objKey),
+		UploadId: aws.String(uploadId),
 	}
 
-	_,err := svc.AbortMultipartUpload(abortInput)
+	_, err := svc.AbortMultipartUpload(abortInput)
 	return err
 }
 
 func CompleteMultipartUploadS3(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId string, completeParts []*s3.CompletedPart) error {
 	completeInput := &s3.CompleteMultipartUploadInput{
-		Bucket:aws.String(destLoca.BucketName),
-		Key:aws.String(objKey),
-		UploadId:aws.String(uploadId),
-		MultipartUpload:&s3.CompletedMultipartUpload{
-			Parts:completeParts,
+		Bucket:   aws.String(destLoca.BucketName),
+		Key:      aws.String(objKey),
+		UploadId: aws.String(uploadId),
+		MultipartUpload: &s3.CompletedMultipartUpload{
+			Parts: completeParts,
 		},
 	}
 
 	rsp, err := svc.CompleteMultipartUpload(completeInput)
 	if err != nil {
 		log.Logf("completeMultipartUploadS3 failed, err:%v\n", err)
-	}else {
+	} else {
 		log.Logf("completeMultipartUploadS3 successfully, rsp:%v\n", rsp)
 	}
 
@@ -248,12 +263,12 @@ func CompleteMultipartUploadS3(objKey string, destLoca *LocationInfo, svc *s3.S3
 }
 
 func DeleteObj(obj *SourceOject, loca *LocationInfo) error {
-	s3c := s3Cred{ak:loca.Access, sk:loca.Security}
+	s3c := s3Cred{ak: loca.Access, sk: loca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
-		Region:aws.String(loca.Region),
-		Endpoint:aws.String(loca.EndPoint),
-		Credentials:creds,
+		Region:      aws.String(loca.Region),
+		Endpoint:    aws.String(loca.EndPoint),
+		Credentials: creds,
 	})
 	if err != nil {
 		log.Fatalf("New session failed, err:%v\n", err)
@@ -277,4 +292,3 @@ func DeleteObj(obj *SourceOject, loca *LocationInfo) error {
 	log.Logf("Object %q successfully deleted\n", obj)
 	return err
 }
-

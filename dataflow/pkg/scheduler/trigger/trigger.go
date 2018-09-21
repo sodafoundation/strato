@@ -25,7 +25,7 @@ type Executer interface {
 type Trigger interface {
 	Add(planId, properties string, executer Executer) error
 	Remove(planId string) error
-    Update(planId, properties string, executer Executer) error
+	Update(planId, properties string, executer Executer) error
 }
 
 const (

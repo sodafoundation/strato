@@ -14,26 +14,26 @@
 
 package crontrigger
 
-import(
-	"github.com/opensds/go-panda/dataflow/pkg/scheduler/trigger"
-	"github.com/robfig/cron"
-	"github.com/micro/go-log"
+import (
 	"fmt"
+
+	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
+	"github.com/robfig/cron"
 )
 
-
 type CronTrigger struct {
-	plans map[string] *cron.Cron
+	plans map[string]*cron.Cron
 }
 
-func init()  {
+func init() {
 	ct := &CronTrigger{
-		plans:make(map[string] *cron.Cron),
+		plans: make(map[string]*cron.Cron),
 	}
 	trigger.RegisterTrigger(trigger.TriggerTypeCron, ct)
 }
 
-func (c* CronTrigger) Add(planId, properties string, executer trigger.Executer) error {
+func (c *CronTrigger) Add(planId, properties string, executer trigger.Executer) error {
 	cn := cron.New()
 	c.plans[planId] = cn
 	if err := cn.AddFunc(properties, executer.Run); err != nil {
@@ -44,7 +44,7 @@ func (c* CronTrigger) Add(planId, properties string, executer trigger.Executer) 
 	return nil
 }
 
-func (c* CronTrigger) Update(planId, properties string, executer trigger.Executer) error {
+func (c *CronTrigger) Update(planId, properties string, executer trigger.Executer) error {
 	c.Remove(planId)
 	if err := c.Add(planId, properties, executer); err != nil {
 		return err
@@ -52,8 +52,8 @@ func (c* CronTrigger) Update(planId, properties string, executer trigger.Execute
 	return nil
 }
 
-func (c* CronTrigger)  Remove(planId string) error {
-	cn,ok := c.plans[planId]
+func (c *CronTrigger) Remove(planId string) error {
+	cn, ok := c.plans[planId]
 	if !ok {
 		log.Logf("Specified plan(%s) is not found", planId)
 		return nil

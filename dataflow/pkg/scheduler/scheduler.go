@@ -15,11 +15,11 @@
 package scheduler
 
 import (
-	"github.com/opensds/go-panda/datamover/proto"
-	"github.com/opensds/go-panda/dataflow/pkg/plan"
+	"github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/micro/go-log"
-	"github.com/opensds/go-panda/dataflow/pkg/db"
-	"github.com/opensds/go-panda/dataflow/pkg/scheduler/trigger"
+	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 )
 
 

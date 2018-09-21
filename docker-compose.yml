@@ -3,7 +3,7 @@ version: '3'
 services:
 
   api:
-    image: opensdsio/go-panda/api
+    image: opensdsio/multi-cloud/api
     ports:
       - 8088:8089
     environment:
@@ -11,25 +11,25 @@ services:
       MICRO_REGISTRY: "mdns"
 
   backend:
-    image: opensdsio/go-panda/backend
+    image: opensdsio/multi-cloud/backend
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
 
   s3:
-    image: opensdsio/go-panda/s3
+    image: opensdsio/multi-cloud/s3
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
 
   dataflow:
-    image: opensdsio/go-panda/dataflow
+    image: opensdsio/multi-cloud/dataflow
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
 
   datamover:
-    image: opensdsio/go-panda/datamover
+    image: opensdsio/multi-cloud/datamover
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
