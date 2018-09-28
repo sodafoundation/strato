@@ -67,6 +67,28 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 	return NoError
 }
 
+func (ad *OBSAdapter) GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error) {
+
+	bucket := ad.backend.BucketName
+	if context.Value("operation") == "download" {
+		input := &obs.GetObjectInput{}
+		input.Bucket = bucket
+		input.Key = object.BucketName + "/" + object.ObjectKey
+
+		out, err := ad.client.GetObject(input)
+
+		if err != nil {
+			log.Logf("download hws obs failed:%v", err)
+			return nil, S3Error{Code: 500, Description: "download hws obs failed"}
+		} else {
+			log.Logf("download obs successfully.%v", out.VersionId)
+			return out.Body, NoError
+		}
+	}
+
+	return nil, NoError
+}
+
 func (ad *OBSAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
 
 	newObjectKey := object.Bucket + "/" + object.Key

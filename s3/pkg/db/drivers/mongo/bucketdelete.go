@@ -33,13 +33,13 @@ func (ad *adapter) DeleteBucket(bucketName string) S3Error {
 		log.Log("Delete bucket failed, err:the specified bucket does not exist.")
 		return NoSuchBucket
 	} else if err != nil {
-		log.Log("Delete bucket from database failed,err:%v.\n", err)
+		log.Logf("Delete bucket from database failed,err:%v.\n", err)
 		return InternalError
 	}
 	cc := ss.DB(DataBaseName).C(bucketName)
 	deleteErr := cc.DropCollection()
 	if deleteErr != nil && deleteErr != mgo.ErrNotFound {
-		log.Log("Delete bucket collection from database failed,err:%v.\n", deleteErr)
+		log.Logf("Delete bucket collection from database failed,err:%v.\n", deleteErr)
 		return InternalError
 	}
 
