@@ -67,7 +67,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
-		log.Log("Upload object successfully.")
+		log.Log("download object successfully.")
 		response.WriteEntity(res)
 	}
 
