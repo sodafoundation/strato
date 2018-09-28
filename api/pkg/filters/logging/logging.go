@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backend
+package logging
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-log"
 )
 
-func RegisterRouter(ws *restful.WebService) {
-	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenantId}/backends/{id}").To(handler.GetBackend)).
-		Doc("Show backend details")
-	ws.Route(ws.GET("/{tenantId}/backends").To(handler.ListBackend)).
-		Doc("Get backend list")
-	ws.Route(ws.POST("/{tenantId}/backends").To(handler.CreateBackend)).
-		Doc("Create backend")
-	ws.Route(ws.PUT("/{tenantId}/backends/{id}").To(handler.UpdateBackend)).
-		Doc("Update backend")
-	ws.Route(ws.DELETE("/{tenantId}/backends/{id}").To(handler.DeleteBackend)).
-		Doc("Delete backend")
+func FilterFactory() restful.FilterFunction {
+	return func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+		log.Logf("\033[32m[D] %s -- %s %s\033[0m\n", req.Request.RemoteAddr, req.Request.Method,
+			req.Request.URL)
+		chain.ProcessFilter(req, resp)
+	}
 }

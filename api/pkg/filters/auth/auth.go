@@ -12,23 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backend
+package auth
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-log"
+	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 )
 
-func RegisterRouter(ws *restful.WebService) {
-	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenantId}/backends/{id}").To(handler.GetBackend)).
-		Doc("Show backend details")
-	ws.Route(ws.GET("/{tenantId}/backends").To(handler.ListBackend)).
-		Doc("Get backend list")
-	ws.Route(ws.POST("/{tenantId}/backends").To(handler.CreateBackend)).
-		Doc("Create backend")
-	ws.Route(ws.PUT("/{tenantId}/backends/{id}").To(handler.UpdateBackend)).
-		Doc("Update backend")
-	ws.Route(ws.DELETE("/{tenantId}/backends/{id}").To(handler.DeleteBackend)).
-		Doc("Delete backend")
+func noAuthFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+	ctx := req.Attribute(c.KContext).(*c.Context)
+	params := req.PathParameters()
+	if tenantId, ok := params["tenantId"]; ok {
+		ctx.TenantId = tenantId
+	}
+
+	log.Log("auth filter", ctx.TenantId)
+	ctx.IsAdmin = ctx.TenantId == c.NoAuthAdminTenantId
+	chain.ProcessFilter(req, resp)
+}
+
+func FilterFactory() restful.FilterFunction {
+	return noAuthFilter
 }

@@ -15,18 +15,18 @@
 package dataflow
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
-	//	"github.com/micro/go-micro/errors"
-	"encoding/json"
-
+	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"io/ioutil"
 )
 
 const (
@@ -49,18 +49,43 @@ func NewAPIService(c client.Client) *APIService {
 	}
 }
 
-func (s *APIService) GetPolicy(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	log.Logf("Received request for policy[name=%s] details.", name)
+func (s *APIService) ListPolicy(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+
 	ctx := context.Background()
-	res, err := s.dataflowClient.GetPolicy(ctx, &dataflow.GetPolicyRequest{Name: name})
+	res, err := s.dataflowClient.ListPolicy(ctx, &dataflow.ListPolicyRequest{Context: actx.ToJson()})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	//For debug -- begin
-	log.Logf("Get policy reponse:%v",res)
+	log.Logf("Get policy reponse:%v", res)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("List policy details successfully.")
+	response.WriteEntity(res)
+}
+
+func (s *APIService) GetPolicy(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	id := request.PathParameter("id")
+	log.Logf("Received request for policy[id=%s] details.", id)
+	ctx := context.Background()
+	res, err := s.dataflowClient.GetPolicy(ctx, &dataflow.GetPolicyRequest{Context: actx.ToJson(), Id: id})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	//For debug -- begin
+	log.Logf("Get policy reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -74,7 +99,7 @@ func (s *APIService) GetPolicy(request *restful.Request, response *restful.Respo
 }
 
 func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Response) {
-	//name := request.PathParameter("name")
+	actx := request.Attribute(c.KContext).(*c.Context)
 	log.Logf("Received request for create policy.\n")
 	ctx := context.Background()
 	pol := dataflow.Policy{}
@@ -94,11 +119,7 @@ func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Re
 	}
 	//For debug --end
 
-	//name,_ := request.BodyParameter("name")
-	//tenant,_ := request.BodyParameter("tenant")
-	//desc,_ := request.BodyParameter("description")
-
-	res, err := s.dataflowClient.CreatePolicy(ctx, &dataflow.CreatePolicyRequest{Pol: &pol})
+	res, err := s.dataflowClient.CreatePolicy(ctx, &dataflow.CreatePolicyRequest{Context: actx.ToJson(), Policy: &pol})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
@@ -109,49 +130,43 @@ func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) UpdatePolicy(request *restful.Request, response *restful.Response) {
-	log.Logf("Received request for update policy.\n")
-	ctx := context.Background()
-	pol := dataflow.Policy{}
-	err := request.ReadEntity(&pol)
+	actx := request.Attribute(c.KContext).(*c.Context)
+	policyId := request.PathParameter("id")
+	body, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		log.Logf("Read request body failed, err:%v.\n", err)
 		return
 	}
+	log.Logf("Received request for update policy.body:%s\n", body)
 
-	//For debug --begin
-	jsons, errs := json.Marshal(pol)
-	if errs != nil {
-		log.Logf(errs.Error())
-	}else {
-		log.Logf("Req body: %s.\n", jsons)
-	}
-	//For debug --end
-
-	res, err := s.dataflowClient.UpdatePolicy(ctx, &dataflow.UpdatePolicyRequest{Pol:&pol})
+	ctx := context.Background()
+	req := &dataflow.UpdatePolicyRequest{Context: actx.ToJson(), PolicyId: policyId, Body: string(body)}
+	res, err := s.dataflowClient.UpdatePolicy(ctx, req)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Log("Update policy successfully.")
 	response.WriteEntity(res)
 
 	//For debug --begin
 	jsons1, errs1 := json.Marshal(res)
 	if errs1 != nil {
 		log.Logf(errs1.Error())
-	}else {
+	} else {
 		log.Logf("Rsp body: %s.\n", jsons1)
 	}
 	//For debug --end
+	log.Log("Update policy successfully.")
 }
 
 func (s *APIService) DeletePolicy(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for delete policy[id=%s] details.", id)
 	ctx := context.Background()
-	res, err := s.dataflowClient.DeletePolicy(ctx, &dataflow.DeletePolicyRequest{Id: id})
+	res, err := s.dataflowClient.DeletePolicy(ctx, &dataflow.DeletePolicyRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
@@ -161,22 +176,48 @@ func (s *APIService) DeletePolicy(request *restful.Request, response *restful.Re
 	response.WriteEntity(res)
 }
 
-func (s *APIService) GetPlan(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	log.Logf("Received request for plan[name=%s] details.", name)
+func (s *APIService) ListPlan(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	id := request.PathParameter("id")
+	log.Logf("Received request for plan[id=%s] details.", id)
 	ctx := context.Background()
-	res, err := s.dataflowClient.GetPlan(ctx, &dataflow.GetPlanRequest{Name: name})
+	res, err := s.dataflowClient.ListPlan(ctx, &dataflow.ListPlanRequest{Context: actx.ToJson()})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	//For debug -- begin
-	log.Logf("Get plan reponse:%v",res)
+	log.Logf("Get plan reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
-	}else {
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("Get plan details successfully.")
+	response.WriteEntity(res)
+}
+
+func (s *APIService) GetPlan(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	id := request.PathParameter("id")
+	log.Logf("Received request for plan[id=%s] details.", id)
+	ctx := context.Background()
+	res, err := s.dataflowClient.GetPlan(ctx, &dataflow.GetPlanRequest{Context: actx.ToJson(), Id: id})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	//For debug -- begin
+	log.Logf("Get plan reponse:%v", res)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
 		log.Logf("res: %s.\n", jsons)
 	}
 	//For debug -- end
@@ -187,6 +228,7 @@ func (s *APIService) GetPlan(request *restful.Request, response *restful.Respons
 
 func (s *APIService) CreatePlan(request *restful.Request, response *restful.Response) {
 	//name := request.PathParameter("name")
+	actx := request.Attribute(c.KContext).(*c.Context)
 	log.Logf("Received request for create plan.\n")
 	ctx := context.Background()
 	plan := dataflow.Plan{}
@@ -201,65 +243,61 @@ func (s *APIService) CreatePlan(request *restful.Request, response *restful.Resp
 	jsons, errs := json.Marshal(plan)
 	if errs != nil {
 		log.Logf(errs.Error())
-	}else {
+	} else {
 		log.Logf("Req body: %s.\n", jsons)
 	}
 	//For debug --end
 
-	res, err := s.dataflowClient.CreatePlan(ctx, &dataflow.CreatePlanRequest{Plan:&plan})
+	resp, err := s.dataflowClient.CreatePlan(ctx, &dataflow.CreatePlanRequest{Context: actx.ToJson(), Plan: &plan})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Log("Create plan successfully.")
-	response.WriteEntity(res)
+	response.WriteEntity(resp)
 }
 
 func (s *APIService) UpdatePlan(request *restful.Request, response *restful.Response) {
-	log.Logf("Received request for update plan.\n")
-	ctx := context.Background()
-	plan := dataflow.Plan{}
-	err := request.ReadEntity(&plan)
+	actx := request.Attribute(c.KContext).(*c.Context)
+
+	planId := request.PathParameter("id")
+	log.Logf("Received request for update plan(%d).\n", planId)
+	body, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		log.Logf("Read request body failed, err:%v.\n", err)
 		return
 	}
+	log.Logf("Req body: %s.\n", string(body))
 
-	//For debug --begin
-	jsons, errs := json.Marshal(plan)
-	if errs != nil {
-		log.Logf(errs.Error())
-	}else {
-		log.Logf("Req body: %s.\n", jsons)
-	}
-	//For debug --end
-
-	res, err := s.dataflowClient.UpdatePlan(ctx, &dataflow.UpdatePlanRequest{Plan:&plan})
+	ctx := context.Background()
+	req := &dataflow.UpdatePlanRequest{Context: actx.ToJson(), PlanId: planId, Body: string(body)}
+	resp, err := s.dataflowClient.UpdatePlan(ctx, req)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Log("Update plan successfully.")
-	response.WriteEntity(res)
+	response.WriteEntity(resp)
 
 	//For debug --begin
-	jsons1, errs1 := json.Marshal(res)
+	jsons1, errs1 := json.Marshal(resp)
 	if errs1 != nil {
 		log.Logf(errs1.Error())
-	}else {
+	} else {
 		log.Logf("Rsp body: %s.\n", jsons1)
 	}
 	//For debug --end
 }
 
 func (s *APIService) DeletePlan(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for delete plan[id=%s] details.", id)
 	ctx := context.Background()
-	res, err := s.dataflowClient.DeletePlan(ctx, &dataflow.DeletePlanRequest{Id: id})
+	res, err := s.dataflowClient.DeletePlan(ctx, &dataflow.DeletePlanRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
@@ -269,14 +307,63 @@ func (s *APIService) DeletePlan(request *restful.Request, response *restful.Resp
 }
 
 func (s *APIService) RunPlan(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for run plan[id=%s] details.", id)
 	ctx := context.Background()
-	res, err := s.dataflowClient.RunPlan(ctx, &dataflow.RunPlanRequest{Id: id})
+	res, err := s.dataflowClient.RunPlan(ctx, &dataflow.RunPlanRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
+	response.WriteEntity(res)
+}
+
+func (s *APIService) GetJob(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	id := request.PathParameter("id")
+	log.Logf("Received request jobs [id=%s] details.", id)
+	ctx := context.Background()
+	res, err := s.dataflowClient.GetJob(ctx, &dataflow.GetJobRequest{Context: actx.ToJson(), Id: id})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	//For debug -- begin
+	log.Logf("Get jobs reponse:%v", res)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("Get job details successfully.")
+	response.WriteEntity(res)
+}
+
+func (s *APIService) ListJob(request *restful.Request, response *restful.Response) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := context.Background()
+	res, err := s.dataflowClient.ListJob(ctx, &dataflow.ListJobRequest{Context: actx.ToJson()})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	//For debug -- begin
+	log.Logf("Get jobs reponse:%v", res)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("Get plan details successfully.")
 	response.WriteEntity(res)
 }

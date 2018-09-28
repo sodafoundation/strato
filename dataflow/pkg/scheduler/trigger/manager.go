@@ -15,18 +15,18 @@
 package trigger
 
 import (
-	"sync"
-	"fmt"
 	"errors"
+	"fmt"
+	"sync"
 
-	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/dataflow/pkg/type"
+	"github.com/opensds/multi-cloud/api/pkg/filters/context"
+	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
 
 var mgr *Manager
 var once sync.Once
-
 
 func GetTriggerMgr() *Manager {
 	once.Do(func() {
@@ -35,15 +35,15 @@ func GetTriggerMgr() *Manager {
 	return mgr
 }
 
-type Manager struct {}
+type Manager struct{}
 
-func (m *Manager) Add(plan *_type.Plan, executer Executer) error  {
+func (m *Manager) Add(ctx *context.Context, plan *model.Plan, executer Executer) error {
 
 	if plan.PolicyId == "" {
 		return fmt.Errorf("specifed plan(%s) does not have policy", plan.Id.Hex())
 	}
-	policy, err := db.DbAdapter.GetPolicyById(plan.PolicyId, plan.Tenant)
-	if err !=  nil {
+	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
+	if err != nil {
 		log.Logf("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
@@ -58,12 +58,12 @@ func (m *Manager) Add(plan *_type.Plan, executer Executer) error  {
 	return tg.Add(plan.Id.Hex(), policy.Schedule.TriggerProperties, executer)
 }
 
-func (m *Manager) Update(plan *_type.Plan, executer Executer) error {
+func (m *Manager) Update(ctx *context.Context, plan *model.Plan, executer Executer) error {
 	if plan.PolicyId == "" {
 		return fmt.Errorf("specifed plan(%s) does not have policy", plan.Id.Hex())
 	}
-	policy, err := db.DbAdapter.GetPolicyById(plan.PolicyId, plan.Tenant)
-	if err !=  nil {
+	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
+	if err != nil {
 		log.Logf("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
@@ -77,13 +77,12 @@ func (m *Manager) Update(plan *_type.Plan, executer Executer) error {
 	return tg.Update(plan.Id.Hex(), policy.Schedule.TriggerProperties, executer)
 }
 
-
-func (m *Manager) Remove(plan *_type.Plan) error  {
+func (m *Manager) Remove(ctx *context.Context, plan *model.Plan) error {
 	if plan.PolicyId == "" {
 		return fmt.Errorf("specifed plan(%s) does not have policy", plan.Id.Hex())
 	}
-	policy, err := db.DbAdapter.GetPolicyById(plan.PolicyId, plan.Tenant)
-	if err !=  nil {
+	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
+	if err != nil {
 		log.Logf("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}

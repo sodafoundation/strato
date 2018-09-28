@@ -17,48 +17,49 @@ package pkg
 import (
 	"context"
 
-	"github.com/micro/go-log"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/micro/go-micro/client"
-	"os"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/type"
-	 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"errors"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"time"
-	"github.com/globalsign/mgo/bson"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
-	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/globalsign/mgo/bson"
+	"github.com/micro/go-log"
+	"github.com/micro/go-micro/client"
+	"github.com/opensds/multi-cloud/backend/proto"
+	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
+	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
+	"github.com/opensds/multi-cloud/datamover/pkg/db"
+	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+	pb "github.com/opensds/multi-cloud/datamover/proto"
+	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"os"
+	"time"
 )
 
 var simuRoutines = 10
 var ObjSizeLimit int64 = 50 * 1024 * 1024 //The max object size that can be moved directly
 var PART_SIZE int64 = 5 * 1024 * 1024
-type DatamoverService struct{
-	s3client osdss3.S3Service
+
+type DatamoverService struct {
+	s3client    osdss3.S3Service
 	bkendclient backend.BackendService
 }
 
 func NewDatamoverService() pb.DatamoverHandler {
 	host := os.Getenv("DB_HOST")
-	dbstor := utils.Database{Credential:"unkonwn", Driver:"mongodb", Endpoint:host}
+	dbstor := utils.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}
 	db.Init(&dbstor)
 
 	return &DatamoverService{
-		s3client:osdss3.NewS3Service("s3", client.DefaultClient),
-		bkendclient:backend.NewBackendService("backend", client.DefaultClient),
+		s3client:    osdss3.NewS3Service("s3", client.DefaultClient),
+		bkendclient: backend.NewBackendService("backend", client.DefaultClient),
 	}
 }
 
 //format of key:
 var locMap map[string]*LocationInfo
 
-func (b *DatamoverService) doMove (ctx context.Context, objs []*SourceOject, capa chan int64, srcLoca *LocationInfo,
+func (b *DatamoverService) doMove(ctx context.Context, objs []*SourceOject, capa chan int64, srcLoca *LocationInfo,
 	destLoca *LocationInfo, remainSource bool) {
 	//Only three routines allowed to be running at the same time
 	th := make(chan int, simuRoutines)
@@ -70,47 +71,49 @@ func (b *DatamoverService) doMove (ctx context.Context, objs []*SourceOject, cap
 	}
 }
 
-func (b *DatamoverService) refreshBackendLocation(ctx context.Context, bkId string) (*LocationInfo,error) {
+func (b *DatamoverService) refreshBackendLocation(ctx context.Context, bkId string) (*LocationInfo, error) {
 	//TODO: use read/write lock to synchronize among routines
-	loca,exists := locMap[bkId]
+	loca, exists := locMap[bkId]
 	if !exists {
-		req := backend.GetBackendRequest{Id:bkId}
-		bk,err := b.bkendclient.GetBackend(ctx, &req)
+		req := backend.GetBackendRequest{Id: bkId}
+		bk, err := b.bkendclient.GetBackend(ctx, &req)
 		if err != nil {
 			log.Fatalf("Get backend information failed, err:%v\n", err)
-			return nil,errors.New("failed")
+			return nil, errors.New("failed")
 		} else {
 			//TODO:use read/write lock to synchronize among routines
 			//TODO: set region to lcation
 			locMap[bkId] = &LocationInfo{bk.Backend.Type, bk.Backend.Endpoint, bk.Backend.Endpoint,
-			bk.Backend.BucketName, bk.Backend.Access, bk.Backend.Security, bkId}
+				bk.Backend.BucketName, bk.Backend.Access, bk.Backend.Security, bkId}
 			//locMap[bkId].region = ""
 			loca = locMap[bkId]
 			log.Fatalf("Refresh backend[id=%s,name=%s] successfully.\n", bk.Backend.Id, bk.Backend.Name)
-			return loca,nil
+			return loca, nil
 		}
-	}else {
-		return nil,nil
+	} else {
+		return nil, nil
 	}
 }
 
-func (b *DatamoverService) getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo,error) {
+func (b *DatamoverService) getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, error) {
 	switch conn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:{
-		bkname := conn.GetBucketName()
-		reqbk := osdss3.Bucket{Name:bkname}
-		rspbk,err := b.s3client.GetBucket(ctx, &reqbk)
-		if err != nil {
-			log.Fatalf("Get bucket[%s] information failed when refresh connector location.\n", bkname)
-			return nil,errors.New("get bucket information failed")
-		}
+	case flowtype.STOR_TYPE_OPENSDS:
+		{
+			bkname := conn.GetBucketName()
+			reqbk := osdss3.Bucket{Name: bkname}
+			rspbk, err := b.s3client.GetBucket(ctx, &reqbk)
+			if err != nil {
+				log.Fatalf("Get bucket[%s] information failed when refresh connector location.\n", bkname)
+				return nil, errors.New("get bucket information failed")
+			}
 
-		return b.refreshBackendLocation(ctx, rspbk.Backend)
-	}
-	default:{
-		log.Fatalf("Unsupport type:%s.\n", conn.Type)
-		return nil,errors.New("unsupport type")
-	}
+			return b.refreshBackendLocation(ctx, rspbk.Backend)
+		}
+	default:
+		{
+			log.Fatalf("Unsupport type:%s.\n", conn.Type)
+			return nil, errors.New("unsupport type")
+		}
 	}
 }
 
@@ -121,17 +124,18 @@ func moveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) er
 	var err error = nil
 
 	//download
-	switch  srcLoca.StorType {
+	switch srcLoca.StorType {
 	case flowtype.STOR_TYPE_HW_OBS:
 	case flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
 	case flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		size, err = obsmover.DownloadHwObsObj(obj, srcLoca, buf)
 	case flowtype.STOR_TYPE_AWS_S3:
 		size, err = s3mover.DownloadS3Obj(obj, srcLoca, buf)
-	default:{
-		log.Fatalf("Not support source backend type:%v\n", srcLoca.StorType)
-		err = errors.New("Not support source backend type.")
-	}
+	default:
+		{
+			log.Fatalf("Not support source backend type:%v\n", srcLoca.StorType)
+			err = errors.New("Not support source backend type.")
+		}
 	}
 
 	if err != nil {
@@ -167,7 +171,7 @@ func downloadRange(obj *SourceOject, srcLoca *LocationInfo, buf []byte, start in
 		log.Logf("Unsupport storType[%d] to download.\n", srcLoca.StorType)
 	}
 
-	return 0,errors.New("Unsupport storage type.")
+	return 0, errors.New("Unsupport storage type.")
 }
 
 func multiPartUploadInit(obj *SourceOject, destLoca *LocationInfo) (svc *s3.S3, uploadId string, err error) {
@@ -181,10 +185,10 @@ func multiPartUploadInit(obj *SourceOject, destLoca *LocationInfo) (svc *s3.S3, 
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
 	}
 
-	return nil,"",errors.New("Unsupport storage type.")
+	return nil, "", errors.New("Unsupport storage type.")
 }
 
-func uploadPartS3(obj *SourceOject, destLoca *LocationInfo, svc *s3.S3, uploadId string, upBytes int64, buf []byte, partNumber int64)(*s3.CompletedPart, error) {
+func uploadPartS3(obj *SourceOject, destLoca *LocationInfo, svc *s3.S3, uploadId string, upBytes int64, buf []byte, partNumber int64) (*s3.CompletedPart, error) {
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
 	case flowtype.STOR_TYPE_HW_OBS:
@@ -195,7 +199,7 @@ func uploadPartS3(obj *SourceOject, destLoca *LocationInfo, svc *s3.S3, uploadId
 		log.Logf("Unsupport storType[%d] to download.\n", destLoca.StorType)
 	}
 
-	return nil,errors.New("Unsupport storage type.")
+	return nil, errors.New("Unsupport storage type.")
 }
 
 func abortMultipartUpload(objKey string, destLoca *LocationInfo, svc *s3.S3, uploadId string) error {
@@ -282,7 +286,7 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 	err := completeMultipartUpload(obj.Obj.ObjectKey, destLoca, svc, uploadId, completeParts)
 	if err != nil {
 		fmt.Println(err.Error())
-	}else {
+	} else {
 		fmt.Println("Move successfully.")
 	}
 
@@ -308,7 +312,7 @@ func (b *DatamoverService) deleteObj(ctx context.Context, obj *SourceOject, loca
 	}
 
 	//delete metadata
-	delMetaReq := osdss3.DeleteObjectInput{Bucket:loca.BucketName, Key:obj.Obj.ObjectKey}
+	delMetaReq := osdss3.DeleteObjectInput{Bucket: loca.BucketName, Key: obj.Obj.ObjectKey}
 	_, err = b.s3client.DeleteObject(ctx, &delMetaReq)
 	if err != nil {
 		log.Logf("Delete object metadata of obj [objKey:%s] failed.\n", obj.Obj.ObjectKey)
@@ -320,7 +324,7 @@ func (b *DatamoverService) deleteObj(ctx context.Context, obj *SourceOject, loca
 func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo, remainSource bool) {
 	succeed := true
-	if obj.Obj.Backend != srcLoca.BakendId {//for selfdefined connector, obj.backend and srcLoca.bakendId would be ""
+	if obj.Obj.Backend != srcLoca.BakendId { //for selfdefined connector, obj.backend and srcLoca.bakendId would be ""
 		//TODO: use read/wirte lock
 		srcLoca = locMap[obj.Obj.Backend]
 	}
@@ -329,7 +333,7 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 	var err error
 	if obj.Obj.Size < ObjSizeLimit {
 		err = moveObj(obj, srcLoca, destLoca)
-	}else {
+	} else {
 		err = multipartMoveObj(obj, srcLoca, destLoca)
 	}
 
@@ -340,7 +344,7 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 	//TODO: what if update meatadata failed
 	//add object metadata to the destination bucket
 	if succeed {
-		_,err := b.s3client.CreateObject(ctx, obj.Obj)
+		_, err := b.s3client.CreateObject(ctx, obj.Obj)
 		if err != nil {
 			log.Logf("Add object metadata of obj [objKey:%s] failed.\n", obj.Obj.ObjectKey)
 		}
@@ -355,7 +359,7 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 	if succeed {
 		//If migrate success, update capacity
 		capa <- obj.Obj.Size
-	}else {
+	} else {
 		capa <- 0
 	}
 	t := <-th
@@ -363,45 +367,47 @@ func (b *DatamoverService) move(ctx context.Context, obj *SourceOject, capa chan
 }
 
 func (b *DatamoverService) getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*SourceOject, error){
+	defaultSrcLoca *LocationInfo) ([]*SourceOject, error) {
 	switch conn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:{
-		//obj := osdss3.Object{ObjectKey:filt.Prefix, BucketName:conn.BucketName}
-		//TODO:need to support filter
-		req := osdss3.ListObjectsRequest{Bucket:conn.BucketName}
-		objs,err := b.s3client.ListObjects(ctx, &req)
-		totalObjs := len(objs.ListObjects)
-		if err != nil || totalObjs == 0{
-			log.Fatalf("List objects failed, err:%v\n", err)
-			return nil, err
-		}
-		srcObjs := []*SourceOject{}
-		storType := ""
-		for i := 0; i < totalObjs; i++ {
-			//obj := SourceOject{ObjKey:objs.ListObjects[i].ObjectKey,
-				//Backend:objs.ListObjects[i].Backend, Size:objs.ListObjects[i].Size}
-			//refresh source location if needed
-			if objs.ListObjects[i].Backend != defaultSrcLoca.BakendId {
-				//User defined specific backend, which is different from the default backend
-				loca,err := b.refreshBackendLocation(ctx, objs.ListObjects[i].Backend)
-				if err != nil {
-					return nil,err
-				}
-				storType = loca.StorType
-			}else {
-				storType = defaultSrcLoca.StorType
+	case flowtype.STOR_TYPE_OPENSDS:
+		{
+			//obj := osdss3.Object{ObjectKey:filt.Prefix, BucketName:conn.BucketName}
+			//TODO:need to support filter
+			req := osdss3.ListObjectsRequest{Bucket: conn.BucketName}
+			objs, err := b.s3client.ListObjects(ctx, &req)
+			totalObjs := len(objs.ListObjects)
+			if err != nil || totalObjs == 0 {
+				log.Fatalf("List objects failed, err:%v\n", err)
+				return nil, err
 			}
-			srcObj := SourceOject{}
-			srcObj.StorType = storType
-			srcObj.Obj = objs.ListObjects[i]
-			srcObjs = append(srcObjs, &srcObj)
+			srcObjs := []*SourceOject{}
+			storType := ""
+			for i := 0; i < totalObjs; i++ {
+				//obj := SourceOject{ObjKey:objs.ListObjects[i].ObjectKey,
+				//Backend:objs.ListObjects[i].Backend, Size:objs.ListObjects[i].Size}
+				//refresh source location if needed
+				if objs.ListObjects[i].Backend != defaultSrcLoca.BakendId {
+					//User defined specific backend, which is different from the default backend
+					loca, err := b.refreshBackendLocation(ctx, objs.ListObjects[i].Backend)
+					if err != nil {
+						return nil, err
+					}
+					storType = loca.StorType
+				} else {
+					storType = defaultSrcLoca.StorType
+				}
+				srcObj := SourceOject{}
+				srcObj.StorType = storType
+				srcObj.Obj = objs.ListObjects[i]
+				srcObjs = append(srcObjs, &srcObj)
+			}
+			return srcObjs, nil
 		}
-		return srcObjs,nil
-	}
-	default:{
-		log.Fatalf("Unsupport storage type:%v\n", conn.Type)
-		return nil, errors.New("unsupport storage type")
-	}
+	default:
+		{
+			log.Fatalf("Unsupport storage type:%v\n", conn.Type)
+			return nil, errors.New("unsupport storage type")
+		}
 	}
 }
 
@@ -409,10 +415,10 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 	log.Log("Runjob is called in datamover service.")
 	log.Logf("Request: %+v\n", in)
 
-	j := flowtype.Job{Id:bson.ObjectIdHex(in.Id)}
+	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 
-    //TODO:Check if source and destination connectors can access.
+	//TODO:Check if source and destination connectors can access.
 
 	//Get source and destination location information
 	srcLoca, err := b.getConnLocation(ctx, in.DestConn)
@@ -429,12 +435,12 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 		db.DbAdapter.UpdateJob(&j)
 		return erro
 	}
-	log.Logf("srcLoca=%v, destLoca=%v\n", srcLoca,destLoca)
+	log.Logf("srcLoca=%v, destLoca=%v\n", srcLoca, destLoca)
 
 	//Get Objects which need to be migrated. Calculate the total number and capacity of objects
-	objs,err := b.getSourceObjs(ctx, in.SourceConn, in.Filt, srcLoca)
+	objs, err := b.getSourceObjs(ctx, in.SourceConn, in.Filt, srcLoca)
 	totalObjs := len(objs)
-	if err != nil || totalObjs == 0{
+	if err != nil || totalObjs == 0 {
 		log.Fatalf("List objects failed, err:%v\n", err)
 		//update database
 		j.Status = flowtype.JOB_STATUS_FAILED
@@ -460,27 +466,29 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 	passedCount := 0
 	//failedCount := 0
 	tmout := true
-	for ; ;  {
+	for {
 		select {
-		case c := <-capa: {//if c equals 0, that means the object is migrated failed.
-			capacity += c
-			count++
-			if capacity != 0 {
-				passedCount++
+		case c := <-capa:
+			{ //if c equals 0, that means the object is migrated failed.
+				capacity += c
+				count++
+				if capacity != 0 {
+					passedCount++
+				}
+				//TODO:update job in database, need to consider the update frequency
+				var deci int = totalObjs / 10
+				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
+					//update database
+					j.PassedCount = passedCount
+					j.PassedCapacity = capacity
+					db.DbAdapter.UpdateJob(&j)
+				}
 			}
-			//TODO:update job in database, need to consider the update frequency
-			var deci int = totalObjs/10
-			if totalObjs < 100 || count == totalObjs || count%deci == 0 {
-				//update database
-				j.PassedCount = passedCount
-				j.PassedCapacity = capacity
-				db.DbAdapter.UpdateJob(&j)
+		case <-time.After(86400 * time.Second):
+			{ //86400 seconds equal one day, we don't provide to migrate to much objects in one plan
+				tmout = true
+				log.Fatal("Timout.")
 			}
-		}
-		case <-time.After(86400*time.Second): { //86400 seconds equal one day, we don't provide to migrate to much objects in one plan
-			tmout = true
-			log.Fatal("Timout.")
-		}
 		}
 		if count >= totalObjs || tmout {
 			if tmout {
@@ -497,7 +505,7 @@ func (b *DatamoverService) Runjob(ctx context.Context, in *pb.RunJobRequest, out
 		out.Err = "success"
 		ret = errors.New("failed")
 		j.Status = flowtype.JOB_STATUS_FAILED
-	}else {
+	} else {
 		out.Err = "success"
 		j.Status = flowtype.JOB_STATUS_SUCCEED
 	}

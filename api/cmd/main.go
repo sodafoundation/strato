@@ -16,13 +16,15 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
+	"github.com/micro/go-log"
 	"github.com/micro/go-web"
+	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
-
-	"github.com/micro/go-log"
 	//	_ "github.com/micro/go-plugins/client/grpc"
+	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
+	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
 )
 
 const (
@@ -46,7 +48,10 @@ func main() {
 	backend.RegisterRouter(ws)
 	s3.RegisterRouter(ws)
 	dataflow.RegisterRouter(ws)
-
+	// add filter for authentication context
+	ws.Filter(logging.FilterFactory())
+	ws.Filter(context.FilterFactory())
+	ws.Filter(auth.FilterFactory())
 	wc.Add(ws)
 	webService.Handle("/", wc)
 	if err := webService.Run(); err != nil {

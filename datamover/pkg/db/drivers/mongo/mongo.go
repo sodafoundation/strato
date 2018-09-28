@@ -21,7 +21,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/type"
+	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
 
 var adap = &adapter{}

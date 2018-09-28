@@ -15,10 +15,11 @@
 package db
 
 import (
-	"github.com/opensds/multi-cloud/dataflow/pkg/type"
-	"github.com/opensds/multi-cloud/dataflow/pkg/db/drivers/mongo"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/micro/go-log"
+	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	"github.com/opensds/multi-cloud/dataflow/pkg/db/drivers/mongo"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
+	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 )
 
 // C is a global variable that controls database module.
@@ -40,7 +41,7 @@ func Init(db *Database) {
 	}
 }
 
-func Exit(db *Database){
+func Exit(db *Database) {
 	switch db.Driver {
 	case "etcd":
 		// C = etcd.Init(db.Driver, db.Crendential)
@@ -54,27 +55,29 @@ func Exit(db *Database){
 	}
 }
 
-func TestClear() error{
+func TestClear() error {
 	err := mongo.TestClear()
 	return err
 }
 
 type DBAdapter interface {
 	//Policy
-	CreatePolicy(pol *_type.Policy) error
-	DeletePolicy(id string, tenant string) error
-	UpdatePolicy(pol *_type.Policy) error
-	GetPolicy(name string, tenant string) ([]_type.Policy,error)
-	GetPolicyById(id string, tenant string)(*_type.Policy,error)
+	CreatePolicy(ctx *c.Context, pol *model.Policy) (*model.Policy, error)
+	DeletePolicy(ctx *c.Context, id string) error
+	UpdatePolicy(ctx *c.Context, pol *model.Policy) (*model.Policy, error)
+	ListPolicy(ctx *c.Context) ([]model.Policy, error)
+	GetPolicy(ctx *c.Context, id string) (*model.Policy, error)
 	//Plan
-	CreatePlan(conn *_type.Plan) error
-	DeletePlan(name string, tenant string) error
-	UpdatePlan(conn *_type.Plan) error
-	GetPlan(name string, tenant string) ([]_type.Plan,error)
-	GetPlanByid(id string, tenant string) (*_type.Plan, error)
-    LockSched(planId string) int
+	CreatePlan(ctx *c.Context, conn *model.Plan) (*model.Plan, error)
+	DeletePlan(ctx *c.Context, name string) error
+	UpdatePlan(ctx *c.Context, conn *model.Plan) (*model.Plan, error)
+	ListPlan(ctx *c.Context) ([]model.Plan, error)
+	GetPlan(ctx *c.Context, id string) (*model.Plan, error)
+	GetPlanByPolicy(ctx *c.Context, policyId string) ([]model.Plan, error)
+	LockSched(planId string) int
 	UnlockSched(planId string) int
 	//Job
-	CreateJob(job *_type.Job) error
-	GetJob(id string, tenant string) ([]_type.Job,error)
+	CreateJob(ctx *c.Context, job *model.Job) (*model.Job, error)
+	GetJob(ctx *c.Context, id string) (*model.Job, error)
+	ListJob(ctx *c.Context) ([]model.Job, error)
 }

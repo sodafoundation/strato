@@ -15,72 +15,108 @@
 package policy
 
 import (
-	"reflect"
 	"regexp"
 
+	"encoding/json"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/type"
+	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
+	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
+	"github.com/opensds/multi-cloud/datamover/proto"
 )
 
-func Create(pol *Policy) error {
+func Create(ctx *context.Context, pol *Policy) (*Policy, error) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", pol.Name)
 	if !m || pol.Name == "all" {
 		log.Logf("Invalid policy name[%s], err:%v\n", pol.Name, err)
-		return ERR_INVALID_POLICY_NAME
-	}
-
-	//TODO check validation of policy
-	return db.DbAdapter.CreatePolicy(pol)
-}
-
-func Delete(id string, tenantname string) error {
-	return db.DbAdapter.DeletePolicy(id, tenantname)
-}
-
-//When update policy, policy id must be provided
-func Update(pol *Policy) error {
-	if pol.Name != "" {
-		m, err := regexp.MatchString("[[:alnum:]-_.]+", pol.Name)
-		if !m || pol.Name == "all" {
-			log.Logf("Invalid policy name[%s], err:%v\n", pol.Name, err)
-			return ERR_INVALID_POLICY_NAME
-		}
-	}
-
-	curPol, err := db.DbAdapter.GetPolicyById(pol.Id.Hex(), pol.Tenant)
-	if err != nil {
-		log.Logf("Update policy failed, err: connot get the policy(%v).\n", err.Error())
-		return err
-	}
-
-	if pol.Name != "" {
-		curPol.Name = pol.Name
-	}
-	if pol.Description != "" {
-		curPol.Description = pol.Description
-	}
-	if !reflect.DeepEqual(pol.Schedule, Schedule{}) {
-		curPol.Schedule = pol.Schedule
-	}
-
-	//TODO check validation of policy
-
-	//update database
-	return db.DbAdapter.UpdatePolicy(curPol)
-}
-
-func Get(name string, tenant string) ([]Policy, error) {
-	m, err := regexp.MatchString("[[:alnum:]-_.]*", name)
-	if !m {
-		log.Logf("Invalid policy name[%s],err:%v\n", name, err)
 		return nil, ERR_INVALID_POLICY_NAME
 	}
 
-	pols, errcode := db.DbAdapter.GetPolicy(name, tenant)
-	if len(pols) == 0 {
-		log.Logf("Get nothing, policy name is %s, tenant is %s\n.", name, tenant)
+	return db.DbAdapter.CreatePolicy(ctx, pol)
+}
+
+func Delete(ctx *context.Context, id string) error {
+	return db.DbAdapter.DeletePolicy(ctx, id)
+}
+
+//When update policy, policy id must be provided
+func Update(ctx *context.Context, policyId string, updateMap map[string]interface{},
+	datamover datamover.DatamoverService) (*Policy, error) {
+
+	curPol, err := db.DbAdapter.GetPolicy(ctx, policyId)
+	if err != nil {
+		log.Logf("Update policy failed, err: connot get the policy(%v).\n", err.Error())
+		return nil, err
 	}
 
-	return pols, errcode
+	if v, ok := updateMap["name"]; ok {
+		name := v.(string)
+		m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
+		if !m {
+			log.Logf("Invalid policy name[%s],err:", name, err) //cannot use all as name
+			return nil, ERR_INVALID_PLAN_NAME
+		}
+		curPol.Name = name
+	}
+
+	if v, ok := updateMap["description"]; ok {
+		curPol.Description = v.(string)
+	}
+
+	var updateInTrigger = false
+	if v, ok := updateMap["schedule"]; ok {
+		b, _ := json.Marshal(v)
+		curPol.Schedule = Schedule{}
+		json.Unmarshal(b, &curPol.Schedule)
+		updateInTrigger = true
+	}
+
+	//update database
+	resp, err := db.DbAdapter.UpdatePolicy(ctx, curPol)
+	if err != nil {
+		return nil, err
+	}
+
+	if updateInTrigger {
+		if err := updatePolicyInTrigger(ctx, resp, datamover); err != nil {
+			return nil, err
+		}
+	}
+
+	return resp, nil
+}
+
+func updatePolicyInTrigger(ctx *context.Context, policy *Policy, datamover datamover.DatamoverService) error {
+	plans, err := db.DbAdapter.GetPlanByPolicy(ctx, policy.Id.Hex())
+	if err != nil {
+		log.Logf("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)
+		return err
+	}
+	t := trigger.GetTriggerMgr()
+	for _, p := range plans {
+		if !p.PolicyEnabled {
+			continue // Policy is not enabled, ignore it
+		}
+		exe := plan.NewPlanExecutor(ctx, datamover, &p)
+		if err := t.Update(ctx, &p, exe); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Get(ctx *context.Context, id string) (*Policy, error) {
+	m, err := regexp.MatchString("[[:alnum:]-_.]*", id)
+	if !m {
+		log.Logf("Invalid policy id[%s],err:%v\n", id, err)
+		return nil, ERR_INVALID_POLICY_NAME
+	}
+
+	return db.DbAdapter.GetPolicy(ctx, id)
+}
+
+func List(ctx *context.Context) ([]Policy, error) {
+	return db.DbAdapter.ListPolicy(ctx)
 }
