@@ -69,6 +69,32 @@ func (ad *AliyunAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Co
 	return NoError
 }
 
+func (ad *AliyunAdapter) GET(object *pb.Object, ctx context.Context) (io.ReadCloser, S3Error) {
+
+	bucketName := ad.backend.BucketName
+
+	bucket, err := ad.client.Bucket(bucketName)
+	if err != nil {
+		log.Logf("Access bucket failed:%v", err)
+		return nil, S3Error{Code: 500, Description: "Access bucket failed"}
+	}
+
+	if ctx.Value("operation") == "download" {
+		newObjectKey := object.BucketName + "/" + object.ObjectKey
+		result, err1 := bucket.GetObject(newObjectKey)
+
+		if err1 != nil {
+			log.Logf("download aliyun obs failed:%v", err)
+			return nil, S3Error{Code: 500, Description: "download aliyun obs failed"}
+		} else {
+			log.Logf("download aliyun obs successfully")
+			return result, NoError
+		}
+	}
+
+	return nil, NoError
+}
+
 func (ad *AliyunAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
 
 	newObjectKey := object.Bucket + "/" + object.Key
