@@ -28,7 +28,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-//ObjectGet -
+//ObjectPut -
 func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")

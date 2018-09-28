@@ -29,6 +29,6 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/s3/{bucketName}").To(handler.BucketDelete)).Doc("Delete bucket")
 	ws.Route(ws.PUT("/s3/{bucketName}/{objectKey}").To(handler.RouteObjectPut)).Doc("Upload object")
 	ws.Route(ws.DELETE("/s3/{bucketName}/{objectKey}").To(handler.ObjectDelete)).Doc("Delete object")
-	ws.Route(ws.GET("/s3/{bucketName}/{objectKey}").To(handler.ObjectDelete)).Doc("Download object")
+	ws.Route(ws.GET("/s3/{bucketName}/{objectKey}").To(handler.ObjectGet)).Doc("Download object")
 
 }
