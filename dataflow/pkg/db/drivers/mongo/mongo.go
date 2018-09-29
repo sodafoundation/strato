@@ -24,7 +24,7 @@ import (
 )
 
 var adap = &adapter{}
-var DataBaseName = "test"
+var DataBaseName = "multi-cloud"
 var lockColName = "mylock"
 var lockManager = "manager"
 var CollPolicy = "policy"

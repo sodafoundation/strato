@@ -26,7 +26,7 @@ import (
 
 var adap = &adapter{}
 
-var DataBaseName = "test"
+var DataBaseName = "multi-cloud"
 var CollJob = "job"
 
 type MyLock struct {
@@ -67,7 +67,8 @@ func (ad *adapter) UpdateJob(job *Job) error {
 	j := Job{}
 	err := c.Find(bson.M{"_id": job.Id}).One(&j)
 	if err != nil {
-		log.Logf("Get job failed before update it, err:%v\n", err)
+		log.Logf("Get job[id:%v] failed before update it, err:%v\n", job.Id, err)
+
 		return errors.New("Get job failed before update it.")
 	}
 
@@ -95,10 +96,10 @@ func (ad *adapter) UpdateJob(job *Job) error {
 
 	err = c.Update(bson.M{"_id": j.Id}, &j)
 	if err != nil {
-		log.Fatalf("Update job in database failed, err:%v\n", err)
+		log.Logf("Update job in database failed, err:%v\n", err)
 		return errors.New("Update job in database failed.")
 	}
 
-	log.Logf("Update job in database successfully\n", err)
+	log.Log("Update job in database successfully.")
 	return nil
 }

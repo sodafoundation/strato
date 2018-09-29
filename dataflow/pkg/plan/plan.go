@@ -274,7 +274,7 @@ func Run(id string, tenant string, mclient datamover.DatamoverService) (bson.Obj
 	if errno == nil {
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
-		req := datamover.RunJobRequest{Id:plan.Id.Hex(), OverWrite:plan.OverWrite, RemainSource:plan.RemainSource}
+		req := datamover.RunJobRequest{Id:job.Id.Hex(), OverWrite:plan.OverWrite, RemainSource:plan.RemainSource}
 		srcConn := datamover.Connector{Type:plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn
