@@ -15,6 +15,7 @@
 package s3
 
 import (
+	"bytes"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -38,6 +39,15 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 
 	log.Logf("Received request for create bucket: %s", bucketName)
 
+	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	if objectMD != nil {
+		//TODO update
+
+	} else {
+
+	}
+
 	object := s3.Object{}
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
@@ -50,25 +60,15 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	_, s3err := client.GET(&object, ctx)
+	body, s3err := client.GET(&object, ctx)
+
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-
-	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	if objectMD != nil {
-		//TODO update
-
-	} else {
-		res, err := s.s3Client.CreateObject(ctx, &object)
-		if err != nil {
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
-		log.Log("download object successfully.")
-		response.WriteEntity(res)
-	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(body)
+	log.Logf("Download succeed, body:%v\n", buf.String())
+	response.WriteEntity(buf.String())
 
 }
