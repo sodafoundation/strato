@@ -14,13 +14,16 @@
 
 package utils
 
-import "github.com/opensds/multi-cloud/s3/proto"
+import (
+	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+)
 
 type LocationInfo struct {
 	StorType string //aws-s3,azure-blob,hw-obs,etc.
 	Region string
 	EndPoint string
 	BucketName string //remote bucket name
+	VirBucket string  //local bucket name
 	Access string
 	Security string
 	BakendId string
@@ -28,5 +31,16 @@ type LocationInfo struct {
 
 type SourceOject struct {
 	StorType string //aws-s3,azure-blob,hw-obs,etc.
-	Obj *s3.Object
+	Obj *osdss3.Object
+}
+
+type MoveWorker interface {
+	DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error)
+	UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error
+	DeleteObj(objKey string, loca *LocationInfo) error
+	DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error)
+	MultiPartUploadInit(objKey string, destLoca *LocationInfo) error
+	UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error
+	AbortMultipartUpload(objKey string, destLoca *LocationInfo) error
+	CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error
 }
