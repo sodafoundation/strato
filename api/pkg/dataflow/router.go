@@ -21,28 +21,32 @@ import (
 
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/policies/{name}").To(handler.GetPolicy)).
-		Doc("Get policy details")
-	ws.Route(ws.POST("/policies/{name}").To(handler.CreatePolicy)).
-		Doc("Create policy details")
-
-	ws.Route(ws.GET("/policies/{name}").To(handler.GetPolicy)).
-		Doc("Get policy details")
-	ws.Route(ws.POST("/policies/{name}").To(handler.CreatePolicy)).
+	ws.Route(ws.POST("/{tenantId}/policies").To(handler.CreatePolicy)).
 		Doc("Create policy")
-	ws.Route(ws.PUT("/policies/{id}").To(handler.UpdatePolicy)).
+	ws.Route(ws.GET("/{tenantId}/policies").To(handler.ListPolicy)).
+		Doc("List policy")
+	ws.Route(ws.GET("/{tenantId}/policies/{id}").To(handler.GetPolicy)).
+		Doc("Get policy details")
+	ws.Route(ws.PUT("/{tenantId}/policies/{id}").To(handler.UpdatePolicy)).
 		Doc("Update policy")
-	ws.Route(ws.DELETE("/policies/{id}").To(handler.DeletePolicy)).
+	ws.Route(ws.DELETE("/{tenantId}/policies/{id}").To(handler.DeletePolicy)).
 		Doc("Delete policy")
 
-	ws.Route(ws.GET("/plan/{name}").To(handler.GetPlan)).
-		Doc("Get plan details")
-	ws.Route(ws.POST("/plan/").To(handler.CreatePlan)).
+	ws.Route(ws.POST("/{tenantId}/plans").To(handler.CreatePlan)).
 		Doc("Create plan")
-	ws.Route(ws.PUT("/plan/{id}").To(handler.UpdatePlan)).
+	ws.Route(ws.GET("/{tenantId}/plans").To(handler.ListPlan)).
+		Doc("List plan")
+	ws.Route(ws.GET("/{tenantId}/plans/{id}").To(handler.GetPlan)).
+		Doc("Get plan details")
+	ws.Route(ws.PUT("/{tenantId}/plans/{id}").To(handler.UpdatePlan)).
 		Doc("Update plan")
-	ws.Route(ws.DELETE("/plan/{id}").To(handler.DeletePlan)).
+	ws.Route(ws.DELETE("/{tenantId}/plans/{id}").To(handler.DeletePlan)).
 		Doc("Delete plan")
-	ws.Route(ws.POST("/plan/run/{id}").To(handler.RunPlan)).
+	ws.Route(ws.POST("/{tenantId}/plans/{id}/run").To(handler.RunPlan)).
 		Doc("Create connector")
+
+	ws.Route(ws.GET("/{tenantId}/jobs").To(handler.ListJob)).
+		Doc("List jobs details")
+	ws.Route(ws.GET("/{tenantId}/jobs/{id}").To(handler.GetJob)).
+		Doc("Get job details")
 }

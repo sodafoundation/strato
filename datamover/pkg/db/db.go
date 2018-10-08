@@ -15,10 +15,10 @@
 package db
 
 import (
-	"github.com/opensds/multi-cloud/dataflow/pkg/type"
-	"github.com/opensds/multi-cloud/datamover/pkg/db/drivers/mongo"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
+	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
+	"github.com/opensds/multi-cloud/datamover/pkg/db/drivers/mongo"
 )
 
 // C is a global variable that controls database module.
@@ -40,7 +40,7 @@ func Init(db *Database) {
 	}
 }
 
-func Exit(db *Database){
+func Exit(db *Database) {
 	switch db.Driver {
 	case "etcd":
 		// C = etcd.Init(db.Driver, db.Crendential)
@@ -55,5 +55,5 @@ func Exit(db *Database){
 }
 
 type DBAdapter interface {
-	UpdateJob(job *_type.Job) error
+	UpdateJob(job *model.Job) error
 }

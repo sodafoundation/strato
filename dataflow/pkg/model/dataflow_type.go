@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package _type
+package model
 
 import (
 	"errors"
@@ -55,6 +55,7 @@ var (
 	ERR_IS_USED_BY_PLAN     = errors.New("is used by plan") //Connector or policy is used by plan
 	ERR_RUN_PLAN_BUSY       = errors.New("is scheduling")   //Plan is being scheduled
 	ERR_JOB_NOT_EXIST       = errors.New("job not exist")
+	ERR_PLAN_NOT_IN_TRIGGER = errors.New("specified plan is not in trigger")
 )
 
 const (
@@ -76,22 +77,19 @@ const (
 )
 
 type Schedule struct {
-	//Id bson.ObjectId		`json:"-" bson:"_id,omitempty"`
-	Type              string   `json:"type" bson:"type"`
-	Day               []string `json:"day,omitempty" bson:"day,omitempty"`
-	TimePoint         string   `json:"time_point,omitempty" bson:"time_point,omitempty"`
-	TriggerProperties string   `json:"trigger_properties" bson:"trigger_properties"`
+	Type              string `json:"type" bson:"type"`
+	TriggerProperties string `json:"triggerProperties" bson:"triggerProperties"`
 }
 
 type KeyValue struct {
-	Key   string
-	Value string
+	Key   string `json:"key" bson:"key"`
+	Value string `json:"value" bson:"value"`
 }
 
 type Connector struct {
-	StorType   string     `json:"stor_type" bson:"store_type"`    //opensds-obj, aws-obj,azure-obj,ceph-obj,hw-obj,nas
-	BucketName string     `json:"bucket_name" bson:"bucket_name"` //when StorType is opensds, need this
-	ConnConfig []KeyValue `json:"conn_config" bson:"conn_config"`
+	StorType   string     `json:"storType" bson:"storeType"`    //opensds-obj, aws-obj,azure-obj,ceph-obj,hw-obj,nas
+	BucketName string     `json:"bucketName" bson:"bucketName"` //when StorType is opensds, need this
+	ConnConfig []KeyValue `json:"connConfig" bson:"connConfig"`
 }
 
 type Filter struct {
@@ -106,15 +104,16 @@ type Plan struct {
 	//IsSched	bool			`json:"is_sched" bson:"is_sched"`
 	//SchedServer string		`json:"sched_server" bson:"sched_server"`
 	Type          string    `json:"type" bson:"type"` //migration
-	SourceConn    Connector `json:"src_conn" bson:"src_conn"`
-	DestConn      Connector `json:"dest_conn" bson:"dest_conn"`
-	Filt          Filter    `json:"source_dir" bson:"source_dir"`
-	OverWrite     bool      `json:"over_write" bson:"over_write"`
-	RemainSource  bool      `json:"remain_source" bson:"remain_source"`
-	LastSchedTime int64     `json:"last_sched_time" bson:"last_sched_time"`
-	PolicyId      string    `json:"policy_id" bson:"policy_id"`
-	PolicyRef     mgo.DBRef `json:"policy_ref" bson:"policy_ref"`
-	PolicyName    string    `json:"policy_name" bson:"policy_name"`
+	SourceConn    Connector `json:"srcConn" bson:"srcConn"`
+	DestConn      Connector `json:"destConn" bson:"destConn"`
+	Filter        Filter    `json:"sourceDir" bson:"sourceDir"`
+	OverWrite     bool      `json:"overWrite" bson:"overWrite"`
+	RemainSource  bool      `json:"remainSource" bson:"remainSource"`
+	LastSchedTime int64     `json:"lastSchedTime" bson:"lastSchedTime"`
+	PolicyId      string    `json:"policyId" bson:"policyId"`
+	PolicyRef     mgo.DBRef `json:"policyRef" bson:"policyRef"`
+	PolicyName    string    `json:"policyName" bson:"policyName"`
+	PolicyEnabled bool      `json:"policyEnabled" bson:"policyEnabled"`
 	Tenant        string    `json:"tenant" bson:"tenant"`
 }
 
@@ -125,22 +124,22 @@ const (
 
 type Job struct {
 	Id             bson.ObjectId `json:"-" bson:"_id"` //make index on id, it cnanot be duplicate
-	TriggerType    string        `json:"trigger_type" bson:"trigger_type"`
+	TriggerType    string        `json:"triggerType" bson:"triggerType"`
 	Type           string        `json:"type" bson:"type"` //migration
-	PlanName       string        `json:"plan_name" bson:"plan_name"`
-	PlanId         string        `json:"plan_id" bson:"plan_id"`
-	TotalCount     int           `json:"total_count" bson:"total_count"`
-	PassedCount    int           `json:"passed_count" bson:"passed_count"`
-	TotalCapacity  int64         `json:"total_capacity" bson:"total_capacity"`
-	PassedCapacity int64         `json:"passed_capacity" bson:"passed_capacity"`
+	PlanName       string        `json:"planName" bson:"planName"`
+	PlanId         string        `json:"planId" bson:"planId"`
+	TotalCount     int           `json:"totalCount" bson:"totalCount"`
+	PassedCount    int           `json:"passedCount" bson:"passedCount"`
+	TotalCapacity  int64         `json:"totalCapacity" bson:"totalCapacity"`
+	PassedCapacity int64         `json:"passedCapacity" bson:"passedCapacity"`
 	//when the plan related connector type is OPENSDS, then location should be bucket name
-	SourceLocation string    `json:"source_location" bson:"source_location"`
-	DestLocation   string    `json:"dest_location" bson:"dest_location"`
-	CreateTime     time.Time `json:"create_time" bson:"create_time"`
-	StartTime      time.Time `json:"start_time" bson:"start_time"`
-	EndTime        time.Time `json:"end_time" bson:"end_time"`
-	OverWrite      bool      `json:"over_write" bson:"over_write"`
-	RemainSource   bool      `json:"remain_source" bson:"remain_source"`
+	SourceLocation string    `json:"sourceLocation" bson:"sourceLocation"`
+	DestLocation   string    `json:"destLocation" bson:"destLocation"`
+	CreateTime     time.Time `json:"createTime" bson:"createTime"`
+	StartTime      time.Time `json:"startTime" bson:"startTime"`
+	EndTime        time.Time `json:"endTime" bson:"endTime"`
+	OverWrite      bool      `json:"overWrite" bson:"overWrite"`
+	RemainSource   bool      `json:"remainSource" bson:"remainSource"`
 	Status         string    `json:"status" bson:"status"` //queueing,
 	Tenant         string    `json:"tenant" bson:"tenant"`
 }

@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/robfig/cron"
 )
@@ -45,6 +46,14 @@ func (c *CronTrigger) Add(planId, properties string, executer trigger.Executer) 
 }
 
 func (c *CronTrigger) Update(planId, properties string, executer trigger.Executer) error {
+	// If the executer is not specified use the previous one.
+	var ok bool
+	if executer == nil {
+		if executer, ok = c.plans[planId]; ok {
+			return model.ERR_PLAN_NOT_IN_TRIGGER
+		}
+	}
+
 	c.Remove(planId)
 	if err := c.Add(planId, properties, executer); err != nil {
 		return err

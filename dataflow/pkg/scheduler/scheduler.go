@@ -15,22 +15,26 @@
 package scheduler
 
 import (
-	"github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
+	"github.com/opensds/multi-cloud/datamover/proto"
 )
 
-
 func LoadAllPlans(service datamover.DatamoverService) {
-	plans, err := db.DbAdapter.GetPlan("all", "tenant")
+	ctx := context.NewAdminContext()
+	plans, err := db.DbAdapter.ListPlan(ctx)
 	if err != nil {
 		log.Logf("Get all plan faild, %v", err)
 	}
-	for _, p := range(plans) {
-		e := plan.NewPlanExecutor(service, &p)
-		err := trigger.GetTriggerMgr().Add(&p, e)
+	for _, p := range plans {
+		if p.PolicyId == "" || !p.PolicyEnabled {
+			continue
+		}
+		e := plan.NewPlanExecutor(ctx, service, &p)
+		err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 		if err != nil {
 			log.Logf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
 			continue

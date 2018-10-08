@@ -12,6 +12,8 @@ It has these top-level messages:
 	Policy
 	GetPolicyRequest
 	GetPolicyResponse
+	ListPolicyRequest
+	ListPolicyResponse
 	CreatePolicyRequest
 	CreatePolicyResponse
 	UpdatePolicyRequest
@@ -26,6 +28,8 @@ It has these top-level messages:
 	CreatePlanResponse
 	GetPlanRequest
 	GetPlanResponse
+	ListPlanRequest
+	ListPlanResponse
 	UpdatePlanRequest
 	UpdatePlanResponse
 	DeletePlanRequest
@@ -35,6 +39,8 @@ It has these top-level messages:
 	Job
 	GetJobRequest
 	GetJobResponse
+	ListJobRequest
+	ListJobResponse
 */
 package dataflow
 
@@ -68,14 +74,17 @@ var _ server.Option
 
 type DataFlowService interface {
 	GetPolicy(ctx context.Context, in *GetPolicyRequest, opts ...client.CallOption) (*GetPolicyResponse, error)
+	ListPolicy(ctx context.Context, in *ListPolicyRequest, opts ...client.CallOption) (*ListPolicyResponse, error)
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...client.CallOption) (*CreatePolicyResponse, error)
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...client.CallOption) (*UpdatePolicyResponse, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...client.CallOption) (*DeletePolicyResponse, error)
 	GetPlan(ctx context.Context, in *GetPlanRequest, opts ...client.CallOption) (*GetPlanResponse, error)
+	ListPlan(ctx context.Context, in *ListPlanRequest, opts ...client.CallOption) (*ListPlanResponse, error)
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...client.CallOption) (*CreatePlanResponse, error)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...client.CallOption) (*UpdatePlanResponse, error)
 	DeletePlan(ctx context.Context, in *DeletePlanRequest, opts ...client.CallOption) (*DeletePlanResponse, error)
 	GetJob(ctx context.Context, in *GetJobRequest, opts ...client.CallOption) (*GetJobResponse, error)
+	ListJob(ctx context.Context, in *ListJobRequest, opts ...client.CallOption) (*ListJobResponse, error)
 	RunPlan(ctx context.Context, in *RunPlanRequest, opts ...client.CallOption) (*RunPlanResponse, error)
 }
 
@@ -100,6 +109,16 @@ func NewDataFlowService(name string, c client.Client) DataFlowService {
 func (c *dataFlowService) GetPolicy(ctx context.Context, in *GetPolicyRequest, opts ...client.CallOption) (*GetPolicyResponse, error) {
 	req := c.c.NewRequest(c.name, "DataFlow.GetPolicy", in)
 	out := new(GetPolicyResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataFlowService) ListPolicy(ctx context.Context, in *ListPolicyRequest, opts ...client.CallOption) (*ListPolicyResponse, error) {
+	req := c.c.NewRequest(c.name, "DataFlow.ListPolicy", in)
+	out := new(ListPolicyResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -147,6 +166,16 @@ func (c *dataFlowService) GetPlan(ctx context.Context, in *GetPlanRequest, opts 
 	return out, nil
 }
 
+func (c *dataFlowService) ListPlan(ctx context.Context, in *ListPlanRequest, opts ...client.CallOption) (*ListPlanResponse, error) {
+	req := c.c.NewRequest(c.name, "DataFlow.ListPlan", in)
+	out := new(ListPlanResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataFlowService) CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...client.CallOption) (*CreatePlanResponse, error) {
 	req := c.c.NewRequest(c.name, "DataFlow.CreatePlan", in)
 	out := new(CreatePlanResponse)
@@ -187,6 +216,16 @@ func (c *dataFlowService) GetJob(ctx context.Context, in *GetJobRequest, opts ..
 	return out, nil
 }
 
+func (c *dataFlowService) ListJob(ctx context.Context, in *ListJobRequest, opts ...client.CallOption) (*ListJobResponse, error) {
+	req := c.c.NewRequest(c.name, "DataFlow.ListJob", in)
+	out := new(ListJobResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataFlowService) RunPlan(ctx context.Context, in *RunPlanRequest, opts ...client.CallOption) (*RunPlanResponse, error) {
 	req := c.c.NewRequest(c.name, "DataFlow.RunPlan", in)
 	out := new(RunPlanResponse)
@@ -201,28 +240,34 @@ func (c *dataFlowService) RunPlan(ctx context.Context, in *RunPlanRequest, opts 
 
 type DataFlowHandler interface {
 	GetPolicy(context.Context, *GetPolicyRequest, *GetPolicyResponse) error
+	ListPolicy(context.Context, *ListPolicyRequest, *ListPolicyResponse) error
 	CreatePolicy(context.Context, *CreatePolicyRequest, *CreatePolicyResponse) error
 	UpdatePolicy(context.Context, *UpdatePolicyRequest, *UpdatePolicyResponse) error
 	DeletePolicy(context.Context, *DeletePolicyRequest, *DeletePolicyResponse) error
 	GetPlan(context.Context, *GetPlanRequest, *GetPlanResponse) error
+	ListPlan(context.Context, *ListPlanRequest, *ListPlanResponse) error
 	CreatePlan(context.Context, *CreatePlanRequest, *CreatePlanResponse) error
 	UpdatePlan(context.Context, *UpdatePlanRequest, *UpdatePlanResponse) error
 	DeletePlan(context.Context, *DeletePlanRequest, *DeletePlanResponse) error
 	GetJob(context.Context, *GetJobRequest, *GetJobResponse) error
+	ListJob(context.Context, *ListJobRequest, *ListJobResponse) error
 	RunPlan(context.Context, *RunPlanRequest, *RunPlanResponse) error
 }
 
 func RegisterDataFlowHandler(s server.Server, hdlr DataFlowHandler, opts ...server.HandlerOption) error {
 	type dataFlow interface {
 		GetPolicy(ctx context.Context, in *GetPolicyRequest, out *GetPolicyResponse) error
+		ListPolicy(ctx context.Context, in *ListPolicyRequest, out *ListPolicyResponse) error
 		CreatePolicy(ctx context.Context, in *CreatePolicyRequest, out *CreatePolicyResponse) error
 		UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, out *UpdatePolicyResponse) error
 		DeletePolicy(ctx context.Context, in *DeletePolicyRequest, out *DeletePolicyResponse) error
 		GetPlan(ctx context.Context, in *GetPlanRequest, out *GetPlanResponse) error
+		ListPlan(ctx context.Context, in *ListPlanRequest, out *ListPlanResponse) error
 		CreatePlan(ctx context.Context, in *CreatePlanRequest, out *CreatePlanResponse) error
 		UpdatePlan(ctx context.Context, in *UpdatePlanRequest, out *UpdatePlanResponse) error
 		DeletePlan(ctx context.Context, in *DeletePlanRequest, out *DeletePlanResponse) error
 		GetJob(ctx context.Context, in *GetJobRequest, out *GetJobResponse) error
+		ListJob(ctx context.Context, in *ListJobRequest, out *ListJobResponse) error
 		RunPlan(ctx context.Context, in *RunPlanRequest, out *RunPlanResponse) error
 	}
 	type DataFlow struct {
@@ -238,6 +283,10 @@ type dataFlowHandler struct {
 
 func (h *dataFlowHandler) GetPolicy(ctx context.Context, in *GetPolicyRequest, out *GetPolicyResponse) error {
 	return h.DataFlowHandler.GetPolicy(ctx, in, out)
+}
+
+func (h *dataFlowHandler) ListPolicy(ctx context.Context, in *ListPolicyRequest, out *ListPolicyResponse) error {
+	return h.DataFlowHandler.ListPolicy(ctx, in, out)
 }
 
 func (h *dataFlowHandler) CreatePolicy(ctx context.Context, in *CreatePolicyRequest, out *CreatePolicyResponse) error {
@@ -256,6 +305,10 @@ func (h *dataFlowHandler) GetPlan(ctx context.Context, in *GetPlanRequest, out *
 	return h.DataFlowHandler.GetPlan(ctx, in, out)
 }
 
+func (h *dataFlowHandler) ListPlan(ctx context.Context, in *ListPlanRequest, out *ListPlanResponse) error {
+	return h.DataFlowHandler.ListPlan(ctx, in, out)
+}
+
 func (h *dataFlowHandler) CreatePlan(ctx context.Context, in *CreatePlanRequest, out *CreatePlanResponse) error {
 	return h.DataFlowHandler.CreatePlan(ctx, in, out)
 }
@@ -270,6 +323,10 @@ func (h *dataFlowHandler) DeletePlan(ctx context.Context, in *DeletePlanRequest,
 
 func (h *dataFlowHandler) GetJob(ctx context.Context, in *GetJobRequest, out *GetJobResponse) error {
 	return h.DataFlowHandler.GetJob(ctx, in, out)
+}
+
+func (h *dataFlowHandler) ListJob(ctx context.Context, in *ListJobRequest, out *ListJobResponse) error {
+	return h.DataFlowHandler.ListJob(ctx, in, out)
 }
 
 func (h *dataFlowHandler) RunPlan(ctx context.Context, in *RunPlanRequest, out *RunPlanResponse) error {
