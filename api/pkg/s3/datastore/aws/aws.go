@@ -15,10 +15,8 @@
 package aws
 
 import (
-	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -88,48 +86,13 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		})
 
 		if err != nil {
-			log.Logf("Upload to aws failed:%v", err)
-			return S3Error{Code: 500, Description: "Upload to aws failed"}
+			log.Logf("Upload to aliyun failed:%v", err)
+			return S3Error{Code: 500, Description: "Upload to aliyun failed"}
 		}
 
 	}
 
 	return NoError
-}
-
-func (ad *AwsAdapter) GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error) {
-
-	bucket := ad.backend.BucketName
-	var buf []byte
-	writer := aws.NewWriteAtBuffer(buf)
-	newObjectKey := object.BucketName + "/" + object.ObjectKey
-	if context.Value("operation") == "download" {
-		downloader := s3manager.NewDownloader(ad.session)
-		numBytes, err := downloader.DownloadWithContext(context, writer, &awss3.GetObjectInput{
-			Bucket: &bucket,
-			Key:    &newObjectKey,
-		})
-		if err != nil {
-			log.Logf("Download failed:%v", err)
-			return nil, S3Error{Code: 500, Description: "Download failed"}
-		} else {
-			log.Logf("Download succeed, bytes:%d\n", numBytes)
-			log.Logf("Download succeed, writer:%v\n", writer)
-			body := bytes.NewReader(writer.Bytes())
-			log.Logf("Download succeed, body:%v\n", *body)
-			// var ioreader io.Reader
-			// ioreader.Read(writer.Bytes())
-			// var ioReaderClose io.ReadCloser
-			// reader := ioutil.NopCloser(body)
-			// ioReaderClose.Read(writer.Bytes())
-			ioReaderClose := ioutil.NopCloser(body)
-			log.Logf("Download succeed, ioReaderClose:%v\n", ioReaderClose)
-			return ioReaderClose, NoError
-		}
-
-	}
-
-	return nil, NoError
 }
 
 func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
