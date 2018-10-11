@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aliyun"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
@@ -32,10 +31,6 @@ func Init(backend *backendpb.BackendDetail) DataStoreAdapter {
 	var StoreAdapter DataStoreAdapter
 
 	switch backend.Type {
-	case "aliyun":
-		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
-		StoreAdapter = aliyun.Init(backend)
-		return StoreAdapter
 	case "obs":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = hws.Init(backend)
