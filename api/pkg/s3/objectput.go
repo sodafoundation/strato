@@ -15,14 +15,17 @@
 package s3
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"net/http"
+
 	//	"github.com/micro/go-micro/errors"
+	"strconv"
+
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	"strconv"
 )
 
 //ObjectPut -

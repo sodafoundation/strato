@@ -53,4 +53,8 @@ type DataStoreAdapter interface {
 	PUT(stream io.Reader, object *pb.Object, context context.Context) S3Error
 	GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error)
 	DELETE(object *pb.DeleteObjectInput, context context.Context) S3Error
+	INITMULTIPARTUPLOAD(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error)
+	UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, context context.Context) (*pb.Object, S3Error)
+	COMPLETEMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error
+	ABORTMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error
 }
