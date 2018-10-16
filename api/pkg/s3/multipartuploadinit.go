@@ -35,7 +35,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	UploadId := request.PathParameter("UploadId")
 	contentLenght := request.HeaderParameter("content-length")
 
-	ctx := context.WithValue(request.Request.Context(), "operation", "multiupload")
+	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
 
