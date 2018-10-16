@@ -18,7 +18,7 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 	objectKey := request.PathParameter("objectKey")
 	uploadId := request.PathParameter("uploadId")
 	contentLenght := request.HeaderParameter("content-length")
-	ctx := context.WithValue(request.Request.Context(), "operation", "MultipartUpload")
+	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 	object := s3.Object{}
 	multipartUpload := s3.MultipartUpload{}
 	multipartUpload.Key = objectKey
