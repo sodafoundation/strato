@@ -151,3 +151,19 @@ func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 
 	return NoError
 }
+
+func (ad *AwsAdapter) INITMULTIPARTUPLOAD(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
+	return nil, NoError
+}
+
+func (ad *AwsAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, context context.Context) (*pb.Object, S3Error) {
+	return nil, NoError
+}
+
+func (ad *AwsAdapter) COMPLETEMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
+	return NoError
+}
+
+func (ad *AwsAdapter) ABORTMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
+	return NoError
+}

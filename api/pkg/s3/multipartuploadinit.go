@@ -29,18 +29,23 @@ import (
 )
 
 //ObjectPut -
-func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
+func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
+	UploadId := request.PathParameter("UploadId")
 	contentLenght := request.HeaderParameter("content-length")
 
-	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
+	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
 
 	object := s3.Object{}
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
+	multipartUpload := s3.MultipartUpload{}
+	multipartUpload.Bucket = bucketName
+	multipartUpload.Key = objectKey
+	multipartUpload.UploadId = UploadId
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
 
@@ -49,26 +54,11 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-
-	s3err := client.PUT(request.Request.Body, &object, ctx)
+	res, s3err := client.INITMULTIPARTUPLOAD(&object, ctx)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-
-	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	if objectMD != nil {
-		//TODO update
-
-	} else {
-		res, err := s.s3Client.CreateObject(ctx, &object)
-		if err != nil {
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
-		log.Log("Upload object successfully.")
-		response.WriteEntity(res)
-	}
-
+	log.Log("Uploadpart successfully.")
+	response.WriteEntity(res)
 }

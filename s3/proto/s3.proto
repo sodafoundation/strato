@@ -217,3 +217,9 @@ message GetObjectInput {
     string Key = 2;
     string Versionid = 3;
 }
+
+message MultipartUpload {
+    string Bucket = 1;
+    string Key = 2;
+    string uploadId = 3;
+}
