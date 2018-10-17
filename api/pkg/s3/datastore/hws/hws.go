@@ -127,13 +127,16 @@ func (ad *OBSAdapter) INITMULTIPARTUPLOAD(object *pb.Object, context context.Con
 
 }
 
-func (ad *OBSAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, context context.Context) (*pb.Object, S3Error) {
+func (ad *OBSAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*pb.Object, S3Error) {
+
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.UploadPartInput{}
 		input.Bucket = bucket
 		input.Key = multipartUpload.Key
 		input.Body = stream
+		input.PartNumber = int(partNumber)
+		input.PartSize = upBytes
 		input.UploadId = multipartUpload.UploadId
 		out, err := ad.client.UploadPart(input)
 		var object *pb.Object
@@ -141,7 +144,7 @@ func (ad *OBSAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.Multipart
 			log.Logf("uploadpart init failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "uploadpart init failed"}
 		} else {
-			log.Logf("uploadpart %s successfully.", out.PartNumber)
+			log.Logf("uploadpart %v successfully.", out.PartNumber)
 			object.Partions[out.PartNumber].Etag = out.ETag
 			return object, NoError
 		}

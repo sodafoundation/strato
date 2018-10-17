@@ -32,9 +32,14 @@ import (
 )
 
 type AwsAdapter struct {
-	backend *backendpb.BackendDetail
-	session *session.Session
+	backend            *backendpb.BackendDetail
+	session            *session.Session
+	svc                *awss3.S3                          //for multipart upload
+	multiUploadInitOut *awss3.CreateMultipartUploadOutput //for multipart upload
+	//uploadId string //for multipart upload
+	completeParts []*awss3.CompletedPart //for multipart upload
 }
+
 type s3Cred struct {
 	ak string
 	sk string
@@ -153,17 +158,98 @@ func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 }
 
 func (ad *AwsAdapter) INITMULTIPARTUPLOAD(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
-	return nil, NoError
+	bucket := ad.backend.BucketName
+	newObjectKey := object.BucketName + "/" + object.ObjectKey
+	ad.svc = awss3.New(ad.session)
+	multipartUpload := &pb.MultipartUpload{}
+	multiUpInput := &awss3.CreateMultipartUploadInput{
+		Bucket: &bucket,
+		Key:    &newObjectKey,
+	}
+	res, err := ad.svc.CreateMultipartUpload(multiUpInput)
+	if err != nil {
+		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
+		return nil, InternalError
+	} else {
+		log.Logf("Init s3 multipart upload succeed, UploadId:%s\n", *res.UploadId)
+		multipartUpload.Bucket = bucket
+		multipartUpload.Key = newObjectKey
+		multipartUpload.UploadId = *res.UploadId
+		return multipartUpload, NoError
+	}
 }
 
-func (ad *AwsAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, context context.Context) (*pb.Object, S3Error) {
+func (ad *AwsAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*pb.Object, S3Error) {
+	tries := 1
+	bucket := ad.backend.BucketName
+	newObjectKey := multipartUpload.Key
+	bytess, _ := ioutil.ReadAll(stream)
+	upPartInput := &awss3.UploadPartInput{
+		Body:          bytes.NewReader(bytess),
+		Bucket:        &bucket,
+		Key:           &newObjectKey,
+		PartNumber:    aws.Int64(partNumber),
+		UploadId:      &multipartUpload.UploadId,
+		ContentLength: aws.Int64(upBytes),
+	}
+	for tries <= 3 {
+		ad.svc = awss3.New(ad.session)
+		upRes, err := ad.svc.UploadPart(upPartInput)
+		if err != nil {
+			if tries == 3 {
+				log.Fatalf("Upload part to aws failed. err:%v\n", err)
+				return nil, S3Error{Code: 500, Description: "Download failed"}
+			}
+			log.Logf("Retrying to upload part#%d\n", partNumber)
+			tries++
+		} else {
+			log.Logf("Uploaded part #%d\n", partNumber)
+			part := awss3.CompletedPart{
+				ETag:       upRes.ETag,
+				PartNumber: aws.Int64(partNumber),
+			}
+			ad.completeParts = append(ad.completeParts, &part)
+			break
+		}
+	}
 	return nil, NoError
 }
 
 func (ad *AwsAdapter) COMPLETEMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
+	bucket := ad.backend.BucketName
+	newObjectKey := multipartUpload.Key
+	completeInput := &awss3.CompleteMultipartUploadInput{
+		Bucket:   &bucket,
+		Key:      &newObjectKey,
+		UploadId: &multipartUpload.UploadId,
+		MultipartUpload: &awss3.CompletedMultipartUpload{
+			Parts: ad.completeParts,
+		},
+	}
+
+	rsp, err := ad.svc.CompleteMultipartUpload(completeInput)
+	if err != nil {
+		log.Logf("completeMultipartUploadS3 failed, err:%v\n", err)
+	} else {
+		log.Logf("completeMultipartUploadS3 successfully, rsp:%v\n", rsp)
+	}
 	return NoError
 }
 
 func (ad *AwsAdapter) ABORTMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
+	bucket := ad.backend.BucketName
+	newObjectKey := multipartUpload.Key
+	abortInput := &awss3.AbortMultipartUploadInput{
+		Bucket:   &bucket,
+		Key:      &newObjectKey,
+		UploadId: &multipartUpload.UploadId,
+	}
+
+	rsp, err := ad.svc.AbortMultipartUpload(abortInput)
+	if err != nil {
+		log.Logf("abortMultipartUploadS3 failed, err:%v\n", err)
+	} else {
+		log.Logf("abortMultipartUploadS3 successfully, rsp:%v\n", rsp)
+	}
 	return NoError
 }
