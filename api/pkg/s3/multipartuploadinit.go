@@ -32,7 +32,6 @@ import (
 func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-	UploadId := request.PathParameter("UploadId")
 	contentLenght := request.HeaderParameter("content-length")
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
@@ -45,7 +44,6 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	multipartUpload := s3.MultipartUpload{}
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
-	multipartUpload.UploadId = UploadId
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
 
