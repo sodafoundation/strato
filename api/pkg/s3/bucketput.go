@@ -20,6 +20,7 @@ import (
 	"github.com/micro/go-log"
 	"net/http"
 	//	"github.com/micro/go-micro/errors"
+	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 	"time"
@@ -41,7 +42,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.CreationDate = time.Now().Unix()
 	log.Logf("Create bucket body: %s", string(body))
 	if body != nil {
-		createBucketConf := CreateBucketConfiguration{}
+		createBucketConf := model.CreateBucketConfiguration{}
 		err := xml.Unmarshal(body, &createBucketConf)
 		if err != nil {
 			response.WriteError(http.StatusInternalServerError, err)

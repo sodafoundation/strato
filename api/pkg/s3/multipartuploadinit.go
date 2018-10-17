@@ -23,7 +23,9 @@ import (
 	//	"github.com/micro/go-micro/errors"
 	"strconv"
 
+	"encoding/xml"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
@@ -52,11 +54,27 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-	res, s3err := client.INITMULTIPARTUPLOAD(&object, ctx)
+	res, s3err := client.InitMultipartUpload(&object, ctx)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
+	result := model.InitiateMultipartUploadResult{
+		Xmlns:    model.Xmlns,
+		Bucket:   res.Bucket,
+		Key:      res.Key,
+		UploadId: res.UploadId,
+	}
+
+	xmlstring, err := xml.MarshalIndent(result, "", "  ")
+	if err != nil {
+		log.Logf("Parse ListBuckets error: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	xmlstring = []byte(xml.Header + string(xmlstring))
+	log.Logf("resp:\n%s", xmlstring)
+	response.Write(xmlstring)
 	log.Log("Uploadpart successfully.")
-	response.WriteEntity(res)
 }

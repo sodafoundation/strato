@@ -22,6 +22,7 @@ import (
 	"github.com/micro/go-log"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -103,7 +104,7 @@ func (ad *OBSAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	return NoError
 }
 
-func (ad *OBSAdapter) INITMULTIPARTUPLOAD(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
+func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.backend.BucketName
 	var multipartUpload *pb.MultipartUpload
 	if context.Value("operation") == "multipartupload" {
@@ -127,7 +128,7 @@ func (ad *OBSAdapter) INITMULTIPARTUPLOAD(object *pb.Object, context context.Con
 
 }
 
-func (ad *OBSAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*pb.Object, S3Error) {
+func (ad *OBSAdapter) UploadPart(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*model.UploadPartResult, S3Error) {
 
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "multipartupload" {
@@ -139,39 +140,50 @@ func (ad *OBSAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.Multipart
 		input.PartSize = upBytes
 		input.UploadId = multipartUpload.UploadId
 		out, err := ad.client.UploadPart(input)
-		var object *pb.Object
+
 		if err != nil {
 			log.Logf("uploadpart init failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "uploadpart init failed"}
 		} else {
 			log.Logf("uploadpart %v successfully.", out.PartNumber)
-			object.Partions[out.PartNumber].Etag = out.ETag
-			return object, NoError
+			result := &model.UploadPartResult{ETag: out.ETag, PartNumber: partNumber}
+			return result, NoError
 		}
-
 	}
 	return nil, NoError
 }
 
-func (ad *OBSAdapter) COMPLETEMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
+func (ad *OBSAdapter) CompleteMultipartUpload(
+	multipartUpload *pb.MultipartUpload,
+	completeUpload *model.CompleteMultipartUpload,
+	context context.Context) (*model.CompleteMultipartUploadResult, S3Error) {
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.CompleteMultipartUploadInput{}
 		input.Bucket = bucket
 		input.Key = multipartUpload.Key
 		input.UploadId = multipartUpload.UploadId
-		_, err := ad.client.CompleteMultipartUpload(input)
+		resp, err := ad.client.CompleteMultipartUpload(input)
+		result := &model.CompleteMultipartUploadResult{
+			Xmlns:    model.Xmlns,
+			Location: resp.Location,
+			Bucket:   resp.Bucket,
+			Key:      resp.Key,
+			ETag:     resp.ETag,
+		}
 		if err != nil {
 			log.Logf("CompleteMultipartUploadInput is nil:%v", err)
-			return S3Error{Code: 500, Description: "uploadpart init failed"}
-		} else {
-			log.Logf("CompleteMultipartUploadInput successfully.")
-			return NoError
+			return nil, S3Error{Code: 500, Description: "uploadpart init failed"}
 		}
+
+		log.Logf("CompleteMultipartUploadInput successfully.")
+		return result, NoError
 	}
-	return NoError
+
+	return nil, NoError
 }
-func (ad *OBSAdapter) ABORTMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
+
+func (ad *OBSAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.AbortMultipartUploadInput{}

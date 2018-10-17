@@ -74,13 +74,13 @@ func ReadBody(r *restful.Request) []byte {
 
 func _getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
 	ctx := context.Background()
-	buekct, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		return nil
 	}
-	backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: buekct.Backend})
+	backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: bucket.Backend})
 	if backendErr != nil {
-		log.Logf("Get backend %s failed.", buekct.Backend)
+		log.Logf("Get backend %s failed.", bucket.Backend)
 		return nil
 	}
 
