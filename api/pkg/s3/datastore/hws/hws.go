@@ -128,6 +128,7 @@ func (ad *OBSAdapter) INITMULTIPARTUPLOAD(object *pb.Object, context context.Con
 }
 
 func (ad *OBSAdapter) UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*pb.Object, S3Error) {
+
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.UploadPartInput{}
