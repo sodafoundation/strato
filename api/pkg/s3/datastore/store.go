@@ -23,6 +23,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -53,9 +54,9 @@ type DataStoreAdapter interface {
 	PUT(stream io.Reader, object *pb.Object, context context.Context) S3Error
 	GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error)
 	DELETE(object *pb.DeleteObjectInput, context context.Context) S3Error
-	INITMULTIPARTUPLOAD(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error)
 
-	UPLOADPART(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*pb.Object, S3Error)
-	COMPLETEMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error
-	ABORTMULTIPARTUPLOAD(multipartUpload *pb.MultipartUpload, context context.Context) S3Error
+	InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error)
+	UploadPart(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*model.UploadPartResult, S3Error)
+	CompleteMultipartUpload(multipartUpload *pb.MultipartUpload, completeUpload *model.CompleteMultipartUpload, context context.Context) (*model.CompleteMultipartUploadResult, S3Error)
+	AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error
 }

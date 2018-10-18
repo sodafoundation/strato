@@ -15,44 +15,42 @@
 package s3
 
 import (
+	"encoding/xml"
+	"net/http"
+	"time"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"net/http"
-	//	"github.com/micro/go-micro/errors"
-	"encoding/xml"
+	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	"strings"
-	"time"
 )
 
-func parseListBuckets(list *s3.ListBucketsResponse) *string {
-	result := []string{}
+func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	if list == nil || list.Buckets == nil {
 		return nil
 	}
-	temp := ListAllMyBucketsResult{}
+	temp := model.ListAllMyBucketsResult{}
 
 	log.Logf("Parse ListBuckets: %v", list.Buckets)
 	//default xmlns
-	temp.Xmlns = Xmlns
-	buckets := []Bucket{}
+	temp.Xmlns = model.Xmlns
+	buckets := []model.Bucket{}
 	for _, value := range list.Buckets {
 		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
-		bucket := Bucket{Name: value.Name, CreationDate: creationDate}
+		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
 
-	data, err := xml.MarshalIndent(temp, "", "")
+	xmlstring, err := xml.MarshalIndent(temp, "", "  ")
 	if err != nil {
 		log.Logf("Parse ListBuckets error: %v", err)
 		return nil
 	}
-	result = append(result, xml.Header)
-	result = append(result, string(data))
-	str := strings.Join(result, "")
-	return &str
+	xmlstring = []byte(xml.Header + string(xmlstring))
+	log.Logf("return error %v", xmlstring)
+	return xmlstring
 }
 
 func (s *APIService) ListBuckets(request *restful.Request, response *restful.Response) {
@@ -68,8 +66,6 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 
 	realRes := parseListBuckets(res)
 
-	log.Logf("Get List of buckets successfully:%v\n", realRes)
-
-	response.WriteEntity(realRes)
-
+	log.Logf("Get List of buckets successfully:%v\n", string(realRes))
+	response.Write(realRes)
 }
