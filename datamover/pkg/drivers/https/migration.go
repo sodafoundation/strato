@@ -21,8 +21,8 @@ import (
 )
 
 var simuRoutines = 10
-var ObjSizeLimit int64 = 5 * 1024 * 1024 //The max object size that can be moved directly
-var PART_SIZE int64 = 5 * 1024 * 1024
+var ObjSizeLimit int64 = 50 * 1024 * 1024 //The max object size that can be moved directly
+var PART_SIZE int64 = 50 * 1024 * 1024
 //format of key:
 var locMap map[string]*LocationInfo
 var s3client osdss3.S3Service

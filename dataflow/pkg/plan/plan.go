@@ -219,35 +219,6 @@ func sendJob(req *datamover.RunJobRequest) error{
 	return kafka.ProduceMsg(topicMigration, data)
 }
 
-/*func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) error{
-	ch := make(chan int)
-	go func(req *datamover.RunJobRequest) {
-		//TODO: call mclient.Runjob directly is a temporary way, need to use sending message to kafka replace it.
-		ctx := context.Background()
-		_, ok := ctx.Deadline()
-		if !ok {
-			ctx, _ = context.WithTimeout(ctx, 7200*time.Second)
-		}
-		_, err := mclient.Runjob(ctx, req)
-		if err != nil {
-			log.Logf("Run job failed, err:%v\n", err)
-			ch <- 1
-		} else {
-			log.Log("Run job succeed.")
-			ch <- 0
-		}
-	}(req)
-
-	select {
-	case n := <-ch:
-		log.Logf("Run job end, n=%d\n", n)
-	case <-time.After(86400 * time.Second):
-		log.Log("Wait job timeout.")
-	}
-
-	return nil
-}*/
-
 func buildConn(reqConn *datamover.Connector, conn *Connector) {
 	if conn.StorType == STOR_TYPE_OPENSDS {
 		reqConn.BucketName = conn.BucketName

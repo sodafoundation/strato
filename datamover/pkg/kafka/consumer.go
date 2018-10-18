@@ -2,7 +2,7 @@ package kafka
 
 import (
 	"github.com/Shopify/sarama"
-	"github.com/sarama-cluster"
+	"github.com/bsm/sarama-cluster"
 	"os"
 	"log"
 	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
