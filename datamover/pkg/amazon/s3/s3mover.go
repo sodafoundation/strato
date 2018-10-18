@@ -51,6 +51,7 @@ func (myc *s3Cred) IsExpired() bool {
 
 func (mover *S3Mover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
 	log.Log("UploadObj of s3mover is called.")
+	log.Logf("destLoca.Region=%s, destLoca.EndPoint=%s\n", destLoca.Region, destLoca.EndPoint)
 	s3c := s3Cred{ak: destLoca.Access, sk: destLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{

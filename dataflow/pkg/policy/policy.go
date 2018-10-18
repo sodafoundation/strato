@@ -24,7 +24,6 @@ import (
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	"github.com/opensds/multi-cloud/datamover/proto"
 )
 
 func Create(ctx *context.Context, pol *Policy) (*Policy, error) {
@@ -42,8 +41,7 @@ func Delete(ctx *context.Context, id string) error {
 }
 
 //When update policy, policy id must be provided
-func Update(ctx *context.Context, policyId string, updateMap map[string]interface{},
-	datamover datamover.DatamoverService) (*Policy, error) {
+func Update(ctx *context.Context, policyId string, updateMap map[string]interface{}) (*Policy, error) {
 
 	curPol, err := db.DbAdapter.GetPolicy(ctx, policyId)
 	if err != nil {
@@ -80,7 +78,7 @@ func Update(ctx *context.Context, policyId string, updateMap map[string]interfac
 	}
 
 	if updateInTrigger {
-		if err := updatePolicyInTrigger(ctx, resp, datamover); err != nil {
+		if err := updatePolicyInTrigger(ctx, resp); err != nil {
 			return nil, err
 		}
 	}
@@ -88,7 +86,7 @@ func Update(ctx *context.Context, policyId string, updateMap map[string]interfac
 	return resp, nil
 }
 
-func updatePolicyInTrigger(ctx *context.Context, policy *Policy, datamover datamover.DatamoverService) error {
+func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
 	plans, err := db.DbAdapter.GetPlanByPolicy(ctx, policy.Id.Hex())
 	if err != nil {
 		log.Logf("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)
@@ -99,7 +97,7 @@ func updatePolicyInTrigger(ctx *context.Context, policy *Policy, datamover datam
 		if !p.PolicyEnabled {
 			continue // Policy is not enabled, ignore it
 		}
-		exe := plan.NewPlanExecutor(ctx, datamover, &p)
+		exe := plan.NewPlanExecutor(ctx, &p)
 		if err := t.Update(ctx, &p, exe); err != nil {
 			return err
 		}
