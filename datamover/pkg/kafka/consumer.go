@@ -14,40 +14,6 @@ var consumer *cluster.Consumer
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
-/*func initTopics(addrs []string, topics []string) error {
-	config := sarama.NewConfig()
-	config.Version = sarama.V2_0_0_0
-
-	client, err := sarama.NewClient(addrs, config)
-	if err != nil {
-		logger.Printf("initTopics failed, err:%v\n", err)
-		return err
-	}
-	defer client.Close()
-
-	tps, err := client.Topics()
-	if err != nil {
-		logger.Printf("Get topics failed, err:%v\n", err)
-		return err
-	}
-
-	for i := 0; i < len(topics); i++ {
-		exist := false
-		for j := 0; j < len(tps); j++ {
-			if tps[j] == topics[i] {
-				exist = true
-				break;
-			}
-		}
-		//if topic not exist, create it.
-		if exist == false {
-
-		}
-	}
-
-	return nil
-}*/
-
 func Init(addrs []string, group string, topics []string) error{
 	logger.Println("Init consumer ...")
 
