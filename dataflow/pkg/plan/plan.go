@@ -27,12 +27,15 @@ import (
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/opensds/multi-cloud/datamover/proto"
-	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
+	//"golang.org/x/net/context"
 )
 
 var dataBaseName = "test"
 var tblConnector = "connector"
 var tblPolicy = "policy"
+var topicMigration = "migration"
+
 
 func isEqual(src *Connector, dest *Connector) bool {
 	switch src.StorType {
@@ -47,7 +50,7 @@ func isEqual(src *Connector, dest *Connector) bool {
 	}
 }
 
-func Create(ctx *c.Context, plan *Plan, datamover datamover.DatamoverService) (*Plan, error) {
+func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	//Check parameter validity
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
 	if !m || plan.Name == "all" {
@@ -80,7 +83,7 @@ func Create(ctx *c.Context, plan *Plan, datamover datamover.DatamoverService) (*
 	}
 
 	if plan.PolicyId != "" && plan.PolicyEnabled {
-		if err := trigger.GetTriggerMgr().Add(ctx, plan, NewPlanExecutor(ctx, datamover, plan)); err != nil {
+		if err := trigger.GetTriggerMgr().Add(ctx, plan, NewPlanExecutor(ctx, plan)); err != nil {
 			log.Logf("Add plan(%s) to trigger failed, %v", plan.Id.Hex(), err)
 			return nil, err
 		}
@@ -114,8 +117,7 @@ func Delete(ctx *c.Context, id string) error {
 }
 
 //1. cannot update type
-func Update(ctx *c.Context, planId string, updateMap map[string]interface{},
-	datamover datamover.DatamoverService) (*Plan, error) {
+func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*Plan, error) {
 
 	curPlan, err := db.DbAdapter.GetPlan(ctx, planId)
 	if err != nil {
@@ -179,7 +181,7 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{},
 	if needUpdateTrigger {
 		trigger.GetTriggerMgr().Remove(ctx, curPlan)
 		if curPlan.PolicyId != "" && curPlan.PolicyEnabled {
-			if err := trigger.GetTriggerMgr().Add(ctx, curPlan, NewPlanExecutor(ctx, datamover, curPlan)); err != nil {
+			if err := trigger.GetTriggerMgr().Add(ctx, curPlan, NewPlanExecutor(ctx, curPlan)); err != nil {
 				log.Logf("Add plan(%s) to trigger failed, %v", curPlan.Id.Hex(), err)
 				return nil, err
 			}
@@ -207,7 +209,17 @@ func getLocation(conn *Connector) (string, error) {
 	}
 }
 
-func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) error {
+func sendJob(req *datamover.RunJobRequest) error{
+	data, err := json.Marshal(*req)
+	if err != nil {
+		log.Logf("Marshal run job request failed, err:%v\n", data)
+		return err
+	}
+
+	return kafka.ProduceMsg(topicMigration, data)
+}
+
+/*func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) error{
 	ch := make(chan int)
 	go func(req *datamover.RunJobRequest) {
 		//TODO: call mclient.Runjob directly is a temporary way, need to use sending message to kafka replace it.
@@ -234,7 +246,7 @@ func sendJob(req *datamover.RunJobRequest, mclient datamover.DatamoverService) e
 	}
 
 	return nil
-}
+}*/
 
 func buildConn(reqConn *datamover.Connector, conn *Connector) {
 	if conn.StorType == STOR_TYPE_OPENSDS {
@@ -246,7 +258,7 @@ func buildConn(reqConn *datamover.Connector, conn *Connector) {
 	}
 }
 
-func Run(ctx *c.Context, id string, mclient datamover.DatamoverService) (bson.ObjectId, error) {
+func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	//Get information from database
 	plan, err := db.DbAdapter.GetPlan(ctx, id)
 	if err != nil {
@@ -308,7 +320,7 @@ func Run(ctx *c.Context, id string, mclient datamover.DatamoverService) (bson.Ob
 		destConn := datamover.Connector{Type: plan.DestConn.StorType}
 		buildConn(&destConn, &plan.DestConn)
 		req.DestConn = &destConn
-		//go sendJob(&req, mclient)
+		go sendJob(&req)
 	} else {
 		log.Logf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
 			job.PlanName, job.SourceLocation, job.DestLocation)
@@ -318,15 +330,13 @@ func Run(ctx *c.Context, id string, mclient datamover.DatamoverService) (bson.Ob
 }
 
 type TriggerExecutor struct {
-	datamover datamover.DatamoverService
 	planId    string
 	tenantId  string
 	ctx       *c.Context
 }
 
-func NewPlanExecutor(ctx *c.Context, datamover datamover.DatamoverService, plan *Plan) trigger.Executer {
+func NewPlanExecutor(ctx *c.Context, plan *Plan) trigger.Executer {
 	return &TriggerExecutor{
-		datamover: datamover,
 		planId:    plan.Id.Hex(),
 		tenantId:  plan.Tenant,
 		ctx:       ctx,

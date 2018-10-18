@@ -19,8 +19,6 @@ import (
 	"github.com/micro/go-micro"
 	handler "github.com/opensds/multi-cloud/dataflow/pkg"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
-	"github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler"
 	_ "github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger/crontrigger"
 )
@@ -30,10 +28,10 @@ func main() {
 		micro.Name("dataflow"),
 	)
 
+	log.Log("Init dataflow service.")
 	service.Init()
-	dm := datamover.NewDatamoverService("datamover", client.DefaultClient)
-	pb.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService(dm))
-	scheduler.LoadAllPlans(dm)
+	pb.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService())
+	scheduler.LoadAllPlans()
 	if err := service.Run(); err != nil {
 		log.Log(err)
 	}

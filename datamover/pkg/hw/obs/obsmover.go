@@ -132,7 +132,18 @@ func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []
 	}
 	defer output.Body.Close()
 
-	readCount, readErr := output.Body.Read(buf)
+	readCount := 0
+	var readErr error
+	for {
+		var rc int
+		rc, readErr = output.Body.Read(buf)
+		if rc > 0 {
+			readCount += rc
+		}
+		if readErr != nil {
+			break
+		}
+	}
 	if readErr != nil && readErr != io.EOF{
 		//log.Logf("%s", buf[:readCount])
 		log.Logf("Body.read failed, err:%v\n", err)

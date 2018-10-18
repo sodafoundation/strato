@@ -527,7 +527,8 @@ func (ad *adapter) CreateJob(ctx *Context, job *Job) (*Job, error) {
 
 	c := ss.DB(DataBaseName).C(CollJob)
 	var err error
-	for i := 0; i < 3; i++ {
+	i := 0
+	for ; i < 3; i++ {
 		job.Id = bson.NewObjectId()
 		err = c.Insert(&job)
 		if err != nil && mgo.IsDup(err) {
@@ -536,8 +537,10 @@ func (ad *adapter) CreateJob(ctx *Context, job *Job) (*Job, error) {
 		}
 		break
 	}
+	if i == 3 {
+		log.Log("Add job to database failed too much times.")
+	}
 
-	log.Log("Add job failed, objectid duplicate too much times.")
 	return job, err
 }
 
