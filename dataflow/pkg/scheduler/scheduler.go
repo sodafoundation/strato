@@ -20,10 +20,9 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	"github.com/opensds/multi-cloud/datamover/proto"
 )
 
-func LoadAllPlans(service datamover.DatamoverService) {
+func LoadAllPlans() {
 	ctx := context.NewAdminContext()
 	plans, err := db.DbAdapter.ListPlan(ctx)
 	if err != nil {
@@ -33,7 +32,7 @@ func LoadAllPlans(service datamover.DatamoverService) {
 		if p.PolicyId == "" || !p.PolicyEnabled {
 			continue
 		}
-		e := plan.NewPlanExecutor(ctx, service, &p)
+		e := plan.NewPlanExecutor(ctx, &p)
 		err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 		if err != nil {
 			log.Logf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)

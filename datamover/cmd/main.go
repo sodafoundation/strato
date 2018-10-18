@@ -15,11 +15,10 @@
 package main
 
 import (
+	"github.com/micro/go-micro"
+	datamover "github.com/opensds/multi-cloud/datamover/pkg"
+	"github.com/micro/go-log"
 	"fmt"
-
-	micro "github.com/micro/go-micro"
-	handler "github.com/opensds/multi-cloud/datamover/pkg"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
 )
 
 func main() {
@@ -27,9 +26,11 @@ func main() {
 		micro.Name("datamover"),
 	)
 
+	log.Log("Init datamover serivice")
 	service.Init()
 
-	pb.RegisterDatamoverHandler(service.Server(), handler.NewDatamoverService())
+	datamover.InitDatamoverService()
+	//pb.RegisterDatamoverHandler(service.Server(), handler.NewDatamoverService())
 	if err := service.Run(); err != nil {
 		fmt.Println(err)
 	}

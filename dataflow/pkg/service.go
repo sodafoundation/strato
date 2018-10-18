@@ -27,21 +27,33 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/policy"
+	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
-	"github.com/opensds/multi-cloud/datamover/proto"
+	"strings"
 )
 
-type dataflowService struct {
-	datamoverClient datamover.DatamoverService
-}
+type dataflowService struct{}
 
-func NewDataFlowService(datamover datamover.DatamoverService) pb.DataFlowHandler {
+func NewDataFlowService() pb.DataFlowHandler {
 	host := os.Getenv("DB_HOST")
 	dbstor := Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}
 	db.Init(&dbstor)
 
-	return &dataflowService{datamoverClient: datamover}
+	addrs := []string{}
+	config := strings.Split(os.Getenv("KAFKA_ADVERTISED_LISTENERS"), ";")
+	for i:=0; i < len(config); i++ {
+		addr := strings.Split(config[i], "//")
+		if len(addr) != 2 {
+			log.Log("Invalid addr:", config[i])
+		}else {
+			addrs = append(addrs, addr[1])
+		}
+	}
+
+	kafka.Init(addrs)
+
+	return &dataflowService{}
 }
 
 func policyModel2Resp(policy *model.Policy) *pb.Policy {
@@ -170,7 +182,7 @@ func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyR
 		return err
 	}
 
-	p, err := policy.Update(actx, policyId, updateMap, b.datamoverClient)
+	p, err := policy.Update(actx, policyId, updateMap)
 	if err != nil {
 		log.Logf("Update policy finished, err:%s", err)
 		return err
@@ -341,7 +353,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 		return errors.New("Name or type is null.")
 	}
 
-	p, err := plan.Create(actx, &pl, b.datamoverClient)
+	p, err := plan.Create(actx, &pl)
 	if err != nil {
 		log.Logf("Create plan failed, err", err)
 		return err
@@ -385,7 +397,7 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 		return err
 	}
 
-	p, err := plan.Update(actx, in.GetPlanId(), updateMap, b.datamoverClient)
+	p, err := plan.Update(actx, in.GetPlanId(), updateMap)
 	if err != nil {
 		log.Logf("Update plan finished, err:%s.", err)
 		return err
@@ -400,15 +412,16 @@ func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, ou
 	actx := c.NewContextFromJson(in.GetContext())
 
 	id := in.Id
-	jid, err := plan.Run(actx, id, b.datamoverClient)
+	jid, err := plan.Run(actx, id)
 	if err == nil {
 		out.JobId = string(jid.Hex())
 		out.Err = ""
 	} else {
 		out.JobId = ""
 		out.Err = err.Error()
+		log.Logf("Run plan err:%s.", out.Err)
 	}
-	log.Logf("Run plan err:%d.", out.Err)
+
 	return err
 }
 
