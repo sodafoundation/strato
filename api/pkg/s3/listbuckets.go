@@ -49,7 +49,6 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 		return nil
 	}
 	xmlstring = []byte(xml.Header + string(xmlstring))
-	log.Logf("return error %v", xmlstring)
 	return xmlstring
 }
 
