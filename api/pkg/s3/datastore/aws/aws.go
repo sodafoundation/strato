@@ -166,11 +166,11 @@ func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 	res, err := svc.CreateMultipartUpload(multiUpInput)
 	if err != nil {
 		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
-		return nil, InternalError
+		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
 		log.Logf("Init s3 multipart upload succeed, UploadId:%s\n", *res.UploadId)
-		multipartUpload.Bucket = bucket
-		multipartUpload.Key = newObjectKey
+		multipartUpload.Bucket = object.BucketName
+		multipartUpload.Key = object.ObjectKey
 		multipartUpload.UploadId = *res.UploadId
 		return multipartUpload, NoError
 	}
@@ -225,7 +225,10 @@ func (ad *AwsAdapter) CompleteMultipartUpload(
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
 	var completeParts []*awss3.CompletedPart
 	for _, p := range completeUpload.Part {
-		completePart := &awss3.CompletedPart{ETag: &p.ETag, PartNumber: &p.PartNumber}
+		completePart := &awss3.CompletedPart{
+			ETag:       aws.String(p.ETag),
+			PartNumber: aws.Int64(p.PartNumber),
+		}
 		completeParts = append(completeParts, completePart)
 	}
 	completeInput := &awss3.CompleteMultipartUploadInput{
@@ -241,12 +244,13 @@ func (ad *AwsAdapter) CompleteMultipartUpload(
 	resp, err := svc.CompleteMultipartUpload(completeInput)
 	if err != nil {
 		log.Logf("completeMultipartUploadS3 failed, err:%v\n", err)
+		return nil, S3Error{Code: 500, Description: err.Error()}
 	}
 	result := &model.CompleteMultipartUploadResult{
 		Xmlns:    model.Xmlns,
 		Location: *resp.Location,
-		Bucket:   *resp.Bucket,
-		Key:      *resp.Key,
+		Bucket:   multipartUpload.Bucket,
+		Key:      multipartUpload.Key,
 		ETag:     *resp.ETag,
 	}
 
@@ -267,6 +271,7 @@ func (ad *AwsAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 	rsp, err := svc.AbortMultipartUpload(abortInput)
 	if err != nil {
 		log.Logf("abortMultipartUploadS3 failed, err:%v\n", err)
+		return S3Error{Code: 500, Description: err.Error()}
 	} else {
 		log.Logf("abortMultipartUploadS3 successfully, rsp:%v\n", rsp)
 	}

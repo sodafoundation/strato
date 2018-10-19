@@ -24,7 +24,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 
 	body := ReadBody(request)
 
-	log.Logf("Create bucket body: %s", string(body))
+	log.Logf("complete multipart upload body: %s", string(body))
 	completeUpload := &model.CompleteMultipartUpload{}
 	xml.Unmarshal(body, completeUpload)
 

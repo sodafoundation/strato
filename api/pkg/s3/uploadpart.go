@@ -2,17 +2,13 @@ package s3
 
 import (
 	"context"
-
+	"encoding/xml"
 	"net/http"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/s3/proto"
-
-	//	"github.com/micro/go-micro/errors"
-
-	"encoding/xml"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 )
 
