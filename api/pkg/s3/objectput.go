@@ -59,8 +59,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	if objectMD != nil {
-		//TODO update
-
+		res,err := s.s3Client.UpdateObject(ctx,&object)
+		if err != nil {
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Log("Upload object successfully.")
+		response.WriteEntity(res)
 	} else {
 		res, err := s.s3Client.CreateObject(ctx, &object)
 		if err != nil {
@@ -70,5 +75,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		log.Log("Upload object successfully.")
 		response.WriteEntity(res)
 	}
+
 
 }

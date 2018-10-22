@@ -9,14 +9,21 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"net/http"
+	"strconv"
 )
 
 func (s *APIService) CompleteMultipartUpload(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	UploadId := request.QueryParameter("uploadId")
+	contentLenght := request.HeaderParameter("content-length")
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
+	object := s3.Object{}
+	object.ObjectKey = objectKey
+	object.BucketName = bucketName
+	size, _ := strconv.ParseInt(contentLenght, 10, 64)
+	object.Size = size
 	multipartUpload := s3.MultipartUpload{}
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
@@ -39,6 +46,25 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
+	}
+	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	if objectMD != nil {
+		res,err := s.s3Client.UpdateObject(ctx,&object)
+		if err != nil {
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Log("Upload object successfully.")
+		response.WriteEntity(res)
+	} else {
+		res, err := s.s3Client.CreateObject(ctx, &object)
+		if err != nil {
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Log("Upload object successfully.")
+		response.WriteEntity(res)
 	}
 	xmlstring, err := xml.MarshalIndent(resp, "", "  ")
 	if err != nil {
