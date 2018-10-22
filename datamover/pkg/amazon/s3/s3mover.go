@@ -274,3 +274,39 @@ func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
 	log.Logf("Object[key:%s] successfully deleted\n", objKey)
 	return err
 }
+
+func ListObjs(loca *LocationInfo) ([]*s3.Object, error) {
+	s3c := s3Cred{ak: loca.Access, sk: loca.Security}
+	creds := credentials.NewCredentials(&s3c)
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(loca.Region),
+		Endpoint:    aws.String(loca.EndPoint),
+		Credentials: creds,
+	})
+	if err != nil {
+		log.Logf("[s3mover] New session failed, err:%v\n", err)
+		return nil,err
+	}
+
+	svc := s3.New(sess)
+	input := &s3.ListObjectsInput{Bucket:aws.String(loca.BucketName)}
+	output, e := svc.ListObjects(input)
+	if e != nil {
+		log.Logf("[s3mover] List aws bucket failed, err:%v\n", e)
+		return nil,e
+	}
+
+	objs := output.Contents
+	for ; *output.IsTruncated == true ; {
+		input.Marker = output.NextMarker
+		output, err = svc.ListObjects(input)
+		if err != nil {
+			log.Logf("[s3mover] List objects failed, err:%v\n", err)
+			return nil,err
+		}
+		objs = append(objs, output.Contents...)
+	}
+
+	log.Logf("[s3mover] Number of objects in bucket[%s] is %d.\n", loca.BucketName, len(objs))
+	return output.Contents,nil
+}

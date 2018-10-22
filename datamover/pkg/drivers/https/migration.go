@@ -111,6 +111,28 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo,err
 
 		return refreshBackendLocation(ctx, virtBkname, rspbk.Backend)
 	}
+	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE:{
+		cfg := conn.ConnConfig
+		loca := LocationInfo{}
+		loca.StorType = conn.Type
+		for i := 0; i < len(cfg); i++ {
+			switch cfg[i].Key {
+			case "region":
+				loca.Region = cfg[i].Value
+			case "endpoint":
+				loca.EndPoint = cfg[i].Value
+			case "bucketname":
+				loca.BucketName = cfg[i].Value
+			case "access":
+				loca.Access = cfg[i].Value
+			case "security":
+				loca.Security = cfg[i].Value
+			default:
+				logger.Printf("Uknow key[%s] for connector.\n", cfg[i].Key)
+			}
+		}
+		return &loca, nil
+	}
 	default:{
 		logger.Printf("Unsupport type:%s.\n", conn.Type)
 		return nil,errors.New("unsupport type")
@@ -190,7 +212,7 @@ func downloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64
 		mover := &obsmover.ObsMover{}
 		return mover.DownloadRange(objKey, srcLoca, buf, start, end)
 	default:
-		logger.Printf("Unsupport storType[%d] to download.\n", srcLoca.StorType)
+		logger.Printf("Unsupport storType[%s] to download.\n", srcLoca.StorType)
 	}
 
 	return 0,errors.New("Unsupport storage type.")
@@ -207,7 +229,7 @@ func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorke
 		err := mover.MultiPartUploadInit(objKey, destLoca)
 		return mover, err
 	default:
-		logger.Printf("Unsupport storType[%d] to download.\n", destLoca.StorType)
+		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
 	return nil,errors.New("Unsupport storage type.")
@@ -218,7 +240,7 @@ func uploadPart(objKey string, destLoca *LocationInfo, mover MoveWorker, upBytes
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return mover.UploadPart(objKey, destLoca, upBytes, buf, partNumber, offset)
 	default:
-		logger.Printf("Unsupport storType[%d] to download.\n", destLoca.StorType)
+		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
 	return errors.New("Unsupport storage type.")
@@ -229,7 +251,7 @@ func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorke
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return mover.AbortMultipartUpload(objKey, destLoca)
 	default:
-		logger.Printf("Unsupport storType[%d] to download.\n", destLoca.StorType)
+		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
 	return errors.New("Unsupport storage type.")
@@ -240,7 +262,7 @@ func completeMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWo
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return mover.CompleteMultipartUpload(objKey, destLoca)
 	default:
-		logger.Printf("Unsupport storType[%d] to download.\n", destLoca.StorType)
+		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
 	return errors.New("Unsupport storage type.")
@@ -252,7 +274,7 @@ func multipartMoveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *Locatio
 		partCount++
 	}
 
-	log.Printf("obj.Obj.ObjectKey=%s, srcLoca.VirBucket=%s, destLoca.VirBucket=%s\n",
+	logger.Printf("obj.Obj.ObjectKey=%s, srcLoca.VirBucket=%s, destLoca.VirBucket=%s\n",
 		obj.Obj.ObjectKey, srcLoca.VirBucket, destLoca.VirBucket)
 	downloadObjKey := obj.Obj.ObjectKey
 	if srcLoca.VirBucket != "" {
@@ -340,10 +362,13 @@ func deleteObj(ctx context.Context, obj *SourceOject, loca *LocationInfo) error 
 	}
 
 	//delete metadata
-	delMetaReq := osdss3.DeleteObjectInput{Bucket:loca.BucketName, Key:obj.Obj.ObjectKey}
-	_, err = s3client.DeleteObject(ctx, &delMetaReq)
-	if err != nil {
-		logger.Printf("Delete object metadata of obj [objKey:%s] failed.\n", obj.Obj.ObjectKey)
+	if loca.VirBucket != "" {
+		delMetaReq := osdss3.DeleteObjectInput{Bucket:loca.VirBucket, Key:obj.Obj.ObjectKey}
+		_, err = s3client.DeleteObject(ctx, &delMetaReq)
+		if err != nil {
+			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] failed.\n", loca.VirBucket,
+				obj.Obj.ObjectKey)
+		}
 	}
 
 	return err
@@ -380,6 +405,8 @@ func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] failed,err:%v.\n", obj.Obj.ObjectKey,
 				obj.Obj.BucketName,err)
 		}
+		logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.Obj.ObjectKey,
+			obj.Obj.BucketName)
 	}
 
 	//Delete source data if needed
@@ -402,7 +429,6 @@ func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*SourceOject, error){
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:{
-		//obj := osdss3.Object{ObjectKey:filt.Prefix, BucketName:conn.BucketName}
 		//TODO:need to support filter
 		req := osdss3.ListObjectsRequest{Bucket:conn.BucketName}
 		objs,err := s3client.ListObjects(ctx, &req)
@@ -432,11 +458,38 @@ func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		}
 		return srcObjs,nil
 	}
+	case flowtype.STOR_TYPE_AWS_S3:{
+		//TODO:need to support filter
+		srcObjs := []*SourceOject{}
+		objs, err := s3mover.ListObjs(defaultSrcLoca)
+		if err != nil {
+			return nil, err
+		}
+		for i := 0; i <len(objs); i++ {
+			obj := osdss3.Object{Size:*objs[i].Size, ObjectKey:*objs[i].Key, Backend:""}
+			srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
+		}
+		return srcObjs,nil
+	}
+	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:{
+		//TODO:need to support filter
+		srcObjs := []*SourceOject{}
+		objs, err := obsmover.ListObjs(defaultSrcLoca)
+		if err != nil {
+			return nil, err
+		}
+		for i := 0; i <len(objs); i++ {
+			obj := osdss3.Object{Size:objs[i].Size, ObjectKey:objs[i].Key, Backend:""}
+			srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
+		}
+		return srcObjs,nil
+	}
 	default:{
 		logger.Printf("Unsupport storage type:%v\n", conn.Type)
 		return nil, errors.New("unsupport storage type")
 	}
 	}
+	return nil,errors.New("Get source objects failed")
 }
 
 func runjob(in *pb.RunJobRequest) error {
@@ -464,6 +517,8 @@ func runjob(in *pb.RunJobRequest) error {
 		logger.Printf("err:%v\n", err)
 		return err
 	}
+	logger.Printf("srcLoca:StorType=%s,VirBucket=%s,BucketName=%s,Region=%s\n",
+		srcLoca.StorType, srcLoca.VirBucket, srcLoca.BucketName, srcLoca.Region)
 	destLoca, erro := getConnLocation(ctx, in.DestConn)
 	if erro != nil {
 		j.Status = flowtype.JOB_STATUS_FAILED
@@ -471,6 +526,8 @@ func runjob(in *pb.RunJobRequest) error {
 		db.DbAdapter.UpdateJob(&j)
 		return erro
 	}
+	logger.Printf("destLoca:srcLoca:StorType=%s,VirBucket=%s,BucketName=%s,Region=%s\n",
+		destLoca.StorType, destLoca.VirBucket, destLoca.BucketName, destLoca.Region)
 	logger.Println("Get connector information succeed.")
 
 	//Get Objects which need to be migrated. Calculate the total number and capacity of objects

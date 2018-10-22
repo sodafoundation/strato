@@ -145,7 +145,6 @@ func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []
 		}
 	}
 	if readErr != nil && readErr != io.EOF{
-		//log.Logf("%s", buf[:readCount])
 		log.Logf("Body.read failed, err:%v\n", err)
 		return 0,readErr
 	}
@@ -227,7 +226,35 @@ func (mover *ObsMover)CompleteMultipartUpload(objKey string, destLoca *LocationI
 	if err != nil {
 		//panic(err)
 		log.Logf("CompleteMultipartUpload failed, err:%v\n", err)
+	}else {
+		log.Log("CompleteMultipartUpload succeed")
 	}
 
 	return err
+}
+
+func ListObjs(loca *LocationInfo) ([]obs.Content, error) {
+	obsClient,_ := obs.New(loca.Access, loca.Security, loca.EndPoint)
+	input := &obs.ListObjectsInput{
+		Bucket: loca.BucketName,
+		Marker: "0",
+	}
+	output, err := obsClient.ListObjects(input)
+	if err != nil {
+		log.Logf("[obsmover] List objects failed, err:%v\n", err)
+		return nil,err
+	}
+	objs := output.Contents
+	for ; output.IsTruncated == true ; {
+		input.Marker = output.NextMarker
+		output, err = obsClient.ListObjects(input)
+		if err != nil {
+			log.Logf("[obsmover] List objects failed, err:%v\n", err)
+			return nil,err
+		}
+		objs = append(objs, output.Contents...)
+	}
+
+	log.Logf("[obsmover] Number of objects in bucket[%s] is %d.\n", loca.BucketName, len(objs))
+	return objs,nil
 }

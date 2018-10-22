@@ -29,6 +29,7 @@ import (
 	"github.com/opensds/multi-cloud/datamover/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	//"golang.org/x/net/context"
+	"errors"
 )
 
 var dataBaseName = "test"
@@ -36,6 +37,14 @@ var tblConnector = "connector"
 var tblPolicy = "policy"
 var topicMigration = "migration"
 
+const(
+	BIT_REGION = 1              //00001
+	BIT_ENDPOINT = 2            //00010
+	BIT_BUCKETNAME = 4	        //00100
+	BIT_ACCESS = 8				//01000
+	BIT_SECURITY = 16			//10000
+	BIT_FULL = 31				//11111
+)
 
 func isEqual(src *Connector, dest *Connector) bool {
 	switch src.StorType {
@@ -48,6 +57,34 @@ func isEqual(src *Connector, dest *Connector) bool {
 	default: //TODO: check according to StorType later.
 		return false
 	}
+}
+
+func checkConnValidation(conn *Connector) error {
+	flag := 0
+	cfg := conn.ConnConfig
+	for i := 0; i < len(cfg); i++ {
+		switch cfg[i].Key {
+		case "region":
+			flag = flag | BIT_REGION
+		case "endpoint":
+			flag = flag | BIT_ENDPOINT
+		case "bucketname":
+			flag = flag | BIT_BUCKETNAME
+		case "access":
+			flag = flag | BIT_ACCESS
+		case "security":
+			flag = flag | BIT_SECURITY
+		default:
+			log.Logf("Uknow key[%s] for connector.\n", cfg[i].Key)
+		}
+	}
+
+	if flag != BIT_FULL {
+		log.Logf("Invalid connector, flag=%b\n", flag)
+		return errors.New("Invalid connector")
+	}
+
+	return nil
 }
 
 func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
@@ -64,6 +101,14 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	if isEqual(&plan.SourceConn, &plan.DestConn) {
 		log.Log("source connector is the same as destination connector.")
 		return nil, ERR_DEST_SRC_CONN_EQUAL
+	}
+	if checkConnValidation(&plan.SourceConn) != nil {
+		log.Logf("Source connector is invalid, type=%s\n", plan.SourceConn.StorType)
+		return nil, ERR_SRC_CONN_NOT_EXIST
+	}
+	if checkConnValidation(&plan.DestConn) != nil {
+		log.Logf("Target connector is invalid, type=%s\n", plan.DestConn.StorType)
+		return nil, ERR_DEST_CONN_NOT_EXIST
 	}
 
 	if plan.PolicyId != "" {
@@ -203,6 +248,14 @@ func getLocation(conn *Connector) (string, error) {
 	switch conn.StorType {
 	case STOR_TYPE_OPENSDS:
 		return conn.BucketName, nil
+	case STOR_TYPE_HW_OBS, STOR_TYPE_AWS_S3, STOR_TYPE_HW_FUSIONSTORAGE, STOR_TYPE_HW_FUSIONCLOUD:
+		cfg := conn.ConnConfig
+		for i := 0; i < len(cfg); i++ {
+			if cfg[i].Key == "bucketname" {
+				return cfg[i].Value,nil
+			}
+		}
+		return "",errors.New("No bucket provided for sefldefine connector.")
 	default:
 		log.Logf("Unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
 		return "", ERR_INNER_ERR
@@ -255,12 +308,14 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	//Get source location by source connector
 	srcLocation, err1 := getLocation(&plan.SourceConn)
 	if err1 != nil {
+		log.Logf("Run plan failed, invalid source connector, type=%s\n", plan.SourceConn.StorType)
 		return "", err1
 	}
 
 	//Get destination location by destination connector
 	destLocation, err2 := getLocation(&plan.DestConn)
 	if err2 != nil {
+		log.Logf("Run plan failed, invalid target connector, type=%s\n", plan.DestConn.StorType)
 		return "", err2
 	}
 
