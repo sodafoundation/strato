@@ -60,6 +60,11 @@ func isEqual(src *Connector, dest *Connector) bool {
 }
 
 func checkConnValidation(conn *Connector) error {
+	if conn.StorType == STOR_TYPE_OPENSDS {
+		//If StorType is opensds-obj, no connector needed.
+		return nil
+	}
+
 	flag := 0
 	cfg := conn.ConnConfig
 	for i := 0; i < len(cfg); i++ {
