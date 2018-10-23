@@ -104,6 +104,10 @@ func (ad *OBSAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	return NoError
 }
 
+func (ad *OBSAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
+	return nil, NoError
+}
+
 func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.backend.BucketName
 	var multipartUpload *pb.MultipartUpload

@@ -153,6 +153,38 @@ func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	return NoError
 }
 
+func (ad *AwsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
+	bucket := ad.backend.BucketName
+	newKey := bucketName + "/"
+
+	input := &awss3.ListObjectsInput{
+		Bucket: &bucket,
+		Prefix: &newKey,
+	}
+
+	svc := awss3.New(ad.session)
+	output, err := svc.ListObjects(input)
+	if err != nil {
+		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
+		return nil, S3Error{Code: 500, Description: err.Error()}
+	}
+
+	for _, content := range output.Contents {
+		realKey := bucketName + "/" + key
+		if realKey != *content.Key {
+			break
+		}
+		obj := &pb.Object{
+			BucketName: bucketName,
+			ObjectKey:  *content.Key,
+			Size:       *content.Size,
+		}
+		return obj, NoError
+	}
+	log.Logf("Can not find spceified object(%s).\n", key)
+	return nil, NoSuchObject
+}
+
 func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.backend.BucketName
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
