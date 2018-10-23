@@ -55,6 +55,7 @@ type DataStoreAdapter interface {
 	GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error)
 	DELETE(object *pb.DeleteObjectInput, context context.Context) S3Error
 
+	GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error)
 	InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error)
 	UploadPart(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*model.UploadPartResult, S3Error)
 	CompleteMultipartUpload(multipartUpload *pb.MultipartUpload, completeUpload *model.CompleteMultipartUpload, context context.Context) (*model.CompleteMultipartUploadResult, S3Error)
