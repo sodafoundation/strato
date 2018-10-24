@@ -22,6 +22,7 @@ import (
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/backend/pkg/db"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	pb "github.com/opensds/multi-cloud/backend/proto"
 )
 
@@ -99,7 +100,7 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 		return errors.New(msg)
 	}
 
-	res, err := db.Repo.ListBackend(int(in.Limit), int(in.Offset), nil)
+	res, err := db.Repo.ListBackend(int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Logf("Failed to list backend: %v", err)
 		return err
@@ -168,5 +169,49 @@ func (b *backendService) DeleteBackend(ctx context.Context, in *pb.DeleteBackend
 		return err
 	}
 	log.Log("Delete backend successfully.")
+	return nil
+}
+
+func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, out *pb.ListTypeResponse) error {
+	log.Log("Received ListType request.")
+	allTypes := []*pb.TypeDetail{
+		{
+			Name:        constants.BackendTypeAws,
+			Description: "AWS Simple Cloud Storage Service(S3)",
+		},
+		{
+			Name:        constants.BackendTypeObs,
+			Description: "Huawei Object Storage Service(OBS)",
+		},
+		{
+			Name:        constants.BackendTypeAzure,
+			Description: "Azure Blob Storage",
+		},
+	}
+
+	// Filter by name
+	var types []*pb.TypeDetail
+	if name, ok := in.Filter["name"]; ok {
+		for _, t := range allTypes {
+			if t.Name == name {
+				types = append(types, t)
+			}
+		}
+	} else {
+		types = allTypes
+	}
+
+	// Pagination handle
+	if int(in.Offset) > len(types) {
+		return fmt.Errorf("offset exceeds the max type length")
+	}
+	start := int(in.Offset)
+	end := start + int(in.Limit)
+	if end > len(types) {
+		end = len(types)
+	}
+
+	out.Types = types[start:end]
+	out.Next = in.Offset + int32(len(out.Types))
 	return nil
 }

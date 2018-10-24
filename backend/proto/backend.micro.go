@@ -19,6 +19,9 @@ It has these top-level messages:
 	DeleteBackendRequest
 	DeleteBackendResponse
 	BackendDetail
+	ListTypeRequest
+	ListTypeResponse
+	TypeDetail
 */
 package backend
 
@@ -56,6 +59,7 @@ type BackendService interface {
 	ListBackend(ctx context.Context, in *ListBackendRequest, opts ...client.CallOption) (*ListBackendResponse, error)
 	UpdateBackend(ctx context.Context, in *UpdateBackendRequest, opts ...client.CallOption) (*UpdateBackendResponse, error)
 	DeleteBackend(ctx context.Context, in *DeleteBackendRequest, opts ...client.CallOption) (*DeleteBackendResponse, error)
+	ListType(ctx context.Context, in *ListTypeRequest, opts ...client.CallOption) (*ListTypeResponse, error)
 }
 
 type backendService struct {
@@ -126,6 +130,16 @@ func (c *backendService) DeleteBackend(ctx context.Context, in *DeleteBackendReq
 	return out, nil
 }
 
+func (c *backendService) ListType(ctx context.Context, in *ListTypeRequest, opts ...client.CallOption) (*ListTypeResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.ListType", in)
+	out := new(ListTypeResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Backend service
 
 type BackendHandler interface {
@@ -134,6 +148,7 @@ type BackendHandler interface {
 	ListBackend(context.Context, *ListBackendRequest, *ListBackendResponse) error
 	UpdateBackend(context.Context, *UpdateBackendRequest, *UpdateBackendResponse) error
 	DeleteBackend(context.Context, *DeleteBackendRequest, *DeleteBackendResponse) error
+	ListType(context.Context, *ListTypeRequest, *ListTypeResponse) error
 }
 
 func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server.HandlerOption) error {
@@ -143,6 +158,7 @@ func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server
 		ListBackend(ctx context.Context, in *ListBackendRequest, out *ListBackendResponse) error
 		UpdateBackend(ctx context.Context, in *UpdateBackendRequest, out *UpdateBackendResponse) error
 		DeleteBackend(ctx context.Context, in *DeleteBackendRequest, out *DeleteBackendResponse) error
+		ListType(ctx context.Context, in *ListTypeRequest, out *ListTypeResponse) error
 	}
 	type Backend struct {
 		backend
@@ -173,4 +189,8 @@ func (h *backendHandler) UpdateBackend(ctx context.Context, in *UpdateBackendReq
 
 func (h *backendHandler) DeleteBackend(ctx context.Context, in *DeleteBackendRequest, out *DeleteBackendResponse) error {
 	return h.BackendHandler.DeleteBackend(ctx, in, out)
+}
+
+func (h *backendHandler) ListType(ctx context.Context, in *ListTypeRequest, out *ListTypeResponse) error {
+	return h.BackendHandler.ListType(ctx, in, out)
 }

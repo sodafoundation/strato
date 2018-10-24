@@ -15,18 +15,15 @@
 package backend
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
-	//	"github.com/micro/go-micro/errors"
-
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"net/http"
 )
 
 const (
@@ -67,25 +64,33 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
 	log.Log("Received request for backend list.")
 	listBackendRequest := &backend.ListBackendRequest{}
-	if request.QueryParameter("limit") != "" {
-		limit, err := strconv.Atoi(request.QueryParameter("limit"))
-		if err != nil {
-			log.Logf("limit is invalid: %v", err)
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
-		listBackendRequest.Limit = int32(limit)
-	}
 
-	if request.QueryParameter("offset") != "" {
-		offset, err := strconv.Atoi(request.QueryParameter("offset"))
-		if err != nil {
-			log.Logf("offset is invalid: %v", err)
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
-		listBackendRequest.Offset = int32(offset)
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Logf("Get pagination parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
 	}
+	listBackendRequest.Limit = limit
+	listBackendRequest.Offset = offset
+
+	sortKeys, sortDirs, err := common.GetSortParam(request)
+	if err != nil {
+		log.Logf("Get sort parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listBackendRequest.SortKeys = sortKeys
+	listBackendRequest.SortDirs = sortDirs
+
+	filterOpts := []string{"name", "type", "region"}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Logf("Get filter failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listBackendRequest.Filter = filter
 
 	ctx := context.Background()
 	res, err := s.backendClient.ListBackend(ctx, listBackendRequest)
@@ -155,4 +160,47 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 
 	log.Log("Delete backend successfully.")
 	response.WriteHeader(http.StatusOK)
+}
+
+func (s *APIService) ListType(request *restful.Request, response *restful.Response) {
+	log.Log("Received request for backend type list.")
+	listTypeRequest := &backend.ListTypeRequest{}
+
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Logf("Get pagination parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listTypeRequest.Limit = limit
+	listTypeRequest.Offset = offset
+
+	sortKeys, sortDirs, err := common.GetSortParam(request)
+	if err != nil {
+		log.Logf("Get sort parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listTypeRequest.SortKeys = sortKeys
+	listTypeRequest.SortDirs = sortDirs
+
+	filterOpts := []string{"name"}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Logf("Get filter failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listTypeRequest.Filter = filter
+
+	ctx := context.Background()
+	res, err := s.backendClient.ListType(ctx, listTypeRequest)
+	if err != nil {
+		log.Logf("Failed to list types: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Log("List types successfully.")
+	response.WriteEntity(res)
 }
