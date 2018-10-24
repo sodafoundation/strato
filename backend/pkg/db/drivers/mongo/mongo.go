@@ -105,6 +105,7 @@ func (repo *mongoRepository) ListBackend(limit, offset int, query interface{}) (
 		limit = math.MinInt32
 	}
 	var backends []*model.Backend
+
 	err := session.DB(defaultDBName).C(defaultCollection).Find(query).Skip(offset).Limit(limit).All(&backends)
 	if err != nil {
 		return nil, err
