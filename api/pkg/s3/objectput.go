@@ -44,13 +44,14 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
 
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
 
 	s3err := client.PUT(request.Request.Body, &object, ctx)
+	log.Logf("LastModified is %v\n",object.LastModified)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return

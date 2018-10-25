@@ -54,7 +54,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
 
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

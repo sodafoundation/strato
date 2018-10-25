@@ -32,7 +32,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 
 	log.Logf("multipartUpload:%v, parts:%v", multipartUpload, completeUpload)
 
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

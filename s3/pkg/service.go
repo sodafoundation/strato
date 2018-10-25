@@ -104,7 +104,12 @@ func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 
 func (b *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Log("PutObject is called in s3 service.")
-	out.Msg = "Create bucket successfully."
+	err:=db.DbAdapter.UpdateObject(in)
+	if err.Code != ERR_OK {
+		return err.Error()
+	}
+	out.Msg = "update object successfully."
+
 	return nil
 }
 

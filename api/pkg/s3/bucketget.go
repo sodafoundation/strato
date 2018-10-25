@@ -28,6 +28,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
 	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
+	log.Logf("list objects is: %v\n",res)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

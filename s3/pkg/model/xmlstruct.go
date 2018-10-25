@@ -29,6 +29,7 @@ type Owner struct {
 type Bucket struct {
 	Name         string `xml:"Name"`
 	CreationDate string `xml:"CreationDate"`
+	LocationConstraint string `xml:"LocationConstraint"`
 }
 
 type ListAllMyBucketsResult struct {

@@ -49,7 +49,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
 
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

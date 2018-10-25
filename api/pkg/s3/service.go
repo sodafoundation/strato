@@ -17,6 +17,8 @@ package s3
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/client"
+	"math"
+
 	//	"github.com/micro/go-micro/errors"
 	"context"
 	"github.com/micro/go-log"
@@ -72,19 +74,42 @@ func ReadBody(r *restful.Request) []byte {
 	return b
 }
 
-func _getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
+func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
 	ctx := context.Background()
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		return nil
 	}
-	backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: bucket.Backend})
+	//backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: bucket.Backend})
+	log.Logf("bucketName is %v\n",bucketName)
+	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
+		Offset:0,
+		Limit:math.MaxInt32,
+		Filter:map[string]string {"name":bucket.Backend}})
+	log.Logf("backendErr is %v:",backendErr)
 	if backendErr != nil {
 		log.Logf("Get backend %s failed.", bucket.Backend)
 		return nil
 	}
+	log.Logf("backendRep is %v:",backendRep)
+	backend := backendRep.Backends[0]
+	client := datastore.Init(backend)
+	return client
+}
 
-	backend := backendRep.Backend
+func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdapter{
+	ctx := context.Background()
+	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
+		Offset:0,
+		Limit:math.MaxInt32,
+		Filter:map[string]string {"name":backendName}})
+	log.Logf("backendErr is %v:",backendErr)
+	if backendErr != nil {
+		log.Logf("Get backend %s failed.", backendName)
+		return nil
+	}
+	log.Logf("backendRep is %v:",backendRep)
+	backend := backendRep.Backends[0]
 	client := datastore.Init(backend)
 	return client
 }

@@ -31,7 +31,7 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 	ctx := context.Background()
 	log.Logf("Received request for delete object: %s", objectKey)
 	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 
 	s3err := client.DELETE(&deleteInput, ctx)
 	if s3err.Code != ERR_OK {
