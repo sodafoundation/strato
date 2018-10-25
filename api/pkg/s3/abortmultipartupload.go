@@ -21,7 +21,7 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 	multipartUpload.Bucket = bucketName
 	multipartUpload.UploadId = uploadId
 
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

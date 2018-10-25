@@ -33,6 +33,7 @@ var ERR_OK = 200
 var NoError = S3Error{Code: ERR_OK}
 var InternalError = S3Error{Code: 500, Description: "Internal error. Please retry"}
 var NoSuchBucket = S3Error{Code: 404, Description: "The specified bucket does not exist."}
+var DBError = S3Error{Code: 500, Description: "DB occured exception."}
 var NoSuchObject = S3Error{Code: 404, Description: "The specified object does not exist."}
 var BucketAlreadyExists = S3Error{Code: 409, Description: "The requested bucket name already exist. Bucket namespace is shared by all users in the system. Select a different name and retry."}
 

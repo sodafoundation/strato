@@ -29,6 +29,7 @@ import (
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	"io"
 	"io/ioutil"
+	"time"
 )
 
 type AwsAdapter struct {
@@ -91,6 +92,9 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		if err != nil {
 			log.Logf("Upload to aws failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to aws failed"}
+		}else{
+			object.LastModified = time.Now().String()[:19]
+			log.Logf("LastModified is:%v\n",object.LastModified)
 		}
 
 	}

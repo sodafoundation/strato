@@ -26,7 +26,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	multipartUpload.Key = objectKey
 	multipartUpload.UploadId = uploadId
 
-	client := _getBackendClient(s, bucketName)
+	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

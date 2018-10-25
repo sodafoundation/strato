@@ -38,7 +38,7 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	buckets := []model.Bucket{}
 	for _, value := range list.Buckets {
 		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
-		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate}
+		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate,LocationConstraint:value.Backend}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets

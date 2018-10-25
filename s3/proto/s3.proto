@@ -178,6 +178,7 @@ message Object {
 	int64 size = 21;
 	repeated Partion partions =22;
 	Tag tags = 23;
+	string lastModified =24;
 }
 
 
