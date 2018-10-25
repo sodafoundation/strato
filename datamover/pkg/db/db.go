@@ -55,5 +55,6 @@ func Exit(db *Database) {
 }
 
 type DBAdapter interface {
+	GetJobStatus(jobID string) string
 	UpdateJob(job *model.Job) error
 }

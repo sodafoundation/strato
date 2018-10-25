@@ -32,7 +32,6 @@ var CollPolicy = "policy"
 var CollConnector = "connector"
 var CollJob = "job"
 var CollPlan = "plan"
-var CollLock = "mylock"
 
 const (
 	maxLockSec = 5
@@ -49,12 +48,22 @@ func Init(host string) *adapter {
 	if err != nil {
 		panic(err)
 	}
-	//defer session.Close()
 
 	session.SetMode(mgo.Monotonic, true)
 	adap.s = session
-
 	adap.userID = "unknown"
+
+	//Set unique index of the collection of lockColName
+	lockColl := session.DB(DataBaseName).C(lockColName)
+	index := mgo.Index{
+		Key:	   []string{"lockobj"},  //index key
+		Unique:    true,				 //unique index
+		DropDups:  true,				 //invalid when Unique equals true
+		Background:true,				 //crate index in background
+	}
+	if err := lockColl.EnsureIndex(index); err != nil {
+		log.Fatalf("Create unique index of %s faild:%v\n", lockColName, err)
+	}
 
 	return adap
 }
@@ -92,7 +101,7 @@ func TestClear() error {
 		return err
 	}
 
-	c = ss.DB(DataBaseName).C(CollLock)
+	c = ss.DB(DataBaseName).C(lockColName)
 	err = c.Remove(bson.M{})
 	if err != nil && err != mgo.ErrNotFound {
 		log.Logf("clear mylock err:%v\n", err)
@@ -553,7 +562,7 @@ func (ad *adapter) GetJob(ctx *Context, id string) (*Job, error) {
 
 	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenant": ctx.TenantId}).One(&job)
 	if err == mgo.ErrNotFound {
-		log.Log("Plan does not exist.")
+		log.Log("Job does not exist.")
 		return nil, ERR_JOB_NOT_EXIST
 	}
 	return &job, nil

@@ -253,7 +253,8 @@ func getLocation(conn *Connector) (string, error) {
 	switch conn.StorType {
 	case STOR_TYPE_OPENSDS:
 		return conn.BucketName, nil
-	case STOR_TYPE_HW_OBS, STOR_TYPE_AWS_S3, STOR_TYPE_HW_FUSIONSTORAGE, STOR_TYPE_HW_FUSIONCLOUD:
+	case STOR_TYPE_HW_OBS, STOR_TYPE_AWS_S3, STOR_TYPE_HW_FUSIONSTORAGE, STOR_TYPE_HW_FUSIONCLOUD,
+		STOR_TYPE_AZURE_BLOB:
 		cfg := conn.ConnConfig
 		for i := 0; i < len(cfg); i++ {
 			if cfg[i].Key == "bucketname" {
