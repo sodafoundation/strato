@@ -179,11 +179,12 @@ message Job {
 	string description = 5; //describe statistic information, such as total objs, finished objs
 	string sourceLocation = 6;
 	string destLocation = 7;
-	int64  createTime = 8;
-	int64  startTime = 9;
-	int64  endTime = 10;
-	bool overWrite = 11;
-	bool remainSource = 12;
+	string status = 8;
+	int64  createTime = 9;
+	int64  startTime = 10;
+	int64  endTime = 11;
+	bool overWrite = 12;
+	bool remainSource = 13;
 }
 
 message GetJobRequest {

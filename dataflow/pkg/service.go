@@ -195,6 +195,11 @@ func fillRspConnector(out *pb.Connector, in *model.Connector) {
 	switch in.StorType {
 	case model.STOR_TYPE_OPENSDS:
 		out.BucketName = in.BucketName
+	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
+		model.STOR_TYPE_AZURE_BLOB:
+		for i := 0; i < len(in.ConnConfig); i++ {
+			out.ConnConfig = append(out.ConnConfig, &pb.KV{Key:in.ConnConfig[i].Key, Value:in.ConnConfig[i].Value})
+		}
 	default:
 		log.Logf("Not support connector type:%v\n", in.StorType)
 	}
@@ -290,6 +295,12 @@ func fillReqConnector(out *model.Connector, in *pb.Connector) error {
 	switch in.StorType {
 	case model.STOR_TYPE_OPENSDS:
 		out.BucketName = in.BucketName
+		return nil
+	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
+		model.STOR_TYPE_AZURE_BLOB:
+		for i := 0; i < len(in.ConnConfig); i++ {
+			out.ConnConfig = append(out.ConnConfig, model.KeyValue{Key:in.ConnConfig[i].Key, Value:in.ConnConfig[i].Value})
+		}
 		return nil
 	default:
 		log.Logf("Not support connector type:%v\n", in.StorType)
@@ -440,7 +451,7 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 	}
 	out.Job = &pb.Job{Id: string(jb.Id.Hex()), Type: jb.Type, PlanName: jb.PlanName, PlanId: jb.PlanId,
 		Description: "for test", SourceLocation: jb.SourceLocation, DestLocation: jb.DestLocation,
-		CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix()}
+		CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix(), Status:jb.Status}
 
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
@@ -468,7 +479,7 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 			des := "for test"
 			j := pb.Job{Id: string(jobs[i].Id.Hex()), Type: jobs[i].Type, PlanName: jobs[i].PlanName, PlanId: jobs[i].PlanId,
 				Description: des, SourceLocation: jobs[i].SourceLocation, DestLocation: jobs[i].DestLocation,
-				CreateTime: jobs[i].CreateTime.Unix(), EndTime: jobs[i].EndTime.Unix()}
+				CreateTime: jobs[i].CreateTime.Unix(), EndTime: jobs[i].EndTime.Unix(), Status:jobs[i].Status}
 			out.Jobs = append(out.Jobs, &j)
 		}
 	}
