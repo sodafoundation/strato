@@ -17,7 +17,6 @@ var logger = log.New(os.Stdout, "", log.LstdFlags)
 func Init(addrs []string, group string, topics []string) error{
 	logger.Println("Init consumer ...")
 
-
 	config := cluster.NewConfig()
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
@@ -74,16 +73,19 @@ func LoopConsume(){
 	for {
 		select {
 		case msg, ok := <-consumer.Messages():
+			var err error
 			if ok {
 				switch msg.Topic {
 				case "migration":
 					//TODO: think about how many jobs can run concurrently
 					logger.Printf("Got an migration job:%s\n", msg.Value)
-					go migration.HandleMsg(msg.Value)
+					err = migration.HandleMsg(msg.Value)
 				default:
 					logger.Printf("Not support topic:%s\n", msg.Topic)
 				}
-				consumer.MarkOffset(msg, "")
+				if err == nil {
+					consumer.MarkOffset(msg, "")
+				}
 			}
 		case <- signals:
 			logger.Println("trap system SIGINT signal")

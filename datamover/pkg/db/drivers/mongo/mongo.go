@@ -16,8 +16,6 @@ package mongo
 
 import (
 	"errors"
-	"time"
-
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
@@ -29,22 +27,14 @@ var adap = &adapter{}
 var DataBaseName = "multi-cloud"
 var CollJob = "job"
 
-type MyLock struct {
-	LockObj  string    `bson:"lockobj"`
-	LockTime time.Time `bson:"locktime"`
-}
-
 func Init(host string) *adapter {
-	//log.Log("edps:", deps)
 	session, err := mgo.Dial(host)
 	if err != nil {
 		panic(err)
 	}
-	//defer session.Close()
 
 	session.SetMode(mgo.Monotonic, true)
 	adap.s = session
-
 	adap.userID = "unknown"
 
 	return adap
@@ -57,6 +47,21 @@ func Exit() {
 type adapter struct {
 	s      *mgo.Session
 	userID string
+}
+
+func (ad *adapter) GetJobStatus(jobID string) string {
+	job := Job{}
+	ss := ad.s.Copy()
+	defer ss.Close()
+	c := ss.DB(DataBaseName).C(CollJob)
+
+	err := c.Find(bson.M{"_id": bson.ObjectIdHex(jobID)}).One(&job)
+	if err != nil {
+		log.Logf("Get job[ID#%s] failed:%v.\n", jobID, err)
+		return ""
+	}
+
+	return job.Status
 }
 
 func (ad *adapter) UpdateJob(job *Job) error {

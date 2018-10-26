@@ -38,6 +38,7 @@ type MoveWorker interface {
 	DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error)
 	UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error
 	DeleteObj(objKey string, loca *LocationInfo) error
+	MultiPartDownloadInit(srcLoca *LocationInfo) error
 	DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error)
 	MultiPartUploadInit(objKey string, destLoca *LocationInfo) error
 	UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error
