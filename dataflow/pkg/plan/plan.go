@@ -24,10 +24,10 @@ import (
 	"github.com/micro/go-log"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	//"golang.org/x/net/context"
 	"errors"
 )
@@ -37,13 +37,13 @@ var tblConnector = "connector"
 var tblPolicy = "policy"
 var topicMigration = "migration"
 
-const(
-	BIT_REGION = 1              //00001
-	BIT_ENDPOINT = 2            //00010
-	BIT_BUCKETNAME = 4	        //00100
-	BIT_ACCESS = 8				//01000
-	BIT_SECURITY = 16			//10000
-	BIT_FULL = 31				//11111
+const (
+	BIT_REGION     = 1  //00001
+	BIT_ENDPOINT   = 2  //00010
+	BIT_BUCKETNAME = 4  //00100
+	BIT_ACCESS     = 8  //01000
+	BIT_SECURITY   = 16 //10000
+	BIT_FULL       = 31 //11111
 )
 
 func isEqual(src *Connector, dest *Connector) bool {
@@ -114,15 +114,6 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	if checkConnValidation(&plan.DestConn) != nil {
 		log.Logf("Target connector is invalid, type=%s\n", plan.DestConn.StorType)
 		return nil, ERR_DEST_CONN_NOT_EXIST
-	}
-
-	if plan.PolicyId != "" {
-		if bson.IsObjectIdHex(plan.PolicyId) {
-			plan.PolicyRef = mgo.DBRef{tblPolicy, bson.ObjectIdHex(plan.PolicyId), dataBaseName}
-		} else {
-			log.Logf("Invalid policy:%s\n", plan.PolicyId)
-			return nil, ERR_POLICY_NOT_EXIST
-		}
 	}
 
 	//Add to database
@@ -258,17 +249,17 @@ func getLocation(conn *Connector) (string, error) {
 		cfg := conn.ConnConfig
 		for i := 0; i < len(cfg); i++ {
 			if cfg[i].Key == "bucketname" {
-				return cfg[i].Value,nil
+				return cfg[i].Value, nil
 			}
 		}
-		return "",errors.New("No bucket provided for sefldefine connector.")
+		return "", errors.New("No bucket provided for sefldefine connector.")
 	default:
 		log.Logf("Unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
 		return "", ERR_INNER_ERR
 	}
 }
 
-func sendJob(req *datamover.RunJobRequest) error{
+func sendJob(req *datamover.RunJobRequest) error {
 	data, err := json.Marshal(*req)
 	if err != nil {
 		log.Logf("Marshal run job request failed, err:%v\n", data)
@@ -345,8 +336,8 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	if err == nil {
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
-		req := datamover.RunJobRequest{Id:job.Id.Hex(), OverWrite:plan.OverWrite, RemainSource:plan.RemainSource}
-		srcConn := datamover.Connector{Type:plan.SourceConn.StorType}
+		req := datamover.RunJobRequest{Id: job.Id.Hex(), OverWrite: plan.OverWrite, RemainSource: plan.RemainSource}
+		srcConn := datamover.Connector{Type: plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn
 		destConn := datamover.Connector{Type: plan.DestConn.StorType}
@@ -362,16 +353,16 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 }
 
 type TriggerExecutor struct {
-	planId    string
-	tenantId  string
-	ctx       *c.Context
+	planId   string
+	tenantId string
+	ctx      *c.Context
 }
 
 func NewPlanExecutor(ctx *c.Context, plan *Plan) trigger.Executer {
 	return &TriggerExecutor{
-		planId:    plan.Id.Hex(),
-		tenantId:  plan.Tenant,
-		ctx:       ctx,
+		planId:   plan.Id.Hex(),
+		tenantId: plan.Tenant,
+		ctx:      ctx,
 	}
 }
 
