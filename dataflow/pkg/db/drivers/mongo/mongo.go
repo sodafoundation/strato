@@ -457,22 +457,25 @@ func (ad *adapter) UpdatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 	return plan, nil
 }
 
-func (ad *adapter) ListPlan(ctx *Context) ([]Plan, error) {
-	m := bson.M{}
+func (ad *adapter) ListPlan(ctx *Context, limit int, offset int, filter interface{}) ([]Plan, error) {
+	//m := bson.M{}
 	if !isAdmin(ctx) {
-		m["tenant"] = ctx.TenantId
+		//m["tenant"] = ctx.TenantId
+		filter.(map[string]string)["tenant"] = ctx.TenantId
 	}
-	return ad.doListPlan(ctx, m)
+
+	return ad.doListPlan(ctx, limit, offset, filter)
 }
 
-func (ad *adapter) doListPlan(ctx *Context, m bson.M) ([]Plan, error) {
+func (ad *adapter) doListPlan(ctx *Context, limit int, offset int, filter interface{}) ([]Plan, error) {
 	//var query mgo.Query;
 	plans := []Plan{}
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollPlan)
 
-	err := c.Find(m).All(&plans)
+	log.Logf("Listplan filter:%v\n", filter)
+	err := c.Find(filter).Skip(offset).Limit(limit).All(&plans)
 	if err == mgo.ErrNotFound || len(plans) == 0 {
 		log.Log("No plan found.")
 		return nil, nil
@@ -527,13 +530,13 @@ func (ad *adapter) GetPlan(ctx *Context, id string) (*Plan, error) {
 	return &p, nil
 }
 
-func (ad *adapter) GetPlanByPolicy(ctx *Context, policyId string) ([]Plan, error) {
+func (ad *adapter) GetPlanByPolicy(ctx *Context, policyId string, limit int, offset int) ([]Plan, error) {
 	log.Logf("GetPlanByPolicy: policyId=%s,tenant=%s\n", policyId, ctx.TenantId)
 	m := bson.M{"policyId": policyId}
 	if !isAdmin(ctx) {
 		m["tenant"] = ctx.TenantId
 	}
-	return ad.doListPlan(ctx, m)
+	return ad.doListPlan(ctx, limit, offset, m)
 }
 
 func (ad *adapter) CreateJob(ctx *Context, job *Job) (*Job, error) {

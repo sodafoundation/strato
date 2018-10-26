@@ -27,6 +27,7 @@ import (
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 	"io/ioutil"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 const (
@@ -177,18 +178,48 @@ func (s *APIService) DeletePolicy(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) ListPlan(request *restful.Request, response *restful.Response) {
+	log.Log("Received request for list plan.")
+
+	listPlanReq := &dataflow.ListPlanRequest{}
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Logf("Get pagination parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listPlanReq.Limit = limit
+	listPlanReq.Offset = offset
+
+	sortKeys, sortDirs, err := common.GetSortParam(request)
+	if err != nil {
+		log.Logf("Get sort parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listPlanReq.SortKeys = sortKeys
+	listPlanReq.SortDirs = sortDirs
+
+	filterOpts := []string{"name", "type"}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Logf("Get filter failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listPlanReq.Filter = filter
+
 	actx := request.Attribute(c.KContext).(*c.Context)
-	id := request.PathParameter("id")
-	log.Logf("Received request for plan[id=%s] details.", id)
+	listPlanReq.Context = actx.ToJson()
+
 	ctx := context.Background()
-	res, err := s.dataflowClient.ListPlan(ctx, &dataflow.ListPlanRequest{Context: actx.ToJson()})
+	res, err := s.dataflowClient.ListPlan(ctx, listPlanReq)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	//For debug -- begin
-	log.Logf("Get plan reponse:%v", res)
+	log.Logf("List plan reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())

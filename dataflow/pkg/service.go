@@ -31,6 +31,7 @@ import (
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
 	"strings"
+	"fmt"
 )
 
 type dataflowService struct{}
@@ -267,11 +268,18 @@ func (b *dataflowService) GetPlan(ctx context.Context, in *pb.GetPlanRequest, ou
 }
 
 func (b *dataflowService) ListPlan(ctx context.Context, in *pb.ListPlanRequest, out *pb.ListPlanResponse) error {
-	log.Log("Get plans is called in dataflow service.")
+	log.Log("List plans is called in dataflow service.")
+
+	if in.Limit < 0 || in.Offset < 0 {
+		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		log.Log(msg)
+		return errors.New(msg)
+	}
+
 	actx := c.NewContextFromJson(in.GetContext())
-	plans, err := plan.List(actx)
+	plans, err := plan.List(actx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("Get plans err:%s.", out.Err)
+		log.Logf("List plans err:%s.", out.Err)
 		return err
 	}
 
