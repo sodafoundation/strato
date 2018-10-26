@@ -2,7 +2,7 @@ package blobmover
 
 import (
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	"github.com/Azure/azure-storage-blob-go/2018-03-28/azblob"
+	"github.com/Azure/azure-storage-blob-go/azblob"
 	"net/url"
 	"github.com/micro/go-log"
 	"context"

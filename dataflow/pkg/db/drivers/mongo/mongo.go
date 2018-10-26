@@ -46,6 +46,7 @@ func Init(host string) *adapter {
 	//log.Log("edps:", deps)
 	session, err := mgo.Dial(host)
 	if err != nil {
+		log.Log("Connect database failed.")
 		panic(err)
 	}
 
@@ -53,16 +54,22 @@ func Init(host string) *adapter {
 	adap.s = session
 	adap.userID = "unknown"
 
-	//Set unique index of the collection of lockColName
 	lockColl := session.DB(DataBaseName).C(lockColName)
-	index := mgo.Index{
-		Key:	   []string{"lockobj"},  //index key
-		Unique:    true,				 //unique index
-		DropDups:  true,				 //invalid when Unique equals true
-		Background:true,				 //crate index in background
-	}
-	if err := lockColl.EnsureIndex(index); err != nil {
-		log.Fatalf("Create unique index of %s faild:%v\n", lockColName, err)
+	//Check if index is realdy set.
+	indxs, err := lockColl.Indexes()
+	if err != nil || len(indxs) == 0 {
+		//Set unique index of the collection of lockColName
+		index := mgo.Index{
+			Key:	   []string{"lockobj"},  //index key
+			Unique:    true,				 //Prevent two documents from having the same index key
+			DropDups:  false,				 //Drop documents with the same index key as a previously indexed one.
+											 // Invalid when Unique equals true.
+			Background:true,				 //If Background is true, other connections will be allowed to proceed
+											 // using the collection without the index while it's being built.
+		}
+		if err := lockColl.EnsureIndex(index); err != nil {
+			log.Fatalf("Create unique index of %s faild:%v.\n", lockColName, err)
+		}
 	}
 
 	return adap
