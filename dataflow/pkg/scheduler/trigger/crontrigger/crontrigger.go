@@ -38,8 +38,8 @@ func (c *CronTrigger) Add(planId, properties string, executer trigger.Executer) 
 	cn := cron.New()
 	c.plans[planId] = cn
 	if err := cn.AddFunc(properties, executer.Run); err != nil {
-		log.Logf("Add plan(%s) in corn trigger failed", planId)
-		return fmt.Errorf("Add plan(%s) in corn trigger failed", planId)
+		log.Logf("Add plan(%s) to  corn trigger failed: %v", planId, err)
+		return fmt.Errorf("Add plan(%s) to corn trigger failed: %v", planId, err)
 	}
 	cn.Start()
 	return nil

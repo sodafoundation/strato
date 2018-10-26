@@ -15,8 +15,8 @@
 package s3
 
 import (
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 
@@ -33,18 +33,26 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")
+	backendName:=request.HeaderParameter("x-amz-storage-class")
+	log.Logf("backendName is :%v\n",backendName)
+	object := s3.Object{}
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
 
-	object := s3.Object{}
+
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
-
-	client := getBackendClient(s, bucketName)
+	var client datastore.DataStoreAdapter
+	if backendName!=""{
+		object.Backend = backendName
+		client = getBackendByName(s,backendName)
+	}else {
+		client = getBackendClient(s, bucketName)
+	}
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

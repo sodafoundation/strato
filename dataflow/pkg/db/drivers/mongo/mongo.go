@@ -60,12 +60,12 @@ func Init(host string) *adapter {
 	if err != nil || len(indxs) == 0 {
 		//Set unique index of the collection of lockColName
 		index := mgo.Index{
-			Key:	   []string{"lockobj"},  //index key
-			Unique:    true,				 //Prevent two documents from having the same index key
-			DropDups:  false,				 //Drop documents with the same index key as a previously indexed one.
-											 // Invalid when Unique equals true.
-			Background:true,				 //If Background is true, other connections will be allowed to proceed
-											 // using the collection without the index while it's being built.
+			Key:      []string{"lockobj"}, //index key
+			Unique:   true,                //Prevent two documents from having the same index key
+			DropDups: false,               //Drop documents with the same index key as a previously indexed one.
+			// Invalid when Unique equals true.
+			Background: true, //If Background is true, other connections will be allowed to proceed
+			// using the collection without the index while it's being built.
 		}
 		if err := lockColl.EnsureIndex(index); err != nil {
 			log.Fatalf("Create unique index of %s faild:%v.\n", lockColName, err)
@@ -349,6 +349,15 @@ func (ad *adapter) CreatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 		return nil, err
 	}
 
+	if plan.PolicyId != "" {
+		if bson.IsObjectIdHex(plan.PolicyId) {
+			plan.PolicyRef = mgo.DBRef{CollPolicy, bson.ObjectIdHex(plan.PolicyId), DataBaseName}
+		} else {
+			log.Logf("Invalid policy:%s\n", plan.PolicyId)
+			return nil, ERR_POLICY_NOT_EXIST
+		}
+	}
+
 	//Create plan id
 	for i := 0; i < 3; i++ {
 		plan.Id = bson.NewObjectId()
@@ -584,12 +593,16 @@ func (ad *adapter) ListJob(ctx *Context) ([]Job, error) {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollJob)
-	err := c.Find(bson.M{"tenant": ctx.TenantId}).All(&jobs)
+	m := bson.M{}
+	if !isAdmin(ctx) {
+		m["tenant"] = ctx.TenantId
+	}
+	err := c.Find(m).All(&jobs)
 	if err == mgo.ErrNotFound || len(jobs) == 0 {
-		log.Log("No connector found.")
+		log.Log("No jobs found.")
 		return nil, nil
 	} else if err != nil {
-		log.Logf("Get connector from database failed,err:%v.\n", err)
+		log.Logf("Get jobs from database failed,err:%v.\n", err)
 		return nil, ERR_DB_ERR
 	}
 	return jobs, nil
