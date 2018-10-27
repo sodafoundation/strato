@@ -133,7 +133,12 @@ message GetPlanResponse {
 }
 
 message ListPlanRequest {
-    string context = 1;
+	string context = 1;
+	int32 limit = 2;
+	int32 offset = 3;
+	repeated string sortKeys = 4;
+	repeated string sortDirs = 5;
+	map<string, string> Filter = 6;
 }
 
 message ListPlanResponse {

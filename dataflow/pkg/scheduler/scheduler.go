@@ -20,24 +20,39 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
 
 func LoadAllPlans() {
 	ctx := context.NewAdminContext()
-	plans, err := db.DbAdapter.ListPlan(ctx)
-	if err != nil {
-		log.Logf("Get all plan faild, %v", err)
-	}
-	for _, p := range plans {
-		if p.PolicyId == "" || !p.PolicyEnabled {
-			continue
-		}
-		e := plan.NewPlanExecutor(ctx, &p)
-		err := trigger.GetTriggerMgr().Add(ctx, &p, e)
+
+	offset := model.DefaultOffset
+	limit := model.DefaultLimit
+
+	planNum := 0
+	for ; offset == 0 || planNum > 0; {
+		plans, err := db.DbAdapter.ListPlan(ctx, limit, offset, nil)
 		if err != nil {
-			log.Logf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
-			continue
+			log.Logf("Get all plan faild, %v", err)
+			break
 		}
-		log.Logf("Load plan(%s) to trigger success", p.Id.Hex())
+		planNum = len(plans)
+		if planNum == 0 {
+			break
+		} else {
+			offset += planNum
+		}
+		for _, p := range plans {
+			if p.PolicyId == "" || !p.PolicyEnabled {
+				continue
+			}
+			e := plan.NewPlanExecutor(ctx, &p)
+			err := trigger.GetTriggerMgr().Add(ctx, &p, e)
+			if err != nil {
+				log.Logf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
+				continue
+			}
+			log.Logf("Load plan(%s) to trigger success", p.Id.Hex())
+		}
 	}
 }

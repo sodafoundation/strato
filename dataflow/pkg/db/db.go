@@ -71,9 +71,9 @@ type DBAdapter interface {
 	CreatePlan(ctx *c.Context, conn *model.Plan) (*model.Plan, error)
 	DeletePlan(ctx *c.Context, name string) error
 	UpdatePlan(ctx *c.Context, conn *model.Plan) (*model.Plan, error)
-	ListPlan(ctx *c.Context) ([]model.Plan, error)
+	ListPlan(ctx *c.Context, limit int, offset int, filter interface{}) ([]model.Plan, error)
 	GetPlan(ctx *c.Context, id string) (*model.Plan, error)
-	GetPlanByPolicy(ctx *c.Context, policyId string) ([]model.Plan, error)
+	GetPlanByPolicy(ctx *c.Context, policyId string, limit int, offset int) ([]model.Plan, error)
 	LockSched(planId string) int
 	UnlockSched(planId string) int
 	//Job

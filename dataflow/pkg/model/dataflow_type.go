@@ -58,6 +58,11 @@ var (
 	ERR_PLAN_NOT_IN_TRIGGER = errors.New("specified plan is not in trigger")
 )
 
+var (
+	DefaultLimit = 1000
+	DefaultOffset = 0
+)
+
 const (
 	LockSuccess = 0
 	LockBusy    = 1

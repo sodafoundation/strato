@@ -236,8 +236,8 @@ func Get(ctx *c.Context, id string) (*Plan, error) {
 	return db.DbAdapter.GetPlan(ctx, id)
 }
 
-func List(ctx *c.Context) ([]Plan, error) {
-	return db.DbAdapter.ListPlan(ctx)
+func List(ctx *c.Context, limit int, offset int, filter interface{}) ([]Plan, error) {
+	return db.DbAdapter.ListPlan(ctx, limit, offset, filter)
 }
 
 func getLocation(conn *Connector) (string, error) {

@@ -87,21 +87,34 @@ func Update(ctx *context.Context, policyId string, updateMap map[string]interfac
 }
 
 func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
-	plans, err := db.DbAdapter.GetPlanByPolicy(ctx, policy.Id.Hex())
-	if err != nil {
-		log.Logf("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)
-		return err
-	}
+	offset := DefaultOffset
+	limit := DefaultLimit
+
 	t := trigger.GetTriggerMgr()
-	for _, p := range plans {
-		if !p.PolicyEnabled {
-			continue // Policy is not enabled, ignore it
-		}
-		exe := plan.NewPlanExecutor(ctx, &p)
-		if err := t.Update(ctx, &p, exe); err != nil {
+	planNum := 0
+	for ; offset == 0 || planNum > 0; {
+		plans, err := db.DbAdapter.GetPlanByPolicy(ctx, policy.Id.Hex(), limit, offset)
+		if err != nil {
+			log.Logf("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)
 			return err
 		}
+		planNum = len(plans)
+		if planNum == 0 {
+			break
+		} else {
+			offset += planNum
+		}
+		for _, p := range plans {
+			if !p.PolicyEnabled {
+				continue // Policy is not enabled, ignore it
+			}
+			exe := plan.NewPlanExecutor(ctx, &p)
+			if err := t.Update(ctx, &p, exe); err != nil {
+				return err
+			}
+		}
 	}
+
 	return nil
 }
 
