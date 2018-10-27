@@ -244,8 +244,9 @@ func (b *dataflowService) GetPlan(ctx context.Context, in *pb.GetPlanRequest, ou
 	actx := c.NewContextFromJson(in.GetContext())
 	id := in.GetId()
 	if id == "" {
-		out.Err = "No id specified."
-		return errors.New("No id specified.")
+		errmsg := fmt.Sprint("No id specified.")
+		out.Err = errmsg
+		return errors.New(errmsg)
 	}
 
 	p, err := plan.Get(actx, id)
@@ -447,19 +448,24 @@ func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, ou
 func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out *pb.GetJobResponse) error {
 	log.Log("Get job is called in dataflow service.")
 	actx := c.NewContextFromJson(in.GetContext())
-	id := in.Id
-	if in.Id == "all" {
-		id = ""
+
+	if in.Id == "" {
+		errmsg := fmt.Sprint("No id specified.")
+		out.Err = errmsg
+		return errors.New(errmsg)
 	}
 
-	jb, err := job.Get(actx, id)
-
+	jb, err := job.Get(actx, in.Id)
 	if err != nil {
 		log.Logf("Get job err:%d.", err)
+		out.Err = err.Error()
+		return err
+	}else {
+		out.Job = &pb.Job{Id: string(jb.Id.Hex()), Type: jb.Type, PlanName: jb.PlanName, PlanId: jb.PlanId,
+			Description: "for test", SourceLocation: jb.SourceLocation, DestLocation: jb.DestLocation,
+			CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix(), Status:jb.Status, TotalCapacity:jb.TotalCapacity,
+			PassedCapacity:jb.PassedCapacity, TotalCount:jb.TotalCount, PassedCount:jb.PassedCount, Progress:jb.Progress}
 	}
-	out.Job = &pb.Job{Id: string(jb.Id.Hex()), Type: jb.Type, PlanName: jb.PlanName, PlanId: jb.PlanId,
-		Description: "for test", SourceLocation: jb.SourceLocation, DestLocation: jb.DestLocation,
-		CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix(), Status:jb.Status}
 
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
@@ -473,9 +479,15 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 }
 
 func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, out *pb.ListJobResponse) error {
-	log.Log("Get job is called in dataflow service.")
+	log.Log("List job is called in dataflow service.")
+	if in.Limit < 0 || in.Offset < 0 {
+		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		log.Log(msg)
+		return errors.New(msg)
+	}
+
 	actx := c.NewContextFromJson(in.GetContext())
-	jobs, err := job.List(actx)
+	jobs, err := job.List(actx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Logf("Get job err:%d.", out.Err)
 		return err
@@ -486,8 +498,10 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 			//TODO: need change according to real scenario
 			des := "for test"
 			j := pb.Job{Id: string(jobs[i].Id.Hex()), Type: jobs[i].Type, PlanName: jobs[i].PlanName, PlanId: jobs[i].PlanId,
-				Description: des, SourceLocation: jobs[i].SourceLocation, DestLocation: jobs[i].DestLocation,
-				CreateTime: jobs[i].CreateTime.Unix(), EndTime: jobs[i].EndTime.Unix(), Status:jobs[i].Status}
+				Description: des, SourceLocation: jobs[i].SourceLocation, DestLocation: jobs[i].DestLocation, StartTime:jobs[i].StartTime.Unix(),
+				CreateTime: jobs[i].CreateTime.Unix(), EndTime: jobs[i].EndTime.Unix(), Status:jobs[i].Status,
+				TotalCapacity:jobs[i].TotalCapacity, PassedCapacity:jobs[i].PassedCapacity, TotalCount:int64(jobs[i].TotalCount),
+				PassedCount:(int64(jobs[i].PassedCount)), Progress:int64(jobs[i].Progress)}
 			out.Jobs = append(out.Jobs, &j)
 		}
 	}
@@ -497,7 +511,7 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 	if errs != nil {
 		log.Logf(errs.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons)
+		log.Logf("Got jobs: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err

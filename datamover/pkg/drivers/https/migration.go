@@ -76,28 +76,25 @@ func doMove (ctx context.Context, objs []*SourceOject, capa chan int64, th chan 
 	}
 }
 
-func refreshBackendLocation(ctx context.Context, virtBkname string, bkId string) (*LocationInfo,error) {
+func refreshBackendLocation(ctx context.Context, virtBkname string, backendName string) (*LocationInfo,error) {
 	//TODO: use read/write lock to synchronize among routines
-	if bkId == "" {
-		logger.Println("Get backend location failed, because backend id is null.")
+	if backendName == "" {
+		logger.Println("Get backend location failed, because backend name is null.")
 		return nil,errors.New("failed")
 	}
-	loca,exists := locMap[bkId]
+	loca,exists := locMap[backendName]
 	if !exists {
-		logger.Printf("Backend(id:%s) is not in the map, need to build it.\n", bkId)
-		req := backend.GetBackendRequest{Id:bkId}
-		bk,err := bkendclient.GetBackend(ctx, &req)
+		logger.Printf("Backend(name:%s) is not in the map, need to build it.\n", backendName)
+		bk, err := db.DbAdapter.GetBackendByName(backendName)
 		if err != nil {
 			logger.Printf("Get backend information failed, err:%v\n", err)
 			return nil,errors.New("failed")
 		} else {
 			//TODO:use read/write lock to synchronize among routines
-			loca = &LocationInfo{bk.Backend.Type, bk.Backend.Region, bk.Backend.Endpoint,
-				bk.Backend.BucketName, virtBkname,bk.Backend.Access, bk.Backend.Security, bkId}
-			//locMap[bkId].region = ""
-			//loca = locMap[bkId]
-			locMap[bkId] = loca
-			logger.Printf("Refresh backend[id:%s,name:%s] successfully.\n", bkId, bk.Backend.BucketName)
+			loca = &LocationInfo{bk.Type, bk.Region, bk.Endpoint,bk.BucketName,
+			virtBkname,bk.Access, bk.Security, backendName}
+			locMap[backendName] = loca
+			logger.Printf("Refresh backend[name:%s,id:%s] successfully.\n", backendName, bk.Id.String())
 			return loca,nil
 		}
 	}else {
@@ -404,11 +401,14 @@ func deleteObj(ctx context.Context, obj *SourceOject, loca *LocationInfo) error 
 func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo, remainSource bool) {
 	succeed := true
-	if obj.Obj.Backend != srcLoca.BakendId && obj.Obj.Backend != "" {
-		//for selfdefined connector, obj.backend and srcLoca.bakendId would be ""
+	if obj.Obj.Backend != srcLoca.BakendName && obj.Obj.Backend != "" {
+		logger.Printf("obj.Obj.Backend=%s,srcLoca.BakendName=%s\n", obj.Obj.Backend, srcLoca.BakendName)
+		logger.Printf("locaMap:%+v\n", locMap)
+		//for selfdefined connector, obj.backend and srcLoca.backendname would be ""
 		//TODO: use read/wirte lock
-		logger.Printf("Related backend of object is not default.")
+		logger.Print("Related backend of object is not default.")
 		srcLoca = locMap[obj.Obj.Backend]
+		logger.Printf("srcLoca=%v\n", srcLoca)
 	}
 
 	//move object
@@ -459,7 +459,7 @@ func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	req := osdss3.ListObjectsRequest{Bucket:conn.BucketName}
 	objs,err := s3client.ListObjects(ctx, &req)
 	totalObjs := len(objs.ListObjects)
-	if err != nil || totalObjs == 0{
+	if err != nil {
 		logger.Printf("List objects failed, err:%v\n", err)
 		return nil, err
 	}
@@ -467,7 +467,7 @@ func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	storType := ""
 	for i := 0; i < totalObjs; i++ {
 		//refresh source location if needed
-		if objs.ListObjects[i].Backend != defaultSrcLoca.BakendId && objs.ListObjects[i].Backend != ""{
+		if objs.ListObjects[i].Backend != defaultSrcLoca.BakendName && objs.ListObjects[i].Backend != ""{
 			//User defined specific backend, which is different from the default backend
 			loca,err := refreshBackendLocation(ctx, conn.BucketName, objs.ListObjects[i].Backend)
 			if err != nil {
@@ -586,8 +586,8 @@ func runjob(in *pb.RunJobRequest) error {
 	//Get Objects which need to be migrated. Calculate the total number and capacity of objects
 	objs,err := getSourceObjs(ctx, in.SourceConn, in.Filt, srcLoca)
 	totalObjs := len(objs)
-	if err != nil || totalObjs == 0{
-		logger.Printf("List objects failed, err:%v\n", err)
+	if err != nil{
+		logger.Printf("List objects failed, err:%v, total objects:%d\n", err, totalObjs)
 		//update database
 		j.Status = flowtype.JOB_STATUS_FAILED
 		j.EndTime = time.Now()
@@ -597,6 +597,14 @@ func runjob(in *pb.RunJobRequest) error {
 	for i := 0; i < totalObjs; i++ {
 		j.TotalCount++
 		j.TotalCapacity += objs[i].Obj.Size
+	}
+	if totalObjs == 0 || j.TotalCapacity == 0 {
+		logger.Printf("No data need to migrate. totalObjs=%d, TotalCapacity=%d\n", totalObjs, j.TotalCapacity)
+		j.Status = flowtype.JOB_STATUS_SUCCEED
+		j.EndTime = time.Now()
+		j.Progress = 100
+		db.DbAdapter.UpdateJob(&j)
+		return err
 	}
 	logger.Printf("List objects succeed, total count:%d, total capacity:%d\n", j.TotalCount, j.TotalCapacity)
 	j.Status = flowtype.JOB_STATUS_RUNNING
@@ -628,8 +636,10 @@ func runjob(in *pb.RunJobRequest) error {
 			var deci int = totalObjs/10
 			if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 				//update database
-				j.PassedCount = passedCount
+				j.PassedCount = (int64(passedCount))
 				j.PassedCapacity = capacity
+				j.Progress = int64(capacity*100/j.TotalCapacity)
+				logger.Printf("capacity:%d,TotalCapacity:%d Progress:%d\n", capacity, j.TotalCapacity, j.Progress)
 				db.DbAdapter.UpdateJob(&j)
 			}
 		}
@@ -647,9 +657,9 @@ func runjob(in *pb.RunJobRequest) error {
 	}
 
 	var ret error = nil
-	j.PassedCount = passedCount
+	j.PassedCount = int64(passedCount)
 	if passedCount < totalObjs {
-		errmsg := strconv.Itoa(totalObjs) + " objects, passed " + strconv.Itoa(j.PassedCount)
+		errmsg := strconv.Itoa(totalObjs) + " objects, passed " + strconv.Itoa(passedCount)
 		logger.Printf("Run job failed: %s\n", errmsg)
 		ret = errors.New("failed")
 		j.Status = flowtype.JOB_STATUS_FAILED

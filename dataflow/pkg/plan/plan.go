@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"encoding/json"
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
@@ -32,7 +31,6 @@ import (
 	"errors"
 )
 
-var dataBaseName = "test"
 var tblConnector = "connector"
 var tblPolicy = "policy"
 var topicMigration = "migration"
@@ -208,15 +206,6 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 	if v, ok := updateMap["policyId"]; ok {
 		curPlan.PolicyId = v.(string)
 		needUpdateTrigger = true
-		if curPlan.PolicyId == "" {
-			curPlan.PolicyRef = mgo.DBRef{}
-		} else if bson.IsObjectIdHex(curPlan.PolicyId) {
-			curPlan.PolicyRef = mgo.DBRef{tblPolicy, bson.ObjectIdHex(curPlan.PolicyId), dataBaseName}
-		} else {
-			log.Logf("Invalid policy:%s\n", curPlan.PolicyId)
-			return nil, ERR_POLICY_NOT_EXIST
-		}
-
 	}
 
 	if needUpdateTrigger {
@@ -330,7 +319,8 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	job.Status = JOB_STATUS_PENDING
 	job.OverWrite = plan.OverWrite
 	job.RemainSource = plan.RemainSource
-
+	job.StartTime = time.Time{}
+	
 	//add job to database
 	_, err = db.DbAdapter.CreateJob(ctx, &job)
 	if err == nil {

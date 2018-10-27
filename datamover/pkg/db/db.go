@@ -19,6 +19,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db/drivers/mongo"
+	backend "github.com/opensds/multi-cloud/backend/pkg/model"
 )
 
 // C is a global variable that controls database module.
@@ -57,4 +58,5 @@ func Exit(db *Database) {
 type DBAdapter interface {
 	GetJobStatus(jobID string) string
 	UpdateJob(job *model.Job) error
+	GetBackendByName(name string) (*backend.Backend, error)
 }

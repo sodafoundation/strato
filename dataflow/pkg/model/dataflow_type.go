@@ -133,8 +133,8 @@ type Job struct {
 	Type           string        `json:"type" bson:"type"` //migration
 	PlanName       string        `json:"planName" bson:"planName"`
 	PlanId         string        `json:"planId" bson:"planId"`
-	TotalCount     int           `json:"totalCount" bson:"totalCount"`
-	PassedCount    int           `json:"passedCount" bson:"passedCount"`
+	TotalCount     int64         `json:"totalCount" bson:"totalCount"`
+	PassedCount    int64         `json:"passedCount" bson:"passedCount"`
 	TotalCapacity  int64         `json:"totalCapacity" bson:"totalCapacity"`
 	PassedCapacity int64         `json:"passedCapacity" bson:"passedCapacity"`
 	//when the plan related connector type is OPENSDS, then location should be bucket name
@@ -147,6 +147,7 @@ type Job struct {
 	RemainSource   bool      `json:"remainSource" bson:"remainSource"`
 	Status         string    `json:"status" bson:"status"` //queueing,
 	Tenant         string    `json:"tenant" bson:"tenant"`
+	Progress       int64     `json:"progress" bson:"progress"`
 }
 
 type Backend struct {

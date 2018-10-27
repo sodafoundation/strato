@@ -453,6 +453,17 @@ func (ad *adapter) UpdatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 		return nil, err
 	}
 
+	if plan.PolicyId != "" {
+		if bson.IsObjectIdHex(plan.PolicyId) {
+			plan.PolicyRef = mgo.DBRef{CollPolicy, bson.ObjectIdHex(plan.PolicyId), DataBaseName}
+		} else {
+			log.Logf("Invalid policy:%s\n", plan.PolicyId)
+			return nil, ERR_POLICY_NOT_EXIST
+		}
+	} else {
+		plan.PolicyRef = mgo.DBRef{}
+	}
+
 	//Update database
 	c := ss.DB(DataBaseName).C(CollPlan)
 	err = c.Update(bson.M{"_id": plan.Id}, plan)
@@ -468,10 +479,10 @@ func (ad *adapter) UpdatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 
 func (ad *adapter) ListPlan(ctx *Context, limit int, offset int, filter interface{}) ([]Plan, error) {
 	//m := bson.M{}
-	if !isAdmin(ctx) {
-		//m["tenant"] = ctx.TenantId
-		filter.(map[string]string)["tenant"] = ctx.TenantId
-	}
+	//if !isAdmin(ctx) {
+	//	//m["tenant"] = ctx.TenantId
+	//	filter.(map[string]string)["tenant"] = ctx.TenantId
+	//}
 
 	return ad.doListPlan(ctx, limit, offset, filter)
 }
@@ -587,17 +598,17 @@ func (ad *adapter) GetJob(ctx *Context, id string) (*Job, error) {
 	return &job, nil
 }
 
-func (ad *adapter) ListJob(ctx *Context) ([]Job, error) {
+func (ad *adapter) ListJob(ctx *Context, limit int, offset int, filter interface{}) ([]Job, error) {
 	//var query mgo.Query;
 	jobs := []Job{}
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollJob)
-	m := bson.M{}
-	if !isAdmin(ctx) {
-		m["tenant"] = ctx.TenantId
-	}
-	err := c.Find(m).All(&jobs)
+	//m := bson.M{}
+	//if !isAdmin(ctx) {
+	//	m["tenant"] = ctx.TenantId
+	//}
+	err := c.Find(filter).Skip(offset).Limit(limit).All(&jobs)
 	if err == mgo.ErrNotFound || len(jobs) == 0 {
 		log.Log("No jobs found.")
 		return nil, nil

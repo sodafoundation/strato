@@ -19,6 +19,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
+	backend "github.com/opensds/multi-cloud/backend/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
 
@@ -26,6 +27,7 @@ var adap = &adapter{}
 
 var DataBaseName = "multi-cloud"
 var CollJob = "job"
+var CollBackend = "backends"
 
 func Init(host string) *adapter {
 	session, err := mgo.Dial(host)
@@ -98,6 +100,9 @@ func (ad *adapter) UpdateJob(job *Job) error {
 	if job.Status != "" {
 		j.Status = job.Status
 	}
+	if job.Progress != 0 {
+		j.Progress = job.Progress
+	}
 
 	err = c.Update(bson.M{"_id": j.Id}, &j)
 	if err != nil {
@@ -107,4 +112,19 @@ func (ad *adapter) UpdateJob(job *Job) error {
 
 	log.Log("Update job in database successfully.")
 	return nil
+}
+
+func (ad *adapter) GetBackendByName(name string) (*backend.Backend, error) {
+	log.Logf("Get backend by name:%s\n", name)
+	session := ad.s.Copy()
+	defer session.Close()
+
+	var backend = &backend.Backend{}
+	collection := session.DB(DataBaseName).C(CollBackend)
+	err := collection.Find(bson.M{"name": name}).One(backend)
+	if err != nil {
+		return nil, err
+	}
+
+	return backend, nil
 }

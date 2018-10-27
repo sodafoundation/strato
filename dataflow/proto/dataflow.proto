@@ -190,6 +190,11 @@ message Job {
 	int64  endTime = 11;
 	bool overWrite = 12;
 	bool remainSource = 13;
+	int64 totalCapacity = 14;
+	int64 passedCapacity = 15;
+	int64 totalCount = 16;
+	int64 passedCount = 17;
+	int64 progress = 18;
 }
 
 message GetJobRequest {
@@ -204,6 +209,11 @@ message GetJobResponse {
 
 message ListJobRequest {
     string context = 1;
+	int32 limit = 2;
+	int32 offset = 3;
+	repeated string sortKeys = 4;
+	repeated string sortDirs = 5;
+	map<string, string> Filter = 6;
 }
 
 message ListJobResponse {
