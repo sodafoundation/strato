@@ -79,5 +79,5 @@ type DBAdapter interface {
 	//Job
 	CreateJob(ctx *c.Context, job *model.Job) (*model.Job, error)
 	GetJob(ctx *c.Context, id string) (*model.Job, error)
-	ListJob(ctx *c.Context) ([]model.Job, error)
+	ListJob(ctx *c.Context, limit int, offset int, filter interface{}) ([]model.Job, error)
 }

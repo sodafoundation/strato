@@ -26,7 +26,7 @@ type LocationInfo struct {
 	VirBucket string  //local bucket name
 	Access string
 	Security string
-	BakendId string
+	BakendName string
 }
 
 type SourceOject struct {

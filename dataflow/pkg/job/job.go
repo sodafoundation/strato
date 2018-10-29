@@ -30,6 +30,6 @@ func Get(ctx *context.Context, id string) (*Job, error) {
 	return db.DbAdapter.GetJob(ctx, id)
 }
 
-func List(ctx *context.Context) ([]Job, error) {
-	return db.DbAdapter.ListJob(ctx)
+func List(ctx *context.Context, limit int, offset int, filter interface{}) ([]Job, error) {
+	return db.DbAdapter.ListJob(ctx, limit, offset, filter)
 }

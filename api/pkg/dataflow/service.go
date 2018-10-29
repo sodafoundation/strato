@@ -377,9 +377,41 @@ func (s *APIService) GetJob(request *restful.Request, response *restful.Response
 }
 
 func (s *APIService) ListJob(request *restful.Request, response *restful.Response) {
+	log.Log("Received request for list jobs.")
+
+	listJobReq := &dataflow.ListJobRequest{}
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Logf("Get pagination parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listJobReq.Limit = limit
+	listJobReq.Offset = offset
+
+	sortKeys, sortDirs, err := common.GetSortParam(request)
+	if err != nil {
+		log.Logf("Get sort parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listJobReq.SortKeys = sortKeys
+	listJobReq.SortDirs = sortDirs
+
+	filterOpts := []string{"planname", "type"}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Logf("Get filter failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listJobReq.Filter = filter
+
 	actx := request.Attribute(c.KContext).(*c.Context)
+	listJobReq.Context = actx.ToJson()
+
 	ctx := context.Background()
-	res, err := s.dataflowClient.ListJob(ctx, &dataflow.ListJobRequest{Context: actx.ToJson()})
+	res, err := s.dataflowClient.ListJob(ctx, listJobReq)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
