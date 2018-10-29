@@ -15,7 +15,7 @@
 package constants
 
 const (
-	BackendTypeAws   = "aws"
-	BackendTypeObs   = "obs"
-	BackendTypeAzure = "azure"
+	BackendTypeAws   = "aws-s3"
+	BackendTypeObs   = "hw-obs"
+	BackendTypeAzure = "azure-blob"
 )
