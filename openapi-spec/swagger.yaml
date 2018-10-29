@@ -1,0 +1,299 @@
+# Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+openapi: 3.0.0
+servers:
+  - url: 'http://virtserver.swaggerhub.com/opensds.io/OpenSDS-Multi-Cloud/1.0.0'
+
+info:
+  description: |
+    OpenSDS Multi-cloud API to manage multi-cloud backend storages.
+    You can find out more about Swagger at 
+    [https://www.opensds.io](https://www.opensds.io) 
+  version: "v1"
+  title: OpenSDS Multi-Cloud API
+  termsOfService: '://www.linuxfoundation.org/terms'
+  contact:
+    name: OpenSDS Support
+    url: 'https://opensds.slack.com'
+    email: support@opensds.io
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: backend
+    description: Muli-cloud cloud storage backends
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'
+  - name: type
+    description: Supported storage backends
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'
+
+
+paths: 
+  '/v1/{tenantId}/backends':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - backend
+      summary: Create a backend.
+      operationId: createBackend
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
+      requestBody:
+        $ref: '#/components/requestBodies/Backend'
+    get:
+      tags:
+        - backend
+      summary: List all backends.
+      operationId: listBackend
+      parameters:
+        - name: type
+          in: query
+          description: Filter the backend by backend type.
+          schema:
+            type: string
+            enum: ["hw-obs", "aws-s3", "azure-blob"]
+        - name: name
+          in: query
+          description: Filter the backend by name.
+          schema:
+            type: string
+        - name: region
+          in: query
+          description: Filter the backend by region.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Backend'
+                  next:
+                    type: integer
+                    example: 1
+    put:
+      tags:
+        - backend
+      summary: Update a backend.
+      operationId: updateBackend
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Access:
+                  description: Updated the specified backend access Id
+                  type: string
+                Security:
+                  description: Updated the specified backend security Id
+                  type: string
+    delete:
+      tags:
+        - backend
+      summary: Deletes a backend.
+      operationId: deleteBackend
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Delete success
+          
+  '/v1/{tenantId}/backends/{backendId}':
+    parameters:
+    - name: tenantId
+      in: path
+      description: The tenantId UUID in a multi-tenancy environment.
+      required: true
+      schema:
+        type: string
+    get:
+      tags:
+        - backend
+      summary: Qurey a backend information.
+      operationId: getBackend
+      parameters:
+        - name: backendId
+          in: path
+          description: The backend ID.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
+  '/v1/{tenantId}/types':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenantId UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - types
+      summary: List all supported storage backend type.
+      operationId: listBackend
+      parameters:
+        - name: name
+          in: query
+          description: Filter the backend by name.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Type'
+                  next:
+                    type: integer
+                    example: 1
+components:
+  parameters:
+    offset:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: The number of items to skip before starting to collect the result set
+    limit:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1000
+      description: The numbers of items to return
+    sort:
+      in: query
+      name: sort
+      required: false
+      schema:
+        type: string
+      description: 'The sort key and direction of items to return, string must like:"id:asc,name:desc"'
+
+  schemas:
+    Backend:
+      type: object
+      properties:
+        Id:
+          description: The backend ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c2"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6a"
+        UserId:
+          description: User Id.
+          type: string
+        Name:
+          description: The backend name specified by user.
+          type: string
+          example: backend001
+        Type:
+          description: The backend type.
+          type: string
+          example: "hw-obs"
+          enum:
+            - hw-obs
+            - aws-s3
+            - azure-blob
+        Region:
+          type: string
+          example: "ap-southeast-1"
+        Endpoint:
+          type: string
+          example: "obs.ap-southeast-1.myhwclouds.com"
+        BucketName:
+          type: string
+          example: "bucket001"
+        Access:
+          type: string
+          example: "4X7JQDFTCYUNWFBRYZVC"
+        Security: 
+          type: string
+          example: "9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn"
+    Type:
+      type: object
+      properties:
+        name:
+          description: The backend type name.
+          type: string
+          example: hw-obs
+        description:
+          description: The backend type description.
+          type: string
+          example: 'Huawei Object Storage Service(OBS)' 
+  requestBodies:
+    Backend:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Backend'
+      description: Cloud Backend configurations
+      required: true
