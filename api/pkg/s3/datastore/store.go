@@ -21,6 +21,7 @@ import (
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/azure"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -32,11 +33,15 @@ func Init(backend *backendpb.BackendDetail) DataStoreAdapter {
 	var StoreAdapter DataStoreAdapter
 
 	switch backend.Type {
-	case "obs":
+	case "azure-blob":
+		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
+		StoreAdapter = azure.Init(backend)
+		return StoreAdapter
+	case "hw-obs": 
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = hws.Init(backend)
 		return StoreAdapter
-	case "aws":
+	case "aws-s3":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = aws.Init(backend)
 		return StoreAdapter
