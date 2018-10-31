@@ -43,6 +43,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 
 	object.ObjectKey = objectKey
+	log.Logf("objectKey is %v:\n",objectKey)
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	object.Size = size
@@ -51,13 +52,15 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		object.Backend = backendName
 		client = getBackendByName(s,backendName)
 	}else {
+		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+		object.Backend = bucket.Backend
 		client = getBackendClient(s, bucketName)
 	}
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-
+	log.Logf("enter the PUT method")
 	s3err := client.PUT(request.Request.Body, &object, ctx)
 	log.Logf("LastModified is %v\n",object.LastModified)
 	if s3err != NoError {

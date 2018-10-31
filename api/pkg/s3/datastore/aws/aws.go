@@ -76,9 +76,6 @@ func Init(backend *backendpb.BackendDetail) *AwsAdapter {
 }
 
 func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
-	if object.Backend!=""{
-
-	}
 	bucket := ad.backend.BucketName
 
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
