@@ -14,6 +14,11 @@
 
 BASE_DIR := $(shell pwd)
 BUILD_DIR := $(BASE_DIR)/build
+DIST_DIR := $(BASE_DIR)/build/dist
+VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
+	     git describe --match=$(git rev-parse --short=8 HEAD) \
+             --always --dirty --abbrev=8)
+BUILD_TGT := opensds-multicloud-$(VERSION)-linux-amd64
 
 .PHONY: all build prebuild api backend s3 dataflow docker clean
 
@@ -60,5 +65,23 @@ docker: build
 	cp $(BUILD_DIR)/datamover datamover
 	chmod 755 datamover/datamover
 	docker build datamover -t opensdsio/multi-cloud/datamover:latest
+
 clean:
 	rm -rf $(BUILD_DIR)
+
+version:
+	@echo ${VERSION}
+
+.PHONY: dist
+dist: build
+	rm -fr $(DIST_DIR) && mkdir -p $(DIST_DIR)/$(BUILD_TGT)/bin
+	cd $(DIST_DIR) && \
+	cp ../api $(BUILD_TGT)/bin/ && \
+	cp ../backend $(BUILD_TGT)/bin/ && \
+	cp ../s3 $(BUILD_TGT)/bin/ && \
+	cp ../dataflow $(BUILD_TGT)/bin/ && \
+	cp ../datamover $(BUILD_TGT)/bin/ && \
+	cp $(BASE_DIR)/LICENSE $(BUILD_TGT) && \
+	zip -r $(DIST_DIR)/$(BUILD_TGT).zip $(BUILD_TGT) && \
+	tar zcvf $(DIST_DIR)/$(BUILD_TGT).tar.gz $(BUILD_TGT)
+	tree $(DIST_DIR)
