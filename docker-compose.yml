@@ -24,8 +24,10 @@ services:
     image: opensdsio/multi-cloud/api
     ports:
       - 8089:8089
+    volumes:
+      - /etc/ssl/certs:/etc/ssl/certs
     environment:
-      MICRO_SERVER_ADDRESS: ":8089"
+      MICRO_SERVER_ADDRESS: "8089"
       MICRO_REGISTRY: "mdns"
 
   backend:
