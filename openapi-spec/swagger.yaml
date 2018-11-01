@@ -1,684 +1,825 @@
+# Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 openapi: 3.0.0
-# Added by API Auto Mocking Plugin
 servers:
+# Added by API Auto Mocking Plugin
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/open83/multi-cloud/1.0.0
+  - url: 'http://virtserver.swaggerhub.com/opensds.io/OpenSDS-Multi-Cloud/1.0.0'
+
 info:
   description: |
-    This is a sample Petstore server.  You can find
-    out more about Swagger at
-    [http://swagger.io](http://swagger.io) or on
-    [irc.freenode.net, #swagger](http://swagger.io/irc/).
+    OpenSDS Multi-cloud API to manage multi-cloud backend storages.
+    You can find out more about Swagger at 
+    [https://www.opensds.io](https://www.opensds.io) 
   version: "1.0.0"
-  title: Swagger Petstore
-  termsOfService: 'http://swagger.io/terms/'
+  title: OpenSDS Multi-Cloud API
+  termsOfService: '://www.linuxfoundation.org/terms'
   contact:
-    email: apiteam@swagger.io
+    name: OpenSDS Support
+    url: 'https://opensds.slack.com'
+    email: support@opensds.io
   license:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
-  - name: pet
-    description: Everything about your Pets
+  - name: backend
+    description: Muli-cloud cloud storage backends
     externalDocs:
       description: Find out more
-      url: 'http://swagger.io'
-  - name: store
-    description: Access to Petstore orders
-  - name: user
-    description: Operations about user
+      url: 'https://opensds.io'
+  - name: type
+    description: Supported storage backends
     externalDocs:
-      description: Find out more about our store
-      url: 'http://swagger.io'
-paths:
-  /pet:
+      description: Find out more
+      url: 'https://opensds.io'
+  - name: plan
+    description: Migration plan
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'
+  - name: job
+    description: Migration job
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'      
+  - name: policy
+    description: Schedule policy of plan.
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io' 
+
+paths: 
+  '/v1/{tenantId}/backends':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
     post:
       tags:
-        - pet
-      summary: Add a new pet to the store
-      operationId: addPet
+        - backend
+      summary: Create a backend.
+      operationId: createBackend
       responses:
-        '405':
-          description: Invalid input
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
       requestBody:
-        $ref: '#/components/requestBodies/Pet'
-    put:
-      tags:
-        - pet
-      summary: Update an existing pet
-      operationId: updatePet
-      responses:
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-        '405':
-          description: Validation exception
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
-      requestBody:
-        $ref: '#/components/requestBodies/Pet'
-  /pet/findByStatus:
+        $ref: '#/components/requestBodies/Backend'
     get:
       tags:
-        - pet
-      summary: Finds Pets by status
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findPetsByStatus
+        - backend
+      summary: List all backends.
+      operationId: listBackend
       parameters:
-        - name: status
+        - name: type
           in: query
-          description: Status values that need to be considered for filter
-          required: true
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-              enum:
-                - available
-                - pending
-                - sold
-              default: available
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-            application/xml:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid status value
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
-  /pet/findByTags:
-    get:
-      tags:
-        - pet
-      summary: Finds Pets by tags
-      description: >-
-        Muliple tags can be provided with comma separated strings. Use\ \ tag1,
-        tag2, tag3 for testing.
-      operationId: findPetsByTags
-      parameters:
-        - name: tags
-          in: query
-          description: Tags to filter by
-          required: true
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-            application/xml:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid tag value
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
-      deprecated: true
-  '/pet/{petId}':
-    get:
-      tags:
-        - pet
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: getPetById
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet to return
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-      security:
-        - api_key: []
-    post:
-      tags:
-        - pet
-      summary: Updates a pet in the store with form data
-      operationId: updatePetWithForm
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet that needs to be updated
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '405':
-          description: Invalid input
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                name:
-                  description: Updated name of the pet
-                  type: string
-                status:
-                  description: Updated status of the pet
-                  type: string
-    delete:
-      tags:
-        - pet
-      summary: Deletes a pet
-      operationId: deletePet
-      parameters:
-        - name: api_key
-          in: header
-          required: false
+          description: Filter the backend by backend type.
           schema:
             type: string
-        - name: petId
-          in: path
-          description: Pet id to delete
-          required: true
+            enum: ["hw-obs", "aws-s3", "azure-blob"]
+        - name: name
+          in: query
+          description: Filter the backend by name.
           schema:
-            type: integer
-            format: int64
-      responses:
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
-  '/pet/{petId}/uploadImage':
-    post:
-      tags:
-        - pet
-      summary: uploads an image
-      operationId: uploadFile
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet to update
-          required: true
+            type: string
+        - name: region
+          in: query
+          description: Filter the backend by region.
           schema:
-            type: integer
-            format: int64
+            type: string
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+
       responses:
         '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-      security:
-        - petstore_auth:
-            - 'write:pets'
-            - 'read:pets'
-      requestBody:
-        content:
-          application/octet-stream:
-            schema:
-              type: string
-              format: binary
-  /store/inventory:
-    get:
-      tags:
-        - store
-      summary: Returns pet inventories by status
-      description: Returns a map of status codes to quantities
-      operationId: getInventory
-      responses:
-        '200':
-          description: successful operation
+          description: successful operation.
           content:
             application/json:
               schema:
                 type: object
-                additionalProperties:
-                  type: integer
-                  format: int32
-      security:
-        - api_key: []
-  /store/order:
-    post:
-      tags:
-        - store
-      summary: Place an order for a pet
-      operationId: placeOrder
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Order'
-        '400':
-          description: Invalid Order
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Order'
-        description: order placed for purchasing the pet
-        required: true
-  '/store/order/{orderId}':
-    get:
-      tags:
-        - store
-      summary: Find purchase order by ID
-      description: >-
-        For valid response try integer IDs with value >= 1 and <= 10.\ \ Other
-        values will generated exceptions
-      operationId: getOrderById
-      parameters:
-        - name: orderId
-          in: path
-          description: ID of pet that needs to be fetched
-          required: true
-          schema:
-            type: integer
-            format: int64
-            minimum: 1
-            maximum: 10
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Order'
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Order not found
-    delete:
-      tags:
-        - store
-      summary: Delete purchase order by ID
-      description: >-
-        For valid response try integer IDs with positive integer value.\ \
-        Negative or non-integer values will generate API errors
-      operationId: deleteOrder
-      parameters:
-        - name: orderId
-          in: path
-          description: ID of the order that needs to be deleted
-          required: true
-          schema:
-            type: integer
-            format: int64
-            minimum: 1
-      responses:
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Order not found
-  /user:
-    post:
-      tags:
-        - user
-      summary: Create user
-      description: This can only be done by the logged in user.
-      operationId: createUser
-      responses:
-        default:
-          description: successful operation
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-        description: Created user object
-        required: true
-  /user/createWithArray:
-    post:
-      tags:
-        - user
-      summary: Creates list of users with given input array
-      operationId: createUsersWithArrayInput
-      responses:
-        default:
-          description: successful operation
-      requestBody:
-        $ref: '#/components/requestBodies/UserArray'
-  /user/createWithList:
-    post:
-      tags:
-        - user
-      summary: Creates list of users with given input array
-      operationId: createUsersWithListInput
-      responses:
-        default:
-          description: successful operation
-      requestBody:
-        $ref: '#/components/requestBodies/UserArray'
-  /user/login:
-    get:
-      tags:
-        - user
-      summary: Logs user into the system
-      operationId: loginUser
-      parameters:
-        - name: username
-          in: query
-          description: The user name for login
-          required: true
-          schema:
-            type: string
-        - name: password
-          in: query
-          description: The password for login in clear text
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: successful operation
-          headers:
-            X-Rate-Limit:
-              description: calls per hour allowed by the user
-              schema:
-                type: integer
-                format: int32
-            X-Expires-After:
-              description: date in UTC when token expires
-              schema:
-                type: string
-                format: date-time
-          content:
-            application/json:
-              schema:
-                type: string
-            application/xml:
-              schema:
-                type: string
-        '400':
-          description: Invalid username/password supplied
-  /user/logout:
-    get:
-      tags:
-        - user
-      summary: Logs out current logged in user session
-      operationId: logoutUser
-      responses:
-        default:
-          description: successful operation
-  '/user/{username}':
-    get:
-      tags:
-        - user
-      summary: Get user by user name
-      operationId: getUserByName
-      parameters:
-        - name: username
-          in: path
-          description: The name that needs to be fetched. Use user1 for testing.
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid username supplied
-        '404':
-          description: User not found
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Backend'
+                  next:
+                    type: integer
+                    example: 1
     put:
       tags:
-        - user
-      summary: Updated user
-      description: This can only be done by the logged in user.
-      operationId: updateUser
-      parameters:
-        - name: username
-          in: path
-          description: name that need to be updated
-          required: true
-          schema:
-            type: string
+        - backend
+      summary: Update a backend.
+      operationId: updateBackend
       responses:
-        '400':
-          description: Invalid user supplied
-        '404':
-          description: User not found
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
-        description: Updated user object
-        required: true
+              type: object
+              properties:
+                Access:
+                  description: Updated the specified backend access Id
+                  type: string
+                Security:
+                  description: Updated the specified backend security Id
+                  type: string
     delete:
       tags:
-        - user
-      summary: Delete user
-      description: This can only be done by the logged in user.
-      operationId: deleteUser
+        - backend
+      summary: Deletes a backend.
+      operationId: deleteBackend
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Delete success
+          
+  '/v1/{tenantId}/backends/{backendId}':
+    parameters:
+    - name: tenantId
+      in: path
+      description: The tenantId UUID in a multi-tenancy environment.
+      required: true
+      schema:
+        type: string
+    get:
+      tags:
+        - backend
+      summary: Qurey a backend information.
+      operationId: getBackend
       parameters:
-        - name: username
+        - name: backendId
           in: path
-          description: The name that needs to be deleted
+          description: The backend ID.
           required: true
           schema:
             type: string
       responses:
-        '400':
-          description: Invalid username supplied
-        '404':
-          description: User not found
-externalDocs:
-  description: Find out more about Swagger
-  url: 'http://swagger.io'
-components:
-  schemas:
-    Order:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        petId:
-          type: integer
-          format: int64
-        quantity:
-          type: integer
-          format: int32
-        shipDate:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
+  '/v1/{tenantId}/types':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenantId UUID in a multi-tenancy environment.
+        required: true
+        schema:
           type: string
-          format: date-time
-        status:
-          type: string
-          description: Order Status
-          enum:
-            - placed
-            - approved
-            - delivered
-        complete:
-          type: boolean
-          default: false
-      xml:
-        name: Order
-    Category:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-      xml:
-        name: Category
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        username:
-          type: string
-        firstName:
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-        phone:
-          type: string
-        userStatus:
-          type: integer
-          format: int32
-          description: User Status
-      xml:
-        name: User
-    Tag:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-      xml:
-        name: Tag
-    Pet:
-      type: object
-      required:
-        - name
-        - photoUrls
-      properties:
-        id:
-          type: integer
-          format: int64
-        category:
-          $ref: '#/components/schemas/Category'
-        name:
-          type: string
-          example: doggie
-        photoUrls:
-          type: array
-          xml:
-            name: photoUrl
-            wrapped: true
-          items:
+    get:
+      tags:
+        - types
+      summary: List all supported storage backend type.
+      operationId: listBackend
+      parameters:
+        - name: name
+          in: query
+          description: Filter the backend by name.
+          schema:
             type: string
-        tags:
-          type: array
-          xml:
-            name: tag
-            wrapped: true
-          items:
-            $ref: '#/components/schemas/Tag'
-        status:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Type'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/plans':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
           type: string
-          description: pet status in the store
-          enum:
-            - available
-            - pending
-            - sold
-      xml:
-        name: Pet
-    ApiResponse:
+    post:
+      tags:
+        - plan
+      summary: Create a plan.
+      operationId: createPlan
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+      requestBody:
+        $ref: '#/components/requestBodies/Plan'
+    get:
+      tags:
+        - plan
+      summary: List all plans.
+      operationId: listPlans
+      parameters:
+        - name: type
+          in: query
+          description: Filter the plans by plan type. Only migration support currently. New type will be added in the future.
+          schema:
+            type: string
+            enum: ["migration"]
+        - name: name
+          in: query
+          description: Filter the plan by name.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plan'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/plans/{planId}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string 
+      - name: planId
+        in: path
+        description: The plan ID
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - plan
+      summary: Get a plan.
+      operationId: getPlan
+      responses:    
+        '200':
+          content:
+            application/json:
+              schema:        
+                $ref: '#/components/schemas/Plan' 
+          description: successful operation.
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist.
+    put:
+      tags:
+        - plan
+      summary: Update a plan.
+      operationId: updatePlan
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+      requestBody:
+        $ref: '#/components/requestBodies/Plan'
+    delete:
+      tags:
+        - plan
+      summary: Delete a plan.
+      operationId: deletePlan
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Delete success
+    post:
+      tags:
+        - plan
+      summary: Run a plan.
+      operationId: runPlan
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Run success  
+          
+  '/v1/{tenantId}/jobs':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - job
+      summary: List all jobs.
+      operationId: listJobs
+      parameters:
+        - name: type
+          in: query
+          description: Filter the jobs by job type. Only migration support currently. New type will be added in the future.
+          schema:
+            type: string
+            enum: ["migration"]
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/jobs/{jobId}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string 
+      - name: jobId
+        in: path
+        description: The job ID
+        required: true
+        schema:
+          type: string
+          
+    get:
+      tags:
+        - job
+      summary: Get a job.
+      operationId: getJob
+      responses:    
+        '200':
+          content:
+            application/json:
+              schema:        
+                $ref: '#/components/schemas/Job' 
+          description: successful operation.
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist.
+ 
+  '/v1/{tenantId}/policies':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - policy
+      summary: Create a policy.
+      operationId: createPolicy
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+      requestBody:
+        $ref: '#/components/requestBodies/Policy'
+    get:
+      tags:
+        - policy
+      summary: List all policies.
+      operationId: listPolicies
+      parameters:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Policy'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/plans/{policyId}': 
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string 
+      - name: policyId
+        in: path
+        description: The policy ID
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - policy
+      summary: Get a policy.
+      operationId: getPolicy
+      responses:    
+        '200':
+          content:
+            application/json:
+              schema:        
+                $ref: '#/components/schemas/Policy' 
+          description: successful operation.
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist.
+    put:
+      tags:
+        - policy
+      summary: Update a policy.
+      operationId: updatePolicy
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+      requestBody:
+        $ref: '#/components/requestBodies/Policy'
+    delete:
+      tags:
+        - policy
+      summary: Delete a policy.
+      operationId: deletePolicy
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Delete success
+          
+components:
+  parameters:
+    offset:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: The number of items to skip before starting to collect the result set
+    limit:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1000
+      description: The numbers of items to return
+    sort:
+      in: query
+      name: sort
+      required: false
+      schema:
+        type: string
+      description: 'The sort key and direction of items to return, string must like:"id:asc,name:desc"'
+
+  schemas:
+    Backend:
       type: object
       properties:
-        code:
+        Id:
+          description: The backend ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c2"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6a"
+        UserId:
+          description: User Id.
+          type: string
+        Name:
+          description: The backend name specified by user.
+          type: string
+          example: backend001
+        Type:
+          description: The backend type.
+          type: string
+          example: "hw-obs"
+          enum:
+            - hw-obs
+            - aws-s3
+            - azure-blob
+        Region:
+          type: string
+          example: "ap-southeast-1"
+        Endpoint:
+          type: string
+          example: "obs.ap-southeast-1.myhwclouds.com"
+        BucketName:
+          type: string
+          example: "bucket001"
+        Access:
+          type: string
+          example: "4X7JQDFTCYUNWFBRYZVC"
+        Security: 
+          type: string
+          example: "9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn"
+    Type:
+      type: object
+      properties:
+        name:
+          description: The backend type name.
+          type: string
+          example: hw-obs
+        description:
+          description: The backend type description.
+          type: string
+          example: 'Huawei Object Storage Service(OBS)' 
+    KV:
+      type: object
+      properties:
+        key:
+          description: Key of the Key-Value object.
+          type: string
+        Value:
+          description: Value of the Key-Value object.
+          type: string
+    Connector:
+      type: object
+      properties:
+        StorType:
+          $ref: '#/components/schemas/ConnType'
+        BucketName:    
+          type: string
+          description: The name of bucket which is created in OpenSDS. When the type of connector is opensds-obj, this parameter should be provided.
+        SelfConfig:
+          description: When the type of connector is not opensds-obj, this parameter should be provided. It is used for self-define connector.
+          type: array
+          items:
+            $ref: '#/components/schemas/KV'
+          example:
+            - key: region
+              value: ap-southeast-1
+            - key: endpoint
+              value: s3.amazonaws.com
+            - key: bucketname
+              value: test
+            - key: access
+              value: ABCDEFGHIJKLMNOPQRST
+            - key: security
+              value: ABCDEFGHIJKLMNOPQRSTABCDEFGHIJKLMNOPQRST
+    ConnType:
+      type: string
+      description: Connector type.
+      example: "opensds-obj"
+      enum:
+        - opensds-obj
+        - aws-s3
+        - azure-blob
+        - hw-obs
+          
+    Plan:
+      type: object
+      properties:
+        Id:
+          description: The plan ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c3"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+        UserId:
+          description: User Id.
+          type: string          
+        Description:
+          description: Plan description.
+          type: string
+        Name:
+          description: The plan name specified by user.
+          type: string
+          example: plan001
+        Type:  
+          description: The plan type. Till now only migration support. New types will be added in the future.
+          type: string
+          example: "migration"
+          enum:
+            - migration
+        RemainSource:
+          description: Remain the source objects or not.
+          type: boolean
+        SourceConn:
+          $ref: '#/components/schemas/Connector' 
+        DestConn:
+          $ref: '#/components/schemas/Connector' 
+        Filter:
+          type: object
+          properties:
+            Prefix:
+              type: string
+              description: Prefix of object name, only those objects which name have this prefix will be choosed.
+    Job:
+      type: object
+      properties:
+        Id:
+          description: The plan ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c3"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+        Type:
+          description: The plan type. Till now only migration support. New types will be added in the future.
+          type: string
+          example: "migration"
+          enum:
+            - migration
+        PlanName:
+          description: The name of plan job belongs to.
+          type: string
+        PlanId:
+          description: The id of plan job belongs to.
+          type: string        
+        SourceLocation:
+          description: The source data migrate or replicate from.
+          type: string
+        DestLocation:
+          description: The target data migrate or replicate to.
+          type: string
+        CreateTime:
+          description: The time job is created. 
           type: integer
-          format: int32
-        type:
+        StartTime:
+          description: The time job started to run.
+          type: integer
+        EndTime:
+          description: The time job ended.
+          type: integer
+        Status:
+          description: The status of job.
           type: string
-        message:
+          enum:
+            - "pending"
+            - "rnning"
+            - "succeed"
+            - "failed"
+        TotalCapacity:
+          description: The total capacity that should be migrated.
+          type: integer
+        PassedCapacity:
+          description: The capacity that have been migrated.
+          type: integer
+        TotalCount:
+          description: The total count of objects that should be migrated.
+          type: integer
+        PassedCount:
+          description: The count that have been migrated.
+          type: integer
+        Progress:
+          description: The progress of job, represented by percentage.
+          type: integer
+    Policy:
+      type: object
+      properties:
+        Id:
+          description: The policy ID, generate by server
           type: string
+          example: "5bd6f273b0bdf90001dc91c3"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+        Name:
+          description: Policy Name.
+          type: string
+        Description:
+          description: Description of policy.
+          type: string
+        Schedule:
+          description: Schedule rules.
+          type: object
+          properties:
+            Type:
+              type: string
+              description: The type of scheduler, only cron support now.
+              enum:
+                - "cron"
+            TriggerProperties:
+              type: string
+              description: Cron expression format. A cron expression represents a set of times, using 6 space-separated fields as follow.
+                #Field name   | Mandatory? | Allowed values  | Allowed special characters
+                #----------   | ---------- | --------------  | --------------------------
+                #Seconds      | Yes        | 0-59            | * / , -
+                #Minutes      | Yes        | 0-59            | * / , -
+                #Hours        | Yes        | 0-23            | * / , -
+                #Day of month | Yes        | 1-31            | * / , - ?
+                #Month        | Yes        | 1-12 or JAN-DEC | * / , -
+                #Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
+                #See https://godoc.org/github.com/robfig/cron for details.
+            
   requestBodies:
-    Pet:
+    Backend:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Pet'
-        application/xml:
-          schema:
-            $ref: '#/components/schemas/Pet'
-      description: Pet object that needs to be added to the store
+            $ref: '#/components/schemas/Backend'
+      description: Cloud Backend configurations
       required: true
-    UserArray:
+    Plan:
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/User'
-      description: List of user object
+            $ref: '#/components/schemas/Plan'
+      description: Plan configurations
+      required: true      
+    Policy:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policy'
+      description: Policy configurations
       required: true
-  securitySchemes:
-    petstore_auth:
-      type: oauth2
-      flows:
-        implicit:
-          authorizationUrl: 'http://petstore.swagger.io/oauth/dialog'
-          scopes:
-            'write:pets': modify pets in your account
-            'read:pets': read your pets
-    api_key:
-      type: apiKey
-      name: api_key
-      in: header
