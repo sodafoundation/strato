@@ -69,7 +69,6 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 	blobURL := ad.containerURL.NewBlockBlobURL(newObjectKey)
 	log.Logf("blobURL is %v\n", blobURL)
 	bytess, _ := ioutil.ReadAll(stream)
-	log.Logf("io.ReadSeek is %v\n", bytes.NewReader(bytess))
 	uploadResp, err := blobURL.Upload(ctx, bytes.NewReader(bytess), azblob.BlobHTTPHeaders{}, nil,
 		azblob.BlobAccessConditions{})
 	if err != nil {
@@ -94,13 +93,14 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context) (io.Read
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
 	blobURL := ad.containerURL.NewBlobURL(newObjectKey)
 	log.Logf("blobURL is %v\n", blobURL)
-	var buf = make([]byte, 20)
+	log.Logf("object.Size is %v \n", object.Size)
+	len := object.Size
+	var buf = make([]byte, len)
 	err := azblob.DownloadBlobToBuffer(context, blobURL, 0, 0, buf, azblob.DownloadFromBlobOptions{})
 	if err != nil {
 		log.Logf("[AzureAdapter] Download failed:%v\n", err)
 		return nil, S3Error{Code: 500, Description: "Download failed"}
 	}
-	log.Logf("buf is %v:\n", buf)
 	body := bytes.NewReader(buf)
 	log.Logf("Download succeed, body:%v\n", *body)
 	ioReaderClose := ioutil.NopCloser(body)
