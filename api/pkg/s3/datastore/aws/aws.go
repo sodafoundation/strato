@@ -91,9 +91,9 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		if err != nil {
 			log.Logf("Upload to aws failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to aws failed"}
-		}else{
+		} else {
 			object.LastModified = time.Now().String()[:19]
-			log.Logf("LastModified is:%v\n",object.LastModified)
+			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
 
 	}
@@ -121,11 +121,6 @@ func (ad *AwsAdapter) GET(object *pb.Object, context context.Context) (io.ReadCl
 			log.Logf("Download succeed, writer:%v\n", writer)
 			body := bytes.NewReader(writer.Bytes())
 			log.Logf("Download succeed, body:%v\n", *body)
-			// var ioreader io.Reader
-			// ioreader.Read(writer.Bytes())
-			// var ioReaderClose io.ReadCloser
-			// reader := ioutil.NopCloser(body)
-			// ioReaderClose.Read(writer.Bytes())
 			ioReaderClose := ioutil.NopCloser(body)
 			log.Logf("Download succeed, ioReaderClose:%v\n", ioReaderClose)
 			return ioReaderClose, NoError
