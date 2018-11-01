@@ -27,7 +27,7 @@ services:
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
     environment:
-      MICRO_SERVER_ADDRESS: ":8089"
+      MICRO_SERVER_ADDRESS: "8089"
       MICRO_REGISTRY: "mdns"
 
   backend:
