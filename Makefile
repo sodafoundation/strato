@@ -48,23 +48,23 @@ docker: build
 
 	cp $(BUILD_DIR)/api api
 	chmod 755 api/api
-	docker build api -t opensdsio/multi-cloud/api:latest
+	docker build api -t opensdsio/multi-cloud-api:latest
 
 	cp $(BUILD_DIR)/backend backend
 	chmod 755 backend/backend
-	docker build backend -t opensdsio/multi-cloud/backend:latest
+	docker build backend -t opensdsio/multi-cloud-backend:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
-	docker build s3 -t opensdsio/multi-cloud/s3:latest
+	docker build s3 -t opensdsio/multi-cloud-s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
 	chmod 755 dataflow/dataflow
-	docker build dataflow -t opensdsio/multi-cloud/dataflow:latest
+	docker build dataflow -t opensdsio/multi-cloud-dataflow:latest
 
 	cp $(BUILD_DIR)/datamover datamover
 	chmod 755 datamover/datamover
-	docker build datamover -t opensdsio/multi-cloud/datamover:latest
+	docker build datamover -t opensdsio/multi-cloud-datamover:latest
 
 clean:
 	rm -rf $(BUILD_DIR)

@@ -77,14 +77,14 @@ You can also run the command `docker ps` to check the installation status.
 # docker ps
 
 CONTAINER ID        IMAGE                             COMMAND                  CREATED             STATUS              PORTS                                                NAMES
-dc5f0f2f1ba2        opensdsio/multi-cloud/datamover   "/datamover"             15 minutes ago      Up 15 minutes                                                            multi-cloud_datamover_1
-21b9a626f0b9        opensdsio/multi-cloud/dataflow    "/dataflow"              15 minutes ago      Up 15 minutes                                                            multi-cloud_dataflow_1
+dc5f0f2f1ba2        opensdsio/multi-cloud-datamover   "/datamover"             15 minutes ago      Up 15 minutes                                                            multi-cloud_datamover_1
+21b9a626f0b9        opensdsio/multi-cloud-dataflow    "/dataflow"              15 minutes ago      Up 15 minutes                                                            multi-cloud_dataflow_1
 300d1ad826f6        wurstmeister/kafka                "start-kafka.sh"         15 minutes ago      Up 15 minutes       0.0.0.0:9092->9092/tcp                               multi-cloud_kafka_1
 f1d81d7c0755        wurstmeister/zookeeper            "/bin/sh -c '/usr/sb…"   15 minutes ago      Up 15 minutes       22/tcp, 2888/tcp, 3888/tcp, 0.0.0.0:2181->2181/tcp   multi-cloud_zookeeper_1
-2a6dad2ce1a7        opensdsio/multi-cloud/backend     "/backend"               15 minutes ago      Up 15 minutes                                                            multi-cloud_backend_1
-e16f9c8af2b8        opensdsio/multi-cloud/s3          "/s3"                    15 minutes ago      Up 15 minutes                                                            multi-cloud_s3_1
+2a6dad2ce1a7        opensdsio/multi-cloud-backend     "/backend"               15 minutes ago      Up 15 minutes                                                            multi-cloud_backend_1
+e16f9c8af2b8        opensdsio/multi-cloud-s3          "/s3"                    15 minutes ago      Up 15 minutes                                                            multi-cloud_s3_1
 d86ebaed8203        mongo                             "docker-entrypoint.s…"   15 minutes ago      Up 15 minutes       0.0.0.0:27017->27017/tcp                             multi-cloud_datastore_1
-1063e7ed784c        opensdsio/multi-cloud/api         "/api"                   15 minutes ago      Up 15 minutes       0.0.0.0:8089->8089/tcp                               multi-cloud_api_1
+1063e7ed784c        opensdsio/multi-cloud-api         "/api"                   15 minutes ago      Up 15 minutes       0.0.0.0:8089->8089/tcp                               multi-cloud_api_1
 
 ```
 

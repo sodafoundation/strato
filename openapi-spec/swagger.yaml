@@ -14,6 +14,9 @@
 
 openapi: 3.0.0
 servers:
+# Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/open83/multi-cloud/1.0.0
   - url: 'http://virtserver.swaggerhub.com/opensds.io/OpenSDS-Multi-Cloud/1.0.0'
 
 info:
@@ -21,7 +24,7 @@ info:
     OpenSDS Multi-cloud API to manage multi-cloud backend storages.
     You can find out more about Swagger at 
     [https://www.opensds.io](https://www.opensds.io) 
-  version: "v1"
+  version: "1.0.0"
   title: OpenSDS Multi-Cloud API
   termsOfService: '://www.linuxfoundation.org/terms'
   contact:
@@ -42,7 +45,21 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
-
+  - name: plan
+    description: Migration plan
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'
+  - name: job
+    description: Migration job
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'      
+  - name: policy
+    description: Schedule policy of plan.
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io' 
 
 paths: 
   '/v1/{tenantId}/backends':
@@ -208,6 +225,318 @@ paths:
                   next:
                     type: integer
                     example: 1
+                    
+  '/v1/{tenantId}/plans':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - plan
+      summary: Create a plan.
+      operationId: createPlan
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+      requestBody:
+        $ref: '#/components/requestBodies/Plan'
+    get:
+      tags:
+        - plan
+      summary: List all plans.
+      operationId: listPlans
+      parameters:
+        - name: type
+          in: query
+          description: Filter the plans by plan type. Only migration support currently. New type will be added in the future.
+          schema:
+            type: string
+            enum: ["migration"]
+        - name: name
+          in: query
+          description: Filter the plan by name.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plan'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/plans/{planId}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string 
+      - name: planId
+        in: path
+        description: The plan ID
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - plan
+      summary: Get a plan.
+      operationId: getPlan
+      responses:    
+        '200':
+          content:
+            application/json:
+              schema:        
+                $ref: '#/components/schemas/Plan' 
+          description: successful operation.
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist.
+    put:
+      tags:
+        - plan
+      summary: Update a plan.
+      operationId: updatePlan
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+      requestBody:
+        $ref: '#/components/requestBodies/Plan'
+    delete:
+      tags:
+        - plan
+      summary: Delete a plan.
+      operationId: deletePlan
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Delete success
+    post:
+      tags:
+        - plan
+      summary: Run a plan.
+      operationId: runPlan
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Run success  
+          
+  '/v1/{tenantId}/jobs':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - job
+      summary: List all jobs.
+      operationId: listJobs
+      parameters:
+        - name: type
+          in: query
+          description: Filter the jobs by job type. Only migration support currently. New type will be added in the future.
+          schema:
+            type: string
+            enum: ["migration"]
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/jobs/{jobId}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string 
+      - name: jobId
+        in: path
+        description: The job ID
+        required: true
+        schema:
+          type: string
+          
+    get:
+      tags:
+        - job
+      summary: Get a job.
+      operationId: getJob
+      responses:    
+        '200':
+          content:
+            application/json:
+              schema:        
+                $ref: '#/components/schemas/Job' 
+          description: successful operation.
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist.
+ 
+  '/v1/{tenantId}/policies':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - policy
+      summary: Create a policy.
+      operationId: createPolicy
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+      requestBody:
+        $ref: '#/components/requestBodies/Policy'
+    get:
+      tags:
+        - policy
+      summary: List all policies.
+      operationId: listPolicies
+      parameters:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+        
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Policy'
+                  next:
+                    type: integer
+                    example: 1
+                    
+  '/v1/{tenantId}/plans/{policyId}': 
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string 
+      - name: policyId
+        in: path
+        description: The policy ID
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - policy
+      summary: Get a policy.
+      operationId: getPolicy
+      responses:    
+        '200':
+          content:
+            application/json:
+              schema:        
+                $ref: '#/components/schemas/Policy' 
+          description: successful operation.
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist.
+    put:
+      tags:
+        - policy
+      summary: Update a policy.
+      operationId: updatePolicy
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+      requestBody:
+        $ref: '#/components/requestBodies/Policy'
+    delete:
+      tags:
+        - policy
+      summary: Delete a policy.
+      operationId: deletePolicy
+      responses:
+        '400':
+          description: Invalid ID supplied
+        '200':
+          description: Delete success
+          
 components:
   parameters:
     offset:
@@ -289,6 +618,189 @@ components:
           description: The backend type description.
           type: string
           example: 'Huawei Object Storage Service(OBS)' 
+    KV:
+      type: object
+      properties:
+        key:
+          description: Key of the Key-Value object.
+          type: string
+        Value:
+          description: Value of the Key-Value object.
+          type: string
+    Connector:
+      type: object
+      properties:
+        StorType:
+          $ref: '#/components/schemas/ConnType'
+        BucketName:    
+          type: string
+          description: The name of bucket which is created in OpenSDS. When the type of connector is opensds-obj, this parameter should be provided.
+        SelfConfig:
+          description: When the type of connector is not opensds-obj, this parameter should be provided. It is used for self-define connector.
+          type: array
+          items:
+            $ref: '#/components/schemas/KV'
+          example:
+            - key: region
+              value: ap-southeast-1
+            - key: endpoint
+              value: s3.amazonaws.com
+            - key: bucketname
+              value: test
+            - key: access
+              value: ABCDEFGHIJKLMNOPQRST
+            - key: security
+              value: ABCDEFGHIJKLMNOPQRSTABCDEFGHIJKLMNOPQRST
+    ConnType:
+      type: string
+      description: Connector type.
+      example: "opensds-obj"
+      enum:
+        - opensds-obj
+        - aws-s3
+        - azure-blob
+        - hw-obs
+          
+    Plan:
+      type: object
+      properties:
+        Id:
+          description: The plan ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c3"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+        UserId:
+          description: User Id.
+          type: string          
+        Description:
+          description: Plan description.
+          type: string
+        Name:
+          description: The plan name specified by user.
+          type: string
+          example: plan001
+        Type:  
+          description: The plan type. Till now only migration support. New types will be added in the future.
+          type: string
+          example: "migration"
+          enum:
+            - migration
+        RemainSource:
+          description: Remain the source objects or not.
+          type: boolean
+        SourceConn:
+          $ref: '#/components/schemas/Connector' 
+        DestConn:
+          $ref: '#/components/schemas/Connector' 
+        Filter:
+          type: object
+          properties:
+            Prefix:
+              type: string
+              description: Prefix of object name, only those objects which name have this prefix will be choosed.
+    Job:
+      type: object
+      properties:
+        Id:
+          description: The plan ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c3"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+        Type:
+          description: The plan type. Till now only migration support. New types will be added in the future.
+          type: string
+          example: "migration"
+          enum:
+            - migration
+        PlanName:
+          description: The name of plan job belongs to.
+          type: string
+        PlanId:
+          description: The id of plan job belongs to.
+          type: string        
+        SourceLocation:
+          description: The source data migrate or replicate from.
+          type: string
+        DestLocation:
+          description: The target data migrate or replicate to.
+          type: string
+        CreateTime:
+          description: The time job is created. 
+          type: integer
+        StartTime:
+          description: The time job started to run.
+          type: integer
+        EndTime:
+          description: The time job ended.
+          type: integer
+        Status:
+          description: The status of job.
+          type: string
+          enum:
+            - "pending"
+            - "rnning"
+            - "succeed"
+            - "failed"
+        TotalCapacity:
+          description: The total capacity that should be migrated.
+          type: integer
+        PassedCapacity:
+          description: The capacity that have been migrated.
+          type: integer
+        TotalCount:
+          description: The total count of objects that should be migrated.
+          type: integer
+        PassedCount:
+          description: The count that have been migrated.
+          type: integer
+        Progress:
+          description: The progress of job, represented by percentage.
+          type: integer
+    Policy:
+      type: object
+      properties:
+        Id:
+          description: The policy ID, generate by server
+          type: string
+          example: "5bd6f273b0bdf90001dc91c3"
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+        Name:
+          description: Policy Name.
+          type: string
+        Description:
+          description: Description of policy.
+          type: string
+        Schedule:
+          description: Schedule rules.
+          type: object
+          properties:
+            Type:
+              type: string
+              description: The type of scheduler, only cron support now.
+              enum:
+                - "cron"
+            TriggerProperties:
+              type: string
+              description: Cron expression format. A cron expression represents a set of times, using 6 space-separated fields as follow.
+                #Field name   | Mandatory? | Allowed values  | Allowed special characters
+                #----------   | ---------- | --------------  | --------------------------
+                #Seconds      | Yes        | 0-59            | * / , -
+                #Minutes      | Yes        | 0-59            | * / , -
+                #Hours        | Yes        | 0-23            | * / , -
+                #Day of month | Yes        | 1-31            | * / , - ?
+                #Month        | Yes        | 1-12 or JAN-DEC | * / , -
+                #Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
+                #See https://godoc.org/github.com/robfig/cron for details.
+            
   requestBodies:
     Backend:
       content:
@@ -296,4 +808,18 @@ components:
           schema:
             $ref: '#/components/schemas/Backend'
       description: Cloud Backend configurations
+      required: true
+    Plan:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Plan'
+      description: Plan configurations
+      required: true      
+    Policy:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policy'
+      description: Policy configurations
       required: true
