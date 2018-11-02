@@ -216,9 +216,9 @@ func planModel2Resp(plan *model.Plan) *pb.Plan {
 		PolicyId:      plan.PolicyId,
 		PolicyName:    plan.PolicyName,
 		PolicyEnabled: plan.PolicyEnabled,
-		OverWrite:     plan.OverWrite,
 		RemainSource:  plan.RemainSource,
-		Tenant:        plan.Tenant,
+		TenantId:      plan.TenantId,
+		UserId:        plan.UserId,
 	}
 
 	srcConn := pb.Connector{StorType: plan.SourceConn.StorType}
@@ -280,14 +280,14 @@ func (b *dataflowService) ListPlan(ctx context.Context, in *pb.ListPlanRequest, 
 	actx := c.NewContextFromJson(in.GetContext())
 	plans, err := plan.List(actx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("List plans err:%s.", out.Err)
+		log.Logf("List plans err:%s.", err)
 		return err
 	}
 
 	for _, p := range plans {
 		out.Plans = append(out.Plans, planModel2Resp(&p))
 	}
-
+	out.Next = in.Offset + int32(len(plans))
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {
@@ -325,10 +325,11 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 
 	pl.Description = in.Plan.GetDescription()
 	pl.Type = in.Plan.GetType()
-	pl.OverWrite = in.Plan.GetOverWrite()
 	pl.RemainSource = in.Plan.GetRemainSource()
 	pl.PolicyId = in.Plan.GetPolicyId()
 	pl.PolicyEnabled = in.Plan.GetPolicyEnabled()
+	pl.UserId = in.Plan.UserId
+	pl.TenantId = in.Plan.TenantId
 
 	if in.Plan.GetSourceConn() != nil {
 		srcConn := model.Connector{StorType: in.Plan.SourceConn.StorType}
@@ -489,23 +490,24 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 	actx := c.NewContextFromJson(in.GetContext())
 	jobs, err := job.List(actx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("Get job err:%d.", out.Err)
+		log.Logf("Get job err:%d.", err)
 		return err
 	}
 
 	if err == nil {
-		for i := 0; i < len(jobs); i++ {
-			//TODO: need change according to real scenario
-			des := "for test"
-			j := pb.Job{Id: string(jobs[i].Id.Hex()), Type: jobs[i].Type, PlanName: jobs[i].PlanName, PlanId: jobs[i].PlanId,
-				Description: des, SourceLocation: jobs[i].SourceLocation, DestLocation: jobs[i].DestLocation, StartTime:jobs[i].StartTime.Unix(),
-				CreateTime: jobs[i].CreateTime.Unix(), EndTime: jobs[i].EndTime.Unix(), Status:jobs[i].Status,
-				TotalCapacity:jobs[i].TotalCapacity, PassedCapacity:jobs[i].PassedCapacity, TotalCount:int64(jobs[i].TotalCount),
-				PassedCount:(int64(jobs[i].PassedCount)), Progress:int64(jobs[i].Progress)}
-			out.Jobs = append(out.Jobs, &j)
+		//for i := 0; i < len(jobs); i++ {
+		for _, job := range jobs{
+				//TODO: need change according to real scenario
+				j := pb.Job{Id: string(job.Id.Hex()), Type: job.Type, PlanName: job.PlanName, PlanId: job.PlanId,
+					SourceLocation: job.SourceLocation, DestLocation: job.DestLocation, StartTime:job.StartTime.Unix(),
+					CreateTime: job.CreateTime.Unix(), EndTime: job.EndTime.Unix(), Status:job.Status,
+					TotalCapacity:job.TotalCapacity, PassedCapacity:job.PassedCapacity, TotalCount:int64(job.TotalCount),
+					PassedCount:(int64(job.PassedCount)), Progress:int64(job.Progress)}
+				out.Jobs = append(out.Jobs, &j)
 		}
 	}
 
+	out.Next = in.Offset + int32(len(jobs))
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {

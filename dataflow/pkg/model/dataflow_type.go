@@ -33,7 +33,7 @@ var (
 
 var (
 	JOB_STATUS_PENDING = "pending"
-	JOB_STATUS_RUNNING = "rnning"
+	JOB_STATUS_RUNNING = "runing"
 	JOB_STATUS_SUCCEED = "succeed"
 	JOB_STATUS_FAILED  = "failed"
 )
@@ -112,14 +112,14 @@ type Plan struct {
 	SourceConn    Connector `json:"srcConn" bson:"srcConn"`
 	DestConn      Connector `json:"destConn" bson:"destConn"`
 	Filter        Filter    `json:"sourceDir" bson:"sourceDir"`
-	OverWrite     bool      `json:"overWrite" bson:"overWrite"`
 	RemainSource  bool      `json:"remainSource" bson:"remainSource"`
 	LastSchedTime int64     `json:"lastSchedTime" bson:"lastSchedTime"`
 	PolicyId      string    `json:"policyId" bson:"policyId"`
 	PolicyRef     mgo.DBRef `json:"policyRef" bson:"policyRef"`
 	PolicyName    string    `json:"policyName" bson:"policyName"`
 	PolicyEnabled bool      `json:"policyEnabled" bson:"policyEnabled"`
-	Tenant        string    `json:"tenant" bson:"tenant"`
+	TenantId      string    `json:"tenantId" bson:"tenantId"`
+	UserId        string    `json:"userId" bson:"userId"`
 }
 
 const (
@@ -143,7 +143,6 @@ type Job struct {
 	CreateTime     time.Time `json:"createTime" bson:"createTime"`
 	StartTime      time.Time `json:"startTime" bson:"startTime"`
 	EndTime        time.Time `json:"endTime" bson:"endTime"`
-	OverWrite      bool      `json:"overWrite" bson:"overWrite"`
 	RemainSource   bool      `json:"remainSource" bson:"remainSource"`
 	Status         string    `json:"status" bson:"status"` //queueing,
 	Tenant         string    `json:"tenant" bson:"tenant"`
