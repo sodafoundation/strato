@@ -398,7 +398,7 @@ func deleteObj(ctx context.Context, obj *SourceOject, loca *LocationInfo) error 
 
 func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo, remainSource bool) {
-	logger.Printf("***********#######Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
+	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
 		obj.Obj.ObjectKey, obj.Obj.Backend, srcLoca.BakendName, destLoca.BakendName)
 	if obj.Obj.Backend != srcLoca.BakendName && obj.Obj.Backend != "" {
 		logger.Printf("obj.Obj.Backend=%s,srcLoca.BakendName=%s\n", obj.Obj.Backend, srcLoca.BakendName)
@@ -413,11 +413,11 @@ func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	needMove := true
 	if srcLoca.BakendName != "" && srcLoca.BakendName == destLoca.BakendName {
 		needMove = false
-		logger.Printf("***************************Obj[%s] is stored in the same backend as target backend[%s].\n",
+		logger.Printf("Obj[%s] is stored in the same backend as target backend[%s].\n",
 			obj.Obj.ObjectKey, destLoca.BakendName)
 	}
 	if srcLoca.BucketName == "" && srcLoca.BucketName == destLoca.BucketName {
-		logger.Printf("***************************Obj[%s] is stored in the same bucket as target bucket[%s].\n",
+		logger.Printf("Obj[%s] is stored in the same bucket as target bucket[%s].\n",
 			obj.Obj.ObjectKey, destLoca.BucketName)
 		needMove = false
 	}
