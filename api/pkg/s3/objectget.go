@@ -21,9 +21,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 
-	//	"github.com/micro/go-micro/errors"
-	"strconv"
-
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
@@ -33,27 +30,23 @@ import (
 func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-	contentLenght := request.HeaderParameter("content-length")
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "download")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
-
+	object := s3.Object{}
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	log.Logf("objectMD.size = %v\n", objectMD.Size)
 	if objectMD != nil {
-		//TODO update
-
+		object.Size = objectMD.Size
 	} else {
-
+		log.Logf("No such object")
+		return
 	}
 
-	object := s3.Object{}
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
-	size, _ := strconv.ParseInt(contentLenght, 10, 64)
-	object.Size = size
-
 	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
