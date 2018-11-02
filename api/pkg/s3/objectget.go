@@ -63,5 +63,4 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	buf.ReadFrom(body)
 	log.Logf("Download succeed, body:%v\n", buf.String())
 	response.Write(buf.Bytes())
-
 }
