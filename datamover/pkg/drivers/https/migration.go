@@ -24,7 +24,7 @@ import (
 var simuRoutines = 10
 var ObjSizeLimit int64 = 50 * 1024 * 1024 //The max object size that can be moved directly
 var PART_SIZE int64 = 50 * 1024 * 1024
-//format of key:
+var JOB_RUN_TIME_MAX = 86400 //seconds
 var locMap map[string]*LocationInfo
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
@@ -98,7 +98,7 @@ func refreshBackendLocation(ctx context.Context, virtBkname string, backendName 
 			return loca,nil
 		}
 	}else {
-		logger.Printf("Backend(id:%s) is in the map:%+v\n", loca)
+		logger.Printf("Backend(id:%s) is in the map, location:%+v\n", backendName, loca)
 		return loca,nil
 	}
 }
@@ -152,10 +152,8 @@ func moveObj(obj *SourceOject, srcLoca *LocationInfo, destLoca *LocationInfo) er
 		return nil
 	}
 	buf := make([]byte, obj.Obj.Size)
-
 	var size int64 = 0
 	var err error = nil
-
 	var downloader,uploader MoveWorker
 	downloadObjKey := obj.Obj.ObjectKey
 	if srcLoca.VirBucket != "" {
@@ -400,7 +398,8 @@ func deleteObj(ctx context.Context, obj *SourceOject, loca *LocationInfo) error 
 
 func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo, remainSource bool) {
-	succeed := true
+	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
+		obj.Obj.ObjectKey, obj.Obj.Backend, srcLoca.BakendName, destLoca.BakendName)
 	if obj.Obj.Backend != srcLoca.BakendName && obj.Obj.Backend != "" {
 		logger.Printf("obj.Obj.Backend=%s,srcLoca.BakendName=%s\n", obj.Obj.Backend, srcLoca.BakendName)
 		logger.Printf("locaMap:%+v\n", locMap)
@@ -411,22 +410,37 @@ func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 		logger.Printf("srcLoca=%v\n", srcLoca)
 	}
 
-	//move object
-	var err error
-	if obj.Obj.Size < ObjSizeLimit {
-		err = moveObj(obj, srcLoca, destLoca)
-	}else {
-		err = multipartMoveObj(obj, srcLoca, destLoca)
+	needMove := true
+	if srcLoca.BakendName != "" && srcLoca.BakendName == destLoca.BakendName {
+		needMove = false
+		logger.Printf("Obj[%s] is stored in the same backend as target backend[%s].\n",
+			obj.Obj.ObjectKey, destLoca.BakendName)
 	}
+	if srcLoca.BucketName == "" && srcLoca.BucketName == destLoca.BucketName {
+		logger.Printf("Obj[%s] is stored in the same bucket as target bucket[%s].\n",
+			obj.Obj.ObjectKey, destLoca.BucketName)
+		needMove = false
+	}
+	succeed := true
+	if needMove {
+		//move object
+		var err error
+		if obj.Obj.Size < ObjSizeLimit {
+			err = moveObj(obj, srcLoca, destLoca)
+		}else {
+			err = multipartMoveObj(obj, srcLoca, destLoca)
+		}
 
-	if err != nil {
-		succeed = false
+		if err != nil {
+			succeed = false
+		}
 	}
 
 	//TODO: what if update meatadata failed
 	//add object metadata to the destination bucket if destination is not self-defined
 	if succeed && destLoca.VirBucket != "" {
 		obj.Obj.BucketName = destLoca.VirBucket
+		obj.Obj.Backend = destLoca.BakendName
 		_,err := s3client.CreateObject(ctx, obj.Obj)
 		if err != nil {
 			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] failed,err:%v.\n", obj.Obj.ObjectKey,
@@ -628,8 +642,7 @@ func runjob(in *pb.RunJobRequest) error {
 			capacity += c
 			count++
 
-			//TODO: shouled be capacity != 0, capacity >= 0 only for test
-			if capacity >= 0 {
+			if c >= 0 {
 				passedCount++
 			}
 			//TODO:update job in database, need to consider the update frequency
@@ -643,7 +656,7 @@ func runjob(in *pb.RunJobRequest) error {
 				db.DbAdapter.UpdateJob(&j)
 			}
 		}
-		case <-time.After(86400*time.Second): { //86400 seconds equal one day, we don't provide to migrate to much objects in one plan
+		case <-time.After(time.Duration(JOB_RUN_TIME_MAX)*time.Second): {
 			tmout = true
 			logger.Println("Timout.")
 		}

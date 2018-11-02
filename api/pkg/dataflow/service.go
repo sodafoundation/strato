@@ -199,12 +199,14 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	listPlanReq.SortKeys = sortKeys
 	listPlanReq.SortDirs = sortDirs
 
-	filterOpts := []string{"name", "type"}
+	filterOpts := []string{"name", "type", "bucketname"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
 		log.Logf("Get filter failed: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
+	} else {
+		log.Logf("Get filter for list plan: %v",filter)
 	}
 	listPlanReq.Filter = filter
 
