@@ -174,7 +174,7 @@ func (ad *AwsAdapter) GetObjectInfo(bucketName string, key string, context conte
 		}
 		obj := &pb.Object{
 			BucketName: bucketName,
-			ObjectKey:  key,
+			ObjectKey:  Key,
 			Size:       *content.Size,
 		}
 		return obj, NoError
