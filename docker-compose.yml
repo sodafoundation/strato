@@ -21,7 +21,7 @@ services:
       - zookeeper
 
   api:
-    image: opensdsio/multi-cloud/api
+    image: opensdsio/multi-cloud-api
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
     ports:
@@ -31,19 +31,19 @@ services:
       MICRO_REGISTRY: "mdns"
 
   backend:
-    image: opensdsio/multi-cloud/backend
+    image: opensdsio/multi-cloud-backend
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
 
   s3:
-    image: opensdsio/multi-cloud/s3
+    image: opensdsio/multi-cloud-s3
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
 
   dataflow:
-    image: opensdsio/multi-cloud/dataflow
+    image: opensdsio/multi-cloud-dataflow
     environment:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
@@ -53,7 +53,7 @@ services:
       - kafka
 
   datamover:
-    image: opensdsio/multi-cloud/datamover
+    image: opensdsio/multi-cloud-datamover
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
     environment:
@@ -68,4 +68,3 @@ services:
     image: mongo
     ports:
       - 27017:27017
-
