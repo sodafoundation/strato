@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"obs"
+	"time"
 
 	"github.com/micro/go-log"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
@@ -61,6 +62,9 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		if err != nil {
 			log.Logf("Upload to obs failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to obs failed"}
+		}else{
+			object.LastModified = time.Now().String()[:19]
+			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
 		log.Logf("Upload %s to obs successfully.", out.VersionId)
 	}

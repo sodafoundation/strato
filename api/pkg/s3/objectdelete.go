@@ -27,19 +27,29 @@ import (
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-
+	deleteInput1 := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
 	ctx := context.Background()
 	log.Logf("Received request for delete object: %s", objectKey)
-	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
-	client := getBackendClient(s, bucketName)
 
-	s3err := client.DELETE(&deleteInput, ctx)
+	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	var s3err S3Error
+	if objectMD != nil {
+		RealbucketName := getBucketNameByBackend(s,objectMD.Backend)
+		deleteInput2 := s3.DeleteObjectInput{Key: objectKey, Bucket: RealbucketName}
+		client := getBackendClient(s, objectMD.Backend)
+		s3err = client.DELETE(&deleteInput2, ctx)
+	}else{
+		log.Logf("No such object")
+		return
+	}
+
 	if s3err.Code != ERR_OK {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
 
-	res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
+	res, err := s.s3Client.DeleteObject(ctx, &deleteInput1)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
