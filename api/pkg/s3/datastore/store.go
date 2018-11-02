@@ -37,7 +37,7 @@ func Init(backend *backendpb.BackendDetail) DataStoreAdapter {
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = azure.Init(backend)
 		return StoreAdapter
-	case "hw-obs": 
+	case "hw-obs":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = hws.Init(backend)
 		return StoreAdapter
