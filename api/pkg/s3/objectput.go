@@ -46,6 +46,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	log.Logf("objectKey is %v:\n",objectKey)
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
+	log.Logf("object.size is %v\n",size)
 	object.Size = size
 	var client datastore.DataStoreAdapter
 	if backendName!=""{
@@ -67,6 +68,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
+	log.Logf("object.size2  = %v \n",object.Size)
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)

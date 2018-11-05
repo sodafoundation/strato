@@ -127,13 +127,18 @@ func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context
 	return NoError
 }
 func (ad *AzureAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
-	return nil, NoError
+	object := pb.Object{}
+	object.BucketName = bucketName
+	object.ObjectKey = key
+	return &object, NoError
 }
 
 func (ad *AzureAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.backend.BucketName
 	log.Logf("bucket is %v\n", bucket)
 	multipartUpload := &pb.MultipartUpload{}
+	multipartUpload.Key = object.ObjectKey
+	multipartUpload.Bucket = object.BucketName
 	multipartUpload.UploadId = object.ObjectKey
 	return multipartUpload, NoError
 }
@@ -174,7 +179,12 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 	completeUpload *model.CompleteMultipartUpload,
 	context context.Context) (*model.CompleteMultipartUploadResult, S3Error) {
 	bucket := ad.backend.BucketName
+	result := model.CompleteMultipartUploadResult{}
+
 	log.Logf("bucket is %v\n", bucket)
+	result.Bucket = multipartUpload.Bucket
+	result.Key =multipartUpload.Key
+	result.Location = ad.backend.Name
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
 	blobURL := ad.containerURL.NewBlockBlobURL(newObjectKey)
 	var completeParts []string
@@ -186,6 +196,10 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 	log.Logf("err is %v\n", err)
 	if err != nil {
 		log.Logf("[AzureAdapter] Commit blocks faild:%v\n", err)
+		return nil, S3Error{Code: 500, Description: err.Error()}
+	}else{
+		log.Logf("[AzureAdapter] Commit blocks succeed:\n")
+		return &result,NoError
 	}
 	return nil, NoError
 }
