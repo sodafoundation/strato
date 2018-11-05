@@ -93,7 +93,7 @@ func checkConnValidation(conn *Connector) error {
 func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	//Check parameter validity
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
-	if !m || plan.Name == "all" {
+	if !m {
 		log.Logf("Invalid plan name[%s], err:%v", plan.Name, err)
 		return nil, ERR_INVALID_PLAN_NAME
 	}
@@ -117,7 +117,7 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	//Add to database
 	plan, err = db.DbAdapter.CreatePlan(ctx, plan)
 	if err != nil {
-		log.Logf("create plan(%s) in db failed,%v", err)
+		log.Logf("create plan in db failed,%v", err)
 		return nil, err
 	}
 
@@ -206,6 +206,14 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 	if v, ok := updateMap["policyId"]; ok {
 		curPlan.PolicyId = v.(string)
 		needUpdateTrigger = true
+	}
+
+	if v, ok := updateMap["description"]; ok {
+		curPlan.Description = v.(string)
+	}
+
+	if v, ok := updateMap["remainSource"]; ok {
+		curPlan.RemainSource = v.(bool)
 	}
 
 	if needUpdateTrigger {
@@ -313,11 +321,10 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	job.Type = plan.Type
 	job.PlanId = string(plan.Id.Hex())
 	job.PlanName = plan.Name
-	job.SourceLocation = srcLocation
-	job.DestLocation = destLocation
+	job.SourceLocation = plan.SourceConn.StorType + ":" + srcLocation
+	job.DestLocation = plan.DestConn.StorType + ":" + destLocation
 	job.CreateTime = ct
 	job.Status = JOB_STATUS_PENDING
-	job.OverWrite = plan.OverWrite
 	job.RemainSource = plan.RemainSource
 	job.StartTime = time.Time{}
 	
@@ -326,7 +333,7 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	if err == nil {
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
-		req := datamover.RunJobRequest{Id: job.Id.Hex(), OverWrite: plan.OverWrite, RemainSource: plan.RemainSource}
+		req := datamover.RunJobRequest{Id: job.Id.Hex(), RemainSource: plan.RemainSource}
 		srcConn := datamover.Connector{Type: plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn
@@ -351,7 +358,7 @@ type TriggerExecutor struct {
 func NewPlanExecutor(ctx *c.Context, plan *Plan) trigger.Executer {
 	return &TriggerExecutor{
 		planId:   plan.Id.Hex(),
-		tenantId: plan.Tenant,
+		tenantId: plan.TenantId,
 		ctx:      ctx,
 	}
 }

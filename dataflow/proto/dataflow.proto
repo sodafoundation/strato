@@ -106,10 +106,10 @@ message Plan {
 	Connector sourceConn = 7;
 	Connector destConn = 8;
 	Filter filter = 9;
-	bool overWrite = 10;
-	bool remainSource = 11;
-	string tenant = 12;
-    bool policyEnabled = 13 ;
+	bool remainSource = 10;
+	string tenantId = 11;
+	string userId = 12;
+	bool policyEnabled = 13;
 }
 
 message CreatePlanRequest {
@@ -142,8 +142,8 @@ message ListPlanRequest {
 }
 
 message ListPlanResponse {
-    string err = 1;
-    repeated Plan plans = 2;
+    repeated Plan plans = 1;
+	int32 next = 2;
 }
 
 message UpdatePlanRequest {
@@ -188,13 +188,12 @@ message Job {
 	int64  createTime = 9;
 	int64  startTime = 10;
 	int64  endTime = 11;
-	bool overWrite = 12;
-	bool remainSource = 13;
-	int64 totalCapacity = 14;
-	int64 passedCapacity = 15;
-	int64 totalCount = 16;
-	int64 passedCount = 17;
-	int64 progress = 18;
+	bool remainSource = 12;
+	int64 totalCapacity = 13;
+	int64 passedCapacity = 14;
+	int64 totalCount = 15;
+	int64 passedCount = 16;
+	int64 progress = 17;
 }
 
 message GetJobRequest {
@@ -217,6 +216,6 @@ message ListJobRequest {
 }
 
 message ListJobResponse {
-    string err = 1;
-    repeated Job jobs = 2;
+    repeated Job jobs = 1;
+	int32 next = 2;
 }
