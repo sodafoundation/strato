@@ -76,6 +76,7 @@ func ReadBody(r *restful.Request) []byte {
 
 func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
 	ctx := context.Background()
+	log.Logf("bucketName is %v:\n",bucketName)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		return nil
@@ -112,20 +113,4 @@ func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdap
 	backend := backendRep.Backends[0]
 	client := datastore.Init(backend)
 	return client
-}
-
-func getBucketNameByBackend(s *APIService, backendName string) string{
-	ctx := context.Background()
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset:0,
-		Limit:math.MaxInt32,
-		Filter:map[string]string {"name":backendName}})
-	log.Logf("backendErr is %v:",backendErr)
-	if backendErr != nil {
-		log.Logf("Get backend %s failed.", backendName)
-		return ""
-	}
-	log.Logf("backendRep is %v:",backendRep)
-	backend := backendRep.Backends[0]
-	return backend.BucketName
 }
