@@ -392,7 +392,7 @@ func (ad *adapter) DeletePlan(ctx *Context, id string) error {
 
 	p := Plan{}
 	c := ss.DB(DataBaseName).C(CollPlan)
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenant": ctx.TenantId}).One(&p)
+	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenantId": ctx.TenantId}).One(&p)
 	if err == mgo.ErrNotFound {
 		log.Log("Delete plan failed, err:the specified p does not exist.")
 		return ERR_PLAN_NOT_EXIST
@@ -547,9 +547,8 @@ func (ad *adapter) GetPlan(ctx *Context, id string) (*Plan, error) {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollPlan)
-	log.Logf("GetPlan: id=%s,tenant=%s\n", id, ctx.TenantId)
-	//err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenant": ctx.TenantId}).One(&p)
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id)}).One(&p)
+	log.Logf("GetPlan: id=%s,tenantId=%s\n", id, ctx.TenantId)
+	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenantId": ctx.TenantId}).One(&p)
 	if err == mgo.ErrNotFound {
 		log.Log("Plan does not exist.")
 		return nil, ERR_PLAN_NOT_EXIST
@@ -571,10 +570,10 @@ func (ad *adapter) GetPlan(ctx *Context, id string) (*Plan, error) {
 }
 
 func (ad *adapter) GetPlanByPolicy(ctx *Context, policyId string, limit int, offset int) ([]Plan, error) {
-	log.Logf("GetPlanByPolicy: policyId=%s,tenant=%s\n", policyId, ctx.TenantId)
+	log.Logf("GetPlanByPolicy: policyId=%s,tenantId=%s\n", policyId, ctx.TenantId)
 	m := bson.M{"policyId": policyId}
 	if !isAdmin(ctx) {
-		m["tenant"] = ctx.TenantId
+		m["tenantId"] = ctx.TenantId
 	}
 	return ad.doListPlan(ctx, limit, offset, m)
 }
