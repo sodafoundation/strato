@@ -82,7 +82,7 @@ func refreshBackendLocation(ctx context.Context, virtBkname string, backendName 
 		logger.Println("Get backend location failed, because backend name is null.")
 		return nil,errors.New("failed")
 	}
-	loca,exists := locMap[backendName]
+	loca,exists := locMap[backendName + virtBkname]
 	if !exists {
 		logger.Printf("Backend(name:%s) is not in the map, need to build it.\n", backendName)
 		bk, err := db.DbAdapter.GetBackendByName(backendName)
@@ -93,7 +93,7 @@ func refreshBackendLocation(ctx context.Context, virtBkname string, backendName 
 			//TODO:use read/write lock to synchronize among routines
 			loca = &LocationInfo{bk.Type, bk.Region, bk.Endpoint,bk.BucketName,
 			virtBkname,bk.Access, bk.Security, backendName}
-			locMap[backendName] = loca
+			locMap[backendName + virtBkname] = loca
 			logger.Printf("Refresh backend[name:%s,id:%s] successfully.\n", backendName, bk.Id.String())
 			return loca,nil
 		}
@@ -400,27 +400,25 @@ func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 	srcLoca *LocationInfo, destLoca *LocationInfo, remainSource bool) {
 	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
 		obj.Obj.ObjectKey, obj.Obj.Backend, srcLoca.BakendName, destLoca.BakendName)
+
+	needMove := true
 	if obj.Obj.Backend != srcLoca.BakendName && obj.Obj.Backend != "" {
-		logger.Printf("obj.Obj.Backend=%s,srcLoca.BakendName=%s\n", obj.Obj.Backend, srcLoca.BakendName)
+		logger.Printf("obj.Obj.Backend=%s,srcLoca.BakendName=%s, srcLoca.VirBucket=%s.\n", obj.Obj.Backend,
+			srcLoca.BakendName, srcLoca.VirBucket)
 		logger.Printf("locaMap:%+v\n", locMap)
 		//for selfdefined connector, obj.backend and srcLoca.backendname would be ""
 		//TODO: use read/wirte lock
 		logger.Print("Related backend of object is not default.")
-		srcLoca = locMap[obj.Obj.Backend]
-		logger.Printf("srcLoca=%v\n", srcLoca)
+		if obj.Obj.Backend == destLoca.BakendName {
+			needMove = false
+			logger.Printf("Obj[%s] is stored in the same backend as target backend[%s].\n",
+				obj.Obj.ObjectKey, destLoca.BakendName)
+		} else {
+			srcLoca = locMap[obj.Obj.Backend + srcLoca.VirBucket]
+			logger.Printf("srcLoca=%v\n", srcLoca)
+		}
 	}
 
-	needMove := true
-	if srcLoca.BakendName != "" && srcLoca.BakendName == destLoca.BakendName {
-		needMove = false
-		logger.Printf("Obj[%s] is stored in the same backend as target backend[%s].\n",
-			obj.Obj.ObjectKey, destLoca.BakendName)
-	}
-	if srcLoca.BucketName == "" && srcLoca.BucketName == destLoca.BucketName {
-		logger.Printf("Obj[%s] is stored in the same bucket as target bucket[%s].\n",
-			obj.Obj.ObjectKey, destLoca.BucketName)
-		needMove = false
-	}
 	succeed := true
 	if needMove {
 		//move object
@@ -459,8 +457,10 @@ func move(ctx context.Context, obj *SourceOject, capa chan int64, th chan int,
 
 	if succeed {
 		//If migrate success, update capacity
+		logger.Printf("  migrate object[%s] succeed.", obj.Obj.ObjectKey)
 		capa <- obj.Obj.Size
 	}else {
+		logger.Printf("  migrate object[%s] succeed.", obj.Obj.ObjectKey)
 		capa <- 0
 	}
 	t := <-th
