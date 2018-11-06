@@ -27,8 +27,8 @@ type Owner struct {
 }
 
 type Bucket struct {
-	Name         string `xml:"Name"`
-	CreationDate string `xml:"CreationDate"`
+	Name               string `xml:"Name"`
+	CreationDate       string `xml:"CreationDate"`
 	LocationConstraint string `xml:"LocationConstraint"`
 }
 
@@ -67,4 +67,15 @@ type CompleteMultipartUploadResult struct {
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
 	ETag     string `xml:"ETag"`
+}
+
+type ListPartsOutput struct {
+	Xmlns       string `xml:"xmlns,attr"`
+	Bucket      string `xml:"Bucket"`
+	Key         string `xml:"Key"`
+	UploadId    string `xml:"UploadId"`
+	MaxParts    int    `xml:"MaxParts"`
+	IsTruncated bool   `xml:"IsTruncated"`
+	Owner       Owner  `xml:"Owner"`
+	Parts       []Part `xml:"Part"`
 }

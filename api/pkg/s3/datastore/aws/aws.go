@@ -307,3 +307,7 @@ func (ad *AwsAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 	}
 	return NoError
 }
+
+func (ad *AwsAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
+	return nil, NoError
+}

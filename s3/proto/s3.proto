@@ -224,3 +224,11 @@ message MultipartUpload {
     string Key = 2;
     string uploadId = 3;
 }
+
+message ListParts {
+    string Bucket = 1;
+    string Key = 2;
+    string uploadId = 3;
+    int64	MaxParts = 4;
+    int64	PartNumberMarker = 5;
+}

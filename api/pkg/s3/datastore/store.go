@@ -20,8 +20,8 @@ import (
 	"io"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/azure"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -65,4 +65,6 @@ type DataStoreAdapter interface {
 	UploadPart(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*model.UploadPartResult, S3Error)
 	CompleteMultipartUpload(multipartUpload *pb.MultipartUpload, completeUpload *model.CompleteMultipartUpload, context context.Context) (*model.CompleteMultipartUploadResult, S3Error)
 	AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error
+
+	ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error)
 }

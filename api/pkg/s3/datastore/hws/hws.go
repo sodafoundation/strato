@@ -62,6 +62,7 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		if err != nil {
 			log.Logf("Upload to obs failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to obs failed"}
+
 		} else {
 			object.LastModified = time.Now().String()[:19]
 			log.Logf("LastModified is:%v\n", object.LastModified)
@@ -171,12 +172,23 @@ func (ad *OBSAdapter) CompleteMultipartUpload(
 	multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload,
 	context context.Context) (*model.CompleteMultipartUploadResult, S3Error) {
+	log.Logf("enter the hws CompleteMultipartUpload method")
 	bucket := ad.backend.BucketName
+	log.Logf("bucket is %v\n", bucket)
+	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
+	log.Logf("newObjectKey is %v\n", newObjectKey)
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.CompleteMultipartUploadInput{}
 		input.Bucket = bucket
-		input.Key = multipartUpload.Key
+		input.Key = newObjectKey
 		input.UploadId = multipartUpload.UploadId
+		for _, p := range completeUpload.Part {
+			part := obs.Part{
+				PartNumber: int(p.PartNumber),
+				ETag:       p.ETag,
+			}
+			input.Parts = append(input.Parts, part)
+		}
 		resp, err := ad.client.CompleteMultipartUpload(input)
 		result := &model.CompleteMultipartUploadResult{
 			Xmlns:    model.Xmlns,
@@ -213,4 +225,38 @@ func (ad *OBSAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 		}
 	}
 	return NoError
+}
+
+func (ad *OBSAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
+	bucket := ad.backend.BucketName
+	if context.Value("operation") == "listParts" {
+		input := &obs.ListPartsInput{}
+		input.Bucket = bucket
+		input.Key = listParts.Key
+		input.UploadId = listParts.UploadId
+		input.MaxParts = int(listParts.MaxParts)
+		listPartsOutput, err := ad.client.ListParts(input)
+		listParts := &model.ListPartsOutput{}
+		listParts.Bucket = listPartsOutput.Bucket
+		listParts.Key = listPartsOutput.Key
+		listParts.UploadId = listPartsOutput.UploadId
+		listParts.MaxParts = listPartsOutput.MaxParts
+
+		for _, p := range listPartsOutput.Parts {
+			part := model.Part{
+				PartNumber: int64(p.PartNumber),
+				ETag:       p.ETag,
+			}
+			listParts.Parts = append(listParts.Parts, part)
+		}
+
+		if err != nil {
+			log.Logf("ListPartsListParts is nil:%v\n", err)
+			return nil, S3Error{Code: 500, Description: "AbortMultipartUploadInput failed"}
+		} else {
+			log.Logf("ListParts successfully")
+			return listParts, NoError
+		}
+	}
+	return nil, NoError
 }
