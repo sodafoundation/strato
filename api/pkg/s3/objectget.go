@@ -16,6 +16,7 @@ package s3
 
 import (
 	"bytes"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -37,17 +38,25 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	object := s3.Object{}
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	var backendname string
 	log.Logf("objectMD.size = %v\n", objectMD.Size)
 	if objectMD != nil {
 		object.Size = objectMD.Size
+		backendname = objectMD.Backend
 	} else {
 		log.Logf("No such object")
+		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 		return
 	}
 
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
-	client := getBackendClient(s, bucketName)
+	var client datastore.DataStoreAdapter
+	if backendname != "" {
+		client = getBackendByName(s, backendname)
+	} else {
+		client = getBackendClient(s, bucketName)
+	}
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

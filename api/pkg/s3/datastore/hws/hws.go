@@ -62,7 +62,7 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		if err != nil {
 			log.Logf("Upload to obs failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to obs failed"}
-		}else{
+		} else {
 			object.LastModified = time.Now().String()[:19]
 			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
@@ -114,21 +114,25 @@ func (ad *OBSAdapter) GetObjectInfo(bucketName string, key string, context conte
 
 func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.backend.BucketName
-	var multipartUpload *pb.MultipartUpload
+	multipartUpload := &pb.MultipartUpload{}
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.InitiateMultipartUploadInput{}
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey
 		out, err := ad.client.InitiateMultipartUpload(input)
-
+		log.Logf("out.Bucket = %v, out.Key = %v ,out.UploadId = %v:\n", out.Bucket, out.Key, out.UploadId)
 		if err != nil {
 			log.Logf("initmultipartupload failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "initmultipartupload failed"}
 		} else {
-			log.Logf("initmultipartupload %s successfully.", out.Key)
+			log.Logf("initmultipartupload %v successfully.", out.Key)
 			multipartUpload.Bucket = out.Bucket
+			log.Logf("out.Bucket is %v", out.Bucket)
 			multipartUpload.Key = out.Key
+			log.Logf("out.Key is %v", out.Key)
 			multipartUpload.UploadId = out.UploadId
+			log.Logf("out.UploadId is %v", out.UploadId)
+			log.Logf("multipartUpload is %v\n", multipartUpload)
 			return multipartUpload, NoError
 		}
 	}
@@ -139,13 +143,15 @@ func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 func (ad *OBSAdapter) UploadPart(stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64, context context.Context) (*model.UploadPartResult, S3Error) {
 
 	bucket := ad.backend.BucketName
+	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.UploadPartInput{}
 		input.Bucket = bucket
-		input.Key = multipartUpload.Key
+		input.Key = newObjectKey
 		input.Body = stream
 		input.PartNumber = int(partNumber)
 		input.PartSize = upBytes
+		log.Logf(" multipartUpload.UploadId is %v", multipartUpload.UploadId)
 		input.UploadId = multipartUpload.UploadId
 		out, err := ad.client.UploadPart(input)
 

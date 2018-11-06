@@ -37,7 +37,7 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 	if objectMD != nil {
 		client := getBackendByName(s, objectMD.Backend)
 		s3err = client.DELETE(&deleteInput, ctx)
-	}else{
+	} else {
 		log.Logf("No such object")
 		return
 	}
