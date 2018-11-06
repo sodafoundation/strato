@@ -52,9 +52,9 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName
 	var client datastore.DataStoreAdapter
-	if backendname!=""{
-		client = getBackendByName(s,backendname)
-	}else {
+	if backendname != "" {
+		client = getBackendByName(s, backendname)
+	} else {
 		client = getBackendClient(s, bucketName)
 	}
 	if client == nil {

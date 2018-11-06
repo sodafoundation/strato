@@ -15,10 +15,10 @@
 package s3
 
 import (
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-	"net/http"
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	"net/http"
 
 	//	"github.com/micro/go-micro/errors"
 	"strconv"
@@ -33,26 +33,25 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")
-	backendName:=request.HeaderParameter("x-amz-storage-class")
-	log.Logf("backendName is :%v\n",backendName)
+	backendName := request.HeaderParameter("x-amz-storage-class")
+	log.Logf("backendName is :%v\n", backendName)
 	object := s3.Object{}
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
 
-
 	object.ObjectKey = objectKey
-	log.Logf("objectKey is %v:\n",objectKey)
+	log.Logf("objectKey is %v:\n", objectKey)
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
-	log.Logf("object.size is %v\n",size)
+	log.Logf("object.size is %v\n", size)
 	object.Size = size
 	var client datastore.DataStoreAdapter
-	if backendName!=""{
+	if backendName != "" {
 		object.Backend = backendName
-		client = getBackendByName(s,backendName)
-	}else {
+		client = getBackendByName(s, backendName)
+	} else {
 		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 		object.Backend = bucket.Backend
 		client = getBackendClient(s, bucketName)
@@ -63,12 +62,12 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	}
 	log.Logf("enter the PUT method")
 	s3err := client.PUT(request.Request.Body, &object, ctx)
-	log.Logf("LastModified is %v\n",object.LastModified)
+	log.Logf("LastModified is %v\n", object.LastModified)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-	log.Logf("object.size2  = %v \n",object.Size)
+	log.Logf("object.size2  = %v \n", object.Size)
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)

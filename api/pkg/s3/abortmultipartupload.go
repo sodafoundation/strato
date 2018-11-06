@@ -3,8 +3,8 @@ package s3
 import (
 	"context"
 	"github.com/emicklei/go-restful"
-	"net/http"
 	"github.com/micro/go-log"
+	"net/http"
 	//	"github.com/micro/go-micro/errors"
 
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -42,7 +42,7 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 		}
 		log.Logf("Delete object %s successfully.", objectKey)
 		response.WriteEntity(res)
-	}else{
+	} else {
 		response.WriteError(http.StatusInternalServerError, InternalError.Error())
 
 	}

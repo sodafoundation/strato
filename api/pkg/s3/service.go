@@ -76,40 +76,40 @@ func ReadBody(r *restful.Request) []byte {
 
 func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapter {
 	ctx := context.Background()
-	log.Logf("bucketName is %v:\n",bucketName)
+	log.Logf("bucketName is %v:\n", bucketName)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		return nil
 	}
 	//backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: bucket.Backend})
-	log.Logf("bucketName is %v\n",bucketName)
+	log.Logf("bucketName is %v\n", bucketName)
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset:0,
-		Limit:math.MaxInt32,
-		Filter:map[string]string {"name":bucket.Backend}})
-	log.Logf("backendErr is %v:",backendErr)
+		Offset: 0,
+		Limit:  math.MaxInt32,
+		Filter: map[string]string{"name": bucket.Backend}})
+	log.Logf("backendErr is %v:", backendErr)
 	if backendErr != nil {
 		log.Logf("Get backend %s failed.", bucket.Backend)
 		return nil
 	}
-	log.Logf("backendRep is %v:",backendRep)
+	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	client := datastore.Init(backend)
 	return client
 }
 
-func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdapter{
+func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdapter {
 	ctx := context.Background()
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset:0,
-		Limit:math.MaxInt32,
-		Filter:map[string]string {"name":backendName}})
-	log.Logf("backendErr is %v:",backendErr)
+		Offset: 0,
+		Limit:  math.MaxInt32,
+		Filter: map[string]string{"name": backendName}})
+	log.Logf("backendErr is %v:", backendErr)
 	if backendErr != nil {
 		log.Logf("Get backend %s failed.", backendName)
 		return nil
 	}
-	log.Logf("backendRep is %v:",backendRep)
+	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	client := datastore.Init(backend)
 	return client

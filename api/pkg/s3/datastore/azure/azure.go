@@ -183,7 +183,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 
 	log.Logf("bucket is %v\n", bucket)
 	result.Bucket = multipartUpload.Bucket
-	result.Key =multipartUpload.Key
+	result.Key = multipartUpload.Key
 	result.Location = ad.backend.Name
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
 	blobURL := ad.containerURL.NewBlockBlobURL(newObjectKey)
@@ -197,9 +197,9 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 	if err != nil {
 		log.Logf("[AzureAdapter] Commit blocks faild:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
-	}else{
+	} else {
 		log.Logf("[AzureAdapter] Commit blocks succeed:\n")
-		return &result,NoError
+		return &result, NoError
 	}
 	return nil, NoError
 }

@@ -20,7 +20,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	//待插入object
+	//to insert object
 	object := s3.Object{}
 	object.BucketName = bucketName
 	object.ObjectKey = objectKey
@@ -40,31 +40,30 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 		return
 	}
 	resp, s3err := client.CompleteMultipartUpload(&multipartUpload, completeUpload, ctx)
-	log.Logf("resp is %v\n",resp)
+	log.Logf("resp is %v\n", resp)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
 
-	_,s3err = client.GetObjectInfo(bucketName, objectKey, ctx)
+	_, s3err = client.GetObjectInfo(bucketName, objectKey, ctx)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
 	if objectMD != nil {
-		objectMD.Partions=nil
+		objectMD.Partions = nil
 		objectMD.LastModified = time.Now().String()[:19]
-		//插入元数据
+		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, objectMD)
-		if err!=nil{
-			log.Logf("err is %v\n",err)
+		if err != nil {
+			log.Logf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 		}
-	}else{
-			response.WriteError(http.StatusInternalServerError, InternalError.Error())
+	} else {
+		response.WriteError(http.StatusInternalServerError, InternalError.Error())
 
 	}
-
 
 	xmlstring, err := xml.MarshalIndent(resp, "", "  ")
 	if err != nil {
