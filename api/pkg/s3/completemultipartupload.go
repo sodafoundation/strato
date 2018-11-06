@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/xml"
 	"net/http"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
@@ -16,9 +17,13 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	UploadId := request.QueryParameter("uploadId")
-
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
-
+	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	//to insert object
+	object := s3.Object{}
+	object.BucketName = bucketName
+	object.ObjectKey = objectKey
 	multipartUpload := s3.MultipartUpload{}
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
@@ -29,42 +34,35 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	log.Logf("complete multipart upload body: %s", string(body))
 	completeUpload := &model.CompleteMultipartUpload{}
 	xml.Unmarshal(body, completeUpload)
-
-	log.Logf("multipartUpload:%v, parts:%v", multipartUpload, completeUpload)
-
 	client := getBackendClient(s, bucketName)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-
 	resp, s3err := client.CompleteMultipartUpload(&multipartUpload, completeUpload, ctx)
+	log.Logf("resp is %v\n", resp)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
 
-	obj, s3err := client.GetObjectInfo(bucketName, objectKey, ctx)
+	_, s3err = client.GetObjectInfo(bucketName, objectKey, ctx)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-
-	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-
 	if objectMD != nil {
-		_, err := s.s3Client.UpdateObject(ctx, obj)
+		objectMD.Partions = nil
+		objectMD.LastModified = time.Now().String()[:19]
+		//insert metadata
+		_, err := s.s3Client.CreateObject(ctx, objectMD)
 		if err != nil {
+			log.Logf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
-			return
 		}
 	} else {
-		_, err := s.s3Client.CreateObject(ctx, obj)
-		if err != nil {
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
+		response.WriteError(http.StatusInternalServerError, InternalError.Error())
+
 	}
 
 	xmlstring, err := xml.MarshalIndent(resp, "", "  ")

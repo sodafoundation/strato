@@ -25,8 +25,7 @@ message RunJobRequest{
 	Connector sourceConn = 2;
 	Connector destConn = 3;
 	Filter filt = 4;
-	bool overWrite = 5;
-	bool remainSource = 6;
+	bool remainSource = 5;
 }
 
 message RunJobResponse {
