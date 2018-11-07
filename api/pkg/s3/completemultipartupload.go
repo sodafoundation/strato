@@ -46,7 +46,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 		return
 	}
 
-	_, s3err = client.GetObjectInfo(bucketName, objectKey, ctx)
+	//_, s3err = client.GetObjectInfo(bucketName, objectKey, ctx)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
