@@ -466,7 +466,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		capa <- obj.Size
 	}else {
 		logger.Printf("  migrate object[%s] failed.", obj.ObjectKey)
-		capa <- 0
+		capa <- -1
 	}
 	t := <-th
 	logger.Printf("  migrate: consume %d routine.", t)

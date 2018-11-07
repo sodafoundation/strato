@@ -321,8 +321,8 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	job.Type = plan.Type
 	job.PlanId = string(plan.Id.Hex())
 	job.PlanName = plan.Name
-	job.SourceLocation = plan.SourceConn.StorType + ":" + srcLocation
-	job.DestLocation = plan.DestConn.StorType + ":" + destLocation
+	job.SourceLocation = srcLocation
+	job.DestLocation = destLocation
 	job.CreateTime = ct
 	job.Status = JOB_STATUS_PENDING
 	job.RemainSource = plan.RemainSource
