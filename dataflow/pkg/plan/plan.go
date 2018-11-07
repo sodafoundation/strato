@@ -15,6 +15,7 @@
 package plan
 
 import (
+	"errors"
 	"regexp"
 	"time"
 
@@ -27,8 +28,6 @@ import (
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/opensds/multi-cloud/datamover/proto"
-	//"golang.org/x/net/context"
-	"errors"
 )
 
 var tblConnector = "connector"
@@ -327,7 +326,6 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	job.Status = JOB_STATUS_PENDING
 	job.RemainSource = plan.RemainSource
 	job.StartTime = time.Time{}
-	
 	//add job to database
 	_, err = db.DbAdapter.CreateJob(ctx, &job)
 	if err == nil {
@@ -364,10 +362,9 @@ func NewPlanExecutor(ctx *c.Context, plan *Plan) trigger.Executer {
 }
 
 func (p *TriggerExecutor) Run() {
-	log.Logf("Plan (%s) is called in dataflow service.", p.planId)
-	//tenant := "tenant"
-	//jobId, err := Run(p.planId, tenant, p.datamover)
-	//if err != nil {
-	//	log.Logf("PlanExcutor run plan(%s) error, jobid:%s, error:%v",p.planId, jobId, err)
-	//}
+	log.Logf("schudler run plan (%s) is called in dataflow service.", p.planId)
+	jobId, err := Run(p.ctx, p.planId)
+	if err != nil {
+		log.Logf("PlanExcutor run plan(%s) error, jobid:%s, error:%v", p.planId, jobId, err)
+	}
 }
