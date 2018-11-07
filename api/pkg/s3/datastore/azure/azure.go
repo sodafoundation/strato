@@ -208,3 +208,6 @@ func (ad *AzureAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload
 	log.Logf("No need to abort multipart upload[objkey:%s].\n", bucket)
 	return NoError
 }
+func (ad *AzureAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
+	return nil, NoError
+}

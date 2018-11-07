@@ -37,6 +37,7 @@ It has these top-level messages:
 	DeleteObjectInput
 	GetObjectInput
 	MultipartUpload
+	ListParts
 */
 package s3
 
