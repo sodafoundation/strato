@@ -63,6 +63,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	log.Logf("enter the PUT method")
 	s3err := client.PUT(request.Request.Body, &object, ctx)
 	log.Logf("LastModified is %v\n", object.LastModified)
+
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return

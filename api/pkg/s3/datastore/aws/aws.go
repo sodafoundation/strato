@@ -153,7 +153,7 @@ func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 
 func (ad *AwsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
 	bucket := ad.backend.BucketName
-	newKey := bucketName + "/"
+	newKey := bucketName + "/" + key
 
 	input := &awss3.ListObjectsInput{
 		Bucket: &bucket,

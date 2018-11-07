@@ -93,21 +93,21 @@ func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 
 func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Log("PutObject is called in s3 service.")
-	getObjectInput := pb.GetObjectInput{Bucket:in.BucketName,Key:in.ObjectKey}
+	getObjectInput := pb.GetObjectInput{Bucket: in.BucketName, Key: in.ObjectKey}
 	object := pb.Object{}
 	err := db.DbAdapter.GetObject(&getObjectInput, &object)
-	if err.Code != ERR_OK && err.Code!=http.StatusNotFound {
+	if err.Code != ERR_OK && err.Code != http.StatusNotFound {
 		return err.Error()
 	}
-	if  err.Code==http.StatusNotFound{
+	if err.Code == http.StatusNotFound {
 		log.Log("CreateObject is called in s3 service.")
-		err1:=db.DbAdapter.CreateObject(in)
+		err1 := db.DbAdapter.CreateObject(in)
 		if err1.Code != ERR_OK {
 			return err.Error()
 		}
-	}else{
+	} else {
 		log.Log("UpdateObject is called in s3 service.")
-		err1:=db.DbAdapter.UpdateObject(in)
+		err1 := db.DbAdapter.UpdateObject(in)
 		if err1.Code != ERR_OK {
 			return err.Error()
 		}
@@ -119,7 +119,7 @@ func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 
 func (b *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Log("PutObject is called in s3 service.")
-	err:=db.DbAdapter.UpdateObject(in)
+	err := db.DbAdapter.UpdateObject(in)
 	if err.Code != ERR_OK {
 		return err.Error()
 	}
