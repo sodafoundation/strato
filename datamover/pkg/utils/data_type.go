@@ -14,10 +14,6 @@
 
 package utils
 
-import (
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-)
-
 type LocationInfo struct {
 	StorType string //aws-s3,azure-blob,hw-obs,etc.
 	Region string
@@ -27,11 +23,6 @@ type LocationInfo struct {
 	Access string
 	Security string
 	BakendName string
-}
-
-type SourceOject struct {
-	StorType string //aws-s3,azure-blob,hw-obs,etc.
-	Obj *osdss3.Object
 }
 
 type MoveWorker interface {

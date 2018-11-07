@@ -33,7 +33,7 @@ var (
 
 var (
 	JOB_STATUS_PENDING = "pending"
-	JOB_STATUS_RUNNING = "runing"
+	JOB_STATUS_RUNNING = "running"
 	JOB_STATUS_SUCCEED = "succeed"
 	JOB_STATUS_FAILED  = "failed"
 )
