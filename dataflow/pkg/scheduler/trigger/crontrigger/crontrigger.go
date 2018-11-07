@@ -42,6 +42,7 @@ func (c *CronTrigger) Add(planId, properties string, executer trigger.Executer) 
 		return fmt.Errorf("Add plan(%s) to corn trigger failed: %v", planId, err)
 	}
 	cn.Start()
+	log.Logf("Add plan(%s) to scheduler, next execute time: %v", planId, cn.Entries()[0].Next)
 	return nil
 }
 
