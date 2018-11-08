@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"encoding/xml"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
 	"time"
 
@@ -34,11 +35,18 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	log.Logf("complete multipart upload body: %s", string(body))
 	completeUpload := &model.CompleteMultipartUpload{}
 	xml.Unmarshal(body, completeUpload)
-	client := getBackendClient(s, bucketName)
+	var client datastore.DataStoreAdapter
+	if objectMD == nil {
+		log.Logf("No such obecjt err\n")
+		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
+
+	}
+	client = getBackendByName(s, objectMD.Backend)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
+
 	resp, s3err := client.CompleteMultipartUpload(&multipartUpload, completeUpload, ctx)
 	log.Logf("resp is %v\n", resp)
 	if s3err != NoError {
@@ -51,18 +59,15 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-	if objectMD != nil {
-		objectMD.Partions = nil
-		objectMD.LastModified = time.Now().String()[:19]
-		//insert metadata
-		_, err := s.s3Client.CreateObject(ctx, objectMD)
-		if err != nil {
-			log.Logf("err is %v\n", err)
-			response.WriteError(http.StatusInternalServerError, err)
-		}
-	} else {
-		response.WriteError(http.StatusInternalServerError, InternalError.Error())
 
+	objectMD.Partions = nil
+	objectMD.LastModified = time.Now().String()[:19]
+	objectMD.InitFlag = "1"
+	//insert metadata
+	_, err := s.s3Client.CreateObject(ctx, objectMD)
+	if err != nil {
+		log.Logf("err is %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	xmlstring, err := xml.MarshalIndent(resp, "", "  ")

@@ -86,7 +86,9 @@ func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		return err.Error()
 	}
 	for j := 0; j < len(objects); j++ {
-		out.ListObjects = append(out.ListObjects, &objects[j])
+		if objects[j].InitFlag != "0" {
+			out.ListObjects = append(out.ListObjects, &objects[j])
+		}
 	}
 	return nil
 }

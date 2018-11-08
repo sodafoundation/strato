@@ -19,13 +19,13 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
-	//assign backend
-	backendName := request.HeaderParameter("x-amz-storage-class")
+
 	uploadId := request.QueryParameter("uploadId")
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
-
+	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	lastModified := time.Now().String()[:19]
 	object := s3.Object{}
 	object.ObjectKey = objectKey
@@ -33,14 +33,12 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	object.LastModified = lastModified
 	object.Size = size
 	var client datastore.DataStoreAdapter
-	if backendName != "" {
-		object.Backend = backendName
-		client = getBackendByName(s, backendName)
-	} else {
-		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-		object.Backend = bucket.Backend
-		client = getBackendClient(s, bucketName)
+	if objectMD == nil {
+		log.Logf("No such obecjt err\n")
+		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
+
 	}
+	client = getBackendByName(s, objectMD.Backend)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
@@ -55,8 +53,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+
 	partion := s3.Partion{}
 
 	partion.PartNumber = partNumber
@@ -64,25 +61,14 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	timestamp := time.Now().Unix()
 	partion.LastModified = timestamp
 	partion.Key = objectKey
-
-	if objectMD != nil {
-		objectMD.Size = objectMD.Size + size
-		objectMD.LastModified = lastModified
-		objectMD.Partions = append(objectMD.Partions, &partion)
-		//insert metadata
-		_, err := s.s3Client.CreateObject(ctx, objectMD)
-		if err != nil {
-			log.Logf("err is %v\n", err)
-			response.WriteError(http.StatusInternalServerError, err)
-		}
-	} else {
-		//insert metadata
-		object.Partions = append(object.Partions, &partion)
-		_, err := s.s3Client.CreateObject(ctx, &object)
-		if err != nil {
-			log.Logf("err is %v\n", err)
-			response.WriteError(http.StatusInternalServerError, err)
-		}
+	objectMD.Size = objectMD.Size + size
+	objectMD.LastModified = lastModified
+	objectMD.Partions = append(objectMD.Partions, &partion)
+	//insert metadata
+	_, err := s.s3Client.CreateObject(ctx, objectMD)
+	if err != nil {
+		log.Logf("err is %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	//return xml format
