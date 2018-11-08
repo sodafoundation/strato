@@ -16,18 +16,24 @@ package s3
 
 import (
 	"encoding/xml"
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"net/http"
 	//	"github.com/micro/go-micro/errors"
+	"time"
+
+	"github.com/opensds/multi-cloud/api/pkg/policy"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"golang.org/x/net/context"
-	"time"
 )
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "bucket:put") {
+		return
+	}
 	bucketName := request.PathParameter("bucketName")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
@@ -49,17 +55,17 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			return
 		} else {
 			backendName := createBucketConf.LocationConstraint
-			if backendName!="" {
-				log.Logf("backendName is %v\n",backendName)
+			if backendName != "" {
+				log.Logf("backendName is %v\n", backendName)
 				bucket.Backend = backendName
-				client := getBackendByName(s,backendName)
+				client := getBackendByName(s, backendName)
 				if client == nil {
 					response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 					return
 				}
-			}else{
-				log.Logf("backetName is %v\n",backendName)
-				response.WriteError(http.StatusNotFound,NoSuchBackend.Error())
+			} else {
+				log.Logf("backetName is %v\n", backendName)
+				response.WriteError(http.StatusNotFound, NoSuchBackend.Error())
 				return
 			}
 		}

@@ -1,4 +1,4 @@
-version: '3'
+version: '2'
 
 services:
 
@@ -29,6 +29,12 @@ services:
     environment:
       MICRO_SERVER_ADDRESS: ":8089"
       MICRO_REGISTRY: "mdns"
+      AUTH_AuthStrategy: "keystone"
+      AuthUrl: "http://10.10.3.100/identity"
+      UserDomainName: "Default"
+      Username: "opensds"
+      Password: "opensds@123"
+      ProjectName: "service"
 
   backend:
     image: opensdsio/multi-cloud-backend
