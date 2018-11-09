@@ -186,6 +186,7 @@ func (ad *AwsAdapter) GetObjectInfo(bucketName string, key string, context conte
 func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.backend.BucketName
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
+	log.Logf("bucket = %v,newObjectKey = %v\n", bucket, newObjectKey)
 	multipartUpload := &pb.MultipartUpload{}
 	multiUpInput := &awss3.CreateMultipartUploadInput{
 		Bucket: &bucket,

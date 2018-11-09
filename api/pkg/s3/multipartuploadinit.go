@@ -40,7 +40,8 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	log.Logf("Received request for create bucket: %s", bucketName)
 	size := 0
 	object := s3.Object{}
-
+	object.ObjectKey = objectKey
+	object.BucketName = bucketName
 	multipartUpload := s3.MultipartUpload{}
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
@@ -70,6 +71,8 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		objectMD.ObjectKey = objectKey
 		objectMD.BucketName = bucketName
 		objectMD.InitFlag = "0"
+		objectMD.IsDeleteMarker = ""
+		objectMD.Partions = nil
 		objectMD.Size = int64(size)
 		objectMD.LastModified = lastModified
 		//insert metadata
@@ -79,11 +82,10 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 			response.WriteError(http.StatusInternalServerError, err)
 		}
 	} else {
-		object.ObjectKey = objectKey
-		object.BucketName = bucketName
 		object.Size = int64(size)
 		object.LastModified = lastModified
 		object.InitFlag = "0"
+
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, &object)
 		if err != nil {

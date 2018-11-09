@@ -36,7 +36,9 @@ func (b *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 		return err.Error()
 	}
 	for j := 0; j < len(buckets); j++ {
-		out.Buckets = append(out.Buckets, &buckets[j])
+		if buckets[j].Deleted != true {
+			out.Buckets = append(out.Buckets, &buckets[j])
+		}
 	}
 
 	return nil
@@ -67,9 +69,15 @@ func (b *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.Bucket
 
 func (b *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Log("DeleteBucket is called in s3 service.")
-	err := db.DbAdapter.DeleteBucket(in.Name)
-
+	bucket := pb.Bucket{}
+	err := db.DbAdapter.GetBucketByName(in.Name, &bucket)
 	if err.Code != ERR_OK {
+		return err.Error()
+	}
+	bucket.Deleted = true
+	log.Log("UpdateBucket is called in s3 service.")
+	err1 := db.DbAdapter.UpdateBucket(&bucket)
+	if err1.Code != ERR_OK {
 		return err.Error()
 	}
 	out.Msg = "Delete bucket successfully."
@@ -86,7 +94,7 @@ func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		return err.Error()
 	}
 	for j := 0; j < len(objects); j++ {
-		if objects[j].InitFlag != "0" {
+		if objects[j].InitFlag != "0" && objects[j].IsDeleteMarker != "1" {
 			out.ListObjects = append(out.ListObjects, &objects[j])
 		}
 	}
@@ -141,8 +149,16 @@ func (b *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *p
 
 func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.BaseResponse) error {
 	log.Log("DeleteObject is called in s3 service.")
-	err := db.DbAdapter.DeleteObject(in)
+	getObjectInput := pb.GetObjectInput{Bucket: in.Bucket, Key: in.Key}
+	object := pb.Object{}
+	err := db.DbAdapter.GetObject(&getObjectInput, &object)
 	if err.Code != ERR_OK {
+		return err.Error()
+	}
+	object.IsDeleteMarker = "1"
+	log.Log("UpdateObject is called in s3 service.")
+	err1 := db.DbAdapter.UpdateObject(&object)
+	if err1.Code != ERR_OK {
 		return err.Error()
 	}
 	out.Msg = "Delete object successfully."

@@ -34,10 +34,11 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	object.Size = size
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Logf("No such obecjt err\n")
+		log.Logf("No such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
+	log.Logf("objectMD.Backend is %v\n", objectMD.Backend)
 	client = getBackendByName(s, objectMD.Backend)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
