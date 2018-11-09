@@ -15,20 +15,25 @@
 package s3
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"net/http"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 	//	"github.com/micro/go-micro/errors"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
 func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "bucket:get") {
+		return
+	}
 	bucketName := request.PathParameter("bucketName")
 	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
 	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
-	log.Logf("list objects is: %v\n",res)
+	log.Logf("list objects is: %v\n", res)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

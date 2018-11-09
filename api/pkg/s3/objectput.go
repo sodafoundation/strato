@@ -15,14 +15,16 @@
 package s3
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-	"net/http"
 
 	//	"github.com/micro/go-micro/errors"
 	"strconv"
 
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
@@ -30,6 +32,9 @@ import (
 
 //ObjectPut -
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "object:put") {
+		return
+	}
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")

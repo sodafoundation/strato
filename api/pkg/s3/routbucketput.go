@@ -16,9 +16,13 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
 func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "routbucket:put") {
+		return
+	}
 	if IsQuery(request, "acl") {
 		//TODO
 	} else if IsQuery(request, "versioning") {

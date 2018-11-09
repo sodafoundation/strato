@@ -15,15 +15,17 @@
 package backend
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	"net/http"
 )
 
 const (
@@ -47,6 +49,9 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func (s *APIService) GetBackend(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:get") {
+		return
+	}
 	log.Logf("Received request for backend details: %s", request.PathParameter("id"))
 	id := request.PathParameter("id")
 	ctx := context.Background()
@@ -62,6 +67,9 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 }
 
 func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:list") {
+		return
+	}
 	log.Log("Received request for backend list.")
 	listBackendRequest := &backend.ListBackendRequest{}
 
@@ -105,6 +113,9 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 }
 
 func (s *APIService) CreateBackend(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:create") {
+		return
+	}
 	log.Log("Received request for creating backend.")
 	backendDetail := &backend.BackendDetail{}
 	err := request.ReadEntity(&backendDetail)
@@ -127,6 +138,9 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 }
 
 func (s *APIService) UpdateBackend(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:update") {
+		return
+	}
 	log.Logf("Received request for updating backend: %v", request.PathParameter("id"))
 	updateBackendRequest := backend.UpdateBackendRequest{Id: request.PathParameter("id")}
 	err := request.ReadEntity(&updateBackendRequest)
@@ -149,6 +163,9 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 }
 
 func (s *APIService) DeleteBackend(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:delete") {
+		return
+	}
 	log.Logf("Received request for deleting backend: %s", request.PathParameter("id"))
 	ctx := context.Background()
 	_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: request.PathParameter("id")})
@@ -163,6 +180,9 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 }
 
 func (s *APIService) ListType(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "type:list") {
+		return
+	}
 	log.Log("Received request for backend type list.")
 	listTypeRequest := &backend.ListTypeRequest{}
 

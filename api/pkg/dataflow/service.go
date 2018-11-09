@@ -18,16 +18,18 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"io/ioutil"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	"io/ioutil"
-	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 const (
@@ -51,6 +53,9 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func (s *APIService) ListPolicy(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "policy:list") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 
 	ctx := context.Background()
@@ -75,6 +80,9 @@ func (s *APIService) ListPolicy(request *restful.Request, response *restful.Resp
 }
 
 func (s *APIService) GetPolicy(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "policy:get") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for policy[id=%s] details.", id)
@@ -100,6 +108,9 @@ func (s *APIService) GetPolicy(request *restful.Request, response *restful.Respo
 }
 
 func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "policy:create") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	log.Logf("Received request for create policy.\n")
 	ctx := context.Background()
@@ -131,6 +142,9 @@ func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) UpdatePolicy(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "policy:update") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	policyId := request.PathParameter("id")
 	body, err := ioutil.ReadAll(request.Request.Body)
@@ -163,6 +177,9 @@ func (s *APIService) UpdatePolicy(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) DeletePolicy(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "policy:delete") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for delete policy[id=%s] details.", id)
@@ -178,6 +195,9 @@ func (s *APIService) DeletePolicy(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) ListPlan(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "plan:list") {
+		return
+	}
 	log.Log("Received request for list plan.")
 
 	listPlanReq := &dataflow.ListPlanRequest{}
@@ -206,7 +226,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	} else {
-		log.Logf("Get filter for list plan: %v",filter)
+		log.Logf("Get filter for list plan: %v", filter)
 	}
 	listPlanReq.Filter = filter
 
@@ -235,6 +255,9 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 }
 
 func (s *APIService) GetPlan(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "plan:get") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for plan[id=%s] details.", id)
@@ -260,6 +283,9 @@ func (s *APIService) GetPlan(request *restful.Request, response *restful.Respons
 }
 
 func (s *APIService) CreatePlan(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "plan:create") {
+		return
+	}
 	//name := request.PathParameter("name")
 	actx := request.Attribute(c.KContext).(*c.Context)
 	log.Logf("Received request for create plan.\n")
@@ -292,6 +318,9 @@ func (s *APIService) CreatePlan(request *restful.Request, response *restful.Resp
 }
 
 func (s *APIService) UpdatePlan(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "plan:update") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 
 	planId := request.PathParameter("id")
@@ -326,6 +355,9 @@ func (s *APIService) UpdatePlan(request *restful.Request, response *restful.Resp
 }
 
 func (s *APIService) DeletePlan(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "plan:delete") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for delete plan[id=%s] details.", id)
@@ -340,6 +372,9 @@ func (s *APIService) DeletePlan(request *restful.Request, response *restful.Resp
 }
 
 func (s *APIService) RunPlan(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "plan:run") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request for run plan[id=%s] details.", id)
@@ -354,6 +389,9 @@ func (s *APIService) RunPlan(request *restful.Request, response *restful.Respons
 }
 
 func (s *APIService) GetJob(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "job:get") {
+		return
+	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
 	log.Logf("Received request jobs [id=%s] details.", id)
@@ -379,6 +417,9 @@ func (s *APIService) GetJob(request *restful.Request, response *restful.Response
 }
 
 func (s *APIService) ListJob(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "job:list") {
+		return
+	}
 	log.Log("Received request for list jobs.")
 
 	listJobReq := &dataflow.ListJobRequest{}

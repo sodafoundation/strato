@@ -21,6 +21,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
@@ -38,7 +39,7 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	buckets := []model.Bucket{}
 	for _, value := range list.Buckets {
 		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
-		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate,LocationConstraint:value.Backend}
+		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate, LocationConstraint: value.Backend}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
@@ -53,6 +54,9 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 }
 
 func (s *APIService) ListBuckets(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "bucket:list") {
+		return
+	}
 	ctx := context.Background()
 	//TODO owner
 	owner := "test"

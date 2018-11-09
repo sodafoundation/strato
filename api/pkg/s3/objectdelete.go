@@ -15,16 +15,21 @@
 package s3
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	"net/http"
 	//	"github.com/micro/go-micro/errors"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "object:delete") {
+		return
+	}
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 
