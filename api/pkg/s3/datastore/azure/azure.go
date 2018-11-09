@@ -172,7 +172,7 @@ func (ad *AzureAdapter) UploadPart(stream io.Reader, multipartUpload *pb.Multipa
 		return nil, S3Error{Code: 500, Description: "Delete failed"}
 	}
 	log.Logf("[AzureAdapter] Stage block[#%d,base64ID:%s] succeed.\n", partNumber, base64ID)
-	result := &model.UploadPartResult{PartNumber: partNumber,ETag:newObjectKey}
+	result := &model.UploadPartResult{PartNumber: partNumber, ETag: newObjectKey}
 	return result, NoError
 }
 func (ad *AzureAdapter) CompleteMultipartUpload(
@@ -187,6 +187,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 	result.Key = multipartUpload.Key
 	result.Location = ad.backend.Name
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
+	log.Logf("newObjectKey is %v\n", newObjectKey)
 	blobURL := ad.containerURL.NewBlockBlobURL(newObjectKey)
 	var completeParts []string
 	for _, p := range completeUpload.Part {

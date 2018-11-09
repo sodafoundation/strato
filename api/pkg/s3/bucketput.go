@@ -44,6 +44,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	owner := "test"
 	ownerDisplayName := "test"
 	bucket.Owner = owner
+	bucket.Deleted = false
 	bucket.OwnerDisplayName = ownerDisplayName
 	bucket.CreationDate = time.Now().Unix()
 	//log.Logf("Create bucket body: %s", string(body))

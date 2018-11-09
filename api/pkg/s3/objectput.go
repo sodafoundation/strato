@@ -52,6 +52,8 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	log.Logf("object.size is %v\n", size)
 	object.Size = size
+	object.IsDeleteMarker = ""
+	object.InitFlag = ""
 	var client datastore.DataStoreAdapter
 	if backendName != "" {
 		object.Backend = backendName
