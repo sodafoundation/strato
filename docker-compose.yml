@@ -29,7 +29,7 @@ services:
     environment:
       MICRO_SERVER_ADDRESS: ":8089"
       MICRO_REGISTRY: "mdns"
-      AUTH_AuthStrategy: "keystone"
+      AUTH_AuthStrategy: "noauth"
       AuthUrl: "http://10.10.3.100/identity"
       UserDomainName: "Default"
       Username: "opensds"
