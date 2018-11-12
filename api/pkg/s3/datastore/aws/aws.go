@@ -117,12 +117,8 @@ func (ad *AwsAdapter) GET(object *pb.Object, context context.Context) (io.ReadCl
 			log.Logf("Download failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		} else {
-			log.Logf("Download succeed, bytes:%d\n", numBytes)
-			log.Logf("Download succeed, writer:%v\n", writer)
 			body := bytes.NewReader(writer.Bytes())
-			log.Logf("Download succeed, body:%v\n", *body)
 			ioReaderClose := ioutil.NopCloser(body)
-			log.Logf("Download succeed, ioReaderClose:%v\n", ioReaderClose)
 			return ioReaderClose, NoError
 		}
 

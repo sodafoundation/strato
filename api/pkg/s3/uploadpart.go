@@ -6,6 +6,8 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/emicklei/go-restful"
@@ -13,6 +15,8 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 )
+
+var muList sync.Mutex = sync.Mutex{}
 
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
@@ -24,6 +28,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
+	muList.Lock()
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	lastModified := time.Now().String()[:19]
@@ -58,15 +63,20 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partion := s3.Partion{}
 
 	partion.PartNumber = partNumber
+	log.Logf("uploadPart size is %v", size)
 	partion.Size = size
 	timestamp := time.Now().Unix()
 	partion.LastModified = timestamp
 	partion.Key = objectKey
-	objectMD.Size = objectMD.Size + size
+	log.Logf("objectMD.Size = %v", objectMD.Size)
+	atomic.AddInt64(&objectMD.Size, size)
 	objectMD.LastModified = lastModified
 	objectMD.Partions = append(objectMD.Partions, &partion)
 	//insert metadata
 	_, err := s.s3Client.CreateObject(ctx, objectMD)
+	result, _ := s.s3Client.GetObject(ctx, &objectInput)
+	muList.Unlock()
+	log.Logf("result.size = %v", result.Size)
 	if err != nil {
 		log.Logf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)

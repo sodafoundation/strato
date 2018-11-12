@@ -102,9 +102,7 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context) (io.Read
 		return nil, S3Error{Code: 500, Description: "Download failed"}
 	}
 	body := bytes.NewReader(buf)
-	log.Logf("Download succeed, body:%v\n", *body)
 	ioReaderClose := ioutil.NopCloser(body)
-	log.Logf("Download succeed, ioReaderClose:%v\n", ioReaderClose)
 	return ioReaderClose, NoError
 }
 func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
