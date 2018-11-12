@@ -35,6 +35,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	objectKey := request.PathParameter("objectKey")
 	//assign backend
 	backendName := request.HeaderParameter("x-amz-storage-class")
+	log.Logf("backendName is %v\n", backendName)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
