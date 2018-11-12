@@ -109,7 +109,7 @@ func (ad *AwsAdapter) GET(object *pb.Object, context context.Context) (io.ReadCl
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
 	if context.Value("operation") == "download" {
 		downloader := s3manager.NewDownloader(ad.session)
-		numBytes, err := downloader.DownloadWithContext(context, writer, &awss3.GetObjectInput{
+		_, err := downloader.DownloadWithContext(context, writer, &awss3.GetObjectInput{
 			Bucket: &bucket,
 			Key:    &newObjectKey,
 		})

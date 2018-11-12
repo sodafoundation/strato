@@ -29,6 +29,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 	muList.Lock()
+	log.Logf("enter the muList.Lock()")
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	lastModified := time.Now().String()[:19]
@@ -53,6 +54,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
 	multipartUpload.UploadId = uploadId
+	log.Logf("call .UploadPart api")
 	//call API
 	res, s3err := client.UploadPart(request.Request.Body, &multipartUpload, partNumberInt, request.Request.ContentLength, ctx)
 	if s3err != NoError {
