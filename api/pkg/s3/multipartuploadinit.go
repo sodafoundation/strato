@@ -74,6 +74,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		objectMD.InitFlag = "0"
 		objectMD.IsDeleteMarker = ""
 		objectMD.Partions = nil
+		objectMD.Backend = object.Backend
 		objectMD.Size = int64(size)
 		objectMD.LastModified = lastModified
 		//insert metadata
