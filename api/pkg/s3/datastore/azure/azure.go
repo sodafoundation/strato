@@ -87,7 +87,7 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 	log.Log("[AzureAdapter] Upload successfully.")
 	return NoError
 }
-func (ad *AzureAdapter) GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error) {
+func (ad *AzureAdapter) GET(object *pb.Object, context context.Context, start int64, end int64) (io.ReadCloser, S3Error) {
 	bucket := ad.backend.BucketName
 	log.Logf("bucket is %v\n", bucket)
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
@@ -96,10 +96,19 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context) (io.Read
 	log.Logf("object.Size is %v \n", object.Size)
 	len := object.Size
 	var buf = make([]byte, len)
-	err := azblob.DownloadBlobToBuffer(context, blobURL, 0, 0, buf, azblob.DownloadFromBlobOptions{})
-	if err != nil {
-		log.Logf("[AzureAdapter] Download failed:%v\n", err)
-		return nil, S3Error{Code: 500, Description: "Download failed"}
+	if start != 0 || end != 0 {
+		count := end - start + 1
+		err := azblob.DownloadBlobToBuffer(context, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
+		if err != nil {
+			log.Logf("[AzureAdapter] Download failed:%v\n", err)
+			return nil, S3Error{Code: 500, Description: "Download failed"}
+		}
+	} else {
+		err := azblob.DownloadBlobToBuffer(context, blobURL, 0, 0, buf, azblob.DownloadFromBlobOptions{})
+		if err != nil {
+			log.Logf("[AzureAdapter] Download failed:%v\n", err)
+			return nil, S3Error{Code: 500, Description: "Download failed"}
+		}
 	}
 	body := bytes.NewReader(buf)
 	ioReaderClose := ioutil.NopCloser(body)

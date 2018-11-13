@@ -57,7 +57,7 @@ func Exit(backendType string) {
 
 type DataStoreAdapter interface {
 	PUT(stream io.Reader, object *pb.Object, context context.Context) S3Error
-	GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error)
+	GET(object *pb.Object, context context.Context, start int64, end int64) (io.ReadCloser, S3Error)
 	DELETE(object *pb.DeleteObjectInput, context context.Context) S3Error
 
 	GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error)
