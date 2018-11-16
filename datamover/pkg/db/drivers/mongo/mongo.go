@@ -110,7 +110,7 @@ func (ad *adapter) UpdateJob(job *Job) error {
 		return errors.New("Update job in database failed.")
 	}
 
-	log.Log("Update job in database successfully.")
+	log.Log("Update job in database succeed.")
 	return nil
 }
 

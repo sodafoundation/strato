@@ -19,6 +19,8 @@ import (
 	"github.com/micro/go-micro/client"
 	"os"
 	"log"
+	"regexp"
+	"fmt"
 )
 
 var simuRoutines = 10
@@ -56,7 +58,7 @@ func HandleMsg(msgData []byte) error {
 		return errors.New("Job already running.")
 	}
 
-	logger.Printf("HandleMsg:job=%v\n",job)
+	logger.Printf("HandleMsg:job=%+v\n",job)
 	go runjob(&job)
 	return nil
 }
@@ -67,11 +69,11 @@ func doMove (ctx context.Context, objs []*osdss3.Object, capa chan int64, th cha
 	//th := make(chan int, simuRoutines)
 	locMap := make(map[string]*LocationInfo)
 	for i := 0; i < len(objs); i++ {
-		logger.Printf("Begin to move obj(key:%s)\n", objs[i].ObjectKey)
+		logger.Printf("************Begin to move obj(key:%s)\n", objs[i].ObjectKey)
 		go move(ctx, objs[i], capa, th, srcLoca, destLoca, remainSource, locMap)
 		//Create one routine
 		th <- 1
-		logger.Println("doMigrate: produce 1 routine.")
+		logger.Printf("doMigrate: produce 1 routine, len(th):%d.\n", len(th))
 	}
 }
 
@@ -135,7 +137,8 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo,err
 }
 
 func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
-	logger.Printf("Obj[%s] size is %d.\n", obj.ObjectKey, obj.Size)
+	logger.Printf("*****Move object[%s] from #%s# to #%s#, size is %d.\n", obj.ObjectKey, srcLoca.BakendName,
+		destLoca.BakendName, obj.Size)
 	if obj.Size <= 0 {
 		return nil
 	}
@@ -165,10 +168,10 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	}
 
 	if err != nil {
-		logger.Printf("Download object failed.")
+		logger.Printf("Download object[%s] failed.", obj.ObjectKey)
 		return err
 	}
-	logger.Printf("Download object succeed, size=%d\n", size)
+	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
 	logger.Printf("buf.len:%d\n", len(buf))
 
 	//upload
@@ -194,7 +197,7 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	if err != nil {
 		logger.Printf("Upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
 	}else {
-		logger.Printf("Upload object[bucket:%s,key:%s] succeed.\n", destLoca.BucketName, uploadObjKey)
+		logger.Printf("Upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
 	}
 
 	return err
@@ -272,8 +275,8 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		partCount++
 	}
 
-	logger.Printf("multipartMoveObj:obj.Obj.ObjectKey=%s\n",
-		obj.ObjectKey, srcLoca.VirBucket, destLoca.VirBucket)
+	logger.Printf("*****Move object[%s] from #%s# to #%s#, size is %d.\n", obj.ObjectKey, srcLoca.BakendName,
+		destLoca.BakendName, obj.Size)
 	downloadObjKey := obj.ObjectKey
 	if srcLoca.VirBucket != "" {
 		downloadObjKey = srcLoca.VirBucket + "/" + downloadObjKey
@@ -384,42 +387,35 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 }
 
 func refreshSrcLocation(ctx context.Context, obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo,
-	locMap map[string]*LocationInfo) (err error) {
+	locMap map[string]*LocationInfo) (newSrcLoca *LocationInfo, err error) {
 	if obj.Backend != srcLoca.BakendName && obj.Backend != "" {
 		//If oject does not use the default backend
 		logger.Printf("locaMap:%+v\n", locMap)
 		//for selfdefined connector, obj.backend and srcLoca.backendname would be ""
 		//TODO: use read/wirte lock
-		logger.Print("##################Related backend of object is not default.")
 		newLoc, exists := locMap[obj.Backend]
 		if !exists {
 			newLoc, err = getOsdsLocation(ctx, obj.BucketName, obj.Backend)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 		locMap[obj.Backend] = newLoc
-		srcLoca.BakendName = newLoc.BakendName
-		srcLoca.BucketName = newLoc.BucketName
-		srcLoca.StorType = newLoc.StorType
-		srcLoca.EndPoint = newLoc.EndPoint
-		srcLoca.Region = newLoc.Region
-		srcLoca.Access = newLoc.Access
-		srcLoca.Security = newLoc.Security
-		logger.Printf("srcLoca=%+v\n", srcLoca)
+		logger.Printf("newSrcLoca=%+v\n", newLoc)
+		return newLoc, nil
 	}
 
-	return nil
+	return srcLoca, nil
 }
 
 func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
 	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo) {
-	logger.Printf("*******Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
+	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
 		obj.ObjectKey, obj.Backend, srcLoca.BakendName, destLoca.BakendName)
 
 	succeed := true
 	needMove := true
-	err := refreshSrcLocation(ctx, obj, srcLoca, destLoca, locaMap)
+	newSrcLoca, err := refreshSrcLocation(ctx, obj, srcLoca, destLoca, locaMap)
 	if err != nil {
 		needMove = false
 		succeed = false
@@ -429,9 +425,9 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		//move object
 		var err error
 		if obj.Size < ObjSizeLimit {
-			err = moveObj(obj, srcLoca, destLoca)
+			err = moveObj(obj, newSrcLoca, destLoca)
 		}else {
-			err = multipartMoveObj(obj, srcLoca, destLoca)
+			err = multipartMoveObj(obj, newSrcLoca, destLoca)
 		}
 
 		if err != nil {
@@ -457,7 +453,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 
 	//Delete source data if needed
 	if succeed && !remainSource {
-		deleteObj(ctx, obj, srcLoca)
+		deleteObj(ctx, obj, newSrcLoca)
 		//TODO: what if delete failed
 	}
 
@@ -470,7 +466,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		capa <- -1
 	}
 	t := <-th
-	logger.Printf("  migrate: consume %d routine.", t)
+	logger.Printf("  migrate: consume %d routine, len(th)=%d\n", t, len(th))
 }
 
 func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
@@ -483,9 +479,24 @@ func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		logger.Printf("List objects failed, err:%v\n", err)
 		return nil, err
 	}
+
 	srcObjs := []*osdss3.Object{}
+	pattern := fmt.Sprintf("^%s", filt.Prefix)
+	logger.Printf("pattern:%s\n", pattern)
 	for i := 0; i < totalObjs; i++ {
-		srcObjs = append(srcObjs, objs.ListObjects[i])
+		valid := true
+		if filt != nil && filt.Prefix != "" {
+			match, _ := regexp.MatchString(pattern, objs.ListObjects[i].ObjectKey)
+			if match == false {
+				valid = false
+			}
+		}
+		if valid == true {
+			srcObjs = append(srcObjs, objs.ListObjects[i])
+			logger.Printf("Object[%s] match, will be migrated.\n", objs.ListObjects[i].ObjectKey)
+		} else {
+			logger.Printf("Object[%s] does not match, will not be migrated.\n", objs.ListObjects[i].ObjectKey)
+		}
 	}
 	return srcObjs,nil
 }
@@ -494,7 +505,7 @@ func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	//TODO:need to support filter
 	srcObjs := []*osdss3.Object{}
-	objs, err := s3mover.ListObjs(defaultSrcLoca)
+	objs, err := s3mover.ListObjs(defaultSrcLoca, filt)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +521,7 @@ func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	//TODO:need to support filter
 	srcObjs := []*osdss3.Object{}
-	objs, err := obsmover.ListObjs(defaultSrcLoca)
+	objs, err := obsmover.ListObjs(defaultSrcLoca, filt)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +535,7 @@ func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	srcObjs := []*osdss3.Object{}
-	objs, err := blobmover.ListObjs(defaultSrcLoca)
+	objs, err := blobmover.ListObjs(defaultSrcLoca, filt)
 	if err != nil {
 		return nil, err
 	}
@@ -578,7 +589,7 @@ func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (sr
 	logger.Println("Get connector information succeed.")
 
 	//Get Objects which need to be migrated. Calculate the total number and capacity of objects
-	objs,err = getSourceObjs(ctx, in.SourceConn, in.Filt, srcLoca)
+	objs,err = getSourceObjs(ctx, in.SourceConn, in.GetFilt(), srcLoca)
 	totalObjs := len(objs)
 	if err != nil{
 		logger.Printf("List objects failed, err:%v, total objects:%d\n", err, totalObjs)
@@ -697,7 +708,6 @@ func runjob(in *pb.RunJobRequest) error {
 			logger.Printf("Update the finish status of job in database failed three times, no need to try more.")
 		}
 	}
-
 
 	return ret
 }

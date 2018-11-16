@@ -111,7 +111,7 @@ type Plan struct {
 	Type          string    `json:"type" bson:"type"` //migration
 	SourceConn    Connector `json:"srcConn" bson:"srcConn"`
 	DestConn      Connector `json:"destConn" bson:"destConn"`
-	Filter        Filter    `json:"sourceDir" bson:"sourceDir"`
+	Filter        Filter    `json:"filter" bson:"filter"`
 	RemainSource  bool      `json:"remainSource" bson:"remainSource"`
 	LastSchedTime int64     `json:"lastSchedTime" bson:"lastSchedTime"`
 	PolicyId      string    `json:"policyId" bson:"policyId"`
