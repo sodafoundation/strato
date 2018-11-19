@@ -38,3 +38,4 @@ var NoSuchObject = S3Error{Code: 404, Description: "The specified object does no
 var BucketAlreadyExists = S3Error{Code: 409, Description: "The requested bucket name already exist. Bucket namespace is shared by all users in the system. Select a different name and retry."}
 
 var NoSuchBackend = S3Error{Code: 404, Description: "The specified backend does not exists."}
+var NoSuchType = S3Error{Code: 404, Description: "The backend type does not exists."}

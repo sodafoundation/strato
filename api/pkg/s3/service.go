@@ -94,7 +94,7 @@ func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapt
 	}
 	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
-	client := datastore.Init(backend)
+	client,_ := datastore.Init(backend)
 	return client
 }
 
@@ -111,7 +111,7 @@ func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdap
 	}
 	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
-	client := datastore.Init(backend)
+	client,_ := datastore.Init(backend)
 	return client
 }
 
