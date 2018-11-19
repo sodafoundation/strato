@@ -51,7 +51,6 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	log.Logf("out the s3Client download method")
 	var backendname string
-	log.Logf("objectMD.size = %v\n", objectMD.Size)
 	if objectMD != nil {
 		object.Size = objectMD.Size
 		backendname = objectMD.Backend
