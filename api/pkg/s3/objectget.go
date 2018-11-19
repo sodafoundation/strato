@@ -16,14 +16,14 @@ package s3
 
 import (
 	"bytes"
-	"net/http"
-
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 
-	"github.com/opensds/multi-cloud/api/pkg/policy"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
@@ -31,20 +31,26 @@ import (
 
 //ObjectGet -
 func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:get") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-
+	rangestr := request.HeaderParameter("Range")
 	ctx := context.WithValue(request.Request.Context(), "operation", "download")
-
+	start := 0
+	end := 0
+	if rangestr != "" {
+		index := strings.Index(rangestr, "-")
+		startstr := string([]rune(rangestr)[6:index])
+		endstr := string([]rune(rangestr)[index+1:])
+		start, _ = strconv.Atoi(startstr)
+		end, _ = strconv.Atoi(endstr)
+	}
 	log.Logf("Received request for create bucket: %s", bucketName)
 	object := s3.Object{}
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
+	log.Logf("enter the s3Client download method")
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
+	log.Logf("out the s3Client download method")
 	var backendname string
-	log.Logf("objectMD.size = %v\n", objectMD.Size)
 	if objectMD != nil {
 		object.Size = objectMD.Size
 		backendname = objectMD.Backend
@@ -66,9 +72,9 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-
-	body, s3err := client.GET(&object, ctx)
-
+	log.Logf("enter the download method")
+	body, s3err := client.GET(&object, ctx, int64(start), int64(end))
+	log.Logf("out  the download method")
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return

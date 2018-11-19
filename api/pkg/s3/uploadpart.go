@@ -6,7 +6,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,8 +14,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 )
-
-var muList sync.Mutex = sync.Mutex{}
 
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
@@ -28,7 +25,6 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
-	muList.Lock()
 	log.Logf("enter the muList.Lock()")
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
@@ -77,7 +73,6 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	//insert metadata
 	_, err := s.s3Client.CreateObject(ctx, objectMD)
 	result, _ := s.s3Client.GetObject(ctx, &objectInput)
-	muList.Unlock()
 	log.Logf("result.size = %v", result.Size)
 	if err != nil {
 		log.Logf("err is %v\n", err)

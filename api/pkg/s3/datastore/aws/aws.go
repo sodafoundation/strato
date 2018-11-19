@@ -29,6 +29,7 @@ import (
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	"io"
 	"io/ioutil"
+	"strconv"
 	"time"
 )
 
@@ -101,22 +102,31 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 	return NoError
 }
 
-func (ad *AwsAdapter) GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error) {
+func (ad *AwsAdapter) GET(object *pb.Object, context context.Context, start int64, end int64) (io.ReadCloser, S3Error) {
 
 	bucket := ad.backend.BucketName
 	var buf []byte
 	writer := aws.NewWriteAtBuffer(buf)
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
+	getObjectInput := awss3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &newObjectKey,
+	}
+	if start != 0 || end != 0 {
+		strStart := strconv.FormatInt(start, 10)
+		strEnd := strconv.FormatInt(end, 10)
+		rangestr := "bytes=" + strStart + "-" + strEnd
+		getObjectInput.SetRange(rangestr)
+	}
+
 	if context.Value("operation") == "download" {
 		downloader := s3manager.NewDownloader(ad.session)
-		_, err := downloader.DownloadWithContext(context, writer, &awss3.GetObjectInput{
-			Bucket: &bucket,
-			Key:    &newObjectKey,
-		})
+		numBytes, err := downloader.DownloadWithContext(context, writer, &getObjectInput)
 		if err != nil {
 			log.Logf("Download failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		} else {
+			log.Logf("Download succeed, bytes:%d\n", numBytes)
 			body := bytes.NewReader(writer.Bytes())
 			ioReaderClose := ioutil.NopCloser(body)
 			return ioReaderClose, NoError

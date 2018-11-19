@@ -73,14 +73,17 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 	return NoError
 }
 
-func (ad *OBSAdapter) GET(object *pb.Object, context context.Context) (io.ReadCloser, S3Error) {
+func (ad *OBSAdapter) GET(object *pb.Object, context context.Context, start int64, end int64) (io.ReadCloser, S3Error) {
 
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "download" {
 		input := &obs.GetObjectInput{}
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey
-
+		if start != 0 || end != 0 {
+			input.RangeStart = start
+			input.RangeEnd = end
+		}
 		out, err := ad.client.GetObject(input)
 
 		if err != nil {
