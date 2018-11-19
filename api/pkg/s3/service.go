@@ -94,7 +94,7 @@ func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapt
 	}
 	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
-	client,_ := datastore.Init(backend)
+	client, _ := datastore.Init(backend)
 	return client
 }
 
@@ -111,22 +111,22 @@ func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdap
 	}
 	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
-	client,_ := datastore.Init(backend)
+	client, _ := datastore.Init(backend)
 	return client
 }
 
-func getBucketNameByBackend(s *APIService, backendName string) string{
+func getBucketNameByBackend(s *APIService, backendName string) string {
 	ctx := context.Background()
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset:0,
-		Limit:math.MaxInt32,
-		Filter:map[string]string {"name":backendName}})
-	log.Logf("backendErr is %v:",backendErr)
+		Offset: 0,
+		Limit:  math.MaxInt32,
+		Filter: map[string]string{"name": backendName}})
+	log.Logf("backendErr is %v:", backendErr)
 	if backendErr != nil {
 		log.Logf("Get backend %s failed.", backendName)
 		return ""
 	}
-	log.Logf("backendRep is %v:",backendRep)
+	log.Logf("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	return backend.BucketName
 }

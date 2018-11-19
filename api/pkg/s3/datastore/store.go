@@ -34,7 +34,7 @@ func Init(backend *backendpb.BackendDetail) (DataStoreAdapter,S3Error) {
 	switch backend.Type {
 	case "azure-blob":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
-		StoreAdapter = azure.Init(backend)
+		StoreAdapter = azure.Init(backend) 
 		return StoreAdapter,NoError
 	case "hw-obs":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
