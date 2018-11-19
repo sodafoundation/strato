@@ -61,7 +61,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 				bucket.Backend = backendName
 				client := getBackendByName(s, backendName)
 				if client == nil {
-					response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
+					response.WriteError(http.StatusInternalServerError, NoSuchType.Error())
 					return
 				}
 			} else {

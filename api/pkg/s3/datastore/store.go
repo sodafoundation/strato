@@ -16,7 +16,6 @@ package datastore
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
@@ -29,26 +28,26 @@ import (
 )
 
 // Init function can perform some initialization work of different datastore.
-func Init(backend *backendpb.BackendDetail) DataStoreAdapter {
+func Init(backend *backendpb.BackendDetail) (DataStoreAdapter,S3Error) {
 	var StoreAdapter DataStoreAdapter
 
 	switch backend.Type {
 	case "azure-blob":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
-		StoreAdapter = azure.Init(backend)
-		return StoreAdapter
+		StoreAdapter = azure.Init(backend) 
+		return StoreAdapter,NoError
 	case "hw-obs":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = hws.Init(backend)
-		return StoreAdapter
+		return StoreAdapter,NoError
 	case "aws-s3":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = aws.Init(backend)
-		return StoreAdapter
+		return StoreAdapter,NoError
 	default:
-		fmt.Printf("Can't find datastore driver %s!\n", backend.Type)
+
 	}
-	return nil
+	return nil,NoSuchType
 }
 
 func Exit(backendType string) {
