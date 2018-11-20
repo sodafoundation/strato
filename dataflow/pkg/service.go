@@ -365,8 +365,6 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 				pl.Filter.Tag = append(pl.Filter.Tag, model.KeyValue{Key: in.Plan.Filter.Tag[j].Key, Value: in.Plan.Filter.Tag[j].Value})
 			}
 		}
-	} else {
-		pl.Filter = model.Filter{Prefix: "/"} //this is default
 	}
 
 	if pl.Name == "" || pl.Type == "" {
@@ -376,7 +374,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 
 	p, err := plan.Create(actx, &pl)
 	if err != nil {
-		log.Logf("Create plan failed, err", err)
+		log.Logf("Create plan failed, err:%v", err)
 		return err
 	}
 

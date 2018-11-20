@@ -16,12 +16,13 @@ package mongo
 
 import (
 	"time"
-
+	"errors"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	"fmt"
 )
 
 var adap = &adapter{}
@@ -42,6 +43,35 @@ type MyLock struct {
 	LockTime time.Time `bson:"locktime"`
 }
 
+func setIndex(session *mgo.Session, colName string, key string, unique bool, dropDups bool, backgroudn bool) {
+	coll := session.DB(DataBaseName).C(colName)
+	log.Logf("Set unique index of %s for %s.\n", key, colName)
+	//Check if index is already set, if not set it.
+	indxs, err := coll.Indexes()
+	if err == nil {
+		for _,indx := range indxs {
+			for _, k := range indx.Key {
+				if k == key {
+					log.Logf("Collection[%s] has set unique index of %s.\n", colName, key)
+					return
+				}
+			}
+		}
+	}
+
+	index := mgo.Index{
+		Key:      []string{key}, //index key
+		Unique:   unique,                //Prevent two documents from having the same index key
+		DropDups: dropDups,               //Drop documents with the same index key as a previously indexed one.
+		// Invalid when Unique equals true.
+		Background: backgroudn, //If Background is true, other connections will be allowed to proceed
+		// using the collection without the index while it's being built.
+	}
+	if err := coll.EnsureIndex(index); err != nil {
+		log.Fatalf("Create unique index of %s for %s faild:%v.\n", key, lockColName, err)
+	}
+}
+
 func Init(host string) *adapter {
 	//log.Log("edps:", deps)
 	session, err := mgo.Dial(host)
@@ -54,23 +84,8 @@ func Init(host string) *adapter {
 	adap.s = session
 	adap.userID = "unknown"
 
-	lockColl := session.DB(DataBaseName).C(lockColName)
-	//Check if index is realdy set.
-	indxs, err := lockColl.Indexes()
-	if err != nil || len(indxs) == 0 {
-		//Set unique index of the collection of lockColName
-		index := mgo.Index{
-			Key:      []string{"lockobj"}, //index key
-			Unique:   true,                //Prevent two documents from having the same index key
-			DropDups: false,               //Drop documents with the same index key as a previously indexed one.
-			// Invalid when Unique equals true.
-			Background: true, //If Background is true, other connections will be allowed to proceed
-			// using the collection without the index while it's being built.
-		}
-		if err := lockColl.EnsureIndex(index); err != nil {
-			log.Fatalf("Create unique index of %s faild:%v.\n", lockColName, err)
-		}
-	}
+	setIndex(session, lockColName, "lockobj", true, false, false)
+	setIndex(session, CollPlan, "name", true, false, false)
 
 	return adap
 }
@@ -343,8 +358,17 @@ func (ad *adapter) CreatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 		return nil, ERR_INNER_ERR
 	}
 
+	//Check if name is duplicate
+	pols := []Policy{}
+	err := c.Find(bson.M{"name": plan.Name}).All(&pols)
+	if err == nil && len(pols) != 0 {
+		errmsg := fmt.Sprintf("Duplicate name:%s", plan.Name)
+		err = errors.New(errmsg)
+		return nil, err
+	}
+
 	//Check if specific connector and policy exist or not
-	err := checkPlanRelateObj(ss, plan)
+	err = checkPlanRelateObj(ss, plan)
 	if err != nil {
 		return nil, err
 	}

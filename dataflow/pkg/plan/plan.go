@@ -331,7 +331,8 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	if err == nil {
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
-		req := datamover.RunJobRequest{Id: job.Id.Hex(), RemainSource: plan.RemainSource}
+		filt := datamover.Filter{Prefix:plan.Filter.Prefix}
+		req := datamover.RunJobRequest{Id: job.Id.Hex(), RemainSource: plan.RemainSource, Filt:&filt}
 		srcConn := datamover.Connector{Type: plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn

@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+	pb "github.com/opensds/multi-cloud/datamover/proto"
 )
 
 type S3Mover struct{
@@ -51,8 +52,7 @@ func (myc *s3Cred) IsExpired() bool {
 }
 
 func (mover *S3Mover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
-	log.Log("UploadObj of s3mover is called.")
-	log.Logf("destLoca.Region=%s, destLoca.EndPoint=%s\n", destLoca.Region, destLoca.EndPoint)
+	log.Logf("[s3mover] UploadObj object, key:%s.", objKey)
 	s3c := s3Cred{ak: destLoca.Access, sk: destLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -61,23 +61,24 @@ func (mover *S3Mover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("New session failed, err:%v\n", err)
+		log.Logf("[s3mover] New session failed, err:%v\n", err)
 		return err
 	}
 
 	reader := bytes.NewReader(buf)
 	uploader := s3manager.NewUploader(sess)
+	log.Logf("[s3mover] Try to upload, bucket:%s,obj:%s\n", destLoca.BucketName, objKey)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(destLoca.BucketName),
 		Key:    aws.String(objKey),
 		Body:   reader,
 	})
 	if err != nil {
-		log.Logf("Upload object to aws failed, err:%v\n", err)
+		log.Logf("[s3mover] Upload object[%s] failed, err:%v\n", objKey, err)
 	} else {
-		log.Log("Upload object to aws succeed.")
+		log.Logf("[s3mover] Upload object[%s] successfully.", objKey)
 	}
-
+	
 	return err
 }
 
@@ -90,7 +91,7 @@ func (mover *S3Mover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byt
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("New session failed, err:%v\n", err)
+		log.Logf("[s3mover] New session failed, err:%v\n", err)
 		return 0, err
 	}
 
@@ -100,12 +101,12 @@ func (mover *S3Mover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byt
 		Bucket:aws.String(srcLoca.BucketName),
 		Key:aws.String(objKey),
 	}
-	log.Logf("Try to download, bucket:%s,obj:%s\n", srcLoca.BucketName, objKey)
+	log.Logf("[s3mover] Try to download, bucket:%s,obj:%s\n", srcLoca.BucketName, objKey)
 	numBytes, err := downLoader.Download(writer, &getObjInput)
 	if err != nil {
-		log.Logf("download object[bucket:%s,key:%s] failed, err:%v\n", srcLoca.BucketName,objKey,err)
+		log.Logf("[s3mover]download object[bucket:%s,key:%s] failed, err:%v\n", srcLoca.BucketName,objKey,err)
 	} else {
-		log.Logf("downlad object[bucket:%s,key:%s] succeed, bytes:%d\n", srcLoca.BucketName,objKey,numBytes)
+		log.Logf("[s3mover]downlad object[bucket:%s,key:%s] succeed, bytes:%d\n", srcLoca.BucketName,objKey,numBytes)
 	}
 
 	return numBytes, err
@@ -130,7 +131,7 @@ func (mover *S3Mover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
 }
 
 func (mover *S3Mover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
-	log.Logf("[s3mover] Download range[%d - %d]...\n", start, end)
+	log.Logf("[s3mover] Download object[%s] range[%d - %d]...\n", objKey, start, end)
 	writer := aws.NewWriteAtBuffer(buf)
 	getObjInput := s3.GetObjectInput{
 		Bucket: aws.String(srcLoca.BucketName),
@@ -140,13 +141,13 @@ func (mover *S3Mover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []b
 	strEnd := strconv.FormatInt(end, 10)
 	rg := "bytes=" + strStart + "-" + strEnd
 	getObjInput.SetRange(rg)
-	log.Logf("range:=%s\n", rg)
+	log.Logf("[s3mover] object:%s, range:=%s\n", objKey, rg)
 	numBytes, err := mover.downloader.Download(writer, &getObjInput)
 
 	if err != nil {
-		log.Logf("[s3mover] Download faild, err:%v\n", err)
+		log.Logf("[s3mover] Download object[%s] range[%d - %d] faild, err:%v\n", objKey, start, end, err)
 	} else {
-		log.Logf("[s3mover] Downlad succeed, bytes:%d\n", numBytes)
+		log.Logf("[s3mover] Download object[%s] range[%d - %d] succeed, bytes:%d\n", objKey, start, end, numBytes)
 	}
 
 	return numBytes, err
@@ -161,7 +162,7 @@ func (mover *S3Mover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) 
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("New session failed, err:%v\n", err)
+		log.Logf("[s3mover] New session failed, err:%v\n", err)
 		return err
 	}
 
@@ -172,10 +173,10 @@ func (mover *S3Mover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) 
 	}
 	resp, err := mover.svc.CreateMultipartUpload(multiUpInput)
 	if err != nil {
-		log.Logf("[s3mover] Init multipart upload failed, err:%v\n", err)
+		log.Logf("[s3mover] Init multipart upload[objkey:%s] failed, err:%v\n", objKey, err)
 		return errors.New("[s3mover] Init multipart upload failed.")
 	} else {
-		log.Logf("[s3mover] Init multipart upload succeed, UploadId:%s\n", *resp.UploadId)
+		log.Logf("[s3mover] Init multipart upload[objkey:%s] succeed, UploadId:%s\n", objKey, *resp.UploadId)
 	}
 
 	//mover.uploadId = *resp.UploadId
@@ -184,8 +185,8 @@ func (mover *S3Mover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) 
 }
 
 func (mover *S3Mover)UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error {
-	log.Logf("[s3mover] Upload range[partnumber#%d,offset#%d,upBytes#%d,uploadid#%s]...\n", partNumber, offset,
-		upBytes, *mover.multiUploadInitOut.UploadId)
+	log.Logf("[s3mover] Upload range[objkey:%s, partnumber#%d,offset#%d,upBytes#%d,uploadid#%s]...\n", objKey, partNumber,
+		offset,	upBytes, *mover.multiUploadInitOut.UploadId)
 	tries := 1
 	upPartInput := &s3.UploadPartInput{
 		Body:          bytes.NewReader(buf),
@@ -200,13 +201,13 @@ func (mover *S3Mover)UploadPart(objKey string, destLoca *LocationInfo, upBytes i
 		upRes, err := mover.svc.UploadPart(upPartInput)
 		if err != nil {
 			if tries == 3 {
-				log.Logf("Upload part to aws failed. err:%v\n", err)
+				log.Logf("[s3mover] Upload part [objkey:%s] failed. err:%v\n", objKey, err)
 				return err
 			}
-			log.Logf("Retrying to upload part#%d\n", partNumber)
+			log.Logf("[s3mover] Retrying to upload [objkey:%s] part#%d\n", objKey, partNumber)
 			tries++
 		} else {
-			log.Logf("[s3mover] Upload range[partnumber#%d,offset#%d] succeed.\n", partNumber, offset)
+			log.Logf("[s3mover] Upload range[objkey:%s, partnumber#%d,offset#%d] successfully.\n", objKey, partNumber, offset)
 			part := s3.CompletedPart{
 				ETag:       upRes.ETag,
 				PartNumber: aws.Int64(partNumber),
@@ -220,7 +221,7 @@ func (mover *S3Mover)UploadPart(objKey string, destLoca *LocationInfo, upBytes i
 }
 
 func (mover *S3Mover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
-	log.Logf("Aborting multipart upload for uploadId#%s.\n", *mover.multiUploadInitOut.UploadId)
+	log.Logf("[s3mover] Aborting multipart upload[objkey:%s] for uploadId#%s.\n", objKey, *mover.multiUploadInitOut.UploadId)
 	abortInput := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(destLoca.BucketName),
 		Key:      aws.String(objKey),
@@ -243,9 +244,9 @@ func (mover *S3Mover)CompleteMultipartUpload(objKey string, destLoca *LocationIn
 
 	rsp, err := mover.svc.CompleteMultipartUpload(completeInput)
 	if err != nil {
-		log.Logf("completeMultipartUploadS3 failed, err:%v\n", err)
+		log.Logf("[s3mover] completeMultipartUploadS3 failed [objkey:%s], err:%v\n", objKey, err)
 	} else {
-		log.Logf("completeMultipartUploadS3 successfully, rsp:%v\n", rsp)
+		log.Logf("[s3mover] completeMultipartUploadS3 successfully [objkey:%s], rsp:%v\n", objKey, rsp)
 	}
 
 	return err
@@ -260,14 +261,14 @@ func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("New session failed, err:%v\n", err)
+		log.Logf("[s3mover] New session failed, err:%v\n", err)
 		return err
 	}
 
 	svc := s3.New(sess)
 	_, err = svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(loca.BucketName), Key: aws.String(objKey)})
 	if err != nil {
-		log.Logf("Unable to delete object[key:%s] from bucket %s, %v\n", objKey, loca.BucketName, err)
+		log.Logf("[s3mover] Unable to delete object[key:%s] from bucket %s, %v\n", objKey, loca.BucketName, err)
 	}
 
 	err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
@@ -275,14 +276,14 @@ func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
 		Key:    aws.String(objKey),
 	})
 	if err != nil {
-		log.Logf("Error occurred while waiting for object[key:%s] to be deleted.\n", objKey)
+		log.Logf("[s3mover] Error occurred while waiting for object[%s] to be deleted.\n", objKey)
 	}
 
-	log.Logf("[s3mover] Object[key:%s] successfully deleted\n", objKey)
+	log.Logf("[s3mover] Delete Object[%s] successfully.\n", objKey)
 	return err
 }
 
-func ListObjs(loca *LocationInfo) ([]*s3.Object, error) {
+func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]*s3.Object, error) {
 	s3c := s3Cred{ak: loca.Access, sk: loca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -297,6 +298,9 @@ func ListObjs(loca *LocationInfo) ([]*s3.Object, error) {
 
 	svc := s3.New(sess)
 	input := &s3.ListObjectsInput{Bucket:aws.String(loca.BucketName)}
+	if filt != nil {
+		input.Prefix = &filt.Prefix
+	}
 	output, e := svc.ListObjects(input)
 	if e != nil {
 		log.Logf("[s3mover] List aws bucket failed, err:%v\n", e)
