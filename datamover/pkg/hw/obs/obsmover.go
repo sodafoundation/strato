@@ -21,6 +21,7 @@ import (
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
+	"errors"
 )
 
 type ObsMover struct{
@@ -39,36 +40,43 @@ func (mover *ObsMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []by
 	input := &obs.GetObjectInput{}
 	input.Bucket = srcLoca.BucketName
 	input.Key = objKey
-	output, err := obsClient.GetObject(input)
-	if err == nil {
-		size = 0
-		defer output.Body.Close()
-		log.Logf("[obsmover] Get objcet[%s], StorageClass:%s, ETag:%s, ContentType:%s, ContentLength:%d, LastModified:%s\n",
-			objKey, output.StorageClass, output.ETag, output.ContentType, output.ContentLength, output.LastModified)
-		var readErr error
-		var readCount int = 0
-		// read object
-		for {
-			s := buf[size:]
-			readCount, readErr = output.Body.Read(s)
-			//log.Logf("readCount=%d, readErr=%v\n", readCount, readErr)
-			if readCount > 0 {
-				size += int64(readCount)
+	size = 0
+	for tries := 1; tries <= 3; tries++ {
+		output, err := obsClient.GetObject(input)
+		if err != nil {
+			log.Logf("[obsmover] Download object[%s] failed %d times, err:%v", objKey, tries, err)
+			if tries == 3 {
+				return 0, err
 			}
-			if readErr != nil {
-				log.Logf("[obsmover] readErr for object[%s] is:%v\n", objKey, readErr)
-				break
+		} else {
+			size = 0
+			defer output.Body.Close()
+			log.Logf("[obsmover] Get objcet[%s], StorageClass:%s, ETag:%s, ContentType:%s, ContentLength:%d, LastModified:%s\n",
+				objKey, output.StorageClass, output.ETag, output.ContentType, output.ContentLength, output.LastModified)
+			var readErr error
+			var readCount int = 0
+			// read object
+			for {
+				s := buf[size:]
+				readCount, readErr = output.Body.Read(s)
+				//log.Logf("readCount=%d, readErr=%v\n", readCount, readErr)
+				if readCount > 0 {
+					size += int64(readCount)
+				}
+				if readErr != nil {
+					log.Logf("[obsmover] readErr for object[%s] is:%v\n", objKey, readErr)
+					break
+				}
 			}
+			if readErr == io.EOF {
+				readErr = nil
+			}
+			log.Logf("[obsmover] Download object[%s] successfully.", objKey)
+			return size, readErr
 		}
-		if readErr == io.EOF {
-			readErr = nil
-		}
-		log.Logf("[obsmover] Download object[%s] successfully.", objKey)
-		return size, readErr
-	} else if obsError, ok := err.(obs.ObsError); ok {
-		log.Logf("[obsmover] Download object[%s] failed, code:%s,message:%s", objKey, obsError.Code, obsError.Message)
-		return 0, err
 	}
+
+	log.Logf("[obsmover] Download object[%s], should not be here.", objKey)
 	return
 }
 
@@ -84,15 +92,22 @@ func (mover *ObsMover)UploadObj(objKey string, destLoca *LocationInfo, buf []byt
 	input.Bucket = destLoca.BucketName
 	input.Key = objKey
 	input.Body = bytes.NewReader(buf)
-	output, err := obsClient.PutObject(input)
-	if err != nil {
-		log.Logf("[obsmover] Put object[%s] to obs failed, err: %v\n", objKey, err)
-	} else {
-		log.Logf("[obsmover] Put object[%s] to obs successfully, RequestId:%s, ETag:%s\n",
-			objKey, output.RequestId, output.ETag)
+	for tries := 1; tries <= 3; tries++ {
+		output, err := obsClient.PutObject(input)
+		if err != nil {
+			log.Logf("[obsmover] Put object[%s] failed %d times, err: %v\n", objKey, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[obsmover] Put object[%s] successfully, RequestId:%s, ETag:%s\n",
+				objKey, output.RequestId, output.ETag)
+			return nil
+		}
 	}
 
-	return err
+	log.Logf("[obsmover] Put object[%s], should not be here.\n", objKey)
+	return nil
 }
 
 func (mover *ObsMover)DeleteObj(objKey string, loca *LocationInfo) error {
@@ -106,16 +121,23 @@ func (mover *ObsMover)DeleteObj(objKey string, loca *LocationInfo) error {
 	input := &obs.DeleteObjectInput{}
 	input.Bucket = loca.BucketName
 	input.Key = objKey
-
-	output, err := obsClient.DeleteObject(input)
-	if err == nil {
-		log.Logf("[obsmover] Delete object[objKey:%s] in storage backend successfully, RequestId:%s\n",
-			objKey, output.RequestId)
-	} else {
-		log.Logf("[obsmover] Delete object[objKey:%s] in storage backend failed, err:%v\n", objKey, err)
+	log.Logf("[obsmover] Try to Delete object[objKey:%s].", objKey)
+	for tries := 1; tries <= 3; tries++ {
+		output, err := obsClient.DeleteObject(input)
+		if err != nil {
+			log.Logf("[obsmover] Delete object[objKey:%s] in storage backend failed %d times, err:%v\n",
+				objKey, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[obsmover] Delete object[objKey:%s] in storage backend successfully, RequestId:%s\n",
+				objKey, output.RequestId)
+			return nil
+		}
 	}
-
-	return err
+	log.Logf("[obsmover] Delete object[objKey:%s] in storage backend, should not be here.\n", objKey)
+	return errors.New("Internal error")
 }
 
 func (mover *ObsMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
@@ -128,42 +150,45 @@ func (mover *ObsMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
 }
 
 func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
-	log.Logf("[obsmover] Download object[%s] range[%d - %d]...\n", objKey, start, end)
 	input := &obs.GetObjectInput{}
 	input.Bucket = srcLoca.BucketName
 	input.Key = objKey
 	input.RangeStart = start
 	input.RangeEnd = end
-	log.Logf("[obsmover] Try to download object[%s] start:%d, end:%d\n", objKey, start, end)
-
-	//obsClient,_ := obs.New(srcLoca.Access, srcLoca.Security, srcLoca.EndPoint)
-	output, err := mover.obsClient.GetObject(input)
-	if err != nil {
-		log.Logf("[obsmover] GetObject[%s] failed, err:%v\n", objKey, err)
-		return 0,err
-	}
-	defer output.Body.Close()
-
-	readCount := 0
-	var readErr error
-	for {
-		var rc int
-		rc, readErr = output.Body.Read(buf)
-		if rc > 0 {
-			readCount += rc
+	log.Logf("[obsmover] Try to download object[%s] range[%d - %d]...\n", objKey, start, end)
+	for tries := 1; tries <= 3; tries++ {
+		output, err := mover.obsClient.GetObject(input)
+		if err != nil {
+			log.Logf("[obsmover] Download object[%s] range[%d - %d] failed %d times.\n",
+				objKey, start, end, tries)
+			if tries == 3 {
+				return 0,err
+			}
+		} else {
+			defer output.Body.Close()
+			readCount := 0
+			var readErr error
+			for {
+				var rc int
+				rc, readErr = output.Body.Read(buf)
+				if rc > 0 {
+					readCount += rc
+				}
+				if readErr != nil {
+					break
+				}
+			}
+			if readErr != nil && readErr != io.EOF{
+				log.Logf("[obsmover] Body.read for object[%s] failed, err:%v\n", objKey, err)
+				return 0,readErr
+			}
+			log.Logf("[obsmover] Download object[%s] range[%d - %d] successfully, readCount=%d.\n", objKey, start, end, readCount)
+			return int64(readCount), nil
 		}
-		if readErr != nil {
-			break
-		}
-	}
-	if readErr != nil && readErr != io.EOF{
-		log.Logf("[obsmover] Body.read for object[%s] failed, err:%v\n", objKey, err)
-		return 0,readErr
 	}
 
-	//log.Logf("Download readCount=%d\nbuf:%s\n", readCount,buf[:readCount])
-	log.Logf("[obsmover] Download object[%s] range[%d - %d] successfully, readCount=%d.\n", objKey, start, end, readCount)
-	return int64(readCount), nil
+	log.Logf("[obsmover] Download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
+	return 0,errors.New("Internal error")
 }
 
 func (mover *ObsMover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) error{
@@ -176,18 +201,27 @@ func (mover *ObsMover)MultiPartUploadInit(objKey string, destLoca *LocationInfo)
 		log.Logf("[obsmover] Create obsclient failed in MultiPartUploadInit[obj:%s], err:%v\n", objKey, err)
 		return err
 	}
-	mover.multiUploadInitOut,err = mover.obsClient.InitiateMultipartUpload(input)
-	if err != nil {
-		log.Logf("[obsmover] InitiateMultipartUpload[obj:%s] failed, err:%v\n", objKey, err)
-		return err
+	log.Logf("[obsmover] Try to InitiateMultipartUpload [objkey:%s].\n", objKey)
+	for tries := 1; tries <= 3; tries++ {
+		mover.multiUploadInitOut,err = mover.obsClient.InitiateMultipartUpload(input)
+		if err != nil {
+			log.Logf("[obsmover] InitiateMultipartUpload [objkey:%s] failed %d times. err:%v\n", objKey, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[obsmover] Initiate multipart upload [objkey:%s] successfully.\n", objKey)
+			return nil
+		}
 	}
 
-	return nil
+	log.Logf("[obsmover] Initiate multipart upload [objkey:%s], should not be here.\n", objKey)
+	return errors.New("Internal error")
 }
 
 func (mover *ObsMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64,
 	offset int64) error {
-	log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d]...\n", objKey, partNumber, offset)
+	log.Logf("[obsmover] Try to upload object[%s] range[partnumber#%d,offset#%d]...\n", objKey, partNumber, offset)
 	uploadPartInput := &obs.UploadPartInput{}
 	uploadPartInput.Bucket = destLoca.BucketName
 	uploadPartInput.Key = objKey
@@ -196,60 +230,80 @@ func (mover *ObsMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes 
 	uploadPartInput.PartNumber = int(partNumber)
 	uploadPartInput.Offset = offset
 	uploadPartInput.PartSize = upBytes
-	tries := 1
-	for tries <= 3 {
+	for tries := 1; tries <= 3; tries++ {
 		uploadPartInputOutput, err := mover.obsClient.UploadPart(uploadPartInput)
 		if err != nil {
+			log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d] failed %d times. err:%v\n",
+				objKey, partNumber, offset, tries, err)
 			if tries == 3 {
-				log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d] failed. err:%v\n",
-					objKey, partNumber, offset, err)
 				return err
 			}
-			log.Logf("[obsmover] Retrying to upload object[%s] part#%d\n", objKey, partNumber)
-			tries++
 		}else {
 			log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d] successfully, size:%d\n",
 				objKey, partNumber, offset, upBytes)
 			mover.completeParts = append(mover.completeParts, obs.Part{
 				ETag: uploadPartInputOutput.ETag,
 				PartNumber: uploadPartInputOutput.PartNumber})
-			break
+			return nil
 		}
 	}
 
-	return nil
+	log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d], should not be here.\n",
+		objKey, partNumber, offset)
+	return errors.New("internal error")
 }
 
-func (mover *ObsMover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
+func (mover *ObsMover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) (err error) {
 	input := &obs.AbortMultipartUploadInput{}
 	input.Bucket = destLoca.BucketName
 	input.Key = objKey
 	input.UploadId = mover.multiUploadInitOut.UploadId
-
-	_, err := mover.obsClient.AbortMultipartUpload(input)
-	log.Logf("[obsmover] Abort multipartupload finish, objkey:%s, uploadId:%s, err:%v\n",
-		objKey, mover.multiUploadInitOut.UploadId, err)
-
-	return err
+	log.Logf("[obsmover] Try to abort multipartupload, objkey:%s, uploadId:%s.\n",
+		objKey, mover.multiUploadInitOut.UploadId)
+	for tries := 1; tries <= 3; tries++ {
+		_, err = mover.obsClient.AbortMultipartUpload(input)
+		if err != nil {
+			log.Logf("[obsmover] Abort multipartupload failed %d times, objkey:%s, uploadId:%s, err:%v\n",
+				tries, objKey, mover.multiUploadInitOut.UploadId, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[obsmover] Abort multipartupload successfully, objkey:%s, uploadId:%s.\n",
+				objKey, mover.multiUploadInitOut.UploadId)
+			return nil
+		}
+	}
+	log.Logf("[obsmover] Abort multipartupload objkey:%s, uploadId:%s, should not be here.\n",
+		objKey, mover.multiUploadInitOut.UploadId)
+	return errors.New("internal error")
 }
 
-func (mover *ObsMover)CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error {
+func (mover *ObsMover)CompleteMultipartUpload(objKey string, destLoca *LocationInfo) (err error) {
 	completeMultipartUploadInput := &obs.CompleteMultipartUploadInput{}
 	completeMultipartUploadInput.Bucket = destLoca.BucketName
 	completeMultipartUploadInput.Key = objKey
 	completeMultipartUploadInput.UploadId = mover.multiUploadInitOut.UploadId
 	completeMultipartUploadInput.Parts = mover.completeParts
-	_, err := mover.obsClient.CompleteMultipartUpload(completeMultipartUploadInput)
-	if err != nil {
-		//panic(err)
-		log.Logf("[obsmover] CompleteMultipartUpload for object[%s] failed, err:%v\n", objKey, err)
-	}else {
-		log.Logf("[obsmover] CompleteMultipartUpload for object[%s] successfully", objKey)
+	log.Logf("[obsmover] Try to CompleteMultipartUpload for object[%s].", objKey)
+	for tries := 1; tries <= 3; tries++ {
+		_, err = mover.obsClient.CompleteMultipartUpload(completeMultipartUploadInput)
+		if err != nil {
+			log.Logf("[obsmover] CompleteMultipartUpload for object[%s] failed %d times, err:%v\n", objKey, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[obsmover] CompleteMultipartUpload for object[%s] successfully", objKey)
+			return nil
+		}
 	}
 
-	return err
+	log.Logf("[obsmover] CompleteMultipartUpload for object[%s], should not be here", objKey)
+	return errors.New("internal error")
 }
 
+//TODO: Need to support list object page by page
 func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]obs.Content, error) {
 	obsClient,_ := obs.New(loca.Access, loca.Security, loca.EndPoint)
 	input := &obs.ListObjectsInput{
