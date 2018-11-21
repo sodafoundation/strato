@@ -68,31 +68,39 @@ func (mover *BlobMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []b
 	log.Logf("[blobmover] Try to download, bucket:%s,obj:%s\n", srcLoca.BucketName, objKey)
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlockBlobURL(objKey)
-	downloadResp, err := blobURL.Download(ctx, 0, azblob.CountToEnd, azblob.BlobAccessConditions{},
-	false)
-	if err != nil {
-		log.Logf("[blobmover] Download object[%s] faild:%v\n", objKey, err)
-		return 0, err
-	}
-	size = 0
-	var readErr error
-	var readCount int = 0
-	for {
-		s := buf[size:]
-		readCount, readErr = downloadResp.Response().Body.Read(s)
-		if readCount > 0 {
-			size += int64(readCount)
+	for tries := 1; tries <= 3; tries++ {
+		downloadResp, err := blobURL.Download(ctx, 0, azblob.CountToEnd, azblob.BlobAccessConditions{},
+			false)
+		if err != nil {
+			log.Logf("[blobmover] Download object[%s] faild %d times, err:%v\n", objKey, tries, err)
+			if tries == 3 {
+				return 0, err
+			}
+		} else {
+			size = 0
+			var readErr error
+			var readCount int = 0
+			for {
+				s := buf[size:]
+				readCount, readErr = downloadResp.Response().Body.Read(s)
+				if readCount > 0 {
+					size += int64(readCount)
+				}
+				if readErr != nil {
+					log.Logf("[blobmover] readErr[objkey:%s]=%v\n", objKey, readErr)
+					break
+				}
+			}
+			if readErr == io.EOF {
+				readErr = nil
+			}
+			log.Logf("[blobmover] Download object[%s] successfully.", objKey)
+			return size, readErr
 		}
-		if readErr != nil {
-			log.Logf("[blobmover] readErr[objkey:%s]=%v\n", objKey, readErr)
-			break
-		}
 	}
-	if readErr == io.EOF {
-		readErr = nil
-	}
-	log.Logf("[blobmover] Download object[%s] successfully.", objKey)
-	return size, readErr
+
+	log.Logf("[blobmover] Download object[%s], should not be here.", objKey)
+	return 0, errors.New("internal error")
 }
 
 func (mover *BlobMover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
@@ -103,20 +111,28 @@ func (mover *BlobMover)UploadObj(objKey string, destLoca *LocationInfo, buf []by
 
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlockBlobURL(objKey)
-	uploadResp, err := blobURL.Upload(ctx, bytes.NewReader(buf), azblob.BlobHTTPHeaders{}, nil,
-		azblob.BlobAccessConditions{})
-	if err != nil {
-		log.Logf("[blobmover] Upload object[%s] faild:%v\n", objKey, err)
-		return err
+	log.Logf("[blobmover] Try to upload object[%s].", objKey)
+	for tries := 1; tries <= 3; tries++ {
+		uploadResp, err := blobURL.Upload(ctx, bytes.NewReader(buf), azblob.BlobHTTPHeaders{}, nil,
+			azblob.BlobAccessConditions{})
+		if err != nil {
+			log.Logf("[blobmover] Upload object[%s] faild %d times, err:%v\n", objKey, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else if uploadResp.StatusCode() != HTTP_CREATED {
+			log.Logf("[blobmover] Upload object[%s] StatusCode:%d\n", objKey, uploadResp.StatusCode())
+			if tries == 3 {
+				return errors.New("Upload failed")
+			}
+		} else {
+			log.Logf("[blobmover] Upload object[%s] successfully.", objKey)
+			return nil
+		}
 	}
 
-	if uploadResp.StatusCode() != HTTP_CREATED {
-		log.Logf("[blobmover] Upload object[%s] StatusCode:%d\n", objKey, uploadResp.StatusCode())
-		return errors.New("Upload failed")
-	}
-
-	log.Logf("[blobmover] Upload object[%s] successfully.", objKey)
-	return nil
+	log.Logf("[blobmover] Upload object[%s], should not be here.", objKey)
+	return errors.New("internal error")
 }
 
 func (mover *BlobMover)DeleteObj(objKey string, loca *LocationInfo) error {
@@ -127,19 +143,27 @@ func (mover *BlobMover)DeleteObj(objKey string, loca *LocationInfo) error {
 
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlockBlobURL(objKey)
-
-	delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
-	if err != nil {
-		log.Logf("[blobmover] Delete object[%s] failed:%v\n", objKey, err)
-		return err
+	log.Logf("[blobmover] Try to delete object[%s].", objKey)
+	for tries := 1; tries <= 3; tries++ {
+		delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
+		if err != nil {
+			log.Logf("[blobmover] Delete object[%s] faild %d times, err:%v\n", objKey, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else if delRsp.StatusCode() != HTTP_OK {
+			log.Logf("[blobmover] Delete object[%s] StatusCode:%d\n", objKey, delRsp.StatusCode())
+			if tries == 3 {
+				return errors.New("Delete failed")
+			}
+		} else {
+			log.Logf("[blobmover] Delete object[%s] successfully.", objKey)
+			return nil
+		}
 	}
 
-	if delRsp.StatusCode() != HTTP_OK {
-		log.Logf("[blobmover] Delete object[%s] failed, status code:%d\n", objKey, delRsp.StatusCode())
-		return errors.New("Delete failed.")
-	}
-
-	return nil
+	log.Logf("[blobmover] Delete object[%s], should not be here.", objKey)
+	return errors.New("internal error")
 }
 
 func (mover *BlobMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
@@ -150,19 +174,27 @@ func (mover *BlobMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
 
 func (mover *BlobMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64,
 	err error) {
-	log.Logf("[blobmover] Download object[%s] range[%d - %d]...\n", objKey, start, end)
+	log.Logf("[blobmover] Try to download object[%s] range[%d - %d]...\n", objKey, start, end)
 
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlobURL(objKey)
 	count := end - start + 1
-	err = azblob.DownloadBlobToBuffer(ctx, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
-	if err != nil {
-		log.Logf("[blobomver] Donwload object[%s] to buffer failed:%v\n", objKey, err)
-		return 0,err
-	}
-	log.Logf("[blobmover] Download object[%s] range[%d - %d] succeed.\n", objKey, start, end)
 
-	return count,nil
+	for tries := 1; tries <= 3; tries++ {
+		err = azblob.DownloadBlobToBuffer(ctx, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
+		if err != nil {
+			log.Logf("[blobomver] Donwload object[%s] to buffer failed %d times, err:%v\n", objKey, tries, err)
+			if tries == 3 {
+				return 0,err
+			}
+		} else {
+			log.Logf("[blobmover] Download object[%s] range[%d - %d] successfully.\n", objKey, start, end)
+			return count, nil
+		}
+	}
+
+	log.Logf("[blobmover] Download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
+	return 0,errors.New("internal error")
 }
 
 func (mover *BlobMover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) error {
@@ -189,21 +221,30 @@ func (mover *BlobMover)Base64ToInt64(base64ID string) int64 {
 
 func (mover *BlobMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64,
 	offset int64) error {
-	log.Logf("[blobmover] Upload object[%s] range[partnumber#%d,offset#%d]...\n", objKey, partNumber, offset)
+	log.Logf("[blobmover] Try to upload object[%s] range[partnumber#%d,offset#%d]...\n", objKey, partNumber, offset)
 	//TODO: Consider that "A blob can have up to 100,000 uncommitted blocks, but their total size cannot exceed 200,000 MB."
 
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlockBlobURL(objKey)
 	base64ID := mover.Int64ToBase64(partNumber)
-	_, err := blobURL.StageBlock(ctx, base64ID, bytes.NewReader(buf), azblob.LeaseAccessConditions{}, nil)
-	if err != nil {
-		log.Logf("[blobmover] Stage object[%s] block[#%d,base64ID:%s] failed:%v\n", objKey, partNumber, base64ID, err)
-		return err
+	for tries := 1; tries <= 3; tries++ {
+		_, err := blobURL.StageBlock(ctx, base64ID, bytes.NewReader(buf), azblob.LeaseAccessConditions{}, nil)
+		if err != nil {
+			log.Logf("[blobmover] Upload object[objkey:%s] part[%d] failed %d times. err:%v\n", objKey, partNumber, tries, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[blobmover] Upload range[objkey:%s, partnumber#%d, base64ID#%d] successfully.\n",
+				objKey, partNumber, base64ID)
+			mover.completeParts = append(mover.completeParts, base64ID)
+			return nil
+		}
 	}
-	mover.completeParts = append(mover.completeParts, base64ID)
-	log.Logf("[blobmover] Stage object[%s] block[#%d,base64ID:%s] succeed.\n", objKey, partNumber, base64ID)
 
-	return nil
+	log.Logf("[blobmover] Upload range[objkey:%s, partnumber#%d, base64ID#%d], should not be here.\n",
+		objKey, partNumber, base64ID)
+	return errors.New("internal error")
 }
 
 func (mover *BlobMover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
@@ -216,11 +257,22 @@ func (mover *BlobMover)CompleteMultipartUpload(objKey string, destLoca *Location
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlockBlobURL(objKey)
 
-	_, err := blobURL.CommitBlockList(ctx, mover.completeParts, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{})
-	if err != nil {
-		log.Logf("[blobmover] Commit blocks of object[%s] faild:%v\n", objKey, err)
+	log.Logf("[blobmover] Try to CompleteMultipartUpload of object[%s].\n", objKey)
+	for tries := 1; tries <= 3; tries++ {
+		_, err := blobURL.CommitBlockList(ctx, mover.completeParts, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{})
+		if err != nil {
+			log.Logf("[blobmover] CompleteMultipartUpload of object[%s] failed:%v\n", objKey, err)
+			if tries == 3 {
+				return err
+			}
+		} else {
+			log.Logf("[blobmover] CompleteMultipartUpload of object[%s] successfully.\n", objKey)
+			return nil
+		}
 	}
-	return nil
+
+	log.Logf("[blobmover] CompleteMultipartUpload of object[%s], should not be here.\n", objKey)
+	return errors.New("internal error")
 }
 
 func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]azblob.BlobItem, error) {
