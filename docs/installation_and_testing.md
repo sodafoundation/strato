@@ -95,7 +95,7 @@ d86ebaed8203        mongo                             "docker-entrypoint.s…"  
 #Request
 curl -H "Content-type: application/json" -X POST -d '
 {
-    "type": "aws", 
+    "type": "aws-s3", 
     "endpoint": "s3.amazonaws.com", 
     "name": "awss3", 
     "region": "ap-northeast-1", 
@@ -109,7 +109,7 @@ curl -H "Content-type: application/json" -X POST -d '
 {
  "id": "5bd94a83d84b8000014a1309",
  "name": "awss3",
- "type": "aws",
+ "type": "aws-s3",
  "region": "ap-northeast-1",
  "endpoint": "s3.amazonaws.com",
  "bucketName": "wbtestbuckt",
