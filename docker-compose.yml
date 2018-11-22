@@ -66,6 +66,7 @@ services:
       MICRO_REGISTRY: "mdns"
       DB_HOST: "datastore:27017"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      PARTSIZE: "16"
     depends_on:
       - zookeeper
       - kafka

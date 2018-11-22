@@ -20,8 +20,8 @@ var (
 	HTTP_CREATED = 201
 )
 
-//TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
-var MaxTimeForSingleHttpRequest = 50 * time.Minute
+//TryTimeout indicates the maximum time allowed for any single try of an HTTP request. 60 seconds per MB as default.
+var MaxTimeForSingleHttpRequest = 16 * time.Minute
 
 type BlobMover struct {
 	containerURL azblob.ContainerURL
