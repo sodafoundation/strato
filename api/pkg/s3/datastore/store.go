@@ -45,7 +45,7 @@ func Init(backend *backendpb.BackendDetail) (DataStoreAdapter,S3Error) {
 		StoreAdapter = aws.Init(backend)
 		return StoreAdapter,NoError
 	default:
-
+		return nil,NoSuchType
 	}
 	return nil,NoSuchType
 }

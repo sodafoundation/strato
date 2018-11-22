@@ -6,7 +6,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/emicklei/go-restful"
@@ -25,7 +24,6 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
-	log.Logf("enter the muList.Lock()")
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	lastModified := time.Now().String()[:19]
@@ -66,8 +64,9 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	timestamp := time.Now().Unix()
 	partion.LastModified = timestamp
 	partion.Key = objectKey
-	log.Logf("objectMD.Size = %v", objectMD.Size)
-	atomic.AddInt64(&objectMD.Size, size)
+	log.Logf("objectMD.Size1 = %v", objectMD.Size)
+	objectMD.Size = objectMD.Size + size
+	log.Logf("objectMD.Size2 = %v", objectMD.Size)
 	objectMD.LastModified = lastModified
 	objectMD.Partions = append(objectMD.Partions, &partion)
 	//insert metadata

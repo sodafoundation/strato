@@ -41,8 +41,22 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		index := strings.Index(rangestr, "-")
 		startstr := string([]rune(rangestr)[6:index])
 		endstr := string([]rune(rangestr)[index+1:])
-		start, _ = strconv.Atoi(startstr)
-		end, _ = strconv.Atoi(endstr)
+		start1, err1 := strconv.Atoi(startstr)
+		if err1 == nil {
+			start = start1
+		} else {
+			log.Logf("the Range format is error")
+			response.WriteError(http.StatusInternalServerError, FormatError.Error())
+			return
+		}
+		end1, err2 := strconv.Atoi(endstr)
+		if err2 == nil {
+			end = end1
+		} else {
+			log.Logf("the Range format is error")
+			response.WriteError(http.StatusInternalServerError, FormatError.Error())
+			return
+		}
 	}
 	log.Logf("Received request for create bucket: %s", bucketName)
 	object := s3.Object{}

@@ -39,3 +39,4 @@ var BucketAlreadyExists = S3Error{Code: 409, Description: "The requested bucket 
 
 var NoSuchBackend = S3Error{Code: 404, Description: "The specified backend does not exists."}
 var NoSuchType = S3Error{Code: 404, Description: "The specified backend type does not exists."}
+var FormatError = S3Error{Code: 404, Description: "The parameter format does not right."}
