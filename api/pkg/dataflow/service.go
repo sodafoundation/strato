@@ -420,7 +420,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	if !policy.Authorize(request, response, "job:list") {
 		return
 	}
-	log.Log("Received request for list jobs.")
+	log.Logf("Received request for list jobs:%v.\n", request)
 
 	listJobReq := &dataflow.ListJobRequest{}
 	limit, offset, err := common.GetPaginationParam(request)
@@ -441,12 +441,14 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	listJobReq.SortKeys = sortKeys
 	listJobReq.SortDirs = sortDirs
 
-	filterOpts := []string{"planname", "type"}
+	filterOpts := []string{"planName", "type"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
 		log.Logf("Get filter failed: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
+	} else {
+		log.Logf("Get filter for list job: %v", filter)
 	}
 	listJobReq.Filter = filter
 

@@ -24,8 +24,7 @@ import (
 )
 
 var simuRoutines = 10
-var ObjSizeLimit int64 = 50 * 1024 * 1024 //The max object size that can be moved directly
-var PART_SIZE int64 = 50 * 1024 * 1024
+var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved directly, default is 16M.
 var JOB_RUN_TIME_MAX = 86400 //seconds
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
@@ -172,7 +171,6 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 		return err
 	}
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
-	logger.Printf("buf.len:%d\n", len(buf))
 
 	//upload
 	uploadObjKey := obj.ObjectKey
@@ -341,8 +339,6 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	err = completeMultipartUpload(uploadObjKey, destLoca, uploadMover)
 	if err != nil {
 		logger.Println(err.Error())
-	}else {
-		logger.Println("Move successfully.")
 	}
 
 	return err
@@ -423,8 +419,16 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 
 	if needMove {
 		//move object
-		var err error
-		if obj.Size < ObjSizeLimit {
+		part_size, err := strconv.ParseInt(os.Getenv("PARTSIZE"), 10, 64)
+		logger.Printf("part_size=%d, err=%v.\n", part_size, err)
+		if err == nil {
+			//part_size must be more than 4M and less than 100M
+			if part_size >= 4 && part_size <= 100 {
+				PART_SIZE = part_size * 1024 * 1024
+				logger.Printf("Set PART_SIZE to be %d.\n", PART_SIZE)
+			}
+		}
+		if obj.Size < PART_SIZE {
 			err = moveObj(obj, newSrcLoca, destLoca)
 		}else {
 			err = multipartMoveObj(obj, newSrcLoca, destLoca)
