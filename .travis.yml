@@ -1,0 +1,32 @@
+dist: trusty
+sudo: required
+group: deprecated-2017Q4
+
+language: go
+go_import_path: github.com/opensds/multi-cloud
+
+go:
+  - 1.11.x
+  - tip
+
+env:
+  matrix:
+  - TARGET=amd64
+  global:
+  - secure: "IhEskTMEAsBNYTQCpDSlvDxIJK5cu1r2V"
+
+before_install:
+  - sudo apt-get update
+
+matrix:
+  fast_finish: true
+  allow_failures:
+  - go: tip
+
+install:
+  # Build OpenSDS multi-cloud source code
+  - make all
+
+after_success:
+  # Clean OpenSDS multi-cloud built data
+  - make clean
