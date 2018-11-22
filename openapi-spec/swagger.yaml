@@ -1,30 +1,14 @@
-# Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 openapi: 3.0.0
 servers:
-# Added by API Auto Mocking Plugin
   - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/open83/multi-cloud/1.0.0
+    url: 'https://virtserver.swaggerhub.com/open83/multi-cloud/1.0.0'
   - url: 'http://virtserver.swaggerhub.com/opensds.io/OpenSDS-Multi-Cloud/1.0.0'
-
 info:
   description: |
     OpenSDS Multi-cloud API to manage multi-cloud backend storages.
     You can find out more about Swagger at 
     [https://www.opensds.io](https://www.opensds.io) 
-  version: "1.0.0"
+  version: 1.0.0
   title: OpenSDS Multi-Cloud API
   termsOfService: '://www.linuxfoundation.org/terms'
   contact:
@@ -54,14 +38,18 @@ tags:
     description: Migration job
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'      
+      url: 'https://opensds.io'
   - name: policy
     description: Schedule policy of plan.
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io' 
-
-paths: 
+      url: 'https://opensds.io'
+  - name: s3
+    description: s3 interface of multi-cloud
+    externalDocs:
+      description: Find out more
+      url: 'https://opensds.io'
+paths:
   '/v1/{tenantId}/backends':
     parameters:
       - name: tenantId
@@ -95,7 +83,10 @@ paths:
           description: Filter the backend by backend type.
           schema:
             type: string
-            enum: ["hw-obs", "aws-s3", "azure-blob"]
+            enum:
+              - hw-obs
+              - aws-s3
+              - azure-blob
         - name: name
           in: query
           description: Filter the backend by name.
@@ -109,8 +100,6 @@ paths:
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/sort'
-        
-
       responses:
         '200':
           description: successful operation.
@@ -156,19 +145,18 @@ paths:
       summary: Deletes a backend.
       operationId: deleteBackend
       responses:
-        '400':
-          description: Invalid ID supplied
         '200':
           description: Delete success
-          
+        '400':
+          description: Invalid ID supplied
   '/v1/{tenantId}/backends/{backendId}':
     parameters:
-    - name: tenantId
-      in: path
-      description: The tenantId UUID in a multi-tenancy environment.
-      required: true
-      schema:
-        type: string
+      - name: tenantId
+        in: path
+        description: The tenantId UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - backend
@@ -225,7 +213,6 @@ paths:
                   next:
                     type: integer
                     example: 1
-                    
   '/v1/{tenantId}/plans':
     parameters:
       - name: tenantId
@@ -256,10 +243,13 @@ paths:
       parameters:
         - name: type
           in: query
-          description: Filter the plans by plan type. Only migration support currently. New type will be added in the future.
+          description: >-
+            Filter the plans by plan type. Only migration support currently. New
+            type will be added in the future.
           schema:
             type: string
-            enum: ["migration"]
+            enum:
+              - migration
         - name: name
           in: query
           description: Filter the plan by name.
@@ -268,7 +258,6 @@ paths:
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/sort'
-        
       responses:
         '200':
           description: successful operation.
@@ -284,7 +273,6 @@ paths:
                   next:
                     type: integer
                     example: 1
-                    
   '/v1/{tenantId}/plans/{planId}':
     parameters:
       - name: tenantId
@@ -292,7 +280,7 @@ paths:
         description: The tenant UUID in a multi-tenancy environment.
         required: true
         schema:
-          type: string 
+          type: string
       - name: planId
         in: path
         description: The plan ID
@@ -304,12 +292,12 @@ paths:
         - plan
       summary: Get a plan.
       operationId: getPlan
-      responses:    
+      responses:
         '200':
           content:
             application/json:
-              schema:        
-                $ref: '#/components/schemas/Plan' 
+              schema:
+                $ref: '#/components/schemas/Plan'
           description: successful operation.
         '400':
           description: Bad Request
@@ -339,21 +327,20 @@ paths:
       summary: Delete a plan.
       operationId: deletePlan
       responses:
-        '400':
-          description: Invalid ID supplied
         '200':
           description: Delete success
+        '400':
+          description: Invalid ID supplied
     post:
       tags:
         - plan
       summary: Run a plan.
       operationId: runPlan
       responses:
+        '200':
+          description: Run success
         '400':
           description: Invalid ID supplied
-        '200':
-          description: Run success  
-          
   '/v1/{tenantId}/jobs':
     parameters:
       - name: tenantId
@@ -370,14 +357,16 @@ paths:
       parameters:
         - name: type
           in: query
-          description: Filter the jobs by job type. Only migration support currently. New type will be added in the future.
+          description: >-
+            Filter the jobs by job type. Only migration support currently. New
+            type will be added in the future.
           schema:
             type: string
-            enum: ["migration"]
+            enum:
+              - migration
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/sort'
-        
       responses:
         '200':
           description: successful operation.
@@ -393,7 +382,6 @@ paths:
                   next:
                     type: integer
                     example: 1
-                    
   '/v1/{tenantId}/jobs/{jobId}':
     parameters:
       - name: tenantId
@@ -401,25 +389,24 @@ paths:
         description: The tenant UUID in a multi-tenancy environment.
         required: true
         schema:
-          type: string 
+          type: string
       - name: jobId
         in: path
         description: The job ID
         required: true
         schema:
           type: string
-          
     get:
       tags:
         - job
       summary: Get a job.
       operationId: getJob
-      responses:    
+      responses:
         '200':
           content:
             application/json:
-              schema:        
-                $ref: '#/components/schemas/Job' 
+              schema:
+                $ref: '#/components/schemas/Job'
           description: successful operation.
         '400':
           description: Bad Request
@@ -429,7 +416,6 @@ paths:
           description: Forbidden
         '404':
           description: The resource does not exist.
- 
   '/v1/{tenantId}/policies':
     parameters:
       - name: tenantId
@@ -461,7 +447,6 @@ paths:
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/sort'
-        
       responses:
         '200':
           description: successful operation.
@@ -477,15 +462,14 @@ paths:
                   next:
                     type: integer
                     example: 1
-                    
-  '/v1/{tenantId}/plans/{policyId}': 
+  '/v1/{tenantId}/plans/{policyId}':
     parameters:
       - name: tenantId
         in: path
         description: The tenant UUID in a multi-tenancy environment.
         required: true
         schema:
-          type: string 
+          type: string
       - name: policyId
         in: path
         description: The policy ID
@@ -497,12 +481,12 @@ paths:
         - policy
       summary: Get a policy.
       operationId: getPolicy
-      responses:    
+      responses:
         '200':
           content:
             application/json:
-              schema:        
-                $ref: '#/components/schemas/Policy' 
+              schema:
+                $ref: '#/components/schemas/Policy'
           description: successful operation.
         '400':
           description: Bad Request
@@ -532,11 +516,254 @@ paths:
       summary: Delete a policy.
       operationId: deletePolicy
       responses:
-        '400':
-          description: Invalid ID supplied
         '200':
           description: Delete success
-          
+        '400':
+          description: Invalid ID supplied
+  'v1/s3/{bucketName}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - s3
+      summary: create a bucket.
+      operationId: bucketPut
+      responses:
+        '200':
+          description: successful create bucket
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+      requestBody:
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/CreateBucketConfiguration'
+    delete:
+      tags:
+        - s3
+      summary: delete a bucket.
+      operationId: bucketdelete
+      responses:
+        '200':
+          description: successful delete bucket
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+  v1/s3:
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - s3
+      summary: list buckets.
+      operationId: listBuckets
+      responses:
+        '200':
+          description: successful delete bucket
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ListAllMyBucketsResult'
+  'v1/s3/{bucketName}/{object}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+      - name: object
+        in: path
+        description: the name of object
+        required: true
+        schema:
+          type: string
+      - name: Range
+        in: path
+        description: >-
+          the Header parameter Range value like "bytes:1-10",used for multipart
+          download
+        required: false
+        schema:
+          type: string
+    put:
+      tags:
+        - s3
+      summary: upload a object.
+      operationId: objectPut
+      responses:
+        '200':
+          description: successful upload a object
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+    get:
+      tags:
+        - s3
+      summary: download object
+      operationId: objectGet
+    delete:
+      tags:
+        - s3
+      summary: delete a object.
+      operationId: objectdelete
+      responses:
+        '200':
+          description: successful delete object
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+  'v1/s3/{bucketName}/':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - s3
+      summary: list objects
+      operationId: listObjects
+      responses:
+        '200':
+          description: successful list objects
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ListObjectResponse'
+  'v1/s3/{bucketName}/{object}?uploads':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+      - name: object
+        in: path
+        description: the name of object
+        required: true
+        schema:
+          type: string
+      - name: x-amz-storage-class
+        in: path
+        description: >-
+          the Header parameter x-amz-storage-class, used for specifying a
+          backend
+        required: false
+        schema:
+          type: string
+    put:
+      tags:
+        - s3
+      summary: upload a object.
+      operationId: init upload
+      responses:
+        '200':
+          description: successful upload a object
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/InitiateMultipartUploadResult'
+  'v1/s3/{bucketName}/{object}?partNumber={PartNumber}&uploadId={UploadId}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+      - name: object
+        in: path
+        description: the name of object
+        required: true
+        schema:
+          type: string
+      - name: PartNumber
+        in: path
+        description: the number of part
+        required: true
+        schema:
+          type: string
+      - name: UploadId
+        in: path
+        description: the id of upload
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - s3
+      summary: upload a object part.
+      operationId: uploadpart
+      responses:
+        '200':
+          description: successful upload a part
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/UploadPartResult'
+  'v1/s3/{bucketName}/{object}?uploadId={UploadId}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+      - name: object
+        in: path
+        description: the name of object
+        required: true
+        schema:
+          type: string
+      - name: UploadId
+        in: path
+        description: the id of upload
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - s3
+      summary: compete multipartupload
+      operationId: compeleteMultiUpload
+      responses:
+        '200':
+          description: compete multipartupload
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/CompleteMultipartUpload'
+    delete:
+      tags:
+        - s3
+      summary: abortmultipartupload
+      operationId: abortmultipartupload
+      responses:
+        '200':
+          description: abort multipartupload
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
 components:
   parameters:
     offset:
@@ -563,20 +790,21 @@ components:
       required: false
       schema:
         type: string
-      description: 'The sort key and direction of items to return, string must like:"id:asc,name:desc"'
-
+      description: >-
+        The sort key and direction of items to return, string must
+        like:"id:asc,name:desc"
   schemas:
     Backend:
       type: object
       properties:
         Id:
-          description: The backend ID, generate by server
+          description: 'The backend ID, generate by server'
           type: string
-          example: "5bd6f273b0bdf90001dc91c2"
+          example: 5bd6f273b0bdf90001dc91c2
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6a"
+          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6a
         UserId:
           description: User Id.
           type: string
@@ -587,26 +815,26 @@ components:
         Type:
           description: The backend type.
           type: string
-          example: "hw-obs"
+          example: hw-obs
           enum:
             - hw-obs
             - aws-s3
             - azure-blob
         Region:
           type: string
-          example: "ap-southeast-1"
+          example: ap-southeast-1
         Endpoint:
           type: string
-          example: "obs.ap-southeast-1.myhwclouds.com"
+          example: obs.ap-southeast-1.myhwclouds.com
         BucketName:
           type: string
-          example: "bucket001"
+          example: bucket001
         Access:
           type: string
-          example: "4X7JQDFTCYUNWFBRYZVC"
-        Security: 
+          example: 4X7JQDFTCYUNWFBRYZVC
+        Security:
           type: string
-          example: "9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn"
+          example: 9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn
     Type:
       type: object
       properties:
@@ -617,7 +845,7 @@ components:
         description:
           description: The backend type description.
           type: string
-          example: 'Huawei Object Storage Service(OBS)' 
+          example: Huawei Object Storage Service(OBS)
     KV:
       type: object
       properties:
@@ -632,11 +860,15 @@ components:
       properties:
         StorType:
           $ref: '#/components/schemas/ConnType'
-        BucketName:    
+        BucketName:
           type: string
-          description: The name of bucket which is created in OpenSDS. When the type of connector is opensds-obj, this parameter should be provided.
+          description: >-
+            The name of bucket which is created in OpenSDS. When the type of
+            connector is opensds-obj, this parameter should be provided.
         SelfConfig:
-          description: When the type of connector is not opensds-obj, this parameter should be provided. It is used for self-define connector.
+          description: >-
+            When the type of connector is not opensds-obj, this parameter should
+            be provided. It is used for self-define connector.
           type: array
           items:
             $ref: '#/components/schemas/KV'
@@ -654,27 +886,26 @@ components:
     ConnType:
       type: string
       description: Connector type.
-      example: "opensds-obj"
+      example: opensds-obj
       enum:
         - opensds-obj
         - aws-s3
         - azure-blob
         - hw-obs
-          
     Plan:
       type: object
       properties:
         Id:
-          description: The plan ID, generate by server
+          description: 'The plan ID, generate by server'
           type: string
-          example: "5bd6f273b0bdf90001dc91c3"
+          example: 5bd6f273b0bdf90001dc91c3
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6b
         UserId:
           description: User Id.
-          type: string          
+          type: string
         Description:
           description: Plan description.
           type: string
@@ -682,40 +913,46 @@ components:
           description: The plan name specified by user.
           type: string
           example: plan001
-        Type:  
-          description: The plan type. Till now only migration support. New types will be added in the future.
+        Type:
+          description: >-
+            The plan type. Till now only migration support. New types will be
+            added in the future.
           type: string
-          example: "migration"
+          example: migration
           enum:
             - migration
         RemainSource:
           description: Remain the source objects or not.
           type: boolean
         SourceConn:
-          $ref: '#/components/schemas/Connector' 
+          $ref: '#/components/schemas/Connector'
         DestConn:
-          $ref: '#/components/schemas/Connector' 
+          $ref: '#/components/schemas/Connector'
         Filter:
           type: object
           properties:
             Prefix:
               type: string
-              description: Prefix of object name, only those objects which name have this prefix will be choosed.
+              description: >-
+                Prefix of object name, only those objects which name have this
+                prefix will be choosed.
     Job:
       type: object
       properties:
         Id:
-          description: The plan ID, generate by server
+          description: 'The plan ID, generate by server'
           type: string
-          example: "5bd6f273b0bdf90001dc91c3"
+          example: 5bd6f273b0bdf90001dc91c3
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6b
         Type:
-          description: The plan type. Till now only migration support. New types will be added in the future.
+          description: >-
+            The plan type. Till now only migration support. New types will be
+            added in the future.
           type: string
-          example: "migration"
+          example: migration
           enum:
             - migration
         PlanName:
@@ -723,7 +960,7 @@ components:
           type: string
         PlanId:
           description: The id of plan job belongs to.
-          type: string        
+          type: string
         SourceLocation:
           description: The source data migrate or replicate from.
           type: string
@@ -731,7 +968,7 @@ components:
           description: The target data migrate or replicate to.
           type: string
         CreateTime:
-          description: The time job is created. 
+          description: The time job is created.
           type: integer
         StartTime:
           description: The time job started to run.
@@ -743,10 +980,10 @@ components:
           description: The status of job.
           type: string
           enum:
-            - "pending"
-            - "rnning"
-            - "succeed"
-            - "failed"
+            - pending
+            - rnning
+            - succeed
+            - failed
         TotalCapacity:
           description: The total capacity that should be migrated.
           type: integer
@@ -760,19 +997,19 @@ components:
           description: The count that have been migrated.
           type: integer
         Progress:
-          description: The progress of job, represented by percentage.
+          description: 'The progress of job, represented by percentage.'
           type: integer
     Policy:
       type: object
       properties:
         Id:
-          description: The policy ID, generate by server
+          description: 'The policy ID, generate by server'
           type: string
-          example: "5bd6f273b0bdf90001dc91c3"
+          example: 5bd6f273b0bdf90001dc91c3
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: "1ff92505-3efb-45bd-8e2d-764a1ce0fa6b"
+          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6b
         Name:
           description: Policy Name.
           type: string
@@ -785,22 +1022,110 @@ components:
           properties:
             Type:
               type: string
-              description: The type of scheduler, only cron support now.
+              description: 'The type of scheduler, only cron support now.'
               enum:
-                - "cron"
+                - cron
             TriggerProperties:
               type: string
-              description: Cron expression format. A cron expression represents a set of times, using 6 space-separated fields as follow.
-                #Field name   | Mandatory? | Allowed values  | Allowed special characters
-                #----------   | ---------- | --------------  | --------------------------
-                #Seconds      | Yes        | 0-59            | * / , -
-                #Minutes      | Yes        | 0-59            | * / , -
-                #Hours        | Yes        | 0-23            | * / , -
-                #Day of month | Yes        | 1-31            | * / , - ?
-                #Month        | Yes        | 1-12 or JAN-DEC | * / , -
-                #Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
-                #See https://godoc.org/github.com/robfig/cron for details.
-            
+              description: >-
+                Cron expression format. A cron expression represents a set of
+                times, using 6 space-separated fields as follow.
+    BaseResponse:
+      type: object
+      properties:
+        ErrorCode:
+          description: error code
+          type: string
+        Message:
+          description: sucessfully or failure
+          type: string
+    CreateBucketConfiguration:
+      type: object
+      properties:
+        LocationConstraint:
+          description: The backend of Bucket
+          type: string
+    InitiateMultipartUploadResult:
+      type: object
+      properties:
+        Bucket:
+          description: The name of Bucket
+          type: string
+        Key:
+          description: The name of Object
+          type: string
+        UploadId:
+          description: the id of upload
+          type: string
+    UploadPartResult:
+      type: object
+      properties:
+        partNumber:
+          description: The number of part
+          type: string
+        Etag:
+          description: The tag of part
+          type: string
+    CompleteMultipartUpload:
+      type: object
+      properties:
+        Location:
+          description: The Location of upload object
+          type: string
+        Bucket:
+          description: The name of bucket
+          type: string
+        Key:
+          description: The name of object
+          type: string
+        Etag:
+          description: The tag of multipartupload
+          type: string
+    ListAllMyBucketsResult:
+      type: object
+      properties:
+        Owner:
+          description: ''
+          type: object
+          properties:
+            ID:
+              description: The owner id
+              type: string
+            DisplayName:
+              description: ''
+              type: string
+        Buckets:
+          description: ''
+          type: object
+          properties:
+            name:
+              description: The name of bucket
+              type: string
+            CreationDate:
+              description: The date of create
+              type: string
+            LocationConstraint:
+              description: The backend of logic bucket
+              type: string
+    ListObjectResponse:
+      type: object
+      properties:
+        ListObjects:
+          description: ''
+          type: object
+          properties:
+            ObjectKey:
+              description: The key of object
+              type: string
+            BucketName:
+              description: The name of bucket
+              type: string
+            size:
+              description: The size of object
+              type: string
+            Backend:
+              description: The backend of object
+              type: string
   requestBodies:
     Backend:
       content:
@@ -815,7 +1140,7 @@ components:
           schema:
             $ref: '#/components/schemas/Plan'
       description: Plan configurations
-      required: true      
+      required: true
     Policy:
       content:
         application/json:
