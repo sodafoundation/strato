@@ -122,11 +122,13 @@ func (ad *AwsAdapter) GET(object *pb.Object, context context.Context, start int6
 	if context.Value("operation") == "download" {
 		downloader := s3manager.NewDownloader(ad.session)
 		numBytes, err := downloader.DownloadWithContext(context, writer, &getObjectInput)
+		//numBytes,err:=downloader.Download(writer,&getObjectInput)
 		if err != nil {
 			log.Logf("Download failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		} else {
 			log.Logf("Download succeed, bytes:%d\n", numBytes)
+			//log.Logf("writer.Bytes() is %v \n",writer.Bytes())
 			body := bytes.NewReader(writer.Bytes())
 			ioReaderClose := ioutil.NopCloser(body)
 			return ioReaderClose, NoError

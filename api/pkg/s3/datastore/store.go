@@ -44,8 +44,11 @@ func Init(backend *backendpb.BackendDetail) (DataStoreAdapter,S3Error) {
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = aws.Init(backend)
 		return StoreAdapter,NoError
+	case "fusionstorage-object":
+		StoreAdapter = hws.Init(backend)
+		return StoreAdapter,NoError
 	default:
-
+		return nil,NoSuchType
 	}
 	return nil,NoSuchType
 }
