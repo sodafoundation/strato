@@ -374,7 +374,10 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 		delMetaReq := osdss3.DeleteObjectInput{Bucket:loca.VirBucket, Key:obj.ObjectKey}
 		_, err = s3client.DeleteObject(ctx, &delMetaReq)
 		if err != nil {
-			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] failed.\n", loca.VirBucket,
+			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n", loca.VirBucket,
+				obj.ObjectKey, err)
+		} else {
+			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] successfully.\n", loca.VirBucket,
 				obj.ObjectKey)
 		}
 	}
@@ -456,6 +459,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	}
 
 	//Delete source data if needed
+	logger.Printf("remainSource for object[%s] is:%v.", obj.ObjectKey, remainSource)
 	if succeed && !remainSource {
 		deleteObj(ctx, obj, newSrcLoca)
 		//TODO: what if delete failed
