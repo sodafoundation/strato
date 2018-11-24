@@ -187,6 +187,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Name:        constants.BackendTypeAzure,
 			Description: "Azure Blob Storage",
 		},
+		{
+			Name:        constants.BackendFusionStorage,
+			Description: "Huawei Fusionstorage Object Storage",
+		},
 	}
 
 	// Filter by name

@@ -18,4 +18,5 @@ const (
 	BackendTypeAws   = "aws-s3"
 	BackendTypeObs   = "hw-obs"
 	BackendTypeAzure = "azure-blob"
+	BackendFusionStorage = "fusionstorage-object"
 )

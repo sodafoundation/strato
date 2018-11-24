@@ -81,7 +81,7 @@ func (mover *ObsMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []by
 }
 
 func (mover *ObsMover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
-	log.Logf("[obsmover] Upload object[%s], buf.len=%d.", objKey, len(buf))
+	log.Logf("[obsmover] Try to upload object[%s], buf.len=%d.", objKey, len(buf))
 	obsClient, err := obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
 		log.Logf("[obsmover] Init obs failed for upload object[%s], err:%v.\n", objKey, err)
