@@ -339,6 +339,7 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 		destConn := datamover.Connector{Type: plan.DestConn.StorType}
 		buildConn(&destConn, &plan.DestConn)
 		req.DestConn = &destConn
+		req.RemainSource = job.RemainSource
 		go sendJob(&req)
 	} else {
 		log.Logf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
