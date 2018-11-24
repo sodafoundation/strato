@@ -69,8 +69,10 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 	blobURL := ad.containerURL.NewBlockBlobURL(newObjectKey)
 	log.Logf("blobURL is %v\n", blobURL)
 	bytess, _ := ioutil.ReadAll(stream)
+	log.Logf("enter the azure upload method")
 	uploadResp, err := blobURL.Upload(ctx, bytes.NewReader(bytess), azblob.BlobHTTPHeaders{}, nil,
 		azblob.BlobAccessConditions{})
+	log.Logf("out the azure upload method")
 	if err != nil {
 		log.Logf("[AzureAdapter] Upload faild,err = %v\n", err)
 		return S3Error{Code: 500, Description: "Upload to azure failed"}
@@ -95,24 +97,37 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context, start in
 	log.Logf("blobURL is %v\n", blobURL)
 	log.Logf("object.Size is %v \n", object.Size)
 	len := object.Size
-	var buf = make([]byte, len)
+	var buf []byte
 	if start != 0 || end != 0 {
 		count := end - start + 1
+		buf = make([]byte, count)
 		err := azblob.DownloadBlobToBuffer(context, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
 		if err != nil {
 			log.Logf("[AzureAdapter] Download failed:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		}
+		body := bytes.NewReader(buf)
+		ioReaderClose := ioutil.NopCloser(body)
+		return ioReaderClose, NoError
 	} else {
-		err := azblob.DownloadBlobToBuffer(context, blobURL, 0, 0, buf, azblob.DownloadFromBlobOptions{})
+		buf = make([]byte, len)
+		//err := azblob.DownloadBlobToBuffer(context, blobURL, 0, 0, buf, azblob.DownloadFromBlobOptions{})
+		downloadResp, err := blobURL.Download(context, 0, azblob.CountToEnd, azblob.BlobAccessConditions{},
+			false)
+		_, readErr := downloadResp.Response().Body.Read(buf)
+		if readErr != nil {
+			log.Logf("[blobmover] readErr[objkey:%s]=%v\n", newObjectKey, readErr)
+		}
 		if err != nil {
 			log.Logf("[AzureAdapter] Download failed:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		}
+		body := bytes.NewReader(buf)
+		ioReaderClose := ioutil.NopCloser(body)
+		return ioReaderClose,NoError
 	}
-	body := bytes.NewReader(buf)
-	ioReaderClose := ioutil.NopCloser(body)
-	return ioReaderClose, NoError
+
+	return nil, NoError
 }
 func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) S3Error {
 	bucket := ad.backend.BucketName
