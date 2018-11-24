@@ -422,13 +422,13 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		part_size, err := strconv.ParseInt(os.Getenv("PARTSIZE"), 10, 64)
 		logger.Printf("part_size=%d, err=%v.\n", part_size, err)
 		if err == nil {
-			//part_size must be more than 4M and less than 100M
-			if part_size >= 4 && part_size <= 100 {
+			//part_size must be more than 5M and less than 100M
+			if part_size >= 5 && part_size <= 100 {
 				PART_SIZE = part_size * 1024 * 1024
 				logger.Printf("Set PART_SIZE to be %d.\n", PART_SIZE)
 			}
 		}
-		if obj.Size < PART_SIZE {
+		if obj.Size <= PART_SIZE {
 			err = moveObj(obj, newSrcLoca, destLoca)
 		}else {
 			err = multipartMoveObj(obj, newSrcLoca, destLoca)
@@ -661,11 +661,10 @@ func runjob(in *pb.RunJobRequest) error {
 	for ; ;  {
 		select {
 		case c := <-capa: {//if c equals 0, that means the object is migrated failed.
-			capacity += c
 			count++
-
 			if c >= 0 {
 				passedCount++
+				capacity += c
 			}
 			//TODO:update job in database, need to consider the update frequency
 			var deci int64 = totalObjs/10
