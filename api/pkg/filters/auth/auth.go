@@ -34,29 +34,30 @@ func NewNoAuth() AuthBase {
 }
 
 func (auth *NoAuth) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+	log.Log("Noauth filter begin")
 	ctx := req.Attribute(c.KContext).(*c.Context)
+	log.Log(ctx.TenantId)
 	params := req.PathParameters()
 	if tenantId, ok := params["tenantId"]; ok {
 		ctx.TenantId = tenantId
 	}
 
-	log.Log("auth filter", ctx.TenantId)
 	ctx.IsAdmin = ctx.TenantId == c.NoAuthAdminTenantId
 	chain.ProcessFilter(req, resp)
 }
 
 func FilterFactory() restful.FilterFunction {
 	var auth AuthBase
-	log.Log("authStrateger:\n")
-	log.Log(os.Getenv("AUTH_AuthStrategy"))
-	switch os.Getenv("AUTH_AuthStrategy") {
+	log.Log(os.Getenv("OS_AUTH_AUTHSTRATEGY"))
+	switch os.Getenv("OS_AUTH_AUTHSTRATEGY") {
 	case "keystone":
 		auth = NewKeystone()
 	case "noauth":
+		log.Log("filter is noauth")
 		auth = NewNoAuth()
 	default:
 		auth = NewNoAuth()
 	}
-	log.Log(auth)
 	return auth.Filter
 }
+

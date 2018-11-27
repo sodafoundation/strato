@@ -8,7 +8,7 @@ services:
       - "2181:2181"
 
   kafka:
-    image: wurstmeister/kafka:2.11-2.0.1
+    image: wurstmeister/kafka
     ports:
       - "9092:9092"
     environment:
@@ -29,12 +29,12 @@ services:
     environment:
       MICRO_SERVER_ADDRESS: ":8089"
       MICRO_REGISTRY: "mdns"
-      AUTH_AuthStrategy: "noauth"
-      AuthUrl: "http://10.10.3.100/identity"
-      UserDomainName: "Default"
-      Username: "opensds"
-      Password: "opensds@123"
-      ProjectName: "service"
+      OS_AUTH_AUTHSTRATEGY: "keystone"
+      OS_AUTH_URL: "http://10.10.3.100/identity"
+      OS_USER_DOMIN_ID: "Default"
+      OS_USERNAME: "multicloud"
+      OS_PASSWORD: "opensds@123"
+      OS_PROJECT_NAME: "service"
 
   backend:
     image: opensdsio/multi-cloud-backend
