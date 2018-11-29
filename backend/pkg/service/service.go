@@ -188,6 +188,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Description: "Azure Blob Storage",
 		},
 		{
+			Name:        constants.BackendTypeCeph,
+			Description: "Ceph Object Storage",
+		},
+		{
 			Name:        constants.BackendFusionStorage,
 			Description: "Huawei Fusionstorage Object Storage",
 		},
