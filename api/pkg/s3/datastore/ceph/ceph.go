@@ -11,14 +11,14 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/Click2Cloud/s3client"
-	. "github.com/Click2Cloud/s3client"
-	"github.com/Click2Cloud/s3client/models"
 	"github.com/micro/go-log"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/webrtcn/s3client"
+	. "github.com/webrtcn/s3client"
+	"github.com/webrtcn/s3client/models"
 )
 
 type CephAdapter struct {

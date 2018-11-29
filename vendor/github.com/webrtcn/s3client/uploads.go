@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/Click2Cloud/s3client/models"
+	"github.com/webrtcn/s3client/models"
 )
 
 //Uploads Multipart Uploads
