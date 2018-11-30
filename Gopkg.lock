@@ -407,15 +407,15 @@
   version = "1.0.1"
 
 [[projects]]
-  digest = "1:be2299612f7e13e86bc3a3aed88d6a597aac57938b6acff56ab8f52cc94eb490"
+  digest = "1:a6fa343daac4d36800fcce1369b0b7e0ce2e5dfb0d6f2d874b2ebb27b2b48fbb"
   name = "github.com/opensds/opensds"
   packages = [
     "pkg/dock/proto",
     "pkg/model",
   ]
   pruneopts = "UT"
-  revision = "a655b3082d40efb78eb831f20162124e10a91440"
-  version = "v0.3.2"
+  revision = "a7e9da1a93976b533072dbbd0e89fe41ff8bf9e0"
+  version = "v0.3.3"
 
 [[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
