@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	HTTP_OK      = 200
-	HTTP_CREATED = 201
+	HTTP_OK        = 200
+	HTTP_CREATED   = 201
+	HTTP_ACCEPTED  = 202
 )
 
 //TryTimeout indicates the maximum time allowed for any single try of an HTTP request. 60 seconds per MB as default.
@@ -151,14 +152,14 @@ func (mover *BlobMover)DeleteObj(objKey string, loca *LocationInfo) error {
 			if tries == 3 {
 				return err
 			}
-		} else if delRsp.StatusCode() != HTTP_OK {
+		} else if delRsp.StatusCode() == HTTP_OK || delRsp.StatusCode() == HTTP_ACCEPTED {
+			log.Logf("[blobmover] Delete object[%s] successfully.", objKey)
+			return nil
+		} else {
 			log.Logf("[blobmover] Delete object[%s] StatusCode:%d\n", objKey, delRsp.StatusCode())
 			if tries == 3 {
 				return errors.New("Delete failed")
 			}
-		} else {
-			log.Logf("[blobmover] Delete object[%s] successfully.", objKey)
-			return nil
 		}
 	}
 
