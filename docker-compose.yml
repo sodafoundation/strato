@@ -29,8 +29,8 @@ services:
     environment:
       MICRO_SERVER_ADDRESS: ":8089"
       MICRO_REGISTRY: "mdns"
-      OS_AUTH_AUTHSTRATEGY: "keystone"
-      OS_AUTH_URL: "http://10.10.3.100/identity"
+      OS_AUTH_AUTHSTRATEGY: "${OS_AUTH_AUTHSTRATEGY}"
+      OS_AUTH_URL: "${AUTHSTRATEGY_URL}"
       OS_USER_DOMIN_ID: "Default"
       OS_USERNAME: "multicloud"
       OS_PASSWORD: "opensds@123"
