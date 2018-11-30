@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"encoding/json"
+
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
@@ -57,12 +58,17 @@ func isEqual(src *Connector, dest *Connector) bool {
 }
 
 func checkConnValidation(conn *Connector) error {
+	var flag int
 	if conn.StorType == STOR_TYPE_OPENSDS {
 		//If StorType is opensds-obj, no connector needed.
 		return nil
 	}
+	if conn.StorType == STOR_TYPE_CEPH_S3 {
+		flag = 1 //region is not a required param for ceph
+	} else {
+		flag = 0
+	}
 
-	flag := 0
 	cfg := conn.ConnConfig
 	for i := 0; i < len(cfg); i++ {
 		switch cfg[i].Key {
@@ -80,7 +86,6 @@ func checkConnValidation(conn *Connector) error {
 			log.Logf("Uknow key[%s] for connector.\n", cfg[i].Key)
 		}
 	}
-
 	if flag != BIT_FULL {
 		log.Logf("Invalid connector, flag=%b\n", flag)
 		return errors.New("Invalid connector")
@@ -241,7 +246,7 @@ func getLocation(conn *Connector) (string, error) {
 	case STOR_TYPE_OPENSDS:
 		return conn.BucketName, nil
 	case STOR_TYPE_HW_OBS, STOR_TYPE_AWS_S3, STOR_TYPE_HW_FUSIONSTORAGE, STOR_TYPE_HW_FUSIONCLOUD,
-		STOR_TYPE_AZURE_BLOB:
+		STOR_TYPE_AZURE_BLOB, STOR_TYPE_CEPH_S3:
 		cfg := conn.ConnConfig
 		for i := 0; i < len(cfg); i++ {
 			if cfg[i].Key == "bucketname" {
@@ -331,8 +336,8 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	if err == nil {
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
-		filt := datamover.Filter{Prefix:plan.Filter.Prefix}
-		req := datamover.RunJobRequest{Id: job.Id.Hex(), RemainSource: plan.RemainSource, Filt:&filt}
+		filt := datamover.Filter{Prefix: plan.Filter.Prefix}
+		req := datamover.RunJobRequest{Id: job.Id.Hex(), RemainSource: plan.RemainSource, Filt: &filt}
 		srcConn := datamover.Connector{Type: plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn

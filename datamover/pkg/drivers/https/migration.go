@@ -1,31 +1,33 @@
 package migration
 
 import (
-	"strconv"
-	"time"
-	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
-	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	"github.com/opensds/multi-cloud/backend/proto"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	"github.com/globalsign/mgo/bson"
-	"errors"
 	"context"
 	"encoding/json"
-	"github.com/micro/go-micro/client"
-	"os"
-	"log"
-	"regexp"
+	"errors"
 	"fmt"
+	"log"
+	"os"
+	"regexp"
+	"strconv"
+	"time"
+
+	"github.com/globalsign/mgo/bson"
+	"github.com/micro/go-micro/client"
+	"github.com/opensds/multi-cloud/backend/proto"
+	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
+	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
+	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
+	"github.com/opensds/multi-cloud/datamover/pkg/db"
+	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+	pb "github.com/opensds/multi-cloud/datamover/proto"
+	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 var simuRoutines = 10
 var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved directly, default is 16M.
-var JOB_RUN_TIME_MAX = 86400 //seconds
+var JOB_RUN_TIME_MAX = 86400           //seconds
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
 
@@ -57,12 +59,12 @@ func HandleMsg(msgData []byte) error {
 		return errors.New("Job already running.")
 	}
 
-	logger.Printf("HandleMsg:job=%+v\n",job)
+	logger.Printf("HandleMsg:job=%+v\n", job)
 	go runjob(&job)
 	return nil
 }
 
-func doMove (ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
+func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
 	destLoca *LocationInfo, remainSource bool) {
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
@@ -76,62 +78,65 @@ func doMove (ctx context.Context, objs []*osdss3.Object, capa chan int64, th cha
 	}
 }
 
-func getOsdsLocation(ctx context.Context, virtBkname string, backendName string) (*LocationInfo,error) {
+func getOsdsLocation(ctx context.Context, virtBkname string, backendName string) (*LocationInfo, error) {
 	if backendName == "" {
 		logger.Println("Get backend location failed, because backend name is null.")
-		return nil,errors.New("failed")
+		return nil, errors.New("failed")
 	}
 
 	bk, err := db.DbAdapter.GetBackendByName(backendName)
 	if err != nil {
 		logger.Printf("Get backend information failed, err:%v\n", err)
-		return nil,errors.New("failed")
+		return nil, errors.New("failed")
 	} else {
-		loca := &LocationInfo{bk.Type, bk.Region, bk.Endpoint,bk.BucketName,
-			virtBkname,bk.Access, bk.Security, backendName}
+		loca := &LocationInfo{bk.Type, bk.Region, bk.Endpoint, bk.BucketName,
+			virtBkname, bk.Access, bk.Security, backendName}
 		logger.Printf("Refresh backend[name:%s,id:%s] successfully.\n", backendName, bk.Id.String())
-		return loca,nil
+		return loca, nil
 	}
 }
 
-func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo,error) {
+func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, error) {
 	switch conn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:{
-		virtBkname := conn.GetBucketName()
-		reqbk := osdss3.Bucket{Name:virtBkname}
-		rspbk, err := s3client.GetBucket(ctx, &reqbk)
-		if err != nil {
-			logger.Printf("Get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
-			return nil,errors.New("get bucket information failed")
-		}
-		return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
-	}
-	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB:{
-		cfg := conn.ConnConfig
-		loca := LocationInfo{}
-		loca.StorType = conn.Type
-		for i := 0; i < len(cfg); i++ {
-			switch cfg[i].Key {
-			case "region":
-				loca.Region = cfg[i].Value
-			case "endpoint":
-				loca.EndPoint = cfg[i].Value
-			case "bucketname":
-				loca.BucketName = cfg[i].Value
-			case "access":
-				loca.Access = cfg[i].Value
-			case "security":
-				loca.Security = cfg[i].Value
-			default:
-				logger.Printf("Uknow key[%s] for connector.\n", cfg[i].Key)
+	case flowtype.STOR_TYPE_OPENSDS:
+		{
+			virtBkname := conn.GetBucketName()
+			reqbk := osdss3.Bucket{Name: virtBkname}
+			rspbk, err := s3client.GetBucket(ctx, &reqbk)
+			if err != nil {
+				logger.Printf("Get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
+				return nil, errors.New("get bucket information failed")
 			}
+			return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
 		}
-		return &loca, nil
-	}
-	default:{
-		logger.Printf("Unsupport type:%s.\n", conn.Type)
-		return nil,errors.New("unsupport type")
-	}
+	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3:
+		{
+			cfg := conn.ConnConfig
+			loca := LocationInfo{}
+			loca.StorType = conn.Type
+			for i := 0; i < len(cfg); i++ {
+				switch cfg[i].Key {
+				case "region":
+					loca.Region = cfg[i].Value
+				case "endpoint":
+					loca.EndPoint = cfg[i].Value
+				case "bucketname":
+					loca.BucketName = cfg[i].Value
+				case "access":
+					loca.Access = cfg[i].Value
+				case "security":
+					loca.Security = cfg[i].Value
+				default:
+					logger.Printf("Uknow key[%s] for connector.\n", cfg[i].Key)
+				}
+			}
+			return &loca, nil
+		}
+	default:
+		{
+			logger.Printf("Unsupport type:%s.\n", conn.Type)
+			return nil, errors.New("unsupport type")
+		}
 	}
 }
 
@@ -144,13 +149,13 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	buf := make([]byte, obj.Size)
 	var size int64 = 0
 	var err error = nil
-	var downloader,uploader MoveWorker
+	var downloader, uploader MoveWorker
 	downloadObjKey := obj.ObjectKey
 	if srcLoca.VirBucket != "" {
 		downloadObjKey = srcLoca.VirBucket + "/" + downloadObjKey
 	}
 	//download
-	switch  srcLoca.StorType {
+	switch srcLoca.StorType {
 	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		downloader = &obsmover.ObsMover{}
 		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
@@ -160,10 +165,14 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		downloader = &blobmover.BlobMover{}
 		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
-	default:{
-		logger.Printf("Not support source backend type:%v\n", srcLoca.StorType)
-		err = errors.New("Not support source backend type.")
-	}
+	case flowtype.STOR_TYPE_CEPH_S3:
+		downloader = &cephs3mover.CephS3Mover{}
+		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
+	default:
+		{
+			logger.Printf("Not support source backend type:%v\n", srcLoca.StorType)
+			err = errors.New("Not support source backend type.")
+		}
 	}
 
 	if err != nil {
@@ -188,13 +197,16 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		uploader = &blobmover.BlobMover{}
 		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
+	case flowtype.STOR_TYPE_CEPH_S3:
+		uploader = &cephs3mover.CephS3Mover{}
+		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
 	default:
 		logger.Printf("Not support destination backend type:%v\n", destLoca.StorType)
 		return errors.New("Not support destination backend type.")
 	}
 	if err != nil {
 		logger.Printf("Upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
-	}else {
+	} else {
 		logger.Printf("Upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
 	}
 
@@ -215,11 +227,16 @@ func multiPartDownloadInit(srcLoca *LocationInfo) (mover MoveWorker, err error) 
 		mover := &blobmover.BlobMover{}
 		err := mover.MultiPartDownloadInit(srcLoca)
 		return mover, err
+	case flowtype.STOR_TYPE_CEPH_S3:
+		mover := &cephs3mover.CephS3Mover{}
+		err := mover.MultiPartDownloadInit(srcLoca)
+		return mover, err
+
 	default:
 		logger.Printf("Unsupport storType[%s] to init multipart download.\n", srcLoca.StorType)
 	}
 
-	return nil,errors.New("Unsupport storage type.")
+	return nil, errors.New("Unsupport storage type.")
 }
 
 func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorker, err error) {
@@ -236,17 +253,21 @@ func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorke
 		mover := &blobmover.BlobMover{}
 		err := mover.MultiPartUploadInit(objKey, destLoca)
 		return mover, err
+	case flowtype.STOR_TYPE_CEPH_S3:
+		mover := &cephs3mover.CephS3Mover{}
+		err := mover.MultiPartUploadInit(objKey, destLoca)
+		return mover, err
 	default:
 		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
-	return nil,errors.New("Unsupport storage type.")
+	return nil, errors.New("Unsupport storage type.")
 }
 
 func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorker) error {
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE,
-	flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB:
+		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3:
 		return mover.AbortMultipartUpload(objKey, destLoca)
 	default:
 		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
@@ -258,7 +279,7 @@ func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorke
 func completeMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorker) error {
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE,
-	flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB:
+		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3:
 		return mover.CompleteMultipartUpload(objKey, destLoca)
 	default:
 		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
@@ -360,6 +381,9 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		mover := blobmover.BlobMover{}
 		err = mover.DeleteObj(objKey, loca)
+	case flowtype.STOR_TYPE_CEPH_S3:
+		mover := cephs3mover.CephS3Mover{}
+		err = mover.DeleteObj(objKey, loca)
 	default:
 		logger.Printf("Delete object[objkey:%s] from backend storage failed.\n", obj.ObjectKey)
 		err = errors.New("Unspport storage type.")
@@ -371,7 +395,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 
 	//delete metadata
 	if loca.VirBucket != "" {
-		delMetaReq := osdss3.DeleteObjectInput{Bucket:loca.VirBucket, Key:obj.ObjectKey}
+		delMetaReq := osdss3.DeleteObjectInput{Bucket: loca.VirBucket, Key: obj.ObjectKey}
 		_, err = s3client.DeleteObject(ctx, &delMetaReq)
 		if err != nil {
 			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n", loca.VirBucket,
@@ -433,7 +457,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		}
 		if obj.Size <= PART_SIZE {
 			err = moveObj(obj, newSrcLoca, destLoca)
-		}else {
+		} else {
 			err = multipartMoveObj(obj, newSrcLoca, destLoca)
 		}
 
@@ -448,11 +472,11 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		obj.BucketName = destLoca.VirBucket
 		obj.Backend = destLoca.BakendName
 		obj.LastModified = time.Now().String()[:19]
-		_,err := s3client.CreateObject(ctx, obj)
+		_, err := s3client.CreateObject(ctx, obj)
 		if err != nil {
 			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] failed,err:%v.\n", obj.ObjectKey,
-				obj.BucketName,err)
-		}else {
+				obj.BucketName, err)
+		} else {
 			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.ObjectKey,
 				obj.BucketName)
 		}
@@ -469,7 +493,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		//If migrate success, update capacity
 		logger.Printf("  migrate object[%s] succeed.", obj.ObjectKey)
 		capa <- obj.Size
-	}else {
+	} else {
 		logger.Printf("  migrate object[%s] failed.", obj.ObjectKey)
 		capa <- -1
 	}
@@ -478,10 +502,10 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 }
 
 func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error){
+	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	//TODO:need to support filter
-	req := osdss3.ListObjectsRequest{Bucket:conn.BucketName}
-	objs,err := s3client.ListObjects(ctx, &req)
+	req := osdss3.ListObjectsRequest{Bucket: conn.BucketName}
+	objs, err := s3client.ListObjects(ctx, &req)
 	totalObjs := len(objs.ListObjects)
 	if err != nil {
 		logger.Printf("List objects failed, err:%v\n", err)
@@ -506,7 +530,7 @@ func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 			logger.Printf("Object[%s] does not match, will not be migrated.\n", objs.ListObjects[i].ObjectKey)
 		}
 	}
-	return srcObjs,nil
+	return srcObjs, nil
 }
 
 func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
@@ -517,12 +541,12 @@ func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	if err != nil {
 		return nil, err
 	}
-	for i := 0; i <len(objs); i++ {
-		obj := osdss3.Object{Size:*objs[i].Size, ObjectKey:*objs[i].Key, Backend:""}
+	for i := 0; i < len(objs); i++ {
+		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
 		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
 		srcObjs = append(srcObjs, &obj)
 	}
-	return srcObjs,nil
+	return srcObjs, nil
 }
 
 func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
@@ -533,11 +557,11 @@ func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	if err != nil {
 		return nil, err
 	}
-	for i := 0; i <len(objs); i++ {
-		obj := osdss3.Object{Size:objs[i].Size, ObjectKey:objs[i].Key, Backend:""}
+	for i := 0; i < len(objs); i++ {
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
-	return srcObjs,nil
+	return srcObjs, nil
 }
 
 func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
@@ -547,15 +571,31 @@ func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	if err != nil {
 		return nil, err
 	}
-	for i := 0; i <len(objs); i++ {
-		obj := osdss3.Object{Size:*objs[i].Properties.ContentLength, ObjectKey:objs[i].Name, Backend:""}
+	for i := 0; i < len(objs); i++ {
+		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name, Backend: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
-	return srcObjs,nil
+	return srcObjs, nil
+}
+
+//to get object details from ceph backend
+func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
+	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
+	srcObjs := []*osdss3.Object{}
+	objs, err := cephs3mover.ListObjs(defaultSrcLoca, filt)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(objs); i++ {
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
+		srcObjs = append(srcObjs, &obj)
+	}
+	return srcObjs, nil
 }
 
 func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error){
+	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		return getOsdsS3Objs(ctx, conn, filt, defaultSrcLoca)
@@ -565,16 +605,19 @@ func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return getHwObjs(ctx, conn, filt, defaultSrcLoca)
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		return getAzureBlobs(ctx, conn, filt, defaultSrcLoca)
-	default:{
-		logger.Printf("Unsupport storage type:%v\n", conn.Type)
-		return nil, errors.New("unsupport storage type")
+	case flowtype.STOR_TYPE_CEPH_S3:
+		return getCephS3Objs(ctx, conn, filt, defaultSrcLoca)
+	default:
+		{
+			logger.Printf("Unsupport storage type:%v\n", conn.Type)
+			return nil, errors.New("unsupport storage type")
+		}
 	}
-	}
-	return nil,errors.New("Get source objects failed")
+	return nil, errors.New("Get source objects failed")
 }
 
 func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (srcLoca *LocationInfo, destLoca *LocationInfo,
-	objs []*osdss3.Object, err error){
+	objs []*osdss3.Object, err error) {
 	srcLoca, err = getConnLocation(ctx, in.SourceConn)
 	if err != nil {
 		j.Status = flowtype.JOB_STATUS_FAILED
@@ -597,9 +640,9 @@ func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (sr
 	logger.Println("Get connector information succeed.")
 
 	//Get Objects which need to be migrated. Calculate the total number and capacity of objects
-	objs,err = getSourceObjs(ctx, in.SourceConn, in.GetFilt(), srcLoca)
+	objs, err = getSourceObjs(ctx, in.SourceConn, in.GetFilt(), srcLoca)
 	totalObjs := len(objs)
-	if err != nil{
+	if err != nil {
 		logger.Printf("List objects failed, err:%v, total objects:%d\n", err, totalObjs)
 		//update database
 		j.Status = flowtype.JOB_STATUS_FAILED
@@ -622,14 +665,14 @@ func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (sr
 	}
 	db.DbAdapter.UpdateJob(j)
 
-	return srcLoca,destLoca,objs,nil
+	return srcLoca, destLoca, objs, nil
 }
 
 func runjob(in *pb.RunJobRequest) error {
 	logger.Println("Runjob is called in datamover service.")
 	logger.Printf("Request: %+v\n", in)
 
-	j := flowtype.Job{Id:bson.ObjectIdHex(in.Id)}
+	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 
 	//TODO:Check if source and destination connectors can access.
@@ -649,7 +692,7 @@ func runjob(in *pb.RunJobRequest) error {
 	}
 
 	//Make channel
-	capa := make(chan int64) //used to transfer capacity of objects
+	capa := make(chan int64)           //used to transfer capacity of objects
 	th := make(chan int, simuRoutines) //concurrent go routines is limited to be  simuRoutines
 
 	//Do migration for each object.
@@ -662,29 +705,31 @@ func runjob(in *pb.RunJobRequest) error {
 	passedCount = 0
 	totalObjs = j.TotalCount
 	tmout := false
-	for ; ;  {
+	for {
 		select {
-		case c := <-capa: {//if c equals 0, that means the object is migrated failed.
-			count++
-			if c >= 0 {
-				passedCount++
-				capacity += c
+		case c := <-capa:
+			{ //if c equals 0, that means the object is migrated failed.
+				count++
+				if c >= 0 {
+					passedCount++
+					capacity += c
+				}
+				//TODO:update job in database, need to consider the update frequency
+				var deci int64 = totalObjs / 10
+				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
+					//update database
+					j.PassedCount = (int64(passedCount))
+					j.PassedCapacity = capacity
+					j.Progress = int64(capacity * 100 / j.TotalCapacity)
+					logger.Printf("capacity:%d,TotalCapacity:%d Progress:%d\n", capacity, j.TotalCapacity, j.Progress)
+					db.DbAdapter.UpdateJob(&j)
+				}
 			}
-			//TODO:update job in database, need to consider the update frequency
-			var deci int64 = totalObjs/10
-			if totalObjs < 100 || count == totalObjs || count%deci == 0 {
-				//update database
-				j.PassedCount = (int64(passedCount))
-				j.PassedCapacity = capacity
-				j.Progress = int64(capacity*100/j.TotalCapacity)
-				logger.Printf("capacity:%d,TotalCapacity:%d Progress:%d\n", capacity, j.TotalCapacity, j.Progress)
-				db.DbAdapter.UpdateJob(&j)
+		case <-time.After(time.Duration(JOB_RUN_TIME_MAX) * time.Second):
+			{
+				tmout = true
+				logger.Println("Timout.")
 			}
-		}
-		case <-time.After(time.Duration(JOB_RUN_TIME_MAX)*time.Second): {
-			tmout = true
-			logger.Println("Timout.")
-		}
 		}
 		if count >= totalObjs || tmout {
 			logger.Printf("break, capacity=%d, timout=%v, count=%d, passed count=%d\n", capacity, tmout, count, passedCount)
@@ -701,7 +746,7 @@ func runjob(in *pb.RunJobRequest) error {
 		logger.Printf("Run job failed: %s\n", errmsg)
 		ret = errors.New("failed")
 		j.Status = flowtype.JOB_STATUS_FAILED
-	}else {
+	} else {
 		j.Status = flowtype.JOB_STATUS_SUCCEED
 	}
 
