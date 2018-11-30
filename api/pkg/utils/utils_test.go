@@ -18,8 +18,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/opensds/opensds/pkg/model"
 )
 
 func TestRvRepElement(t *testing.T) {
@@ -110,19 +108,21 @@ func TestPathExists(t *testing.T) {
 	os.RemoveAll(testDir)
 }
 
+type fakeExtras struct {
+	FakeKey string `json:"fakeKey,omitempty"`
+}
+
+type fakePool struct {
+	FreeCapacity int64      `json:"freeCapacity,omitempty"`
+	Extras       fakeExtras `json:"extras,omitempty"`
+}
+
 func TestStructToMap(t *testing.T) {
-	PoolA := model.StoragePoolSpec{
-		BaseModel: &model.BaseModel{
-			Id:        "f4486139-78d5-462d-a7b9-fdaf6c797e11",
-			CreatedAt: "2017-10-24T15:04:05",
-		},
-		FreeCapacity:     int64(50),
-		AvailabilityZone: "az1",
-		Extras: model.StoragePoolExtraSpec{
-			DataStorage:    model.DataStorageLoS{ProvisioningPolicy: "Thin", IsSpaceEfficient: false},
-			IOConnectivity: model.IOConnectivityLoS{AccessProtocol: "iscsi", MaxIOPS: 700000, MaxBWS: 600},
-			DataProtection: model.DataProtectionLoS{IsIsolated: true, ReplicaType: "Mirror"},
-			Advanced:       map[string]interface{}{"diskType": "SSD", "latency": 5},
+
+	PoolA := fakePool{
+		FreeCapacity: int64(50),
+		Extras: fakeExtras{
+			FakeKey: "fakeValue",
 		},
 	}
 

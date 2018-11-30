@@ -28,7 +28,7 @@ type CompletePart struct {
 }
 
 //CompleteUpload CompleteUpload
-type CompleteUpload struct {
+type CompleteUpload struct { 
 	XMLName xml.Name      `xml:"CompleteMultipartUpload"`
 	Parts   CompleteParts `xml:"Part"`
 }

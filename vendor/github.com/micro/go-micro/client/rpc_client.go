@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"sync/atomic"
+
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-micro/codec"
 	"github.com/micro/go-micro/errors"
@@ -14,7 +16,6 @@ import (
 	"github.com/micro/go-micro/registry"
 	"github.com/micro/go-micro/selector"
 	"github.com/micro/go-micro/transport"
-	"sync/atomic"
 )
 
 type rpcClient struct {
@@ -88,7 +89,7 @@ func (r *rpcClient) call(ctx context.Context, address string, req Request, resp 
 		r.pool.release(address, c, grr)
 	}()
 
-	seq := r.seq
+	seq := atomic.LoadUint64(&r.seq)
 	atomic.AddUint64(&r.seq, 1)
 
 	stream := &rpcStream{
@@ -322,9 +323,9 @@ func (r *rpcClient) Call(ctx context.Context, request Request, response interfac
 	var gerr error
 
 	for i := 0; i <= callOpts.Retries; i++ {
-		go func() {
+		go func(i int) {
 			ch <- call(i)
-		}()
+		}(i)
 
 		select {
 		case <-ctx.Done():
