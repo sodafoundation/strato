@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/broker/codec/json"
 	merr "github.com/micro/go-micro/errors"
@@ -26,7 +27,6 @@ import (
 	maddr "github.com/micro/util/go/lib/addr"
 	mnet "github.com/micro/util/go/lib/net"
 	mls "github.com/micro/util/go/lib/tls"
-	"github.com/pborman/uuid"
 )
 
 // HTTP Broker is a point to point async broker
@@ -116,7 +116,7 @@ func newHttpBroker(opts ...Option) Broker {
 	}
 
 	h := &httpBroker{
-		id:          "broker-" + uuid.NewUUID().String(),
+		id:          "broker-" + uuid.New().String(),
 		address:     addr,
 		opts:        options,
 		r:           reg,
@@ -126,7 +126,19 @@ func newHttpBroker(opts ...Option) Broker {
 		mux:         http.NewServeMux(),
 	}
 
+	// specify the message handler
 	h.mux.Handle(DefaultSubPath, h)
+
+	// get optional handlers
+	if h.opts.Context != nil {
+		handlers, ok := h.opts.Context.Value("http_handlers").(map[string]http.Handler)
+		if ok {
+			for pattern, handler := range handlers {
+				h.mux.Handle(pattern, handler)
+			}
+		}
+	}
+
 	return h
 }
 
@@ -176,7 +188,7 @@ func (h *httpBroker) unsubscribe(s *httpSubscriber) error {
 	for _, sub := range h.subscribers[s.topic] {
 		// deregister and skip forward
 		if sub.id == s.id {
-			h.r.Deregister(sub.svc)
+			_ = h.r.Deregister(sub.svc)
 			continue
 		}
 		// keep subscriber
@@ -200,7 +212,7 @@ func (h *httpBroker) run(l net.Listener) {
 			h.RLock()
 			for _, subs := range h.subscribers {
 				for _, sub := range subs {
-					h.r.Register(sub.svc, registry.RegisterTTL(registerTTL))
+					_ = h.r.Register(sub.svc, registry.RegisterTTL(registerTTL))
 				}
 			}
 			h.RUnlock()
@@ -210,7 +222,7 @@ func (h *httpBroker) run(l net.Listener) {
 			h.RLock()
 			for _, subs := range h.subscribers {
 				for _, sub := range subs {
-					h.r.Deregister(sub.svc)
+					_ = h.r.Deregister(sub.svc)
 				}
 			}
 			h.RUnlock()
@@ -401,7 +413,7 @@ func (h *httpBroker) Init(opts ...Option) error {
 	}
 
 	if len(h.id) == 0 {
-		h.id = "broker-" + uuid.NewUUID().String()
+		h.id = "broker-" + uuid.New().String()
 	}
 
 	// get registry
@@ -508,7 +520,7 @@ func (h *httpBroker) Subscribe(topic string, handler Handler, opts ...SubscribeO
 	}
 
 	// create unique id
-	id := h.id + "." + uuid.NewUUID().String()
+	id := h.id + "." + uuid.New().String()
 
 	var secure bool
 

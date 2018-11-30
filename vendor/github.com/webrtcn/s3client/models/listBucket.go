@@ -1,21 +1,21 @@
 package models
 
-import (
+import(
 	"encoding/xml"
 	"time"
 )
 
 type BucketsResult struct {
 	XMLName xml.Name `xml:"ListAllMyBucketsResult"`
-	Owner   Owner
+	Owner Owner
 	Buckets BucketDetail
-}
+} 
 
 type BucketDetail struct {
 	Bucket []BucketItem
 }
 
 type BucketItem struct {
-	Name         string
+	Name string
 	CreationDate time.Time
 }

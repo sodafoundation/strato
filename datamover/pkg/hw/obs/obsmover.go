@@ -16,21 +16,22 @@ package obsmover
 
 import (
 	"bytes"
+	"errors"
 	"io"
-	"obs"
+
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
-	"errors"
 )
 
-type ObsMover struct{
-	obsClient *obs.ObsClient //for multipart upload and download
+type ObsMover struct {
+	obsClient          *obs.ObsClient                     //for multipart upload and download
 	multiUploadInitOut *obs.InitiateMultipartUploadOutput //for multipart upload
-	completeParts []obs.Part //for multipart upload
+	completeParts      []obs.Part                         //for multipart upload
 }
 
-func (mover *ObsMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
+func (mover *ObsMover) DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
 	obsClient, err := obs.New(srcLoca.Access, srcLoca.Security, srcLoca.EndPoint)
 	if err != nil {
 		return 0, err
@@ -80,7 +81,7 @@ func (mover *ObsMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []by
 	return
 }
 
-func (mover *ObsMover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
+func (mover *ObsMover) UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
 	log.Logf("[obsmover] Try to upload object[%s], buf.len=%d.", objKey, len(buf))
 	obsClient, err := obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
@@ -110,7 +111,7 @@ func (mover *ObsMover)UploadObj(objKey string, destLoca *LocationInfo, buf []byt
 	return nil
 }
 
-func (mover *ObsMover)DeleteObj(objKey string, loca *LocationInfo) error {
+func (mover *ObsMover) DeleteObj(objKey string, loca *LocationInfo) error {
 	obsClient, err := obs.New(loca.Access, loca.Security, loca.EndPoint)
 	if err != nil {
 		log.Logf("[obsmover] New client failed when delete obj[objKey:%s] in storage backend[type:hws], err:%v\n",
@@ -140,7 +141,7 @@ func (mover *ObsMover)DeleteObj(objKey string, loca *LocationInfo) error {
 	return errors.New("Internal error")
 }
 
-func (mover *ObsMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
+func (mover *ObsMover) MultiPartDownloadInit(srcLoca *LocationInfo) error {
 	var err error
 	mover.obsClient, err = obs.New(srcLoca.Access, srcLoca.Security, srcLoca.EndPoint)
 	if err != nil {
@@ -149,7 +150,7 @@ func (mover *ObsMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
 	return err
 }
 
-func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
+func (mover *ObsMover) DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
 	input := &obs.GetObjectInput{}
 	input.Bucket = srcLoca.BucketName
 	input.Key = objKey
@@ -162,7 +163,7 @@ func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []
 			log.Logf("[obsmover] Download object[%s] range[%d - %d] failed %d times.\n",
 				objKey, start, end, tries)
 			if tries == 3 {
-				return 0,err
+				return 0, err
 			}
 		} else {
 			defer output.Body.Close()
@@ -178,9 +179,9 @@ func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []
 					break
 				}
 			}
-			if readErr != nil && readErr != io.EOF{
+			if readErr != nil && readErr != io.EOF {
 				log.Logf("[obsmover] Body.read for object[%s] failed, err:%v\n", objKey, err)
-				return 0,readErr
+				return 0, readErr
 			}
 			log.Logf("[obsmover] Download object[%s] range[%d - %d] successfully, readCount=%d.\n", objKey, start, end, readCount)
 			return int64(readCount), nil
@@ -188,22 +189,22 @@ func (mover *ObsMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []
 	}
 
 	log.Logf("[obsmover] Download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
-	return 0,errors.New("Internal error")
+	return 0, errors.New("Internal error")
 }
 
-func (mover *ObsMover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) error{
+func (mover *ObsMover) MultiPartUploadInit(objKey string, destLoca *LocationInfo) error {
 	input := &obs.InitiateMultipartUploadInput{}
 	input.Bucket = destLoca.BucketName
 	input.Key = objKey
 	var err error = nil
-	mover.obsClient,err = obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
+	mover.obsClient, err = obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
 		log.Logf("[obsmover] Create obsclient failed in MultiPartUploadInit[obj:%s], err:%v\n", objKey, err)
 		return err
 	}
 	log.Logf("[obsmover] Try to InitiateMultipartUpload [objkey:%s].\n", objKey)
 	for tries := 1; tries <= 3; tries++ {
-		mover.multiUploadInitOut,err = mover.obsClient.InitiateMultipartUpload(input)
+		mover.multiUploadInitOut, err = mover.obsClient.InitiateMultipartUpload(input)
 		if err != nil {
 			log.Logf("[obsmover] InitiateMultipartUpload [objkey:%s] failed %d times. err:%v\n", objKey, tries, err)
 			if tries == 3 {
@@ -219,7 +220,7 @@ func (mover *ObsMover)MultiPartUploadInit(objKey string, destLoca *LocationInfo)
 	return errors.New("Internal error")
 }
 
-func (mover *ObsMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64,
+func (mover *ObsMover) UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64,
 	offset int64) error {
 	log.Logf("[obsmover] Try to upload object[%s] range[partnumber#%d,offset#%d]...\n", objKey, partNumber, offset)
 	uploadPartInput := &obs.UploadPartInput{}
@@ -238,11 +239,11 @@ func (mover *ObsMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes 
 			if tries == 3 {
 				return err
 			}
-		}else {
+		} else {
 			log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d] successfully, size:%d\n",
 				objKey, partNumber, offset, upBytes)
 			mover.completeParts = append(mover.completeParts, obs.Part{
-				ETag: uploadPartInputOutput.ETag,
+				ETag:       uploadPartInputOutput.ETag,
 				PartNumber: uploadPartInputOutput.PartNumber})
 			return nil
 		}
@@ -253,7 +254,7 @@ func (mover *ObsMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes 
 	return errors.New("internal error")
 }
 
-func (mover *ObsMover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) (err error) {
+func (mover *ObsMover) AbortMultipartUpload(objKey string, destLoca *LocationInfo) (err error) {
 	input := &obs.AbortMultipartUploadInput{}
 	input.Bucket = destLoca.BucketName
 	input.Key = objKey
@@ -279,7 +280,7 @@ func (mover *ObsMover)AbortMultipartUpload(objKey string, destLoca *LocationInfo
 	return errors.New("internal error")
 }
 
-func (mover *ObsMover)CompleteMultipartUpload(objKey string, destLoca *LocationInfo) (err error) {
+func (mover *ObsMover) CompleteMultipartUpload(objKey string, destLoca *LocationInfo) (err error) {
 	completeMultipartUploadInput := &obs.CompleteMultipartUploadInput{}
 	completeMultipartUploadInput.Bucket = destLoca.BucketName
 	completeMultipartUploadInput.Key = objKey
@@ -305,7 +306,7 @@ func (mover *ObsMover)CompleteMultipartUpload(objKey string, destLoca *LocationI
 
 //TODO: Need to support list object page by page
 func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]obs.Content, error) {
-	obsClient,_ := obs.New(loca.Access, loca.Security, loca.EndPoint)
+	obsClient, _ := obs.New(loca.Access, loca.Security, loca.EndPoint)
 	input := &obs.ListObjectsInput{
 		Bucket: loca.BucketName,
 		Marker: "0",
@@ -316,19 +317,19 @@ func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]obs.Content, error) {
 	output, err := obsClient.ListObjects(input)
 	if err != nil {
 		log.Logf("[obsmover] List objects failed, err:%v\n", err)
-		return nil,err
+		return nil, err
 	}
 	objs := output.Contents
-	for ; output.IsTruncated == true ; {
+	for output.IsTruncated == true {
 		input.Marker = output.NextMarker
 		output, err = obsClient.ListObjects(input)
 		if err != nil {
 			log.Logf("[obsmover] List objects failed, err:%v\n", err)
-			return nil,err
+			return nil, err
 		}
 		objs = append(objs, output.Contents...)
 	}
 
 	log.Logf("[obsmover] Number of objects in bucket[%s] is %d.\n", loca.BucketName, len(objs))
-	return objs,nil
+	return objs, nil
 }

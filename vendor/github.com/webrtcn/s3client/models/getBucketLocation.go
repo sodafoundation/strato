@@ -1,5 +1,6 @@
-package models
+package models 
+ 
 
-type LocationConstraint struct {
+type LocationConstraint struct { 
 	LocationConstraint string `xml:",innerxml"`
 }

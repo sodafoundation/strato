@@ -1,10 +1,9 @@
-package models
+package models 
 
 import (
 	"encoding/xml"
 )
-
 type ErrorResult struct {
-	XMLName xml.Name `xml:"Error"`
-	Code    string   `xml:"Code"`
+	XMLName xml.Name   	`xml:"Error"`
+	Code string 		`xml:"Code"`
 }

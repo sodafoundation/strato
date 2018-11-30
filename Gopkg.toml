@@ -35,7 +35,7 @@
 
 [[constraint]]
   name = "github.com/aws/aws-sdk-go"
-  version = "1.15.72"
+  version = "1.15.88"
 
 [[constraint]]
   name = "github.com/bsm/sarama-cluster"
@@ -75,19 +75,19 @@
 
 [[constraint]]
   name = "github.com/micro/go-micro"
-  version = "0.11.0"
+  version = "0.14.1"
 
 [[constraint]]
   name = "github.com/micro/go-web"
   version = "0.4.0"
 
 [[constraint]]
-  name = "github.com/opensds/opensds"
-  version = "0.3.3"
-
-[[constraint]]
   name = "github.com/robfig/cron"
   version = "1.1.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/webrtcn/s3client"
 
 [[constraint]]
   branch = "master"

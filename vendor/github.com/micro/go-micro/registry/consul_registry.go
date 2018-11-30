@@ -24,6 +24,8 @@ type consulRegistry struct {
 
 	sync.Mutex
 	register map[string]uint64
+	// lastChecked tracks when a node was last checked as existing in Consul
+	lastChecked map[string]time.Time
 }
 
 func getDeregisterTTL(t time.Duration) time.Duration {
@@ -118,8 +120,9 @@ func configure(c *consulRegistry, opts ...Option) {
 
 func newConsulRegistry(opts ...Option) Registry {
 	cr := &consulRegistry{
-		opts:     Options{},
-		register: make(map[string]uint64),
+		opts:        Options{},
+		register:    make(map[string]uint64),
+		lastChecked: make(map[string]time.Time),
 	}
 	configure(cr, opts...)
 	return cr
@@ -135,9 +138,10 @@ func (c *consulRegistry) Deregister(s *Service) error {
 		return errors.New("Require at least one node")
 	}
 
-	// delete our hash of the service
+	// delete our hash and time check of the service
 	c.Lock()
 	delete(c.register, s.Name)
+	delete(c.lastChecked, s.Name)
 	c.Unlock()
 
 	node := s.Nodes[0]
@@ -180,10 +184,27 @@ func (c *consulRegistry) Register(s *Service, opts ...RegisterOption) error {
 
 	// if it's already registered and matches then just pass the check
 	if ok && v == h {
-		// if the err is nil we're all good, bail out
-		// if not, we don't know what the state is, so full re-register
-		if err := c.Client.Agent().PassTTL("service:"+node.Id, ""); err == nil {
-			return nil
+		if options.TTL == time.Duration(0) {
+			// ensure that our service hasn't been deregistered by Consul
+			if time.Since(c.lastChecked[s.Name]) <= getDeregisterTTL(regInterval) {
+				return nil
+			}
+			services, _, err := c.Client.Health().Checks(s.Name, &consul.QueryOptions{
+				AllowStale: true,
+			})
+			if err == nil {
+				for _, v := range services {
+					if v.ServiceID == node.Id {
+						return nil
+					}
+				}
+			}
+		} else {
+			// if the err is nil we're all good, bail out
+			// if not, we don't know what the state is, so full re-register
+			if err := c.Client.Agent().PassTTL("service:"+node.Id, ""); err == nil {
+				return nil
+			}
 		}
 	}
 
@@ -208,7 +229,7 @@ func (c *consulRegistry) Register(s *Service, opts ...RegisterOption) error {
 		deregTTL := getDeregisterTTL(options.TTL)
 
 		check = &consul.AgentServiceCheck{
-			TTL: fmt.Sprintf("%v", options.TTL),
+			TTL:                            fmt.Sprintf("%v", options.TTL),
 			DeregisterCriticalServiceAfter: fmt.Sprintf("%v", deregTTL),
 		}
 	}
@@ -234,9 +255,10 @@ func (c *consulRegistry) Register(s *Service, opts ...RegisterOption) error {
 		return err
 	}
 
-	// save our hash of the service
+	// save our hash and time check of the service
 	c.Lock()
 	c.register[s.Name] = h
+	c.lastChecked[s.Name] = time.Now()
 	c.Unlock()
 
 	// if the TTL is 0 we don't mess with the checks
