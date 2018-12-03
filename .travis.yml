@@ -1,13 +1,15 @@
-dist: trusty
+dist: xenial
 sudo: required
-group: deprecated-2017Q4
 
 language: go
 go_import_path: github.com/opensds/multi-cloud
-
 go:
   - 1.11.x
   - tip
+
+services:
+  - docker
+  - docker-compose
 
 env:
   matrix:
@@ -24,8 +26,9 @@ matrix:
   - go: tip
 
 install:
-  # Build OpenSDS multi-cloud source code
-  - make all
+  # Build OpenSDS multi-cloud contanier images
+  - make docker
+  - docker-compose up -d
 
 after_success:
   # Clean OpenSDS multi-cloud built data
