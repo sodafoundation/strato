@@ -589,7 +589,7 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/ListAllMyBucketsResult'
-  '/v1/s3/{bucketName}/{Object}':
+  '/v1/s3/{bucketName}/{object}':
     parameters:
       - name: bucketName
         in: path
@@ -597,7 +597,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: Object
+      - name: object
         in: path
         description: the name of object
         required: true
@@ -617,12 +617,12 @@ paths:
         required: false
         schema:
           type: string
-      - name: uploadId&partNumber
+      - name: partNumber
         in: query
         description: >-
           the format is
-          '/{object}?partNumber={partNumber}&uploadId={UploadId}',used for
-          upload a part
+          '/{object}?partNumber={partNumber}&uploadId={UploadId}',must be used
+          with uploadId parameter ,used for upload a part
         required: false
         schema:
           type: string
