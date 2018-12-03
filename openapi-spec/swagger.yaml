@@ -520,7 +520,7 @@ paths:
           description: Delete success
         '400':
           description: Invalid ID supplied
-  'v1/s3/{bucketName}':
+  '/v1/s3/{bucketName}':
     parameters:
       - name: bucketName
         in: path
@@ -557,7 +557,19 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
-  v1/s3:
+    get:
+      tags:
+        - s3
+      summary: list objects
+      operationId: listObjects
+      responses:
+        '200':
+          description: successful list objects
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ListObjectResponse'
+  /v1/s3/:
     parameters:
       - name: bucketName
         in: path
@@ -577,7 +589,7 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/ListAllMyBucketsResult'
-  'v1/s3/{bucketName}/{object}':
+  '/v1/s3/{bucketName}/{Object}':
     parameters:
       - name: bucketName
         in: path
@@ -585,14 +597,14 @@ paths:
         required: true
         schema:
           type: string
-      - name: object
+      - name: Object
         in: path
         description: the name of object
         required: true
         schema:
           type: string
       - name: Range
-        in: path
+        in: query
         description: >-
           the Header parameter Range value like "bytes:1-10",used for multipart
           download
@@ -600,20 +612,25 @@ paths:
         schema:
           type: string
       - name: uploads
-        in:  query
-        description: the format is '/{object}?uploads',used for init multipartupload
+        in: query
+        description: 'the format is ''/{object}?uploads'',used for init multipartupload'
         required: false
         schema:
           type: string
       - name: uploadId&partNumber
-        in:  query
-        description: the format is '/{object}?partNumber={partNumber}&uploadId={UploadId}',used for upload a part
+        in: query
+        description: >-
+          the format is
+          '/{object}?partNumber={partNumber}&uploadId={UploadId}',used for
+          upload a part
         required: false
         schema:
           type: string
       - name: uploadId
-        in:  query
-        description: the format is '/{object}?uploadId={UploadId}',used for compelete multipart upload and abort multiparupload
+        in: query
+        description: >-
+          the format is '/{object}?uploadId={UploadId}',used for compelete
+          multipart upload and abort multiparupload
         required: false
         schema:
           type: string
@@ -634,6 +651,9 @@ paths:
         - s3
       summary: download object
       operationId: objectGet
+      responses:
+        '200':
+          description: successful download object
     delete:
       tags:
         - s3
@@ -646,26 +666,6 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
-  'v1/s3/{bucketName}/':
-    parameters:
-      - name: bucketName
-        in: path
-        description: the name of bucket
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - s3
-      summary: list objects
-      operationId: listObjects
-      responses:
-        '200':
-          description: successful list objects
-          content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/ListObjectResponse'
 components:
   parameters:
     offset:
@@ -946,42 +946,6 @@ components:
       properties:
         LocationConstraint:
           description: The backend of Bucket
-          type: string
-    InitiateMultipartUploadResult:
-      type: object
-      properties:
-        Bucket:
-          description: The name of Bucket
-          type: string
-        Key:
-          description: The name of Object
-          type: string
-        UploadId:
-          description: the id of upload
-          type: string
-    UploadPartResult:
-      type: object
-      properties:
-        partNumber:
-          description: The number of part
-          type: string
-        Etag:
-          description: The tag of part
-          type: string
-    CompleteMultipartUpload:
-      type: object
-      properties:
-        Location:
-          description: The Location of upload object
-          type: string
-        Bucket:
-          description: The name of bucket
-          type: string
-        Key:
-          description: The name of object
-          type: string
-        Etag:
-          description: The tag of multipartupload
           type: string
     ListAllMyBucketsResult:
       type: object
