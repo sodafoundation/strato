@@ -26,7 +26,7 @@ matrix:
   - go: tip
 
 install:
-  # Build OpenSDS multi-cloud contanier images
+  # Build OpenSDS multi-cloud container images
   - make docker
   - docker-compose up -d
 

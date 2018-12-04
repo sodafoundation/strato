@@ -20,18 +20,19 @@ import (
 	"errors"
 	"os"
 
+	"fmt"
+	"strings"
+
 	"github.com/micro/go-log"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/job"
+	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/policy"
-	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
-	"strings"
-	"fmt"
 )
 
 type dataflowService struct{}
@@ -43,11 +44,11 @@ func NewDataFlowService() pb.DataFlowHandler {
 
 	addrs := []string{}
 	config := strings.Split(os.Getenv("KAFKA_ADVERTISED_LISTENERS"), ";")
-	for i:=0; i < len(config); i++ {
+	for i := 0; i < len(config); i++ {
 		addr := strings.Split(config[i], "//")
 		if len(addr) != 2 {
 			log.Log("Invalid addr:", config[i])
-		}else {
+		} else {
 			addrs = append(addrs, addr[1])
 		}
 	}
@@ -197,9 +198,9 @@ func fillRspConnector(out *pb.Connector, in *model.Connector) {
 	case model.STOR_TYPE_OPENSDS:
 		out.BucketName = in.BucketName
 	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
-		model.STOR_TYPE_AZURE_BLOB:
+		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3:
 		for i := 0; i < len(in.ConnConfig); i++ {
-			out.ConnConfig = append(out.ConnConfig, &pb.KV{Key:in.ConnConfig[i].Key, Value:in.ConnConfig[i].Value})
+			out.ConnConfig = append(out.ConnConfig, &pb.KV{Key: in.ConnConfig[i].Key, Value: in.ConnConfig[i].Value})
 		}
 	default:
 		log.Logf("Not support connector type:%v\n", in.StorType)
@@ -306,9 +307,9 @@ func fillReqConnector(out *model.Connector, in *pb.Connector) error {
 		out.BucketName = in.BucketName
 		return nil
 	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
-		model.STOR_TYPE_AZURE_BLOB:
+		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3:
 		for i := 0; i < len(in.ConnConfig); i++ {
-			out.ConnConfig = append(out.ConnConfig, model.KeyValue{Key:in.ConnConfig[i].Key, Value:in.ConnConfig[i].Value})
+			out.ConnConfig = append(out.ConnConfig, model.KeyValue{Key: in.ConnConfig[i].Key, Value: in.ConnConfig[i].Value})
 		}
 		return nil
 	default:
@@ -459,11 +460,11 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 		log.Logf("Get job err:%d.", err)
 		out.Err = err.Error()
 		return err
-	}else {
+	} else {
 		out.Job = &pb.Job{Id: string(jb.Id.Hex()), Type: jb.Type, PlanName: jb.PlanName, PlanId: jb.PlanId,
 			Description: "for test", SourceLocation: jb.SourceLocation, DestLocation: jb.DestLocation,
-			CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix(), Status:jb.Status, TotalCapacity:jb.TotalCapacity,
-			PassedCapacity:jb.PassedCapacity, TotalCount:jb.TotalCount, PassedCount:jb.PassedCount, Progress:jb.Progress}
+			CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix(), Status: jb.Status, TotalCapacity: jb.TotalCapacity,
+			PassedCapacity: jb.PassedCapacity, TotalCount: jb.TotalCount, PassedCount: jb.PassedCount, Progress: jb.Progress}
 	}
 
 	//For debug -- begin
@@ -494,14 +495,14 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 
 	if err == nil {
 		//for i := 0; i < len(jobs); i++ {
-		for _, job := range jobs{
-				//TODO: need change according to real scenario
-				j := pb.Job{Id: string(job.Id.Hex()), Type: job.Type, PlanName: job.PlanName, PlanId: job.PlanId,
-					SourceLocation: job.SourceLocation, DestLocation: job.DestLocation, StartTime:job.StartTime.Unix(),
-					CreateTime: job.CreateTime.Unix(), EndTime: job.EndTime.Unix(), Status:job.Status,
-					TotalCapacity:job.TotalCapacity, PassedCapacity:job.PassedCapacity, TotalCount:int64(job.TotalCount),
-					PassedCount:(int64(job.PassedCount)), Progress:int64(job.Progress)}
-				out.Jobs = append(out.Jobs, &j)
+		for _, job := range jobs {
+			//TODO: need change according to real scenario
+			j := pb.Job{Id: string(job.Id.Hex()), Type: job.Type, PlanName: job.PlanName, PlanId: job.PlanId,
+				SourceLocation: job.SourceLocation, DestLocation: job.DestLocation, StartTime: job.StartTime.Unix(),
+				CreateTime: job.CreateTime.Unix(), EndTime: job.EndTime.Unix(), Status: job.Status,
+				TotalCapacity: job.TotalCapacity, PassedCapacity: job.PassedCapacity, TotalCount: int64(job.TotalCount),
+				PassedCount: (int64(job.PassedCount)), Progress: int64(job.Progress)}
+			out.Jobs = append(out.Jobs, &j)
 		}
 	}
 
