@@ -112,7 +112,7 @@ func (ad *AwsAdapter) GET(object *pb.Object, context context.Context, start int6
 		Bucket: &bucket,
 		Key:    &newObjectKey,
 	}
-        log.Logf("------------start=%d, end=%d\n", start, end)
+	log.Logf("start = %d, end = %d\n", start, end)
 	if start != 0 || end != 0 {
 		strStart := strconv.FormatInt(start, 10)
 		strEnd := strconv.FormatInt(end, 10)

@@ -17,10 +17,10 @@ package hws
 import (
 	"context"
 	"io"
-	"obs"
 	"time"
 
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -128,13 +128,10 @@ func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 			log.Logf("initmultipartupload failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "initmultipartupload failed"}
 		} else {
-			log.Log("initmultipartupload successfully.\n")
+			log.Log("initmultipartupload  successfully.")
 			multipartUpload.Bucket = out.Bucket
-
 			multipartUpload.Key = out.Key
-
 			multipartUpload.UploadId = out.UploadId
-
 			log.Logf("multipartUpload is %v\n", multipartUpload)
 			return multipartUpload, NoError
 		}
