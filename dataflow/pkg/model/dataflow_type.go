@@ -27,6 +27,7 @@ var (
 	STOR_TYPE_AWS_S3           = "aws-s3"
 	STOR_TYPE_AZURE_BLOB       = "azure-blob"
 	STOR_TYPE_HW_OBS           = "hw-obs"
+	STOR_TYPE_CEPH_S3          = "ceph-s3"
 	STOR_TYPE_HW_FUSIONSTORAGE = "fusionstorage-object"
 	STOR_TYPE_HW_FUSIONCLOUD   = "hw-fusioncloud"
 )
@@ -59,7 +60,7 @@ var (
 )
 
 var (
-	DefaultLimit = 1000
+	DefaultLimit  = 1000
 	DefaultOffset = 0
 )
 
@@ -92,7 +93,7 @@ type KeyValue struct {
 }
 
 type Connector struct {
-	StorType   string     `json:"storType" bson:"storeType"`    //opensds-obj, aws-obj,azure-obj,ceph-obj,hw-obj,nas
+	StorType   string     `json:"storType" bson:"storeType"`    //opensds-obj, aws-obj,azure-obj,ceph-s3,hw-obj,nas
 	BucketName string     `json:"bucketName" bson:"bucketName"` //when StorType is opensds, need this
 	ConnConfig []KeyValue `json:"connConfig" bson:"connConfig"`
 }

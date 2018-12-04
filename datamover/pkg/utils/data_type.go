@@ -15,13 +15,13 @@
 package utils
 
 type LocationInfo struct {
-	StorType string //aws-s3,azure-blob,hw-obs,etc.
-	Region string
-	EndPoint string
+	StorType   string //aws-s3,azure-blob,hw-obs,ceph-s3 etc.
+	Region     string
+	EndPoint   string
 	BucketName string //remote bucket name
-	VirBucket string  //local bucket name
-	Access string
-	Security string
+	VirBucket  string //local bucket name
+	Access     string
+	Security   string
 	BakendName string
 }
 
