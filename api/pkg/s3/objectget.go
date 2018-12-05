@@ -34,6 +34,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	rangestr := request.HeaderParameter("Range")
+	log.Logf("%v\n", rangestr)
 	ctx := context.WithValue(request.Request.Context(), "operation", "download")
 	start := 0
 	end := 0

@@ -124,18 +124,14 @@ func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey
 		out, err := ad.client.InitiateMultipartUpload(input)
-		log.Logf("out.Bucket = %v, out.Key = %v ,out.UploadId = %v:\n", out.Bucket, out.Key, out.UploadId)
 		if err != nil {
 			log.Logf("initmultipartupload failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "initmultipartupload failed"}
 		} else {
-			log.Logf("initmultipartupload %v successfully.", out.Key)
+			log.Log("initmultipartupload  successfully.")
 			multipartUpload.Bucket = out.Bucket
-			log.Logf("out.Bucket is %v", out.Bucket)
 			multipartUpload.Key = out.Key
-			log.Logf("out.Key is %v", out.Key)
 			multipartUpload.UploadId = out.UploadId
-			log.Logf("out.UploadId is %v", out.UploadId)
 			log.Logf("multipartUpload is %v\n", multipartUpload)
 			return multipartUpload, NoError
 		}
