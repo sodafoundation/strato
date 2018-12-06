@@ -210,10 +210,12 @@ func (ad *OBSAdapter) CompleteMultipartUpload(
 
 func (ad *OBSAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
 	bucket := ad.backend.BucketName
+	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.AbortMultipartUploadInput{}
+		input.UploadId = multipartUpload.UploadId
 		input.Bucket = bucket
-		input.Key = multipartUpload.Key
+		input.Key = newObjectKey
 		_, err := ad.client.AbortMultipartUpload(input)
 		if err != nil {
 			log.Logf("AbortMultipartUploadInput is nil:%v", err)
