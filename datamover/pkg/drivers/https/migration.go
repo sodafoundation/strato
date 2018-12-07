@@ -360,6 +360,10 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	err = completeMultipartUpload(uploadObjKey, destLoca, uploadMover)
 	if err != nil {
 		logger.Println(err.Error())
+		err := abortMultipartUpload(obj.ObjectKey, destLoca, uploadMover)
+		if err != nil {
+			logger.Printf("Abort s3 multipart upload failed, err:%v\n", err)
+		}
 	}
 
 	return err
