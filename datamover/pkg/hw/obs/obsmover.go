@@ -232,6 +232,7 @@ func (mover *ObsMover) UploadPart(objKey string, destLoca *LocationInfo, upBytes
 	uploadPartInput.Offset = offset
 	uploadPartInput.PartSize = upBytes
 	for tries := 1; tries <= 3; tries++ {
+		uploadPartInput.Body = bytes.NewReader(buf)
 		uploadPartInputOutput, err := mover.obsClient.UploadPart(uploadPartInput)
 		if err != nil {
 			log.Logf("[obsmover] Upload object[%s] range[partnumber#%d,offset#%d] failed %d times. err:%v\n",
