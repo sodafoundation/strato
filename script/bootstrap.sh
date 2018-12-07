@@ -177,12 +177,12 @@ function install_multicloud() {
 
     if [[ -d /opt/stack/devstack ]]; then
         config_keystone
-        sed -i "s,OS_AUTH_AUTHSTRATEGY:.*$,OS_AUTH_AUTHSTRATEGY: \"keystone\"," $compose_file
-        sed -i "s,OS_AUTH_URL:.*$,OS_AUTH_URL: \"http://$HOST_IP/identity\"," $compose_file
-        sed -i "s,OS_USERNAME:.*$,OS_USERNAME: \"$MULTICLOUD_SERVER_NAME\"," $compose_file
-        sed -i "s,OS_PASSWORD:.*$,OS_PASSWORD: \"$MULTICLOUD_PASSWORD\"," $compose_file
+        sed -i "s,OS_AUTH_AUTHSTRATEGY=.*$,OS_AUTH_AUTHSTRATEGY=keystone," $compose_file
+        sed -i "s,OS_AUTH_URL=.*$,OS_AUTH_URL=http://$HOST_IP/identity," $compose_file
+        sed -i "s,OS_USERNAME=.*$,OS_USERNAME=$MULTICLOUD_SERVER_NAME," $compose_file
+        sed -i "s,OS_PASSWORD=.*$,OS_PASSWORD=$MULTICLOUD_PASSWORD," $compose_file
     else
-        sed -i "s,OS_AUTH_AUTHSTRATEGY:.*$,OS_AUTH_AUTHSTRATEGY: \"noauth\"," $compose_file
+        sed -i "s,OS_AUTH_AUTHSTRATEGY=.*$,OS_AUTH_AUTHSTRATEGY=noauth," $compose_file
     fi
     log "Starting MultiCloud service ..."
     cd $multicloud_root
