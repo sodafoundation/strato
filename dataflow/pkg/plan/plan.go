@@ -23,7 +23,7 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"

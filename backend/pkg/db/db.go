@@ -17,6 +17,7 @@ package db
 import (
 	"fmt"
 
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/backend/pkg/db/drivers/mongo"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/config"
@@ -24,11 +25,11 @@ import (
 
 type Repository interface {
 	// Backend
-	CreateBackend(backend *model.Backend) (*model.Backend, error)
-	DeleteBackend(id string) error
-	UpdateBackend(backend *model.Backend) (*model.Backend, error)
-	GetBackend(id string) (*model.Backend, error)
-	ListBackend(limit, offset int, query interface{}) ([]*model.Backend, error)
+	CreateBackend(ctx *c.Context, backend *model.Backend) (*model.Backend, error)
+	DeleteBackend(ctx *c.Context, id string) error
+	UpdateBackend(ctx *c.Context, backend *model.Backend) (*model.Backend, error)
+	GetBackend(ctx *c.Context, id string) (*model.Backend, error)
+	ListBackend(ctx *c.Context, limit, offset int, query interface{}) ([]*model.Backend, error)
 	Close()
 }
 

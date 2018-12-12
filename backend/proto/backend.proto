@@ -11,7 +11,8 @@ service Backend {
 }
 
 message CreateBackendRequest {
-	BackendDetail backend = 1;
+	string context = 1;
+	BackendDetail backend = 2;
 }
 
 message CreateBackendResponse {
@@ -19,7 +20,8 @@ message CreateBackendResponse {
 }
 
 message GetBackendRequest {
-	string id = 1;
+	string context = 1;
+	string id = 2;
 }
 
 message GetBackendResponse {
@@ -27,11 +29,12 @@ message GetBackendResponse {
 }
 
 message ListBackendRequest {
-	int32 limit = 1;
-	int32 offset = 2;
-	repeated string sortKeys = 3;
-	repeated string sortDirs = 4;
-	map<string, string> Filter = 5;
+	string context = 1;
+	int32 limit = 2;
+	int32 offset = 3;
+	repeated string sortKeys = 4;
+	repeated string sortDirs = 5;
+	map<string, string> Filter = 6;
 }
 
 message ListBackendResponse {
@@ -40,9 +43,10 @@ message ListBackendResponse {
 }
 
 message UpdateBackendRequest {
-	string id = 1;
-	string access = 2;
-	string security = 3;
+	string context = 1;
+	string id = 2;
+	string access = 4;
+	string security = 5;
 }
 
 message UpdateBackendResponse {
@@ -50,7 +54,8 @@ message UpdateBackendResponse {
 }
 
 message DeleteBackendRequest {
-	string id = 1;
+	string context = 1;
+	string id = 2;
 }
 
 message DeleteBackendResponse {
@@ -70,11 +75,12 @@ message BackendDetail {
 }
 
 message ListTypeRequest {
-	int32 limit = 1;
-	int32 offset = 2;
-	repeated string sortKeys = 3;
-	repeated string sortDirs = 4;
-	map<string, string> Filter = 5;
+	string context = 1;
+	int32 limit = 2;
+	int32 offset = 3;
+	repeated string sortKeys = 4;
+	repeated string sortDirs = 5;
+	map<string, string> Filter = 6;
 }
 
 message ListTypeResponse {

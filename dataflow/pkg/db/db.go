@@ -16,7 +16,7 @@ package db
 
 import (
 	"github.com/micro/go-log"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db/drivers/mongo"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"

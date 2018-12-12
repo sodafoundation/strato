@@ -17,8 +17,8 @@ import (
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-	contentLenght := request.HeaderParameter("content-length")
-	size, _ := strconv.ParseInt(contentLenght, 10, 64)
+	contentLength := request.HeaderParameter("content-length")
+	size, _ := strconv.ParseInt(contentLength, 10, 64)
 
 	uploadId := request.QueryParameter("uploadId")
 	partNumber := request.QueryParameter("partNumber")

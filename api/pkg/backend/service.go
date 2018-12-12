@@ -21,6 +21,7 @@ import (
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
@@ -54,8 +55,9 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 	}
 	log.Logf("Received request for backend details: %s", request.PathParameter("id"))
 	id := request.PathParameter("id")
+	actx := request.Attribute(c.KContext).(*c.Context)
 	ctx := context.Background()
-	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
+	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
 		log.Logf("Failed to get backend details: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -100,6 +102,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 	}
 	listBackendRequest.Filter = filter
 
+	listBackendRequest.Context = request.Attribute(c.KContext).(*c.Context).ToJson()
 	ctx := context.Background()
 	res, err := s.backendClient.ListBackend(ctx, listBackendRequest)
 	if err != nil {
@@ -125,8 +128,9 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 		return
 	}
 
+	actx := request.Attribute(c.KContext).(*c.Context)
 	ctx := context.Background()
-	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
+	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Context: actx.ToJson(), Backend: backendDetail})
 	if err != nil {
 		log.Logf("Failed to create backend: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -150,6 +154,7 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 		return
 	}
 
+	updateBackendRequest.Context = request.Attribute(c.KContext).(*c.Context).ToJson()
 	ctx := context.Background()
 	res, err := s.backendClient.UpdateBackend(ctx, &updateBackendRequest)
 	if err != nil {
@@ -167,8 +172,9 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 		return
 	}
 	log.Logf("Received request for deleting backend: %s", request.PathParameter("id"))
+	actx := request.Attribute(c.KContext).(*c.Context)
 	ctx := context.Background()
-	_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: request.PathParameter("id")})
+	_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Context: actx.ToJson(), Id: request.PathParameter("id")})
 	if err != nil {
 		log.Logf("Failed to delete backend: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -212,6 +218,8 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 		return
 	}
 	listTypeRequest.Filter = filter
+
+	listTypeRequest.Context = request.Attribute(c.KContext).(*c.Context).ToJson()
 
 	ctx := context.Background()
 	res, err := s.backendClient.ListType(ctx, listTypeRequest)

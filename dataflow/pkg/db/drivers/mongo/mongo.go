@@ -15,14 +15,15 @@
 package mongo
 
 import (
-	"time"
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
-	. "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	. "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"fmt"
 )
 
 var adap = &adapter{}
@@ -49,7 +50,7 @@ func setIndex(session *mgo.Session, colName string, key string, unique bool, dro
 	//Check if index is already set, if not set it.
 	indxs, err := coll.Indexes()
 	if err == nil {
-		for _,indx := range indxs {
+		for _, indx := range indxs {
 			for _, k := range indx.Key {
 				if k == key {
 					log.Logf("Collection[%s] has set unique index of %s.\n", colName, key)
@@ -61,8 +62,8 @@ func setIndex(session *mgo.Session, colName string, key string, unique bool, dro
 
 	index := mgo.Index{
 		Key:      []string{key}, //index key
-		Unique:   unique,                //Prevent two documents from having the same index key
-		DropDups: dropDups,               //Drop documents with the same index key as a previously indexed one.
+		Unique:   unique,        //Prevent two documents from having the same index key
+		DropDups: dropDups,      //Drop documents with the same index key as a previously indexed one.
 		// Invalid when Unique equals true.
 		Background: backgroudn, //If Background is true, other connections will be allowed to proceed
 		// using the collection without the index while it's being built.
@@ -90,8 +91,19 @@ func Init(host string) *adapter {
 	return adap
 }
 
-func isAdmin(ctx *Context) bool {
-	return ctx.IsAdmin
+func UpdateFilter(m bson.M, filter map[string]string) error {
+	for k, v := range filter {
+		m[k] = interface{}(v)
+	}
+	return nil
+}
+
+func UpdateContextFilter(m bson.M, ctx *Context) error {
+	// if context is admin, no need filter by tenantId.
+	if !ctx.IsAdmin {
+		m["tenantId"] = ctx.TenantId
+	}
+	return nil
 }
 
 func Exit() {
@@ -204,7 +216,7 @@ func (ad *adapter) UnlockSched(planId string) int {
 }
 
 func (ad *adapter) CreatePolicy(ctx *Context, pol *Policy) (*Policy, error) {
-	pol.Tenant = ctx.TenantId
+	pol.TenantId = ctx.TenantId
 	pol.Id = bson.NewObjectId()
 	ss := ad.s.Copy()
 	defer ss.Close()
@@ -238,7 +250,9 @@ func (ad *adapter) DeletePolicy(ctx *Context, id string) error {
 
 	po := Policy{}
 	c := ss.DB(DataBaseName).C(CollPolicy)
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenant": ctx.TenantId}).One(&po)
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	UpdateContextFilter(m, ctx)
+	err := c.Find(m).One(&po)
 	if err == mgo.ErrNotFound {
 		log.Log("Delete policy: the specified policy does not exist.")
 		return ERR_POLICY_NOT_EXIST
@@ -275,10 +289,10 @@ func (ad *adapter) ListPolicy(ctx *Context) ([]Policy, error) {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollPolicy)
+
 	m := bson.M{}
-	if !isAdmin(ctx) {
-		m["tenant"] = ctx.TenantId
-	}
+	UpdateContextFilter(m, ctx)
+
 	err := c.Find(m).All(&pols)
 	if err == mgo.ErrNotFound || len(pols) == 0 {
 		log.Log("No policy found.")
@@ -295,8 +309,11 @@ func (ad *adapter) GetPolicy(ctx *Context, id string) (*Policy, error) {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollPolicy)
-	log.Logf("GetPolicy: id=%s,tenant=%s\n", id, ctx.TenantId)
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenant": ctx.TenantId}).One(&pol)
+
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	UpdateContextFilter(m, ctx)
+
+	err := c.Find(m).One(&pol)
 	if err == mgo.ErrNotFound {
 		log.Log("Plan does not exist.")
 		return nil, ERR_POLICY_NOT_EXIST
@@ -323,9 +340,11 @@ func (ad *adapter) UpdatePolicy(ctx *Context, newPol *Policy) (*Policy, error) {
 		return nil, ERR_INNER_ERR
 	}
 
+	m := bson.M{"_id": newPol.Id}
+	UpdateContextFilter(m, ctx)
+
 	//Update database
-	c := ss.DB(DataBaseName).C(CollPolicy)
-	err := c.Update(bson.M{"_id": newPol.Id}, newPol)
+	err := ss.DB(DataBaseName).C(CollPolicy).Update(m, newPol)
 	if err == mgo.ErrNotFound {
 		//log.Log("Update policy failed, err: the specified policy does not exist.")
 		log.Logf("Update policy in database failed, err: %v.", err)
@@ -414,19 +433,11 @@ func (ad *adapter) DeletePlan(ctx *Context, id string) error {
 		return ERR_INNER_ERR
 	}
 
-	p := Plan{}
-	c := ss.DB(DataBaseName).C(CollPlan)
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenantId": ctx.TenantId}).One(&p)
-	if err == mgo.ErrNotFound {
-		log.Log("Delete plan failed, err:the specified p does not exist.")
-		return ERR_PLAN_NOT_EXIST
-	} else if err != nil {
-		log.Logf("Delete plan failed, err:%v.\n", err)
-		return ERR_DB_ERR
-	}
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	UpdateContextFilter(m, ctx)
 
 	//Delete it from database
-	err = c.Remove(bson.M{"_id": p.Id})
+	err := ss.DB(DataBaseName).C(CollPlan).Remove(m)
 	if err == mgo.ErrNotFound {
 		log.Log("Delete plan failed, err:the specified p does not exist.")
 		return ERR_PLAN_NOT_EXIST
@@ -488,9 +499,11 @@ func (ad *adapter) UpdatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 		plan.PolicyRef = mgo.DBRef{}
 	}
 
+	m := bson.M{"_id": plan.Id}
+	UpdateContextFilter(m, ctx)
+
 	//Update database
-	c := ss.DB(DataBaseName).C(CollPlan)
-	err = c.Update(bson.M{"_id": plan.Id}, plan)
+	err = ss.DB(DataBaseName).C(CollPlan).Update(m, plan)
 	if err == mgo.ErrNotFound {
 		log.Logf("Update plan: the specified plan[id=%v] does not exist.", plan.Id)
 		return nil, ERR_PLAN_NOT_EXIST
@@ -502,16 +515,16 @@ func (ad *adapter) UpdatePlan(ctx *Context, plan *Plan) (*Plan, error) {
 }
 
 func (ad *adapter) ListPlan(ctx *Context, limit int, offset int, filter interface{}) ([]Plan, error) {
-	//m := bson.M{}
-	//if !isAdmin(ctx) {
-	//	//m["tenant"] = ctx.TenantId
-	//	filter.(map[string]string)["tenant"] = ctx.TenantId
-	//}
-
-	return ad.doListPlan(ctx, limit, offset, filter)
+	m := bson.M{}
+	if filter != nil {
+		if v, ok := filter.(map[string]string); ok {
+			UpdateFilter(m, v)
+		}
+	}
+	return ad.doListPlan(ctx, limit, offset, m)
 }
 
-func (ad *adapter) doListPlan(ctx *Context, limit int, offset int, filter interface{}) ([]Plan, error) {
+func (ad *adapter) doListPlan(ctx *Context, limit int, offset int, filter bson.M) ([]Plan, error) {
 	//var query mgo.Query;
 	plans := []Plan{}
 	ss := ad.s.Copy()
@@ -519,25 +532,16 @@ func (ad *adapter) doListPlan(ctx *Context, limit int, offset int, filter interf
 	c := ss.DB(DataBaseName).C(CollPlan)
 
 	log.Logf("Listplan filter:%v\n", filter)
-
-	//Search plan by bucket
-	var err error = nil
-	if filter != nil {
-		filt, ok := filter.(map[string]string)
-		if !ok {
-			log.Log("Reflect filter failed.")
-			return nil, ERR_INNER_ERR
-		}
-		if filt["bucketname"] == "" {
-			err = c.Find(filter).Skip(offset).Limit(limit).All(&plans)
-		} else {
-			query := []bson.M{}
-			query = append(query, bson.M{"srcConn.bucketName":filt["bucketname"]})
-			query = append(query, bson.M{"destConn.bucketName":filt["bucketname"]})
-			err = c.Find(bson.M{"$or":query}).Skip(offset).Limit(limit).All(&plans)
-		}
+	if v, ok := filter["bucketname"]; ok {
+		query := []bson.M{}
+		query = append(query, bson.M{"srcConn.bucketName": v})
+		query = append(query, bson.M{"destConn.bucketName": v})
+		filter["$or"] = query
+		delete(filter, "bucketname")
 	}
 
+	UpdateContextFilter(filter, ctx)
+	err := c.Find(filter).Skip(offset).Limit(limit).All(&plans)
 	//err := c.Find(filter).Skip(offset).Limit(limit).All(&plans)
 	if err == mgo.ErrNotFound || len(plans) == 0 {
 		log.Log("No plan found.")
@@ -558,7 +562,6 @@ func (ad *adapter) doListPlan(ctx *Context, limit int, offset int, filter interf
 				return nil, ERR_DB_ERR
 			} else {
 				plans[i].PolicyName = pol.Name
-				//plans[i].PolicyId = string(pol.Id.Hex())
 			}
 		}
 	}
@@ -570,9 +573,10 @@ func (ad *adapter) GetPlan(ctx *Context, id string) (*Plan, error) {
 	p := Plan{}
 	ss := ad.s.Copy()
 	defer ss.Close()
-	c := ss.DB(DataBaseName).C(CollPlan)
+
 	log.Logf("GetPlan: id=%s,tenantId=%s\n", id, ctx.TenantId)
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenantId": ctx.TenantId}).One(&p)
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	err := ss.DB(DataBaseName).C(CollPlan).Find(m).One(&p)
 	if err == mgo.ErrNotFound {
 		log.Log("Plan does not exist.")
 		return nil, ERR_PLAN_NOT_EXIST
@@ -587,7 +591,6 @@ func (ad *adapter) GetPlan(ctx *Context, id string) (*Plan, error) {
 			return nil, ERR_DB_ERR
 		} else {
 			p.PolicyName = pol.Name
-			//plans[i].PolicyId = string(pol.Id.Hex())
 		}
 	}
 	return &p, nil
@@ -596,14 +599,11 @@ func (ad *adapter) GetPlan(ctx *Context, id string) (*Plan, error) {
 func (ad *adapter) GetPlanByPolicy(ctx *Context, policyId string, limit int, offset int) ([]Plan, error) {
 	log.Logf("GetPlanByPolicy: policyId=%s,tenantId=%s\n", policyId, ctx.TenantId)
 	m := bson.M{"policyId": policyId}
-	if !isAdmin(ctx) {
-		m["tenantId"] = ctx.TenantId
-	}
 	return ad.doListPlan(ctx, limit, offset, m)
 }
 
 func (ad *adapter) CreateJob(ctx *Context, job *Job) (*Job, error) {
-	job.Tenant = ctx.TenantId
+	job.TenantId = ctx.TenantId
 	ss := ad.s.Copy()
 	defer ss.Close()
 
@@ -631,9 +631,9 @@ func (ad *adapter) GetJob(ctx *Context, id string) (*Job, error) {
 	job := Job{}
 	ss := ad.s.Copy()
 	defer ss.Close()
-	c := ss.DB(DataBaseName).C(CollJob)
-
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(id), "tenant": ctx.TenantId}).One(&job)
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	UpdateContextFilter(m, ctx)
+	err := ss.DB(DataBaseName).C(CollJob).Find(m).One(&job)
 	if err == mgo.ErrNotFound {
 		log.Log("Job does not exist.")
 		return nil, ERR_JOB_NOT_EXIST
@@ -647,11 +647,9 @@ func (ad *adapter) ListJob(ctx *Context, limit int, offset int, filter interface
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(CollJob)
-	//m := bson.M{}
-	//if !isAdmin(ctx) {
-	//	m["tenant"] = ctx.TenantId
-	//}
-	err := c.Find(filter).Skip(offset).Limit(limit).All(&jobs)
+	m := bson.M{}
+	UpdateContextFilter(m, ctx)
+	err := c.Find(m).Skip(offset).Limit(limit).All(&jobs)
 	if err == mgo.ErrNotFound || len(jobs) == 0 {
 		log.Log("No jobs found.")
 		return nil, nil

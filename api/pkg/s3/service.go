@@ -15,19 +15,19 @@
 package s3
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/client"
+	"context"
+	"io"
+	"io/ioutil"
 	"math"
 
-	//	"github.com/micro/go-micro/errors"
-	"context"
+	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/micro/go-micro/client"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"io"
-	"io/ioutil"
 )
 
 const (
@@ -84,49 +84,35 @@ func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapt
 	//backendRep, backendErr := s.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{Id: bucket.Backend})
 	log.Logf("bucketName is %v\n", bucketName)
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  math.MaxInt32,
-		Filter: map[string]string{"name": bucket.Backend}})
+		Context: c.NewAdminContext().ToJson(),
+		Offset:  0,
+		Limit:   math.MaxInt32,
+		Filter:  map[string]string{"name": bucket.Backend}})
 	log.Logf("backendErr is %v:", backendErr)
 	if backendErr != nil {
 		log.Logf("Get backend %s failed.", bucket.Backend)
 		return nil
 	}
 	log.Logf("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	client, _ := datastore.Init(backend)
-	return client
+	b := backendRep.Backends[0]
+	db, _ := datastore.Init(b)
+	return db
 }
 
 func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdapter {
 	ctx := context.Background()
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  math.MaxInt32,
-		Filter: map[string]string{"name": backendName}})
+		Context: c.NewAdminContext().ToJson(),
+		Offset:  0,
+		Limit:   math.MaxInt32,
+		Filter:  map[string]string{"name": backendName}})
 	log.Logf("backendErr is %v:", backendErr)
 	if backendErr != nil {
 		log.Logf("Get backend %s failed.", backendName)
 		return nil
 	}
 	log.Logf("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	client, _ := datastore.Init(backend)
-	return client
-}
-
-func getBucketNameByBackend(s *APIService, backendName string) string {
-	ctx := context.Background()
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  math.MaxInt32,
-		Filter: map[string]string{"name": backendName}})
-	log.Logf("backendErr is %v:", backendErr)
-	if backendErr != nil {
-		log.Logf("Get backend %s failed.", backendName)
-		return ""
-	}
-	log.Logf("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	return backend.BucketName
+	b := backendRep.Backends[0]
+	db, _ := datastore.Init(b)
+	return db
 }

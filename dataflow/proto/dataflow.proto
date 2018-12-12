@@ -24,7 +24,7 @@ message Schedule {
 message Policy {
 	string id = 1;
 	string name = 2;
-	string tenant = 3;
+	string tenantId = 3;
 	string description = 4;
 	Schedule schedule = 5;
 }

@@ -16,11 +16,11 @@ package scheduler
 
 import (
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
+	"github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
 
 func LoadAllPlans() {
@@ -30,7 +30,7 @@ func LoadAllPlans() {
 	limit := model.DefaultLimit
 
 	planNum := 0
-	for ; offset == 0 || planNum > 0; {
+	for offset == 0 || planNum > 0 {
 		plans, err := db.DbAdapter.ListPlan(ctx, limit, offset, nil)
 		if err != nil {
 			log.Logf("Get all plan faild, %v", err)

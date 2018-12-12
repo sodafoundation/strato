@@ -16,7 +16,7 @@ package job
 
 import (
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
+	"github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 )

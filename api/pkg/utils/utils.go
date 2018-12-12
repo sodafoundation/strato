@@ -21,7 +21,7 @@ import (
 	"os"
 	"reflect"
 
-	log "github.com/golang/glog"
+	log "github.com/micro/go-log"
 )
 
 //remove redundant elements
@@ -97,14 +97,14 @@ func Retry(retryNum int, desc string, silent bool, fn func(retryIdx int, lastErr
 	for i := 0; i < retryNum; i++ {
 		if err = fn(i, err); err != nil {
 			if !silent {
-				log.Errorf("%s:%s, retry %d time(s)", desc, err, i+1)
+				log.Logf("[Error]: %s:%s, retry %d time(s)", desc, err, i+1)
 			}
 		} else {
 			return nil
 		}
 	}
 	if !silent {
-		log.Errorf("%s retry exceed the max retry times(%d).", desc, retryNum)
+		log.Logf("[Error]: %s retry exceed the max retry times(%d).", desc, retryNum)
 	}
 	return err
 }

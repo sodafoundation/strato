@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/micro/go-log"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/job"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
@@ -63,7 +63,7 @@ func policyModel2Resp(policy *model.Policy) *pb.Policy {
 		Id:          policy.Id.Hex(),
 		Name:        policy.Name,
 		Description: policy.Description,
-		Tenant:      policy.Tenant,
+		TenantId:    policy.TenantId,
 		Schedule: &pb.Schedule{
 			Type:             policy.Schedule.Type,
 			TiggerProperties: policy.Schedule.TriggerProperties,
@@ -457,7 +457,7 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 
 	jb, err := job.Get(actx, in.Id)
 	if err != nil {
-		log.Logf("Get job err:%d.", err)
+		log.Logf("Get job err:%v.", err)
 		out.Err = err.Error()
 		return err
 	} else {
@@ -472,7 +472,7 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 	if errs != nil {
 		log.Logf(errs.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons)
+		log.Logf("json: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err
@@ -489,7 +489,7 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 	actx := c.NewContextFromJson(in.GetContext())
 	jobs, err := job.List(actx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("Get job err:%d.", err)
+		log.Logf("Get job err:%v.", err)
 		return err
 	}
 
