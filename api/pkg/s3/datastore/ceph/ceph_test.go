@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/webrtcn/s3client"
-	. "github.com/webrtcn/s3client"
 )
 
 type TestCephAdapter struct {
@@ -170,7 +169,7 @@ func TestCephAdapter_GET(t *testing.T) {
 		BucketName: "archanabucket",
 	}
 
-	_, err := cephObject.Get(object1.ObjectKey, &GetObjectOption{})
+	_, err := cephObject.Get(object1.ObjectKey, &s3client.GetObjectOption{})
 
 	if err != nil {
 
@@ -438,7 +437,7 @@ func TestCephAdapter_GetObjectInfo(t *testing.T) {
 		BucketName: "archanabucket",
 	}
 
-	cephObject.Get(object1.ObjectKey, &GetObjectOption{})
+	cephObject.Get(object1.ObjectKey, &s3client.GetObjectOption{})
 
 	backend2 := &backendpb.BackendDetail{
 		Access:     "M20C8OSI4KTBECSE8ODZ",
