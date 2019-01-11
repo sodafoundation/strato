@@ -23,12 +23,12 @@ dpkg -i docker-ce_18.03.1~ce-0~ubuntu_amd64.deb
 Check golang version information:
 ```bash
 root@proxy:~# go version
-go version go1.9.2 linux/amd64
+go version go1.11.2 linux/amd64
 ```
 You can install golang by executing commands below:
 ```bash
-wget https://storage.googleapis.com/golang/go1.9.2.linux-amd64.tar.gz
-tar -C /usr/local -xzf go1.9.2.linux-amd64.tar.gz
+wget https://storage.googleapis.com/golang/go1.11.2.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.11.2.linux-amd64.tar.gz
 mkdir 
 echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
 echo 'export GOPATH=$HOME/gopath' >> /etc/profile
@@ -132,6 +132,9 @@ curl -H "Content-type: application/xml" -X PUT -d '
  <BaseResponse>
   <ErrorCode></ErrorCode>
   <Msg>Create bucket successfully.</Msg>
+  <XXX_NoUnkeyedLiteral></XXX_NoUnkeyedLiteral>
+  <XXX_unrecognized></XXX_unrecognized>
+  <XXX_sizecache>0</XXX_sizecache>
  </BaseResponse>
 ```
 
@@ -140,13 +143,16 @@ curl -H "Content-type: application/xml" -X PUT -d '
 ## before upload create a files firstly.
 echo "Hello World." > test.txt
 ## Request
-curl -H "Content-type: application/xml" -X -T "test.txt" PUT http://127.0.0.1:8089/v1/s3/bucket001/test.txt
+curl -H "Content-type: application/xml" -X PUT -T "test.txt" http://127.0.0.1:8089/v1/s3/bucket001/test.txt
 
 ## Response
 <?xml version="1.0" encoding="UTF-8"?>
  <BaseResponse>
   <ErrorCode></ErrorCode>
-  <Msg>update object successfully.</Msg>
+  <Msg>Create object successfully.</Msg>
+  <XXX_NoUnkeyedLiteral></XXX_NoUnkeyedLiteral>
+  <XXX_unrecognized></XXX_unrecognized>
+  <XXX_sizecache>0</XXX_sizecache>
  </BaseResponse>
 ```
 
