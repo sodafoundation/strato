@@ -20,6 +20,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 	//	"github.com/micro/go-micro/errors"
@@ -32,11 +33,23 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 	bucketName := request.PathParameter("bucketName")
 	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
-	res, err := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
+	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
+
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Delete bucket successfully.")
-	response.WriteEntity(res)
+	if len(res.ListObjects) == 0 {
+		res1, err1 := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
+		if err1 != nil {
+			response.WriteError(http.StatusInternalServerError, err1)
+			return
+		}
+		log.Log("Delete bucket successfully.")
+		response.WriteEntity(res1)
+	} else {
+		log.Log("The bucket can not be deleted. please delete objects first.\n")
+		response.WriteError(http.StatusInternalServerError, BucketDeleteError.Error())
+	}
+
 }

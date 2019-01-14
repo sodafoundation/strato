@@ -46,11 +46,11 @@ func (b *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 
 func (b *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Log("CreateBucket is called in s3 service.")
-	bucket:=pb.Bucket{}
+	bucket := pb.Bucket{}
 	err := db.DbAdapter.GetBucketByName(in.Name, &bucket)
 	//err := db.DbAdapter.CreateBucket(in)
 
-	if err.Code != ERR_OK&&err.Code!=http.StatusNotFound{
+	if err.Code != ERR_OK && err.Code != http.StatusNotFound {
 		return err.Error()
 	}
 	if err.Code == http.StatusNotFound {

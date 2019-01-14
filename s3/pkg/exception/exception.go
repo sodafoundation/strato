@@ -39,3 +39,5 @@ var BucketAlreadyExists = S3Error{Code: 409, Description: "The requested bucket 
 
 var NoSuchBackend = S3Error{Code: 404, Description: "The specified backend does not exists."}
 var NoSuchType = S3Error{Code: 404, Description: "The specified backend type does not exists."}
+var BucketDeleteError = S3Error{Code: 500, Description: "The bucket can not be deleted. please delete object first"}
+var BackendDeleteError = S3Error{Code: 500, Description: "The backend can not be deleted. please delete bucket first"}
