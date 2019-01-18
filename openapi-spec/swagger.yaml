@@ -33,32 +33,32 @@ info:
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
   - name: backend
-    description: Muli-cloud cloud storage backends
+    description: Storage backend for Mulit-cloud. Each backend is related to a specific bucket in cloud storage which is used to store data. Once backend is registered, user do not use hte related bucket in the cloud storage directly.
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
   - name: type
-    description: Supported storage backends
+    description: Each backend has it's type, like AWS S3, Azure Blob, Ceph S3, etc.
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
   - name: plan
-    description: Migration plan
+    description: Plan is used to define when and how dataflow runs.
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
   - name: job
-    description: Migration job
+    description: Run plan can generate a job each time.
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
   - name: policy
-    description: Schedule policy of plan.
+    description: The schedule for plan.
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
   - name: s3
-    description: s3 interface of multi-cloud
+    description: s3 interface of multi-cloud, it provid the s3 compatible APIs.
     externalDocs:
       description: Find out more
       url: 'https://opensds.io'
@@ -155,7 +155,7 @@ paths:
     delete:
       tags:
         - backend
-      summary: Deletes a backend.
+      summary: Delete a backend.
       operationId: deleteBackend
       responses:
         '200':
@@ -173,7 +173,7 @@ paths:
     get:
       tags:
         - backend
-      summary: Qurey a backend information.
+      summary: Get details of a backend.
       operationId: getBackend
       parameters:
         - name: backendId
