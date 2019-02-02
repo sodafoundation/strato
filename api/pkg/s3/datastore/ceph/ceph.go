@@ -150,7 +150,8 @@ func (ad *CephAdapter) GetObjectInfo(bucketName string, key string, context cont
 	bucketResp, err := bucketO.Get(bucket, newKey, "", "", 1000)
 
 	if err != nil {
-		log.Fatalf("Error occured during get Object Info, err:%v\n", err)
+		log.Logf("Error occured during get Object Info, err:%v\n", err)
+		//log.Fatalf("Error occured during get Object Info, err:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	}
 

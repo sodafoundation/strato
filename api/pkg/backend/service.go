@@ -24,6 +24,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
@@ -166,17 +167,43 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	if !policy.Authorize(request, response, "backend:delete") {
 		return
 	}
-	log.Logf("Received request for deleting backend: %s", request.PathParameter("id"))
+	id := request.PathParameter("id")
+	log.Logf("Received request for deleting backend: %s", id)
 	ctx := context.Background()
-	_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: request.PathParameter("id")})
+	owner := "test"
+	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{Id: owner})
+	count := 0
+	for _, v := range res.Buckets {
+		res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
+		if err != nil {
+			log.Logf("Failed to get backend details: %v", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		backendname := res.Backend.Name
+		if backendname == v.Backend {
+			count++
+		}
+	}
 	if err != nil {
-		log.Logf("Failed to delete backend: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-
-	log.Log("Delete backend successfully.")
-	response.WriteHeader(http.StatusOK)
+	if count == 0 {
+		_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: id})
+		if err != nil {
+			log.Logf("Failed to delete backend: %v", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Log("Delete backend successfully.")
+		response.WriteHeader(http.StatusOK)
+		return
+	} else {
+		log.Log("The backend can not be deleted. please delete bucket first.")
+		response.WriteError(http.StatusInternalServerError, BackendDeleteError.Error())
+		return
+	}
 }
 
 func (s *APIService) ListType(request *restful.Request, response *restful.Response) {
