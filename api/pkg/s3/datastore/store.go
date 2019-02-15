@@ -16,6 +16,7 @@ package datastore
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/gcp"
 	"io"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/ceph"
@@ -51,6 +52,9 @@ func Init(backend *backendpb.BackendDetail) (DataStoreAdapter, S3Error) {
 		return StoreAdapter, NoError
 	case "fusionstorage-object":
 		StoreAdapter = hws.Init(backend)
+		return StoreAdapter, NoError
+	case "gcp-s3":
+		StoreAdapter = gcp.Init(backend)
 		return StoreAdapter, NoError
 	default:
 		return nil, NoSuchType
