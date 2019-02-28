@@ -16,14 +16,13 @@ package pkg
 
 import (
 	"context"
-	"net/http"
-	"os"
-
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"net/http"
+	"os"
 )
 
 type s3Service struct{}

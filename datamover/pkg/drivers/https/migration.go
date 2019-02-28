@@ -694,7 +694,7 @@ func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (sr
 		j.TotalCount++
 		j.TotalCapacity += objs[i].Size
 	}
-	if totalObjs == 0 || j.TotalCapacity == 0 {
+	if totalObjs == 0 {
 		logger.Printf("No data need to migrate. totalObjs=%d, TotalCapacity=%d\n", totalObjs, j.TotalCapacity)
 		j.Status = flowtype.JOB_STATUS_SUCCEED
 		j.EndTime = time.Now()

@@ -37,7 +37,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	xml.Unmarshal(body, completeUpload)
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Logf("No such obecjt err\n")
+		log.Logf("No such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
