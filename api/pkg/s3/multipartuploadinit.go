@@ -65,6 +65,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
+	object.ObjectKey = objectKey
 	lastModified := time.Now().String()[:19]
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)

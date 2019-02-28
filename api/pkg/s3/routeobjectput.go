@@ -24,6 +24,7 @@ func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.
 	if !policy.Authorize(request, response, "routobject:put") {
 		return
 	}
+
 	if IsQuery(request, "acl") {
 		//TODO
 	} else if IsQuery(request, "tagging") {
