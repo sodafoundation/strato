@@ -199,6 +199,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Name:        constants.BackendFusionStorage,
 			Description: "Huawei Fusionstorage Object Storage",
 		},
+		{
+			Name:        constants.BackendTypeIBMCos,
+			Description: "IBM Cloud Object Storage",
+		},
 	}
 
 	// Filter by name
