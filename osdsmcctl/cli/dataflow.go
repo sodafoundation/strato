@@ -312,7 +312,7 @@ func jobListAction(cmd *cobra.Command, args []string) {
 		Fatalln(HTTPErrStrip(err))
 	}
 
-	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "Description", "SourceLocation",
+	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "SourceLocation",
 		"DestLocation", "Status", "CreateTime", "StartTime", "EndTime", "RemainSource",
 		"TotalCapacity", "PassedCapacity", "TotalCount", "PassedCount", "Progress"}
 	PrintList(resp, keys, FormatterList{})
@@ -326,7 +326,7 @@ func jobShowAction(cmd *cobra.Command, args []string) {
 		Fatalln(HTTPErrStrip(err))
 	}
 
-	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "Description", "SourceLocation",
+	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "SourceLocation",
 		"DestLocation", "Status", "CreateTime", "StartTime", "EndTime", "RemainSource",
 		"TotalCapacity", "PassedCapacity", "TotalCount", "PassedCount", "Progress"}
 	PrintDict(resp, keys, FormatterList{})
