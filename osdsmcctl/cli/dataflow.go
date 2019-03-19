@@ -305,11 +305,12 @@ func policyDeleteAction(cmd *cobra.Command, args []string) {
 	}
 }
 
-type CliJobFormat struct {
-	Id             string
+// JobCliFormat implementation
+type JobCliFormat struct {
+	ID             string
 	Type           string
 	PlanName       string
-	PlanId         string
+	PlanID         string
 	Description    string
 	SourceLocation string
 	DestLocation   string
@@ -325,12 +326,13 @@ type CliJobFormat struct {
 	Progress       int64
 }
 
-func ConvertJobToCliFormat(job *dataflow.Job) CliJobFormat {
-	return CliJobFormat{
-		Id:             job.Id,
+// ConvertJobToCliFormat implementation
+func ConvertJobToCliFormat(job *dataflow.Job) JobCliFormat {
+	return JobCliFormat{
+		ID:             job.Id,
 		Type:           job.Type,
 		PlanName:       job.PlanName,
-		PlanId:         job.PlanId,
+		PlanID:         job.PlanId,
 		Description:    job.Description,
 		SourceLocation: job.SourceLocation,
 		DestLocation:   job.DestLocation,
@@ -355,12 +357,12 @@ func jobListAction(cmd *cobra.Command, args []string) {
 		Fatalln(HTTPErrStrip(err))
 	}
 
-	var jobs []CliJobFormat
-	for i, _ := range resp {
-		jobs =append(jobs,ConvertJobToCliFormat(resp[i]))		
+	var jobs []JobCliFormat
+	for _, oldJob := range resp {
+		jobs = append(jobs, ConvertJobToCliFormat(oldJob))
 	}
 
-	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "SourceLocation",
+	keys := KeyList{"ID", "Type", "PlanName", "PlanID", "SourceLocation",
 		"DestLocation", "Status", "CreateTime", "StartTime", "EndTime", "RemainSource",
 		"TotalCapacity", "PassedCapacity", "TotalCount", "PassedCount", "Progress"}
 	PrintList(jobs, keys, FormatterList{})
@@ -374,7 +376,7 @@ func jobShowAction(cmd *cobra.Command, args []string) {
 		Fatalln(HTTPErrStrip(err))
 	}
 
-	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "SourceLocation",
+	keys := KeyList{"ID", "Type", "PlanName", "PlanID", "SourceLocation",
 		"DestLocation", "Status", "CreateTime", "StartTime", "EndTime", "RemainSource",
 		"TotalCapacity", "PassedCapacity", "TotalCount", "PassedCount", "Progress"}
 	PrintDict(ConvertJobToCliFormat(resp), keys, FormatterList{})

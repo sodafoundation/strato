@@ -212,7 +212,10 @@ func (*receiver) Recv(url string, method string, headers HeaderOption,
 // NewKeystoneReciver implementation
 func NewKeystoneReciver(auth *KeystoneAuthOptions) Receiver {
 	k := &KeystoneReciver{Auth: auth}
-	k.GetToken()
+	err := k.GetToken()
+	if err != nil {
+		log.Printf("Failed to get token: %v", err)
+	}
 	return k
 }
 
@@ -267,7 +270,10 @@ func (k *KeystoneReciver) Recv(url string, method string, headers HeaderOption,
 		if retryIdx > 0 {
 			err, ok := lastErr.(*HTTPError)
 			if ok && err.Code == http.StatusUnauthorized {
-				k.GetToken()
+				err := k.GetToken()
+				if err != nil {
+					log.Printf("Failed to get token: %v", err)
+				}
 			} else {
 				return lastErr
 			}
