@@ -21,6 +21,7 @@ package cli
 import (
 	"encoding/json"
 	"os"
+	"time"
 
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/spf13/cobra"
@@ -304,6 +305,48 @@ func policyDeleteAction(cmd *cobra.Command, args []string) {
 	}
 }
 
+type CliJobFormat struct {
+	Id             string
+	Type           string
+	PlanName       string
+	PlanId         string
+	Description    string
+	SourceLocation string
+	DestLocation   string
+	Status         string
+	CreateTime     string
+	StartTime      string
+	EndTime        string
+	RemainSource   bool
+	TotalCapacity  int64
+	PassedCapacity int64
+	TotalCount     int64
+	PassedCount    int64
+	Progress       int64
+}
+
+func ConvertJobToCliFormat(job *dataflow.Job) CliJobFormat {
+	return CliJobFormat{
+		Id:             job.Id,
+		Type:           job.Type,
+		PlanName:       job.PlanName,
+		PlanId:         job.PlanId,
+		Description:    job.Description,
+		SourceLocation: job.SourceLocation,
+		DestLocation:   job.DestLocation,
+		Status:         job.Status,
+		CreateTime:     time.Unix(job.CreateTime, 0).Format(`2006-01-02T15:04:05`),
+		StartTime:      time.Unix(job.StartTime, 0).Format(`2006-01-02T15:04:05`),
+		EndTime:        time.Unix(job.EndTime, 0).Format(`2006-01-02T15:04:05`),
+		RemainSource:   job.RemainSource,
+		TotalCapacity:  job.TotalCapacity,
+		PassedCapacity: job.PassedCapacity,
+		TotalCount:     job.TotalCount,
+		PassedCount:    job.PassedCount,
+		Progress:       job.Progress,
+	}
+}
+
 func jobListAction(cmd *cobra.Command, args []string) {
 	ArgsNumCheck(cmd, args, 0)
 
@@ -312,10 +355,15 @@ func jobListAction(cmd *cobra.Command, args []string) {
 		Fatalln(HTTPErrStrip(err))
 	}
 
+	var jobs []CliJobFormat
+	for i, _ := range resp {
+		jobs =append(jobs,ConvertJobToCliFormat(resp[i]))		
+	}
+
 	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "SourceLocation",
 		"DestLocation", "Status", "CreateTime", "StartTime", "EndTime", "RemainSource",
 		"TotalCapacity", "PassedCapacity", "TotalCount", "PassedCount", "Progress"}
-	PrintList(resp, keys, FormatterList{})
+	PrintList(jobs, keys, FormatterList{})
 }
 
 func jobShowAction(cmd *cobra.Command, args []string) {
@@ -329,5 +377,5 @@ func jobShowAction(cmd *cobra.Command, args []string) {
 	keys := KeyList{"Id", "Type", "PlanName", "PlanId", "SourceLocation",
 		"DestLocation", "Status", "CreateTime", "StartTime", "EndTime", "RemainSource",
 		"TotalCapacity", "PassedCapacity", "TotalCount", "PassedCount", "Progress"}
-	PrintDict(resp, keys, FormatterList{})
+	PrintDict(ConvertJobToCliFormat(resp), keys, FormatterList{})
 }
