@@ -462,7 +462,7 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 		return err
 	} else {
 		out.Job = &pb.Job{Id: string(jb.Id.Hex()), Type: jb.Type, PlanName: jb.PlanName, PlanId: jb.PlanId,
-			Description: "for test", SourceLocation: jb.SourceLocation, DestLocation: jb.DestLocation,
+			Description: "for test", SourceLocation: jb.SourceLocation, DestLocation: jb.DestLocation, StartTime: jb.StartTime.Unix(),
 			CreateTime: jb.CreateTime.Unix(), EndTime: jb.EndTime.Unix(), Status: jb.Status, TotalCapacity: jb.TotalCapacity,
 			PassedCapacity: jb.PassedCapacity, TotalCount: jb.TotalCount, PassedCount: jb.PassedCount, Progress: jb.Progress}
 	}
