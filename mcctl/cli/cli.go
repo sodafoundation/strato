@@ -34,7 +34,7 @@ import (
 var (
 	client      *c.Client
 	rootCommand = &cobra.Command{
-		Use:   "osdsmcctl",
+		Use:   "mcctl",
 		Short: "Administer the OpenSDS multi-cloud",
 		Long:  `Admin utility for the OpenSDS multi-cloud.`,
 		Run: func(cmd *cobra.Command, args []string) {

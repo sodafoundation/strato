@@ -24,7 +24,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/opensds/multi-cloud/osdsmcctl/cli"
+	"github.com/opensds/multi-cloud/mcctl/cli"
 )
 
 func main() {
