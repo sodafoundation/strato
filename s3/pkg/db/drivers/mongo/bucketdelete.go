@@ -29,14 +29,14 @@ func (ad *adapter) DeleteBucket(bucketName string) S3Error {
 
 	//Delete it from database
 	c := ss.DB(DataBaseName).C(BucketMD)
-	log.Logf("bucketName is %v:",bucketName)
+	log.Logf("bucketName is %v:", bucketName)
 	err := c.Remove(bson.M{"name": bucketName})
-	log.Logf("err is %v:",err)
+	log.Logf("err is %v:", err)
 	if err != nil {
-		if strings.Contains(err.Error(),"not found") {
+		if strings.Contains(err.Error(), "not found") {
 			log.Logf("Delete bucket from database failed,err:%v.\n", err.Error())
 			return NoSuchBucket
-		}else{
+		} else {
 			log.Logf("Delete bucket from database failed,err:%v.\n", err.Error())
 			return DBError
 		}

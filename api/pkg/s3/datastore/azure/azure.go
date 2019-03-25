@@ -124,7 +124,7 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context, start in
 		}
 		body := bytes.NewReader(buf)
 		ioReaderClose := ioutil.NopCloser(body)
-		return ioReaderClose,NoError
+		return ioReaderClose, NoError
 	}
 
 	return nil, NoError

@@ -3,9 +3,9 @@ package kafka
 import (
 	"github.com/Shopify/sarama"
 	"github.com/bsm/sarama-cluster"
-	"os"
-	"log"
 	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
+	"log"
+	"os"
 	"os/signal"
 	"time"
 )
@@ -14,7 +14,7 @@ var consumer *cluster.Consumer
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
-func Init(addrs []string, group string, topics []string) error{
+func Init(addrs []string, group string, topics []string) error {
 	logger.Println("Init consumer ...")
 
 	config := cluster.NewConfig()
@@ -26,12 +26,12 @@ func Init(addrs []string, group string, topics []string) error{
 	config.Config.Admin.Timeout = 10 * time.Second
 
 	var err error
-	consumer,err = cluster.NewConsumer(addrs, group, topics, config)
+	consumer, err = cluster.NewConsumer(addrs, group, topics, config)
 	for try := 0; try < 10; try++ {
 		if err == sarama.ErrOutOfBrokers {
 			time.Sleep(2 * time.Second)
-			consumer,err = cluster.NewConsumer(addrs, group, topics, config)
-		}else {
+			consumer, err = cluster.NewConsumer(addrs, group, topics, config)
+		} else {
 			break
 		}
 	}
@@ -47,7 +47,7 @@ func Init(addrs []string, group string, topics []string) error{
 	return err
 }
 
-func LoopConsume(){
+func LoopConsume() {
 	defer consumer.Close()
 
 	//trap SIGINT to trigger a shutdown.
@@ -87,7 +87,7 @@ func LoopConsume(){
 					consumer.MarkOffset(msg, "")
 				}
 			}
-		case <- signals:
+		case <-signals:
 			logger.Println("trap system SIGINT signal")
 			return
 		}
