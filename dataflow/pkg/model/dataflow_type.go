@@ -28,8 +28,10 @@ var (
 	STOR_TYPE_AZURE_BLOB       = "azure-blob"
 	STOR_TYPE_HW_OBS           = "hw-obs"
 	STOR_TYPE_CEPH_S3          = "ceph-s3"
+	STOR_TYPE_GCP_S3           = "gcp-s3"
 	STOR_TYPE_HW_FUSIONSTORAGE = "fusionstorage-object"
 	STOR_TYPE_HW_FUSIONCLOUD   = "hw-fusioncloud"
+	STOR_TYPE_IBM_COS          = "ibm-cos"
 )
 
 var (

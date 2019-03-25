@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
 	"log"
 	"os"
 	"regexp"
@@ -20,6 +21,7 @@ import (
 	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
@@ -109,7 +111,7 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 			}
 			return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
 		}
-	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3:
+	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		{
 			cfg := conn.ConnConfig
 			loca := LocationInfo{}
@@ -162,11 +164,17 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	case flowtype.STOR_TYPE_AWS_S3:
 		downloader = &s3mover.S3Mover{}
 		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
+	case flowtype.STOR_TYPE_IBM_COS:
+		downloader = &ibmcosmover.IBMCOSMover{}
+		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		downloader = &blobmover.BlobMover{}
 		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
 	case flowtype.STOR_TYPE_CEPH_S3:
 		downloader = &cephs3mover.CephS3Mover{}
+		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
+	case flowtype.STOR_TYPE_GCP_S3:
+		downloader = &Gcps3mover.GcpS3Mover{}
 		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
 	default:
 		{
@@ -194,11 +202,17 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 	case flowtype.STOR_TYPE_AWS_S3:
 		uploader = &s3mover.S3Mover{}
 		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
+	case flowtype.STOR_TYPE_IBM_COS:
+		uploader = &ibmcosmover.IBMCOSMover{}
+		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		uploader = &blobmover.BlobMover{}
 		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
 	case flowtype.STOR_TYPE_CEPH_S3:
 		uploader = &cephs3mover.CephS3Mover{}
+		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
+	case flowtype.STOR_TYPE_GCP_S3:
+		uploader = &Gcps3mover.GcpS3Mover{}
 		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
 	default:
 		logger.Printf("Not support destination backend type:%v\n", destLoca.StorType)
@@ -219,6 +233,10 @@ func multiPartDownloadInit(srcLoca *LocationInfo) (mover MoveWorker, err error) 
 		mover := &s3mover.S3Mover{}
 		err := mover.MultiPartDownloadInit(srcLoca)
 		return mover, err
+	case flowtype.STOR_TYPE_IBM_COS:
+		mover := &ibmcosmover.IBMCOSMover{}
+		err := mover.MultiPartDownloadInit(srcLoca)
+		return mover, err
 	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		mover := &obsmover.ObsMover{}
 		err := mover.MultiPartDownloadInit(srcLoca)
@@ -229,6 +247,10 @@ func multiPartDownloadInit(srcLoca *LocationInfo) (mover MoveWorker, err error) 
 		return mover, err
 	case flowtype.STOR_TYPE_CEPH_S3:
 		mover := &cephs3mover.CephS3Mover{}
+		err := mover.MultiPartDownloadInit(srcLoca)
+		return mover, err
+	case flowtype.STOR_TYPE_GCP_S3:
+		mover := &Gcps3mover.GcpS3Mover{}
 		err := mover.MultiPartDownloadInit(srcLoca)
 		return mover, err
 
@@ -245,6 +267,10 @@ func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorke
 		mover := &s3mover.S3Mover{}
 		err := mover.MultiPartUploadInit(objKey, destLoca)
 		return mover, err
+	case flowtype.STOR_TYPE_IBM_COS:
+		mover := &ibmcosmover.IBMCOSMover{}
+		err := mover.MultiPartUploadInit(objKey, destLoca)
+		return mover, err
 	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		mover := &obsmover.ObsMover{}
 		err := mover.MultiPartUploadInit(objKey, destLoca)
@@ -257,6 +283,10 @@ func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorke
 		mover := &cephs3mover.CephS3Mover{}
 		err := mover.MultiPartUploadInit(objKey, destLoca)
 		return mover, err
+	case flowtype.STOR_TYPE_GCP_S3:
+		mover := &Gcps3mover.GcpS3Mover{}
+		err := mover.MultiPartUploadInit(objKey, destLoca)
+		return mover, err
 	default:
 		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
@@ -267,7 +297,7 @@ func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorke
 func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorker) error {
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE,
-		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3:
+		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		return mover.AbortMultipartUpload(objKey, destLoca)
 	default:
 		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
@@ -279,7 +309,7 @@ func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorke
 func completeMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorker) error {
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE,
-		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3:
+		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		return mover.CompleteMultipartUpload(objKey, destLoca)
 	default:
 		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
@@ -379,6 +409,9 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 	case flowtype.STOR_TYPE_AWS_S3:
 		mover := s3mover.S3Mover{}
 		err = mover.DeleteObj(objKey, loca)
+	case flowtype.STOR_TYPE_IBM_COS:
+		mover := ibmcosmover.IBMCOSMover{}
+		err = mover.DeleteObj(objKey, loca)
 	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		mover := obsmover.ObsMover{}
 		err = mover.DeleteObj(objKey, loca)
@@ -387,6 +420,9 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 		err = mover.DeleteObj(objKey, loca)
 	case flowtype.STOR_TYPE_CEPH_S3:
 		mover := cephs3mover.CephS3Mover{}
+		err = mover.DeleteObj(objKey, loca)
+	case flowtype.STOR_TYPE_GCP_S3:
+		mover := Gcps3mover.GcpS3Mover{}
 		err = mover.DeleteObj(objKey, loca)
 	default:
 		logger.Printf("Delete object[objkey:%s] from backend storage failed.\n", obj.ObjectKey)
@@ -537,6 +573,21 @@ func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	return srcObjs, nil
 }
 
+func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
+	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
+	//TODO(acorbellini): reuse getAWSS3Objs function
+	srcObjs := []*osdss3.Object{}
+	objs, err := ibmcosmover.ListObjs(defaultSrcLoca, filt)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(objs); i++ {
+		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
+		srcObjs = append(srcObjs, &obj)
+	}
+	return srcObjs, nil
+}
+
 func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	//TODO:need to support filter
@@ -598,6 +649,22 @@ func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	return srcObjs, nil
 }
 
+//to get object details from gcp backend
+func getGcpS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
+	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
+	srcObjs := []*osdss3.Object{}
+	objs, err := Gcps3mover.ListObjs(defaultSrcLoca, filt)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(objs); i++ {
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
+		srcObjs = append(srcObjs, &obj)
+	}
+	return srcObjs, nil
+}
+
 func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
 	switch conn.Type {
@@ -605,12 +672,16 @@ func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return getOsdsS3Objs(ctx, conn, filt, defaultSrcLoca)
 	case flowtype.STOR_TYPE_AWS_S3:
 		return getAwsS3Objs(ctx, conn, filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_IBM_COS:
+		return getIBMCosObjs(ctx, conn, filt, defaultSrcLoca)
 	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
 		return getHwObjs(ctx, conn, filt, defaultSrcLoca)
 	case flowtype.STOR_TYPE_AZURE_BLOB:
 		return getAzureBlobs(ctx, conn, filt, defaultSrcLoca)
 	case flowtype.STOR_TYPE_CEPH_S3:
 		return getCephS3Objs(ctx, conn, filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_GCP_S3:
+		return getGcpS3Objs(ctx, conn, filt, defaultSrcLoca)
 	default:
 		{
 			logger.Printf("Unsupport storage type:%v\n", conn.Type)
@@ -658,7 +729,7 @@ func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (sr
 		j.TotalCount++
 		j.TotalCapacity += objs[i].Size
 	}
-	if totalObjs == 0 || j.TotalCapacity == 0 {
+	if totalObjs == 0 {
 		logger.Printf("No data need to migrate. totalObjs=%d, TotalCapacity=%d\n", totalObjs, j.TotalCapacity)
 		j.Status = flowtype.JOB_STATUS_SUCCEED
 		j.EndTime = time.Now()

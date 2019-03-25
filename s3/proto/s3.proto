@@ -177,9 +177,10 @@ message Object {
 	repeated ReplicationInfo replicationInfo = 20;
 	int64 size = 21;
 	repeated Partion partions =22;
-	Tag tags = 23;
+	repeated Tag tags = 23;
 	string lastModified =24;
 	string initFlag=25;
+	string ETag=26;
 }
 
 

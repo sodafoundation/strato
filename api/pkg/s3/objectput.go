@@ -16,6 +16,8 @@ package s3
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
@@ -35,25 +37,33 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	if !policy.Authorize(request, response, "object:put") {
 		return
 	}
+	url := request.Request.URL
+	log.Logf("URL is %v", request.Request.URL.String())
+	log.Logf("request  is %v\n", request)
 	bucketName := request.PathParameter("bucketName")
+	log.Logf("bucketName is %v\n:", bucketName)
 	objectKey := request.PathParameter("objectKey")
+	if strings.HasSuffix(url.String(), "/") {
+		objectKey = objectKey + "/"
+	}
+	log.Logf("objectKey is %v:\n", objectKey)
 	contentLenght := request.HeaderParameter("content-length")
 	backendName := request.HeaderParameter("x-amz-storage-class")
 	log.Logf("backendName is :%v\n", backendName)
 	object := s3.Object{}
-
-	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
-
-	log.Logf("Received request for create bucket: %s", bucketName)
-
-	object.ObjectKey = objectKey
-	log.Logf("objectKey is %v:\n", objectKey)
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	log.Logf("object.size is %v\n", size)
 	object.Size = size
 	object.IsDeleteMarker = ""
 	object.InitFlag = ""
+	object.LastModified = time.Now().String()[:19]
+	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
+
+	log.Logf("Received request for create bucket: %s", bucketName)
+
+	log.Logf("objectKey is %v:\n", objectKey)
+	object.ObjectKey = objectKey
 	var client datastore.DataStoreAdapter
 	if backendName != "" {
 		object.Backend = backendName
@@ -63,6 +73,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		object.Backend = bucket.Backend
 		client = getBackendClient(s, bucketName)
 	}
+
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
@@ -75,13 +86,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-	log.Logf("object.size2  = %v \n", object.Size)
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
+		log.Logf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+	log.Logf("object.size2  = %v \n", object.Size)
 	log.Log("Upload object successfully.")
 	response.WriteEntity(res)
-
 }

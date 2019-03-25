@@ -16,6 +16,7 @@ package s3
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
@@ -30,36 +31,35 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 	if !policy.Authorize(request, response, "object:delete") {
 		return
 	}
+	url := request.Request.URL
+	log.Logf("URL is %v", request.Request.URL.String())
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-
+	if strings.HasSuffix(url.String(), "/") {
+		objectKey = objectKey + "/"
+	}
 	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
 	ctx := context.Background()
-	log.Logf("Received request for delete object: %s", objectKey)
-
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	var s3err S3Error
 	if objectMD != nil {
-
 		client := getBackendByName(s, objectMD.Backend)
-		s3err = client.DELETE(&deleteInput, ctx)
+		s3err := client.DELETE(&deleteInput, ctx)
+		if s3err.Code != ERR_OK {
+			response.WriteError(http.StatusInternalServerError, s3err.Error())
+			return
+		}
+		res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
+		if err != nil {
+			log.Logf("err is %v\n", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		log.Logf("Delete object %s successfully.", objectKey)
+		response.WriteEntity(res)
 	} else {
-
 		log.Logf("No such object")
 		return
 	}
 
-	if s3err.Code != ERR_OK {
-		response.WriteError(http.StatusInternalServerError, s3err.Error())
-		return
-	}
-
-	res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-	log.Logf("Delete object %s successfully.", objectKey)
-	response.WriteEntity(res)
 }
