@@ -92,7 +92,7 @@ func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
 
 	t := trigger.GetTriggerMgr()
 	planNum := 0
-	for ; offset == 0 || planNum > 0; {
+	for offset == 0 || planNum > 0 {
 		plans, err := db.DbAdapter.GetPlanByPolicy(ctx, policy.Id.Hex(), limit, offset)
 		if err != nil {
 			log.Logf("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)

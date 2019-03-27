@@ -18,9 +18,9 @@ import (
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro"
 	handler "github.com/opensds/multi-cloud/dataflow/pkg"
-	pb "github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler"
 	_ "github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger/crontrigger"
+	pb "github.com/opensds/multi-cloud/dataflow/proto"
 )
 
 func main() {
