@@ -35,6 +35,10 @@ type Keystone struct {
 	identity *gophercloud.ServiceClient
 }
 
+func GetIdentity(k *Keystone) *gophercloud.ServiceClient {
+	return k.identity
+}
+
 func NewKeystone() AuthBase {
 	k := &Keystone{}
 	if err := k.SetUp(); err != nil {

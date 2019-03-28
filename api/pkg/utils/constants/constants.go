@@ -30,4 +30,8 @@ const (
 
 	// OpenSDS current api version
 	APIVersion = "v1beta"
+
+	//Signature parameter name
+	AuthorizationHeader = "Authorization"
+	SignDateHeader	= "X-Auth-Date"
 )
