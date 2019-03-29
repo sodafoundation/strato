@@ -16,6 +16,7 @@ package datastore
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/gcp"
 	"io"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/ceph"
@@ -23,6 +24,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/azure"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/ibm"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -46,11 +48,17 @@ func Init(backend *backendpb.BackendDetail) (DataStoreAdapter, S3Error) {
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		StoreAdapter = aws.Init(backend)
 		return StoreAdapter, NoError
+	case "ibm-cos":
+		StoreAdapter = ibmcos.Init(backend)
+		return StoreAdapter, NoError
 	case "ceph-s3":
 		StoreAdapter = ceph.Init(backend)
 		return StoreAdapter, NoError
 	case "fusionstorage-object":
 		StoreAdapter = hws.Init(backend)
+		return StoreAdapter, NoError
+	case "gcp-s3":
+		StoreAdapter = gcp.Init(backend)
 		return StoreAdapter, NoError
 	default:
 		return nil, NoSuchType

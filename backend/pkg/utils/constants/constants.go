@@ -16,8 +16,10 @@ package constants
 
 const (
 	BackendTypeAws       = "aws-s3"
+	BackendTypeIBMCos    = "ibm-cos"
 	BackendTypeObs       = "hw-obs"
 	BackendTypeAzure     = "azure-blob"
 	BackendTypeCeph      = "ceph-s3"
+	BackendTypeGcp       = "gcp-s3"
 	BackendFusionStorage = "fusionstorage-object"
 )

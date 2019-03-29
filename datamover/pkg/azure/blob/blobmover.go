@@ -1,35 +1,35 @@
 package blobmover
 
 import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/binary"
+	"errors"
+	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/Azure/azure-storage-blob-go/azblob"
-	"net/url"
-	"github.com/micro/go-log"
-	"context"
 	"io"
-	"bytes"
-	"errors"
-	"encoding/binary"
-	"encoding/base64"
+	"net/url"
 	"time"
 )
 
 var (
-	HTTP_OK        = 200
-	HTTP_CREATED   = 201
-	HTTP_ACCEPTED  = 202
+	HTTP_OK       = 200
+	HTTP_CREATED  = 201
+	HTTP_ACCEPTED = 202
 )
 
 //TryTimeout indicates the maximum time allowed for any single try of an HTTP request. 60 seconds per MB as default.
 var MaxTimeForSingleHttpRequest = 16 * time.Minute
 
 type BlobMover struct {
-	containerURL azblob.ContainerURL
+	containerURL  azblob.ContainerURL
 	completeParts []string
 }
 
-func (mover *BlobMover)Init(endpoint *string, acountName *string, accountKey *string) error {
+func (mover *BlobMover) Init(endpoint *string, acountName *string, accountKey *string) error {
 	var err error
 	mover.containerURL, err = mover.createContainerURL(endpoint, acountName, accountKey)
 	if err != nil {
@@ -41,9 +41,9 @@ func (mover *BlobMover)Init(endpoint *string, acountName *string, accountKey *st
 	return nil
 }
 
-func (mover *BlobMover)createContainerURL(endpoint *string, acountName *string, accountKey *string) (azblob.ContainerURL,
+func (mover *BlobMover) createContainerURL(endpoint *string, acountName *string, accountKey *string) (azblob.ContainerURL,
 	error) {
-	credential,err := azblob.NewSharedKeyCredential(*acountName, *accountKey)
+	credential, err := azblob.NewSharedKeyCredential(*acountName, *accountKey)
 	if err != nil {
 		log.Logf("[blobmover] Create credential failed, err:%v\n", err)
 		return azblob.ContainerURL{}, err
@@ -60,7 +60,7 @@ func (mover *BlobMover)createContainerURL(endpoint *string, acountName *string, 
 	return azblob.NewContainerURL(*URL, p), nil
 }
 
-func (mover *BlobMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error){
+func (mover *BlobMover) DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
 	err = mover.Init(&srcLoca.EndPoint, &srcLoca.Access, &srcLoca.Security)
 	if err != nil {
 		return 0, err
@@ -104,7 +104,7 @@ func (mover *BlobMover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []b
 	return 0, errors.New("internal error")
 }
 
-func (mover *BlobMover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
+func (mover *BlobMover) UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
 	err := mover.Init(&destLoca.EndPoint, &destLoca.Access, &destLoca.Security)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (mover *BlobMover)UploadObj(objKey string, destLoca *LocationInfo, buf []by
 	return errors.New("internal error")
 }
 
-func (mover *BlobMover)DeleteObj(objKey string, loca *LocationInfo) error {
+func (mover *BlobMover) DeleteObj(objKey string, loca *LocationInfo) error {
 	err := mover.Init(&loca.EndPoint, &loca.Access, &loca.Security)
 	if err != nil {
 		return err
@@ -167,13 +167,13 @@ func (mover *BlobMover)DeleteObj(objKey string, loca *LocationInfo) error {
 	return errors.New("internal error")
 }
 
-func (mover *BlobMover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
+func (mover *BlobMover) MultiPartDownloadInit(srcLoca *LocationInfo) error {
 	log.Logf("[blobmover] Prepare to do part upload, container:%s.\n", srcLoca.BucketName)
 
 	return mover.Init(&srcLoca.EndPoint, &srcLoca.Access, &srcLoca.Security)
 }
 
-func (mover *BlobMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64,
+func (mover *BlobMover) DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64,
 	err error) {
 	log.Logf("[blobmover] Try to download object[%s] range[%d - %d]...\n", objKey, start, end)
 
@@ -186,7 +186,7 @@ func (mover *BlobMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf [
 		if err != nil {
 			log.Logf("[blobomver] Donwload object[%s] to buffer failed %d times, err:%v\n", objKey, tries, err)
 			if tries == 3 {
-				return 0,err
+				return 0, err
 			}
 		} else {
 			log.Logf("[blobmover] Download object[%s] range[%d - %d] successfully.\n", objKey, start, end)
@@ -195,32 +195,32 @@ func (mover *BlobMover)DownloadRange(objKey string, srcLoca *LocationInfo, buf [
 	}
 
 	log.Logf("[blobmover] Download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
-	return 0,errors.New("internal error")
+	return 0, errors.New("internal error")
 }
 
-func (mover *BlobMover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) error {
+func (mover *BlobMover) MultiPartUploadInit(objKey string, destLoca *LocationInfo) error {
 	log.Logf("[blobmover] Prepare to do part upload for object[%s], container:%s, blob:%s\n",
 		objKey, destLoca.BucketName, objKey)
 
 	return mover.Init(&destLoca.EndPoint, &destLoca.Access, &destLoca.Security)
 }
 
-func (mover *BlobMover)Int64ToBase64(blockID int64) string {
+func (mover *BlobMover) Int64ToBase64(blockID int64) string {
 	buf := (&[8]byte{})[:]
 	binary.LittleEndian.PutUint64(buf, uint64(blockID))
 	return mover.BinaryToBase64(buf)
 }
 
-func (mover *BlobMover)BinaryToBase64(binaryID []byte) string {
+func (mover *BlobMover) BinaryToBase64(binaryID []byte) string {
 	return base64.StdEncoding.EncodeToString(binaryID)
 }
 
-func (mover *BlobMover)Base64ToInt64(base64ID string) int64 {
-	bin, _ := base64.StdEncoding.DecodeString(base64ID);
+func (mover *BlobMover) Base64ToInt64(base64ID string) int64 {
+	bin, _ := base64.StdEncoding.DecodeString(base64ID)
 	return int64(binary.LittleEndian.Uint64(bin))
 }
 
-func (mover *BlobMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64,
+func (mover *BlobMover) UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64,
 	offset int64) error {
 	log.Logf("[blobmover] Try to upload object[%s] range[partnumber#%d,offset#%d]...\n", objKey, partNumber, offset)
 	//TODO: Consider that "A blob can have up to 100,000 uncommitted blocks, but their total size cannot exceed 200,000 MB."
@@ -248,13 +248,13 @@ func (mover *BlobMover)UploadPart(objKey string, destLoca *LocationInfo, upBytes
 	return errors.New("internal error")
 }
 
-func (mover *BlobMover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
+func (mover *BlobMover) AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
 	log.Logf("No need to abort multipart upload[objkey:%s].\n", objKey)
 	return nil
 }
 
 //A blob can have up to 100,000 uncommitted blocks, but their total size cannot exceed 200,000 MB.
-func (mover *BlobMover)CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error {
+func (mover *BlobMover) CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error {
 	ctx := context.Background()
 	blobURL := mover.containerURL.NewBlockBlobURL(objKey)
 
@@ -278,7 +278,7 @@ func (mover *BlobMover)CompleteMultipartUpload(objKey string, destLoca *Location
 
 func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]azblob.BlobItem, error) {
 	log.Logf("[blobmover] List objects of container[%s]\n", loca.BucketName)
-	credential,err := azblob.NewSharedKeyCredential(loca.Access, loca.Security)
+	credential, err := azblob.NewSharedKeyCredential(loca.Access, loca.Security)
 	if err != nil {
 		log.Fatalf("[blobmover] Create credential failed for list objects, err:%v\n", err)
 		return nil, err

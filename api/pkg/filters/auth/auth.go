@@ -60,4 +60,3 @@ func FilterFactory() restful.FilterFunction {
 	}
 	return auth.Filter
 }
-

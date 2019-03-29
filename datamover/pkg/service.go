@@ -16,10 +16,10 @@ package pkg
 
 import (
 	"github.com/go-log/log"
-	"os"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
+	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
+	"os"
 	"strings"
 )
 
@@ -27,16 +27,16 @@ var dataMoverGroup = "datamover"
 
 func InitDatamoverService() error {
 	host := os.Getenv("DB_HOST")
-	dbstor := utils.Database{Credential:"unkonwn", Driver:"mongodb", Endpoint:host}
+	dbstor := utils.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}
 	db.Init(&dbstor)
 
 	addrs := []string{}
 	config := strings.Split(os.Getenv("KAFKA_ADVERTISED_LISTENERS"), ";")
-	for i:=0; i < len(config); i++ {
+	for i := 0; i < len(config); i++ {
 		addr := strings.Split(config[i], "//")
 		if len(addr) != 2 {
 			log.Log("Invalid addr:", config[i])
-		}else {
+		} else {
 			addrs = append(addrs, addr[1])
 		}
 	}
