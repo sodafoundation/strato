@@ -22,11 +22,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"time"
-)
-
-const (
-	KLastModified = "lastmodified"
-	KPrefix = "prefix"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
@@ -38,13 +34,13 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 
 	filter := []bson.M{}
 	if in.Filter != nil {
-		if in.Filter[KPrefix] != "" {
-			str := "^" + in.Filter[KPrefix]
-			filter = append(filter, bson.M{"objectkey":bson.M{"$regex": str}})
+		if in.Filter[common.KObjKey] != "" {
+			//str := "^" + in.Filter[common.KObjKey]
+			filter = append(filter, bson.M{"objectkey":bson.M{"$regex": in.Filter[common.KObjKey]}})
 		}
-		if in.Filter[KLastModified] != "" {
+		if in.Filter[common.KLastModified] != "" {
 			var tmFilter map[string]string
-			err := json.Unmarshal([]byte(in.Filter[KLastModified]), &tmFilter)
+			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
 			if err != nil {
 				log.Logf("Unmarshal lastmodified value faild:%s\n", err)
 				return InvalidQueryParameter

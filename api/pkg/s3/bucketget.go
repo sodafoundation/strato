@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"fmt"
+	"strings"
 )
 
 func checkLastmodifiedFilter(fmap *map[string]string) error {
@@ -46,6 +47,27 @@ func checkLastmodifiedFilter(fmap *map[string]string) error {
 	return nil
 }
 
+func checkObjKeyFilter(val string) (string, error) {
+	// val should be like: objeKey=like:parttern
+	if strings.HasPrefix(val,"like:") == false {
+		log.Logf("Invalid object key filter:%s", val)
+		return "", fmt.Errorf("Invalid object key filter:%s", val)
+	}
+
+	vals := strings.Split(val,":")
+	if len(vals) <= 1 {
+		log.Logf("Invalid object key filter:%s", val)
+		return "", fmt.Errorf("Invalid object key filter:%s", val)
+	}
+
+	var ret string
+	for i := 1; i < len(vals); i++ {
+		ret = ret + vals[i]
+	}
+
+	return ret, nil
+}
+
 func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "bucket:get") {
 		return
@@ -53,7 +75,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("Received request for bucket details: %s", bucketName)
 
-	filterOpts := []string{common.KPrefix, common.KLastModified}
+	filterOpts := []string{common.KObjKey, common.KLastModified}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
 		log.Logf("Get filter failed: %v", err)
@@ -64,6 +86,18 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 			filterOpts, filter)
 	}
 
+	if filter[common.KObjKey] != "" {
+		//filter[common.KObjKey] should be like: like:parttern
+		ret, err := checkObjKeyFilter(filter[common.KObjKey])
+		if err != nil {
+			log.Logf("Invalid objkey:%s\v", filter[common.KObjKey])
+			response.WriteError(http.StatusBadRequest,
+				fmt.Errorf("Invalid objkey, it should be like objkey=like:parttern"))
+			return
+		}
+		filter[common.KObjKey] = ret
+	}
+
 	// Check validation of query parameter
 	if filter[common.KLastModified] != "" {
 		var tmFilter map[string]string
@@ -71,14 +105,14 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		if err != nil {
 			log.Logf("Invalid lastModified:%s\v", filter[common.KLastModified])
 			response.WriteError(http.StatusBadRequest,
-				fmt.Errorf("Invalid lastModified:%s", filter[common.KLastModified]))
+				fmt.Errorf("Invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
 			return
 		}
 		err = checkLastmodifiedFilter(&tmFilter)
 		if err != nil {
 			log.Logf("Invalid lastModified:%s\v", filter[common.KLastModified])
 			response.WriteError(http.StatusBadRequest,
-				fmt.Errorf("Invalid lastModified:%s", filter[common.KLastModified]))
+				fmt.Errorf("Invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
 			return
 		}
 	}
