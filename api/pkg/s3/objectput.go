@@ -57,7 +57,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	object.Size = size
 	object.IsDeleteMarker = ""
 	object.InitFlag = ""
-	object.LastModified = time.Now().String()[:19]
+	object.LastModified = time.Now().Unix()
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)

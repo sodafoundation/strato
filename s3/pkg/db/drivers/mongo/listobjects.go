@@ -19,6 +19,14 @@ import (
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"encoding/json"
+	"strconv"
+	"time"
+)
+
+const (
+	KLastModified = "lastmodified"
+	KPrefix = "prefix"
 )
 
 func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
@@ -28,10 +36,52 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 
 	log.Log("Find objects from database...... \n")
 
-	err := c.Find(bson.M{}).All(out)
+	filter := []bson.M{}
+	if in.Filter != nil {
+		if in.Filter[KPrefix] != "" {
+			str := "^" + in.Filter[KPrefix]
+			filter = append(filter, bson.M{"objectkey":bson.M{"$regex": str}})
+		}
+		if in.Filter[KLastModified] != "" {
+			var tmFilter map[string]string
+			err := json.Unmarshal([]byte(in.Filter[KLastModified]), &tmFilter)
+			if err != nil {
+				log.Logf("Unmarshal lastmodified value faild:%s\n", err)
+				return InvalidQueryParameter
+			}
+			for k, v := range tmFilter {
+				ts,_ := strconv.Atoi(v)
+				secs := time.Now().Unix() - int64(ts * 24 * 60 *60)
+				var op string
+				switch k {
+				case "lt":
+					op = "$gt"
+				case "gt":
+					op = "$lt"
+				case "lte":
+					op = "$gte"
+				case "gte":
+					op = "$lte"
+				default:
+					log.Logf("Unsupport filter action:%s\n", k)
+					return InvalidQueryParameter
+				}
+				filter = append(filter, bson.M{"lastmodified": bson.M{op: secs}})
+			}
+		}
+	}
+
+	log.Logf("filter:%+v\n", filter)
+	var err error
+	if len(filter) > 0 {
+		err = c.Find(bson.M{"$and":filter}).All(out)
+	} else {
+		err = c.Find(bson.M{}).All(out)
+	}
+
 	//TODO pagination
 	if err != nil {
-		log.Log("Find objects from database failed, err:%v\n", err)
+		log.Logf("Find objects from database failed, err:%v\n", err)
 		return InternalError
 	}
 

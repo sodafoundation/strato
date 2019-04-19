@@ -16,29 +16,86 @@ package s3
 
 import (
 	"net/http"
-
+	"errors"
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	//	"github.com/micro/go-micro/errors"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"strconv"
+	"encoding/json"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"fmt"
 )
+
+func checkLastmodifiedFilter(fmap *map[string]string) error {
+	for k, v := range *fmap {
+		if k != "lt" && k != "lte" && k != "gt" && k != "gte" {
+			log.Logf("Invalid query parameter:k=%s,v=%s\n", k, v)
+			return errors.New("Invalid query parameter")
+		} else {
+			_, err := strconv.Atoi(v)
+			if err != nil {
+				log.Logf("Invalid query parameter:k=%s,v=%s, err=%v\n", k, v, err)
+				return errors.New("Invalid query parameter")
+			}
+		}
+	}
+
+	return nil
+}
 
 func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "bucket:get") {
 		return
 	}
 	bucketName := request.PathParameter("bucketName")
-	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
-	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
-	log.Logf("list objects is: %v\n", res)
+
+	filterOpts := []string{common.KPrefix, common.KLastModified}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Logf("Get filter failed: %v", err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	} else {
+		log.Logf("Get filter for BucketGet, filterOpts=%+v, filter=%+v\n",
+			filterOpts, filter)
+	}
+
+	// Check validation of query parameter
+	if filter[common.KLastModified] != "" {
+		var tmFilter map[string]string
+		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
+		if err != nil {
+			log.Logf("Invalid lastModified:%s\v", filter[common.KLastModified])
+			response.WriteError(http.StatusBadRequest,
+				fmt.Errorf("Invalid lastModified:%s", filter[common.KLastModified]))
+			return
+		}
+		err = checkLastmodifiedFilter(&tmFilter)
+		if err != nil {
+			log.Logf("Invalid lastModified:%s\v", filter[common.KLastModified])
+			response.WriteError(http.StatusBadRequest,
+				fmt.Errorf("Invalid lastModified:%s", filter[common.KLastModified]))
+			return
+		}
+	}
+
+	req := s3.ListObjectsRequest{
+		Bucket: bucketName,
+		Filter: filter,
+	}
+
+	ctx := context.Background()
+	res, err := s.s3Client.ListObjects(ctx, &req)
+	log.Logf("list objects result: %v\n", res)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+
 	log.Log("Get bucket successfully.")
 	response.WriteEntity(res)
-
 }

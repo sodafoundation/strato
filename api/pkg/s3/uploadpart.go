@@ -26,7 +26,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	lastModified := time.Now().String()[:19]
+	lastModified := time.Now().Unix()
 	object := s3.Object{}
 	object.ObjectKey = objectKey
 	object.BucketName = bucketName

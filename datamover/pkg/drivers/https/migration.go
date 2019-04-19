@@ -511,7 +511,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	if succeed && destLoca.VirBucket != "" {
 		obj.BucketName = destLoca.VirBucket
 		obj.Backend = destLoca.BakendName
-		obj.LastModified = time.Now().String()[:19]
+		obj.LastModified = time.Now().Unix()
 		_, err := s3client.CreateObject(ctx, obj)
 		if err != nil {
 			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] failed,err:%v.\n", obj.ObjectKey,
