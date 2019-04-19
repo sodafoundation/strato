@@ -61,7 +61,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	}
 
 	objectMD.Partions = nil
-	objectMD.LastModified = time.Now().String()[:19]
+	objectMD.LastModified = time.Now().Unix()
 	objectMD.InitFlag = "1"
 	//insert metadata
 	_, err := s.s3Client.CreateObject(ctx, objectMD)

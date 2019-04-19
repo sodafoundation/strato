@@ -79,7 +79,7 @@ func (ad *CephAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Cont
 			log.Logf("Upload to ceph failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to ceph failed"}
 		} else {
-			object.LastModified = time.Now().String()[:19]
+			object.LastModified = time.Now().Unix()
 			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
 	}
