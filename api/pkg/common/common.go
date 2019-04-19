@@ -36,7 +36,7 @@ const (
 	KOffset = "offset"
 	KSort   = "sort"
 	KLastModified = "lastmodified"
-	KPrefix = "prefix"
+	KObjKey = "objkey"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
