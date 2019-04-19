@@ -64,7 +64,7 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			return S3Error{Code: 500, Description: "Upload to obs failed"}
 
 		} else {
-			object.LastModified = time.Now().String()[:19]
+			object.LastModified = time.Now().Unix()
 			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
 		log.Logf("Upload %s to obs successfully.", out.VersionId)
