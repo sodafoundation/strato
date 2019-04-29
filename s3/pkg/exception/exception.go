@@ -41,3 +41,5 @@ var NoSuchBackend = S3Error{Code: 404, Description: "The specified backend does 
 var NoSuchType = S3Error{Code: 404, Description: "The specified backend type does not exists."}
 var BucketDeleteError = S3Error{Code: 500, Description: "The bucket can not be deleted. please delete object first"}
 var BackendDeleteError = S3Error{Code: 500, Description: "The backend can not be deleted. please delete bucket first"}
+
+var InvalidQueryParameter = S3Error{Code:400, Description:"Invalid query parameter"}

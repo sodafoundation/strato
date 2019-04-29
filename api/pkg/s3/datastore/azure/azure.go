@@ -77,7 +77,7 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 		log.Logf("[AzureAdapter] Upload faild,err = %v\n", err)
 		return S3Error{Code: 500, Description: "Upload to azure failed"}
 	} else {
-		object.LastModified = time.Now().String()[:19]
+		object.LastModified = time.Now().Unix()
 		log.Logf("LastModified is:%v\n", object.LastModified)
 	}
 
