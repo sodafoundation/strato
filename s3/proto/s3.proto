@@ -98,21 +98,40 @@ message Tag {
 }
 
 message LifecycleFilter {
-	string prefix = 1;
-	repeated Tag tags = 2;
+	//Object prefix for lifecycle filter
+	string Prefix = 1;
+	//Tags will not be used for current release
+	//repeated Tag tags = 2;
 }
 
-message Action {
-	string name = 1;
-	string day = 2;
-	string deleteMarker = 4;
+message TransitionAction {
+	//Days after creation of object
+	int32 Days = 1;
+	//Storage class of the object where object is to be transitioned
+	string StorageClass = 2;
+	// Destination backend of the object/bucket for Cross-cloud transition
+	string Backend = 3;
 }
 
-message LifecycleRole {
-	string id = 1;
-	string status = 2;
-	LifecycleFilter filter = 3;
-	repeated Action actions = 4;
+message ExpirationAction {
+	//Days after creation of object
+	int32 Days = 1;
+	//Delete marker will be used when versioning feature is provided
+	//string deleteMarker = 2;
+}
+
+message AbortMultipartUpload {
+  	//Days after which the abort operation will be performed on incomplete upload
+	int32 DaysAfterInitiation = 1;
+}
+
+message LifecycleRule {
+	string ID = 1;
+	string Status = 2;
+	LifecycleFilter Filter = 3;
+	repeated TransitionAction Transition = 4;
+	repeated ExpirationAction Expiration = 5;
+	AbortMultipartUpload AbortIncompleteMultipartUpload = 6;
 }
 
 message ReplicationInfo {
@@ -135,7 +154,7 @@ message Bucket {
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
-	repeated LifecycleRole lifecycleConfiguration = 14;
+	repeated LifecycleRule LifecycleConfiguration = 14;
 }
 
 message Partion {

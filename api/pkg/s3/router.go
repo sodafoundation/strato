@@ -25,7 +25,7 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.GET("/").To(handler.ListBuckets)).Doc("Return list of buckets for the user")
 	ws.Route(ws.PUT("/{bucketName}").To(handler.RouteBucketPut)).Doc("Create bucket for the user")
 	//ws.Route(ws.HEAD("/s3/{bucketName}").To(handler.BucketHead)).Doc("Determine if bucket exists and if user has permission to access it")
-	ws.Route(ws.GET("/{bucketName}").To(handler.BucketGet)).Doc("Return list of objects in bucket")
+	ws.Route(ws.GET("/{bucketName}").To(handler.RouteBucketGet)).Doc("Return list of objects in bucket")
 	ws.Route(ws.DELETE("/{bucketName}").To(handler.BucketDelete)).Doc("Delete bucket")
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("Upload object")
 	ws.Route(ws.DELETE("/{bucketName}/{objectKey:*}").To(handler.RouteObjectDelete)).Doc("Delete object")
@@ -35,4 +35,8 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("UploadPart")
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("CompleteMultipartUpload")
 	ws.Route(ws.DELETE("/{bucketName}/{objectKey:*}").To(handler.RouteObjectDelete)).Doc("AbortMultipartUpload")
+
+	//Router for PUT and GET bucket lifecycle
+	ws.Route(ws.PUT("/{bucketName}/?lifecycle").To(handler.RouteBucketPut)).Doc("Create lifecycle configuration for the bucket")
+	ws.Route(ws.GET("/{bucketName}/?lifecycle").To(handler.RouteBucketGet)).Doc("Get lifecycle configuration from the bucket")
 }

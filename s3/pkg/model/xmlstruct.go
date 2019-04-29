@@ -79,3 +79,36 @@ type ListPartsOutput struct {
 	Owner       Owner  `xml:"Owner"`
 	Parts       []Part `xml:"Part"`
 }
+
+type LifecycleConfiguration struct {
+	Rule        []Rule   	`xml:"Rule"`
+}
+
+type Rule struct {
+	ID     							string 							`xml:"ID"`
+	Filter 							Filter 							`xml:"Filter"`
+	Status     						string 							`xml:"Status"`
+	Transition      				[]Transition					`xml:"Transition"`
+	Expiration 						[]Expiration					`xml:"Expiration"`
+	AbortIncompleteMultipartUpload	AbortIncompleteMultipartUpload	`xml:"AbortIncompleteMultipartUpload"`
+}
+
+type Filter struct {
+	Prefix 			string 		`xml:"Prefix"`
+}
+
+type Transition struct {
+	Days         		int32 		`xml:"Days"`
+	StorageClass 		string 		`xml:"StorageClass"`
+	Backend				string		`xml:"Backend"`
+}
+
+type Expiration struct {
+	Days         		int32 		`xml:"Days"`
+	//Delete marker will be used in later release
+	//ExpiredObjectDeleteMarker string   `xml:"ExpiredObjectDeleteMArker"`
+}
+
+type AbortIncompleteMultipartUpload struct {
+	DaysAfterInitiation 	int32		`xml:"DaysAfterInitiation"`
+}

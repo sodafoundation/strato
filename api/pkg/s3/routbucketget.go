@@ -19,8 +19,8 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
-func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "routbucket:put") {
+func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "routbucket:get") {
 		return
 	}
 	if IsQuery(request, "acl") {
@@ -36,9 +36,9 @@ func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.
 		//TODO
 
 	} else if IsQuery(request, "lifecycle") {
-		s.BucketLifecyclePut(request, response)
+		s.BucketLifecycleGet(request, response)
 
 	} else {
-		s.BucketPut(request, response)
+		s.BucketGet(request, response)
 	}
 }
