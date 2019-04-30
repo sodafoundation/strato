@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,6 +87,7 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			Bucket: &bucket,
 			Key:    &newObjectKey,
 			Body:   stream,
+			StorageClass: aws.String("STANDARD"), // Currently, only support STANDARD for PUT.
 		})
 
 		if err != nil {
@@ -200,6 +201,7 @@ func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 	multiUpInput := &awss3.CreateMultipartUploadInput{
 		Bucket: &bucket,
 		Key:    &newObjectKey,
+		StorageClass: aws.String("STANDARD"), // Currently, only support STANDARD.
 	}
 
 	svc := awss3.New(ad.session)

@@ -1,3 +1,17 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package azure
 
 import (
@@ -84,6 +98,13 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 	if uploadResp.StatusCode() != http.StatusCreated {
 		log.Logf("[AzureAdapter] Upload StatusCode:%d\n", uploadResp.StatusCode())
 		return S3Error{Code: 500, Description: "azure failed"}
+	}
+
+	// Currently, only support Hot
+	_, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+	if err != nil {
+		log.Logf("[AzureAdapter] Set tier failed:%v\n", err)
+		return S3Error{Code: 500, Description: "azure set tier failed"}
 	}
 
 	log.Log("[AzureAdapter] Upload successfully.")
@@ -223,9 +244,15 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
 		log.Logf("[AzureAdapter] Commit blocks succeed:\n")
-		return &result, NoError
+		// Currently, only support Hot
+		_, err = blobURL.SetTier(context, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+		if err != nil {
+			log.Logf("[AzureAdapter] Set tier failed:%v\n", err)
+			return nil, S3Error{Code: 500, Description: "azure set tier failed"}
+		}
 	}
-	return nil, NoError
+
+	return &result, NoError
 }
 func (ad *AzureAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
 	bucket := ad.backend.BucketName

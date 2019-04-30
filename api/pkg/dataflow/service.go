@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -250,7 +250,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	}
 	//For debug -- end
 
-	log.Log("Get plan details successfully.")
+	log.Log("List plan successfully.")
 	response.WriteEntity(res)
 }
 
@@ -463,7 +463,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	}
 
 	//For debug -- begin
-	log.Logf("Get jobs reponse:%v", res)
+	log.Logf("List jobs reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -472,6 +472,6 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	}
 	//For debug -- end
 
-	log.Log("Get plan details successfully.")
+	log.Log("List jobs successfully.")
 	response.WriteEntity(res)
 }

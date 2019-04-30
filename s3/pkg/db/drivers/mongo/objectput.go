@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,6 +52,26 @@ func (ad *adapter) UpdateObject(in *pb.Object) S3Error {
 	} else if err != nil {
 		log.Log("Update object to database failed, err:%v\n", err)
 		return InternalError
+	}
+
+	return NoError
+}
+
+func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, setting map[string]interface{}) S3Error {
+	ss := ad.s.Copy()
+	defer ss.Close()
+	c := ss.DB(DataBaseName).C(*bucketName)
+	selector := bson.M{"objectkey":objKey}
+	sets := []bson.M{}
+	for k, v := range setting {
+		sets = append(sets, bson.M{k:v})
+	}
+	data := bson.M{"$set":sets}
+	err := c.Update(selector, data)
+
+	if err != nil {
+		log.Logf("Update object metadata failed:%v.\n", err)
+		return DBError
 	}
 
 	return NoError

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"strconv"
+	"errors"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
 const (
@@ -67,11 +70,7 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 	response.WriteEntity(res.Backend)
 }
 
-func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "backend:list") {
-		return
-	}
-	log.Log("Received request for backend list.")
+func (s *APIService)listBackendDefault(request *restful.Request, response *restful.Response) {
 	listBackendRequest := &backend.ListBackendRequest{}
 
 	limit, offset, err := common.GetPaginationParam(request)
@@ -111,6 +110,52 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 
 	log.Log("List backends successfully.")
 	response.WriteEntity(res)
+}
+
+func (s *APIService) FiterBackendByTier(request *restful.Request, response *restful.Response, tier int32) {
+	// Get those backend type which supporte the specific tier.
+	req := pb.GetBackendTypeByTierRequest{Tier: tier}
+	res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
+	req1 := &backend.ListBackendRequest{}
+	resp := &backend.ListBackendResponse{}
+	for _, v := range res.Types {
+		// Get backends with specific backend type.
+		filter := make(map[string]string)
+		filter["type"] = v
+		req1.Filter = filter
+		res1, err := s.backendClient.ListBackend(context.Background(), req1)
+		if err != nil {
+			log.Logf("Failed to list backends of type[%s]: %v\n", v, err)
+			response.WriteError(http.StatusInternalServerError, err)
+		}
+		if len(res1.Backends) != 0 {
+			resp.Backends = append(resp.Backends, res1.Backends...)
+		}
+	}
+	//TODO: Need to consider pagination
+
+	log.Log("FiterBackendByTier backends successfully.")
+	response.WriteEntity(resp)
+}
+
+func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:list") {
+		return
+	}
+	log.Log("Received request for backend list.")
+
+	para := request.QueryParameter("tier")
+	if para != "" { //List those backends which support the specific tier.
+		tier, err := strconv.Atoi(para)
+		if err != nil {
+			log.Logf("List backends with tier as filter, but tier[%s] is invalid\n", tier)
+			response.WriteError(http.StatusBadRequest, errors.New("Invalid tier"))
+			return
+		}
+		s.FiterBackendByTier(request, response, int32(tier))
+	} else {
+		s.listBackendDefault(request, response)
+	}
 }
 
 func (s *APIService) CreateBackend(request *restful.Request, response *restful.Response) {

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,6 +72,14 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	if !policy.Authorize(request, response, "bucket:get") {
 		return
 	}
+
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Logf("Get pagination parameters failed: %v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("Received request for bucket details: %s", bucketName)
 
@@ -98,7 +106,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		filter[common.KObjKey] = ret
 	}
 
-	// Check validation of query parameter
+	// Check validation of query parameter. Example of lastmodified: {"lt":"100", "gt":"30"}
 	if filter[common.KLastModified] != "" {
 		var tmFilter map[string]string
 		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
@@ -120,6 +128,8 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	req := s3.ListObjectsRequest{
 		Bucket: bucketName,
 		Filter: filter,
+		Offset: offset,
+		Limit: limit,
 	}
 
 	ctx := context.Background()

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
 	ws.Route(ws.GET("/").To(handler.ListBuckets)).Doc("Return list of buckets for the user")
+	ws.Route(ws.GET("/storageClasses").To(handler.GetStorageClasses)).Doc("Return supported storage classes.")
 	ws.Route(ws.PUT("/{bucketName}").To(handler.RouteBucketPut)).Doc("Create bucket for the user")
 	//ws.Route(ws.HEAD("/s3/{bucketName}").To(handler.BucketHead)).Doc("Determine if bucket exists and if user has permission to access it")
 	ws.Route(ws.GET("/{bucketName}").To(handler.BucketGet)).Doc("Return list of objects in bucket")

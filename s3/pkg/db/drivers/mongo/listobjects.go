@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,17 +65,32 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 				filter = append(filter, bson.M{"lastmodified": bson.M{op: secs}})
 			}
 		}
+		if in.Filter[common.KStorageTier] != "" {
+			tier, err := strconv.Atoi(in.Filter[common.KStorageTier])
+			if err != nil {
+				log.Logf("Invalid storage class:%s\n", in.Filter[common.KStorageTier])
+				return InvalidQueryParameter
+			}
+			filter = append(filter, bson.M{"tier": bson.M{"$lt": tier}})
+		}
 	}
+
+	filter = append(filter, bson.M{"initflag": bson.M{"$ne": "0"}})
+	filter = append(filter, bson.M{"isdeletemarker": bson.M{"$ne": "1"}})
 
 	log.Logf("filter:%+v\n", filter)
 	var err error
+	offset := int(in.Offset)
+	limit := int(in.Limit)
+	if limit == 0 {
+		limit = 1000  // as default
+	}
 	if len(filter) > 0 {
-		err = c.Find(bson.M{"$and":filter}).All(out)
+		err = c.Find(bson.M{"$and":filter}).Skip(offset).Limit(limit).All(out)
 	} else {
-		err = c.Find(bson.M{}).All(out)
+		err = c.Find(bson.M{}).Skip(offset).Limit(limit).All(out)
 	}
 
-	//TODO pagination
 	if err != nil {
 		log.Logf("Find objects from database failed, err:%v\n", err)
 		return InternalError
