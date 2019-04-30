@@ -82,12 +82,12 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	}
 
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for bucket details: %s", bucketName)
+	log.Logf("Received request for bucket details: %s\n", bucketName)
 
 	filterOpts := []string{common.KObjKey, common.KLastModified}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("Get filter failed: %v", err)
+		log.Logf("Get filter failed: %v\n", err)
 		response.WriteError(http.StatusBadRequest, err)
 		return
 	} else {

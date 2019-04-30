@@ -220,6 +220,7 @@ func (ad *AzureAdapter) UploadPart(stream io.Reader, multipartUpload *pb.Multipa
 	result := &model.UploadPartResult{PartNumber: partNumber, ETag: newObjectKey}
 	return result, NoError
 }
+
 func (ad *AzureAdapter) CompleteMultipartUpload(
 	multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload,
@@ -245,22 +246,24 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 		log.Logf("[AzureAdapter] Commit blocks faild:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
-		log.Logf("[AzureAdapter] Commit blocks succeed:\n")
+		log.Logf("[AzureAdapter] Commit blocks succeed.\n")
 		// Currently, only support Hot
 		_, err = blobURL.SetTier(context, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
 		if err != nil {
-			log.Logf("[AzureAdapter] Set tier failed:%v\n", err)
+			log.Logf("set blob tier failed:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "azure set tier failed"}
 		}
 	}
 
 	return &result, NoError
 }
+
 func (ad *AzureAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
 	bucket := ad.backend.BucketName
 	log.Logf("No need to abort multipart upload[objkey:%s].\n", bucket)
 	return NoError
 }
+
 func (ad *AzureAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
 	return nil, NoError
 }

@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/micro/go-log"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -91,7 +90,8 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			Bucket: &bucket,
 			Key:    &newObjectKey,
 			Body:   stream,
-			StorageClass: aws.String(constants.StorageClassAWSStandard), // Currently, only support STANDARD for PUT.
+			// Currently, only support STANDARD for PUT.
+			StorageClass: aws.String(constants.StorageClassAWSStandard),
 		})
 
 		if err != nil {
@@ -205,7 +205,8 @@ func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 	multiUpInput := &awss3.CreateMultipartUploadInput{
 		Bucket: &bucket,
 		Key:    &newObjectKey,
-		StorageClass: aws.String(constants.StorageClassAWSStandard), // Currently, only support STANDARD.
+		// Currently, only support STANDARD.
+		StorageClass: aws.String(constants.StorageClassAWSStandard),
 	}
 
 	svc := awss3.New(ad.session)
