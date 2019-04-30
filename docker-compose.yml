@@ -21,7 +21,7 @@ services:
       - zookeeper
 
   api:
-    image: opensdsio/multi-cloud-api
+    image: opensdsio/multi-cloud-api:bali
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
     ports:
@@ -37,19 +37,19 @@ services:
       - OS_PROJECT_NAME=service
 
   backend:
-    image: opensdsio/multi-cloud-backend
+    image: opensdsio/multi-cloud-backend:bali
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
 
   s3:
-    image: opensdsio/multi-cloud-s3
+    image: opensdsio/multi-cloud-s3:bali
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
 
   dataflow:
-    image: opensdsio/multi-cloud-dataflow
+    image: opensdsio/multi-cloud-dataflow:bali
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -59,7 +59,7 @@ services:
       - kafka
 
   datamover:
-    image: opensdsio/multi-cloud-datamover
+    image: opensdsio/multi-cloud-datamover:bali
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
     environment:
