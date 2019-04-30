@@ -1,5 +1,5 @@
 // Copyright 2019 The OpenSDS Authors.
-
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -71,7 +71,7 @@ func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendReques
 	log.Log("Received GetBackend request.")
 	res, err := db.Repo.GetBackend(in.Id)
 	if err != nil {
-		log.Logf("Failed to get backend: %v", err)
+		log.Logf("failed to get backend: %v", err)
 		return err
 	}
 	out.Backend = &pb.BackendDetail{

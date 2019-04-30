@@ -17,20 +17,24 @@ package aws
 import (
 	"bytes"
 	"context"
+	"io"
+	"io/ioutil"
+	"strconv"
+	"time"
+
+	"github.com/micro/go-log"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/micro/go-log"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"io"
-	"io/ioutil"
-	"strconv"
-	"time"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 )
 
 type AwsAdapter struct {
@@ -87,7 +91,7 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			Bucket: &bucket,
 			Key:    &newObjectKey,
 			Body:   stream,
-			StorageClass: aws.String("STANDARD"), // Currently, only support STANDARD for PUT.
+			StorageClass: aws.String(constants.StorageClassAWSStandard), // Currently, only support STANDARD for PUT.
 		})
 
 		if err != nil {
@@ -201,7 +205,7 @@ func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 	multiUpInput := &awss3.CreateMultipartUploadInput{
 		Bucket: &bucket,
 		Key:    &newObjectKey,
-		StorageClass: aws.String("STANDARD"), // Currently, only support STANDARD.
+		StorageClass: aws.String(constants.StorageClassAWSStandard), // Currently, only support STANDARD.
 	}
 
 	svc := awss3.New(ad.session)

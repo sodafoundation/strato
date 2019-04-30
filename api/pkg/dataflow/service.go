@@ -17,19 +17,19 @@ package dataflow
 import (
 	"encoding/json"
 	"net/http"
-
 	"io/ioutil"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
+	"golang.org/x/net/context"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -241,7 +241,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	}
 
 	//For debug -- begin
-	log.Logf("List plan reponse:%v", res)
+	log.Logf("List plans reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -250,7 +250,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	}
 	//For debug -- end
 
-	log.Log("List plan successfully.")
+	log.Log("List plans successfully.")
 	response.WriteEntity(res)
 }
 

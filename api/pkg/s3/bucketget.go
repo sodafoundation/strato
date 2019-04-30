@@ -17,17 +17,18 @@ package s3
 import (
 	"net/http"
 	"errors"
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	//	"github.com/micro/go-micro/errors"
-	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 	"strconv"
 	"encoding/json"
-	"github.com/opensds/multi-cloud/api/pkg/common"
 	"fmt"
 	"strings"
+
+	"github.com/emicklei/go-restful"
+	"github.com/micro/go-log"
+	"golang.org/x/net/context"
+
+	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 func checkLastmodifiedFilter(fmap *map[string]string) error {
@@ -75,7 +76,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Logf("Get pagination parameters failed: %v", err)
+		log.Logf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

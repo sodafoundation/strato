@@ -16,14 +16,15 @@ package pkg
 
 import (
 	"context"
-	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/s3/pkg/db"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"net/http"
 	"os"
 	"strconv"
 	"fmt"
+
+	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/s3/pkg/db"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"

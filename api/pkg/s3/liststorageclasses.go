@@ -16,14 +16,15 @@ package s3
 
 import (
 	"net/http"
+	"encoding/xml"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"golang.org/x/net/context"
+
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"encoding/xml"
 )
 
 func (s *APIService) GetStorageClasses(request *restful.Request, response *restful.Response) {
