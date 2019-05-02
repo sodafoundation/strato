@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,8 +35,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("Received request for create bucket: %s", bucketName)
 	ctx := context.Background()
-	bucket := s3.Bucket{}
-	bucket.Name = bucketName
+	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	body := ReadBody(request)
 	log.Logf("Body request is %v\n", body)
 
@@ -55,6 +54,10 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 				// assign the fields
 				s3Rule.ID = rule.ID  //Assigning the rule ID
+
+				//Assigning the status value to s3 status
+				log.Logf("Status in rule file is %v\n", rule.Status)
+				s3Rule.Status = rule.Status
 
 				//Assigning the filter, using convert function to convert xml struct to s3 struct
 				s3Rule.Filter = convertRuleFilterToS3Filter(rule.Filter)
@@ -107,12 +110,12 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 	// Create bucket with bucket name will check if the bucket exists or not, if it exists
 	// it will internally call UpdateBucket function
-	res, err := s.s3Client.CreateBucket(ctx, &bucket)
+	res, err := s.s3Client.CreateBucket(ctx, bucket)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Create bucket successfully.")
+	log.Log("Create bucket lifecycle successfully.")
 	response.WriteEntity(res)
 
 }
