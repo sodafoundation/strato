@@ -15,15 +15,6 @@ service S3 {
 
 
 
-message ACL {
-	string canned = 1;
-	repeated string FULL_CONTROL = 2;
-	repeated string WRITE = 3;
-	repeated string WRITE_ACP = 4;
-	repeated string READ = 5;
-	repeated string READ_ACP = 6;
-}
-
 message ServerSideEncryption {
 	string cryptScheme = 1;
 	string algorithm = 2;
@@ -144,7 +135,7 @@ message Bucket {
 	string name = 1;
 	string owner = 2;
 	string ownerDisplayName = 3;
-	ACL acl = 4;
+	string acl = 4;
     int64 creationDate = 5;
 	bool transient = 6;
 	bool deleted = 7;
@@ -155,6 +146,7 @@ message Bucket {
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
 	repeated LifecycleRule LifecycleConfiguration = 14;
+	string bucketPolicy = 15;
 }
 
 message Partion {
@@ -189,17 +181,16 @@ message Object {
 	string storageClass = 13;
 	ServerSideEncryption serverSideEncryption = 14;
 	string websiteRedirectLocation = 15;
-	ACL acl = 16;
+	string acl = 16;
 	string backend = 17;
 	string isNull = 18;
 	string isDeleteMarker = 19;
 	repeated ReplicationInfo replicationInfo = 20;
 	int64 size = 21;
 	repeated Partion partions =22;
-	repeated Tag tags = 23;
-	int64 lastModified =24;
+	Tag tags = 23;
+	string lastModified =24;
 	string initFlag=25;
-	string ETag=26;
 }
 
 
@@ -222,7 +213,6 @@ message ListObjectsRequest {
     string Bucket = 1;
     string Delimiter = 2;
     string Owner = 3;
-	map<string, string> Filter = 4;
 }
 
 message ListObjectResponse {
