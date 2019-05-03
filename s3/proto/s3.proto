@@ -189,7 +189,7 @@ message Object {
 	int64 size = 21;
 	repeated Partion partions =22;
 	Tag tags = 23;
-	string lastModified =24;
+	int64 lastModified =24;
 	string initFlag=25;
 }
 
@@ -213,6 +213,7 @@ message ListObjectsRequest {
     string Bucket = 1;
     string Delimiter = 2;
     string Owner = 3;
+	map<string, string> Filter = 4;
 }
 
 message ListObjectResponse {
