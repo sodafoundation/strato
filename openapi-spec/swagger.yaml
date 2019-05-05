@@ -201,7 +201,7 @@ paths:
       tags:
         - types
       summary: List all supported storage backend type.
-      operationId: listBackend
+      operationId: listBackendTypes
       parameters:
         - name: name
           in: query
@@ -679,6 +679,19 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+  '/v1/v3/storageClasses':
+    get:
+      tags:
+        - s3
+      summary: get supported storage classes
+      operationId: getStorageClasses
+      responses:
+        '200':
+          description: 'Get storage classes succesfully. There is a map between storage class name and stroage tier, as default the storage classes are compatible with aws s3.'
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ListStorageClasses'
 components:
   parameters:
     offset:
@@ -1022,6 +1035,23 @@ components:
             Backend:
               description: The backend of object
               type: string
+    ListStorageClasses:
+      type: array
+      xml:
+        wrapped: true
+      items:
+        xml:
+          name: Class
+        type: object
+        properties:
+          Name:
+            description: 'The storage class name, as default, it is compatible with aws s3.'
+            type: string
+            example: STANDARD
+          Tier:
+            description: 'The storage tier, used in OpenSDS. Each tier is mapped to a specific name.'
+            type: integer
+            example: 1
   requestBodies:
     Backend:
       content:
