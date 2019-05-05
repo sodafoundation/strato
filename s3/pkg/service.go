@@ -190,8 +190,8 @@ func loadDefaultStorageClass() error {
 }
 
 func loadUserDefinedStorageClass() error {
-	log.Log("User defined storage class is not supported now.")
-	return fmt.Errorf("User defined storage class is not supported now")
+	log.Log("user defined storage class is not supported now")
+	return fmt.Errorf("user defined storage class is not supported now")
 }
 
 func loadDefaultTransition() error {
@@ -204,8 +204,8 @@ func loadDefaultTransition() error {
 }
 
 func loadUserDefinedTransition() error  {
-	log.Log("User defined storage class is not supported now.")
-	return fmt.Errorf("User defined storage class is not supported now")
+	log.Log("user defined storage class is not supported now")
+	return fmt.Errorf("user defined storage class is not supported now")
 }
 
 func initStorageClass() {
@@ -214,8 +214,8 @@ func initStorageClass() {
 	val, err := strconv.ParseInt(set, 10, 64)
 	log.Logf("USE_DEFAULT_STORAGE_CLASS:set=%s, val=%d, err=%v.\n", set, val, err)
 	if err != nil{
-		log.Logf("Invalid USE_DEFAULT_STORAGE_CLASS:%s", set)
-		panic("Init s3service failed")
+		log.Logf("invalid USE_DEFAULT_STORAGE_CLASS:%s", set)
+		panic("init s3service failed")
 	}
 
 	// Load storage class definition and transition relationship.
@@ -229,7 +229,7 @@ func initStorageClass() {
 	}
 	// Exit if init failed.
 	if err1 != nil || err2 != nil {
-		panic("Init s3service failed")
+		panic("init s3service failed")
 	}
 }
 
@@ -453,7 +453,7 @@ func (b *s3Service)UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaReques
 		return err.Error()
 	}
 
-	out.Msg = "Update object meta data successfully."
+	out.Msg = "update object meta data successfully."
 	return nil
 }
 
