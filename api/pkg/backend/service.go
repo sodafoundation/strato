@@ -23,7 +23,6 @@ import (
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	"golang.org/x/net/context"
-
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
@@ -113,7 +112,7 @@ func (s *APIService)listBackendDefault(request *restful.Request, response *restf
 	response.WriteEntity(res)
 }
 
-func (s *APIService) FiterBackendByTier(request *restful.Request, response *restful.Response, tier int32) {
+func (s *APIService) FilterBackendByTier(request *restful.Request, response *restful.Response, tier int32) {
 	// Get those backend type which supporte the specific tier.
 	req := pb.GetBackendTypeByTierRequest{Tier: tier}
 	res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
@@ -153,7 +152,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 			response.WriteError(http.StatusBadRequest, errors.New("Invalid tier"))
 			return
 		}
-		s.FiterBackendByTier(request, response, int32(tier))
+		s.FilterBackendByTier(request, response, int32(tier))
 	} else {
 		s.listBackendDefault(request, response)
 	}

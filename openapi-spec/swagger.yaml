@@ -679,7 +679,7 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
-  '/v1/v3/storageClasses':
+  '/v1/s3/storageClasses':
     get:
       tags:
         - s3
