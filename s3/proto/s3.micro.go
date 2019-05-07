@@ -8,7 +8,6 @@ It is generated from these files:
 	s3.proto
 
 It has these top-level messages:
-	ACL
 	ServerSideEncryption
 	VersioningConfiguration
 	RedirectAllRequestsTo

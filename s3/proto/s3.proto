@@ -17,15 +17,6 @@ service S3 {
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
 }
 
-message ACL {
-	string canned = 1;
-	repeated string FULL_CONTROL = 2;
-	repeated string WRITE = 3;
-	repeated string WRITE_ACP = 4;
-	repeated string READ = 5;
-	repeated string READ_ACP = 6;
-}
-
 message ServerSideEncryption {
 	string cryptScheme = 1;
 	string algorithm = 2;
@@ -129,7 +120,7 @@ message Bucket {
 	string name = 1;
 	string owner = 2;
 	string ownerDisplayName = 3;
-	ACL acl = 4;
+	string acl = 4;
     int64 creationDate = 5;
 	bool transient = 6;
 	bool deleted = 7;
@@ -140,6 +131,7 @@ message Bucket {
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
 	repeated LifecycleRule lifecycleConfiguration = 14;
+	string bucketPolicy = 15;
 }
 
 message Partion {
@@ -174,7 +166,7 @@ message Object {
 	string storageClass = 13;
 	ServerSideEncryption serverSideEncryption = 14;
 	string websiteRedirectLocation = 15;
-	ACL acl = 16;
+	string acl = 16;
 	string backend = 17;
 	string isNull = 18;
 	string isDeleteMarker = 19;
