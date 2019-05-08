@@ -19,7 +19,7 @@ import (
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -31,13 +31,11 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	log.Logf("Received request for bucket details in GET lifecycle: %s", bucketName)
 
 	ctx := context.Background()
-	log.Log("just before call to GetBucket")
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 
 	// convert back to xml struct
 	getLifecycleConf := model.LifecycleConfiguration{}
 	getLifecycleConf.Rule = make([]model.Rule, 0)
-	log.Log("before convert rule[]")
 	// convert lifecycle rule to xml Rule
 	for _, lcRule := range bucket.LifecycleConfiguration {
 		xmlRule := model.Rule{}
@@ -66,7 +64,6 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	// marshall the array back to xml
 	//xmlByteArr, _ := xml.Marshal(getLifecycleConf.Rule)
 	response.WriteAsXml(getLifecycleConf.Rule)
-	log.Logf("Response in GET lifecycle: %s", getLifecycleConf.Rule)
 
 	log.Log("Get bucket lifecycle successfully.")
 }

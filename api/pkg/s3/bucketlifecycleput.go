@@ -26,6 +26,7 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"crypto/md5"
 )
 
 func (s *APIService) BucketLifecyclePut(request *restful.Request, response *restful.Response) {
@@ -38,6 +39,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	body := ReadBody(request)
 	log.Logf("Body request is %v\n", body)
+	log.Logf("%x", md5.Sum(body))
 
 	if body != nil {
 		createLifecycleConf := model.LifecycleConfiguration{}
