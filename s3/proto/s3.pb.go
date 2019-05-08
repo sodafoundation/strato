@@ -32,7 +32,7 @@ func (m *ServerSideEncryption) Reset()         { *m = ServerSideEncryption{} }
 func (m *ServerSideEncryption) String() string { return proto.CompactTextString(m) }
 func (*ServerSideEncryption) ProtoMessage()    {}
 func (*ServerSideEncryption) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{0}
+	return fileDescriptor_s3_1244b13629ced826, []int{0}
 }
 func (m *ServerSideEncryption) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerSideEncryption.Unmarshal(m, b)
@@ -92,7 +92,7 @@ func (m *VersioningConfiguration) Reset()         { *m = VersioningConfiguration
 func (m *VersioningConfiguration) String() string { return proto.CompactTextString(m) }
 func (*VersioningConfiguration) ProtoMessage()    {}
 func (*VersioningConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{1}
+	return fileDescriptor_s3_1244b13629ced826, []int{1}
 }
 func (m *VersioningConfiguration) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VersioningConfiguration.Unmarshal(m, b)
@@ -138,7 +138,7 @@ func (m *RedirectAllRequestsTo) Reset()         { *m = RedirectAllRequestsTo{} }
 func (m *RedirectAllRequestsTo) String() string { return proto.CompactTextString(m) }
 func (*RedirectAllRequestsTo) ProtoMessage()    {}
 func (*RedirectAllRequestsTo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{2}
+	return fileDescriptor_s3_1244b13629ced826, []int{2}
 }
 func (m *RedirectAllRequestsTo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RedirectAllRequestsTo.Unmarshal(m, b)
@@ -187,7 +187,7 @@ func (m *Redirect) Reset()         { *m = Redirect{} }
 func (m *Redirect) String() string { return proto.CompactTextString(m) }
 func (*Redirect) ProtoMessage()    {}
 func (*Redirect) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{3}
+	return fileDescriptor_s3_1244b13629ced826, []int{3}
 }
 func (m *Redirect) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Redirect.Unmarshal(m, b)
@@ -254,7 +254,7 @@ func (m *Condition) Reset()         { *m = Condition{} }
 func (m *Condition) String() string { return proto.CompactTextString(m) }
 func (*Condition) ProtoMessage()    {}
 func (*Condition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{4}
+	return fileDescriptor_s3_1244b13629ced826, []int{4}
 }
 func (m *Condition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Condition.Unmarshal(m, b)
@@ -300,7 +300,7 @@ func (m *RoutingRules) Reset()         { *m = RoutingRules{} }
 func (m *RoutingRules) String() string { return proto.CompactTextString(m) }
 func (*RoutingRules) ProtoMessage()    {}
 func (*RoutingRules) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{5}
+	return fileDescriptor_s3_1244b13629ced826, []int{5}
 }
 func (m *RoutingRules) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutingRules.Unmarshal(m, b)
@@ -348,7 +348,7 @@ func (m *WebsiteConfiguration) Reset()         { *m = WebsiteConfiguration{} }
 func (m *WebsiteConfiguration) String() string { return proto.CompactTextString(m) }
 func (*WebsiteConfiguration) ProtoMessage()    {}
 func (*WebsiteConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{6}
+	return fileDescriptor_s3_1244b13629ced826, []int{6}
 }
 func (m *WebsiteConfiguration) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WebsiteConfiguration.Unmarshal(m, b)
@@ -412,7 +412,7 @@ func (m *CORSConfiguration) Reset()         { *m = CORSConfiguration{} }
 func (m *CORSConfiguration) String() string { return proto.CompactTextString(m) }
 func (*CORSConfiguration) ProtoMessage()    {}
 func (*CORSConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{7}
+	return fileDescriptor_s3_1244b13629ced826, []int{7}
 }
 func (m *CORSConfiguration) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CORSConfiguration.Unmarshal(m, b)
@@ -486,7 +486,7 @@ func (m *Destination) Reset()         { *m = Destination{} }
 func (m *Destination) String() string { return proto.CompactTextString(m) }
 func (*Destination) ProtoMessage()    {}
 func (*Destination) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{8}
+	return fileDescriptor_s3_1244b13629ced826, []int{8}
 }
 func (m *Destination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Destination.Unmarshal(m, b)
@@ -534,7 +534,7 @@ func (m *ReplicationRole) Reset()         { *m = ReplicationRole{} }
 func (m *ReplicationRole) String() string { return proto.CompactTextString(m) }
 func (*ReplicationRole) ProtoMessage()    {}
 func (*ReplicationRole) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{9}
+	return fileDescriptor_s3_1244b13629ced826, []int{9}
 }
 func (m *ReplicationRole) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReplicationRole.Unmarshal(m, b)
@@ -594,7 +594,7 @@ func (m *ReplicationConfiguration) Reset()         { *m = ReplicationConfigurati
 func (m *ReplicationConfiguration) String() string { return proto.CompactTextString(m) }
 func (*ReplicationConfiguration) ProtoMessage()    {}
 func (*ReplicationConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{10}
+	return fileDescriptor_s3_1244b13629ced826, []int{10}
 }
 func (m *ReplicationConfiguration) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReplicationConfiguration.Unmarshal(m, b)
@@ -640,7 +640,7 @@ func (m *Tag) Reset()         { *m = Tag{} }
 func (m *Tag) String() string { return proto.CompactTextString(m) }
 func (*Tag) ProtoMessage()    {}
 func (*Tag) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{11}
+	return fileDescriptor_s3_1244b13629ced826, []int{11}
 }
 func (m *Tag) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Tag.Unmarshal(m, b)
@@ -686,7 +686,7 @@ func (m *LifecycleFilter) Reset()         { *m = LifecycleFilter{} }
 func (m *LifecycleFilter) String() string { return proto.CompactTextString(m) }
 func (*LifecycleFilter) ProtoMessage()    {}
 func (*LifecycleFilter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{12}
+	return fileDescriptor_s3_1244b13629ced826, []int{12}
 }
 func (m *LifecycleFilter) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LifecycleFilter.Unmarshal(m, b)
@@ -735,7 +735,7 @@ func (m *Action) Reset()         { *m = Action{} }
 func (m *Action) String() string { return proto.CompactTextString(m) }
 func (*Action) ProtoMessage()    {}
 func (*Action) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{13}
+	return fileDescriptor_s3_1244b13629ced826, []int{13}
 }
 func (m *Action) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Action.Unmarshal(m, b)
@@ -804,7 +804,7 @@ func (m *LifecycleRule) Reset()         { *m = LifecycleRule{} }
 func (m *LifecycleRule) String() string { return proto.CompactTextString(m) }
 func (*LifecycleRule) ProtoMessage()    {}
 func (*LifecycleRule) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{14}
+	return fileDescriptor_s3_1244b13629ced826, []int{14}
 }
 func (m *LifecycleRule) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LifecycleRule.Unmarshal(m, b)
@@ -865,7 +865,7 @@ func (m *ReplicationInfo) Reset()         { *m = ReplicationInfo{} }
 func (m *ReplicationInfo) String() string { return proto.CompactTextString(m) }
 func (*ReplicationInfo) ProtoMessage()    {}
 func (*ReplicationInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{15}
+	return fileDescriptor_s3_1244b13629ced826, []int{15}
 }
 func (m *ReplicationInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReplicationInfo.Unmarshal(m, b)
@@ -931,7 +931,7 @@ func (m *Bucket) Reset()         { *m = Bucket{} }
 func (m *Bucket) String() string { return proto.CompactTextString(m) }
 func (*Bucket) ProtoMessage()    {}
 func (*Bucket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{16}
+	return fileDescriptor_s3_1244b13629ced826, []int{16}
 }
 func (m *Bucket) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Bucket.Unmarshal(m, b)
@@ -1071,7 +1071,7 @@ func (m *Partion) Reset()         { *m = Partion{} }
 func (m *Partion) String() string { return proto.CompactTextString(m) }
 func (*Partion) ProtoMessage()    {}
 func (*Partion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{17}
+	return fileDescriptor_s3_1244b13629ced826, []int{17}
 }
 func (m *Partion) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Partion.Unmarshal(m, b)
@@ -1141,7 +1141,7 @@ func (m *Version) Reset()         { *m = Version{} }
 func (m *Version) String() string { return proto.CompactTextString(m) }
 func (*Version) ProtoMessage()    {}
 func (*Version) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{18}
+	return fileDescriptor_s3_1244b13629ced826, []int{18}
 }
 func (m *Version) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Version.Unmarshal(m, b)
@@ -1233,7 +1233,7 @@ func (m *Object) Reset()         { *m = Object{} }
 func (m *Object) String() string { return proto.CompactTextString(m) }
 func (*Object) ProtoMessage()    {}
 func (*Object) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{19}
+	return fileDescriptor_s3_1244b13629ced826, []int{19}
 }
 func (m *Object) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Object.Unmarshal(m, b)
@@ -1453,7 +1453,7 @@ func (m *ListBucketsResponse) Reset()         { *m = ListBucketsResponse{} }
 func (m *ListBucketsResponse) String() string { return proto.CompactTextString(m) }
 func (*ListBucketsResponse) ProtoMessage()    {}
 func (*ListBucketsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{20}
+	return fileDescriptor_s3_1244b13629ced826, []int{20}
 }
 func (m *ListBucketsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListBucketsResponse.Unmarshal(m, b)
@@ -1492,7 +1492,7 @@ func (m *BaseResponse) Reset()         { *m = BaseResponse{} }
 func (m *BaseResponse) String() string { return proto.CompactTextString(m) }
 func (*BaseResponse) ProtoMessage()    {}
 func (*BaseResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{21}
+	return fileDescriptor_s3_1244b13629ced826, []int{21}
 }
 func (m *BaseResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BaseResponse.Unmarshal(m, b)
@@ -1537,7 +1537,7 @@ func (m *BaseRequest) Reset()         { *m = BaseRequest{} }
 func (m *BaseRequest) String() string { return proto.CompactTextString(m) }
 func (*BaseRequest) ProtoMessage()    {}
 func (*BaseRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{22}
+	return fileDescriptor_s3_1244b13629ced826, []int{22}
 }
 func (m *BaseRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BaseRequest.Unmarshal(m, b)
@@ -1581,7 +1581,7 @@ func (m *ListObjectsRequest) Reset()         { *m = ListObjectsRequest{} }
 func (m *ListObjectsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListObjectsRequest) ProtoMessage()    {}
 func (*ListObjectsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{23}
+	return fileDescriptor_s3_1244b13629ced826, []int{23}
 }
 func (m *ListObjectsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListObjectsRequest.Unmarshal(m, b)
@@ -1654,7 +1654,7 @@ func (m *ListObjectResponse) Reset()         { *m = ListObjectResponse{} }
 func (m *ListObjectResponse) String() string { return proto.CompactTextString(m) }
 func (*ListObjectResponse) ProtoMessage()    {}
 func (*ListObjectResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{24}
+	return fileDescriptor_s3_1244b13629ced826, []int{24}
 }
 func (m *ListObjectResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListObjectResponse.Unmarshal(m, b)
@@ -1694,7 +1694,7 @@ func (m *DeleteObjectInput) Reset()         { *m = DeleteObjectInput{} }
 func (m *DeleteObjectInput) String() string { return proto.CompactTextString(m) }
 func (*DeleteObjectInput) ProtoMessage()    {}
 func (*DeleteObjectInput) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{25}
+	return fileDescriptor_s3_1244b13629ced826, []int{25}
 }
 func (m *DeleteObjectInput) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteObjectInput.Unmarshal(m, b)
@@ -1748,7 +1748,7 @@ func (m *GetObjectInput) Reset()         { *m = GetObjectInput{} }
 func (m *GetObjectInput) String() string { return proto.CompactTextString(m) }
 func (*GetObjectInput) ProtoMessage()    {}
 func (*GetObjectInput) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{26}
+	return fileDescriptor_s3_1244b13629ced826, []int{26}
 }
 func (m *GetObjectInput) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetObjectInput.Unmarshal(m, b)
@@ -1802,7 +1802,7 @@ func (m *MultipartUpload) Reset()         { *m = MultipartUpload{} }
 func (m *MultipartUpload) String() string { return proto.CompactTextString(m) }
 func (*MultipartUpload) ProtoMessage()    {}
 func (*MultipartUpload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{27}
+	return fileDescriptor_s3_1244b13629ced826, []int{27}
 }
 func (m *MultipartUpload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MultipartUpload.Unmarshal(m, b)
@@ -1858,7 +1858,7 @@ func (m *ListParts) Reset()         { *m = ListParts{} }
 func (m *ListParts) String() string { return proto.CompactTextString(m) }
 func (*ListParts) ProtoMessage()    {}
 func (*ListParts) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{28}
+	return fileDescriptor_s3_1244b13629ced826, []int{28}
 }
 func (m *ListParts) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListParts.Unmarshal(m, b)
@@ -1924,7 +1924,7 @@ func (m *TList) Reset()         { *m = TList{} }
 func (m *TList) String() string { return proto.CompactTextString(m) }
 func (*TList) ProtoMessage()    {}
 func (*TList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{29}
+	return fileDescriptor_s3_1244b13629ced826, []int{29}
 }
 func (m *TList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TList.Unmarshal(m, b)
@@ -1962,7 +1962,7 @@ func (m *Tier2ClassName) Reset()         { *m = Tier2ClassName{} }
 func (m *Tier2ClassName) String() string { return proto.CompactTextString(m) }
 func (*Tier2ClassName) ProtoMessage()    {}
 func (*Tier2ClassName) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{30}
+	return fileDescriptor_s3_1244b13629ced826, []int{30}
 }
 func (m *Tier2ClassName) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Tier2ClassName.Unmarshal(m, b)
@@ -2001,7 +2001,7 @@ func (m *GetTierMapResponse) Reset()         { *m = GetTierMapResponse{} }
 func (m *GetTierMapResponse) String() string { return proto.CompactTextString(m) }
 func (*GetTierMapResponse) ProtoMessage()    {}
 func (*GetTierMapResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{31}
+	return fileDescriptor_s3_1244b13629ced826, []int{31}
 }
 func (m *GetTierMapResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetTierMapResponse.Unmarshal(m, b)
@@ -2048,7 +2048,7 @@ func (m *UpdateObjMetaRequest) Reset()         { *m = UpdateObjMetaRequest{} }
 func (m *UpdateObjMetaRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateObjMetaRequest) ProtoMessage()    {}
 func (*UpdateObjMetaRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{32}
+	return fileDescriptor_s3_1244b13629ced826, []int{32}
 }
 func (m *UpdateObjMetaRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateObjMetaRequest.Unmarshal(m, b)
@@ -2101,7 +2101,7 @@ func (m *StorageClass) Reset()         { *m = StorageClass{} }
 func (m *StorageClass) String() string { return proto.CompactTextString(m) }
 func (*StorageClass) ProtoMessage()    {}
 func (*StorageClass) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{33}
+	return fileDescriptor_s3_1244b13629ced826, []int{33}
 }
 func (m *StorageClass) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StorageClass.Unmarshal(m, b)
@@ -2146,7 +2146,7 @@ func (m *GetStorageClassesResponse) Reset()         { *m = GetStorageClassesResp
 func (m *GetStorageClassesResponse) String() string { return proto.CompactTextString(m) }
 func (*GetStorageClassesResponse) ProtoMessage()    {}
 func (*GetStorageClassesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{34}
+	return fileDescriptor_s3_1244b13629ced826, []int{34}
 }
 func (m *GetStorageClassesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetStorageClassesResponse.Unmarshal(m, b)
@@ -2184,7 +2184,7 @@ func (m *GetBackendTypeByTierRequest) Reset()         { *m = GetBackendTypeByTie
 func (m *GetBackendTypeByTierRequest) String() string { return proto.CompactTextString(m) }
 func (*GetBackendTypeByTierRequest) ProtoMessage()    {}
 func (*GetBackendTypeByTierRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{35}
+	return fileDescriptor_s3_1244b13629ced826, []int{35}
 }
 func (m *GetBackendTypeByTierRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBackendTypeByTierRequest.Unmarshal(m, b)
@@ -2222,7 +2222,7 @@ func (m *GetBackendTypeByTierResponse) Reset()         { *m = GetBackendTypeByTi
 func (m *GetBackendTypeByTierResponse) String() string { return proto.CompactTextString(m) }
 func (*GetBackendTypeByTierResponse) ProtoMessage()    {}
 func (*GetBackendTypeByTierResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s3_2bb647e9b7dbf08f, []int{36}
+	return fileDescriptor_s3_1244b13629ced826, []int{36}
 }
 func (m *GetBackendTypeByTierResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBackendTypeByTierResponse.Unmarshal(m, b)
@@ -2293,9 +2293,9 @@ func init() {
 	proto.RegisterType((*GetBackendTypeByTierResponse)(nil), "GetBackendTypeByTierResponse")
 }
 
-func init() { proto.RegisterFile("s3.proto", fileDescriptor_s3_2bb647e9b7dbf08f) }
+func init() { proto.RegisterFile("s3.proto", fileDescriptor_s3_1244b13629ced826) }
 
-var fileDescriptor_s3_2bb647e9b7dbf08f = []byte{
+var fileDescriptor_s3_1244b13629ced826 = []byte{
 	// 2180 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x4b, 0x6f, 0x1c, 0xc7,
 	0xf1, 0xe7, 0x3e, 0xb9, 0x5b, 0xbb, 0x7c, 0xa8, 0xb5, 0xa2, 0x46, 0x2b, 0xda, 0xd6, 0x7f, 0x20,

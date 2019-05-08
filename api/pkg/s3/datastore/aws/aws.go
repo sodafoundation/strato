@@ -22,18 +22,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/micro/go-log"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/micro/go-log"
 
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 )
 
 type AwsAdapter struct {

@@ -28,7 +28,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	"github.com/opensds/multi-cloud/datamover/proto"
+	datamover "github.com/opensds/multi-cloud/datamover/proto"
 )
 
 var tblConnector = "connector"

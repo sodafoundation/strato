@@ -25,16 +25,16 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/micro/go-log"
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	
+	"github.com/micro/go-log"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
-//TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
+// TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
 var MaxTimeForSingleHttpRequest = 50 * time.Minute
 
 type AzureAdapter struct {

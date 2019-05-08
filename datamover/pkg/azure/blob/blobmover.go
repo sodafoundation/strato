@@ -6,13 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
+	"io"
+	"net/url"
+	"time"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
-	"io"
-	"net/url"
-	"time"
 )
 
 var (

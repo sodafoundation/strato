@@ -84,10 +84,10 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	offset := int(in.Offset)
 	limit := int(in.Limit)
 	if limit == 0 {
-		limit = 1000  // as default
+		limit = 1000 // as default
 	}
 	if len(filter) > 0 {
-		err = c.Find(bson.M{"$and":filter}).Skip(offset).Limit(limit).All(out)
+		err = c.Find(bson.M{"$and": filter}).Skip(offset).Limit(limit).All(out)
 	} else {
 		err = c.Find(bson.M{}).Skip(offset).Limit(limit).All(out)
 	}
