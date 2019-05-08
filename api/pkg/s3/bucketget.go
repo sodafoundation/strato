@@ -15,19 +15,23 @@
 package s3
 
 import (
-	"net/http"
 	"errors"
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
 	//	"github.com/micro/go-micro/errors"
-	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
-	"strconv"
+
 	"encoding/json"
-	"github.com/opensds/multi-cloud/api/pkg/common"
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"golang.org/x/net/context"
 )
 
 func checkLastmodifiedFilter(fmap *map[string]string) error {
@@ -49,12 +53,12 @@ func checkLastmodifiedFilter(fmap *map[string]string) error {
 
 func checkObjKeyFilter(val string) (string, error) {
 	// val should be like: objeKey=like:parttern
-	if strings.HasPrefix(val,"like:") == false {
+	if strings.HasPrefix(val, "like:") == false {
 		log.Logf("Invalid object key filter:%s", val)
 		return "", fmt.Errorf("Invalid object key filter:%s", val)
 	}
 
-	vals := strings.Split(val,":")
+	vals := strings.Split(val, ":")
 	if len(vals) <= 1 {
 		log.Logf("Invalid object key filter:%s", val)
 		return "", fmt.Errorf("Invalid object key filter:%s", val)

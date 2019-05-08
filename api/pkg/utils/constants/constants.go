@@ -33,5 +33,5 @@ const (
 
 	//Signature parameter name
 	AuthorizationHeader = "Authorization"
-	SignDateHeader	= "X-Auth-Date"
+	SignDateHeader      = "X-Auth-Date"
 )

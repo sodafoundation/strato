@@ -26,18 +26,19 @@ const authorizationStr = "OPENSDS-HMAC-SHA256 Credential=access_key/20190301/us-
 
 type mockProvider struct {
 	credentials credentials.Value
-	err   error
+	err         error
 }
+
 func (m *mockProvider) Retrieve() (credentials.Value, error) {
 	m.credentials.ProviderName = "mockProvider"
 	return m.credentials, m.err
 }
 
-func buildRequest(serviceName, region string) (*http.Request) {
+func buildRequest(serviceName, region string) *http.Request {
 	endpoint := "https://" + serviceName + "/" + region
 	req, _ := http.NewRequest("GET", endpoint, nil)
-	req.Header.Add("X-Auth-Date","20190301T220855Z")
-	req.Header.Add("Authorization",authorizationStr)
+	req.Header.Add("X-Auth-Date", "20190301T220855Z")
+	req.Header.Add("Authorization", authorizationStr)
 	return req
 }
 
@@ -50,15 +51,15 @@ func buildSigner() signer.Signer {
 	})
 
 	return signer.Signer{
-		Credentials:  c,
+		Credentials: c,
 	}
 }
 
 func TestSignRequestValidation(t *testing.T) {
 	req := buildRequest("s3", "us-east-1")
 	signer := buildSigner()
-        credentialStr := "access_key/20190301/us-east-1/s3/sign_request"
-	calculatedSignature, err := signer.Sign(req, "", "s3", "us-east-1","20190301T220855Z", "20190301", credentialStr)
+	credentialStr := "access_key/20190301/us-east-1/s3/sign_request"
+	calculatedSignature, err := signer.Sign(req, "", "s3", "us-east-1", "20190301T220855Z", "20190301", credentialStr)
 
 	if err != nil {
 		return
