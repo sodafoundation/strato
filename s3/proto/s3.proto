@@ -96,11 +96,11 @@ message LifecycleFilter {
 }
 
 message Action {
-	string name = 1;   //expiration or transition
+	string name = 1;   // expiration or transition
 	int32 days = 2;
-	string deleteMarker = 4;  //for versioning
-	int32 tier = 5;  //only for transition
-	string backend = 6;		  //for cross-cloud transition, if it is not set, that means in-cloud transition
+	string deleteMarker = 4;  // for versioning
+	int32 tier = 5;  // only for transition
+	string backend = 6;		  // for cross-cloud transition, if it is not set, that means in-cloud transition
 }
 
 message LifecycleRule {
@@ -244,7 +244,7 @@ message Tier2ClassName {
 }
 
 message GetTierMapResponse {
-	repeated string Transition = 1;  //format:[from:to from:to ....]
+	repeated string Transition = 1;  // format:[from:to from:to ....]
 	map<string, Tier2ClassName> Tier2Name = 2;
 }
 

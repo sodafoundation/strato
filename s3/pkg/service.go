@@ -410,7 +410,6 @@ func NewS3Service() pb.S3Handler {
 
 func (b *s3Service)GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.GetTierMapResponse) error {
 	log.Log("GetTierMap ...")
-	//out = &pb.GetTierMapResponse{}
 
 	//Get map from internal tier to external class name.
 	out.Tier2Name = make(map[string]*pb.Tier2ClassName)
