@@ -21,12 +21,13 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	//. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 	"crypto/md5"
+
+	"github.com/opensds/multi-cloud/api/pkg/policy"
+
+	"github.com/opensds/multi-cloud/s3/pkg/model"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"golang.org/x/net/context"
 )
 
 func (s *APIService) BucketLifecyclePut(request *restful.Request, response *restful.Response) {
@@ -50,12 +51,12 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		} else {
-			s3RulePtrArr := make([]*s3.LifecycleRule,0)
-			for _, rule := range createLifecycleConf.Rule{
+			s3RulePtrArr := make([]*s3.LifecycleRule, 0)
+			for _, rule := range createLifecycleConf.Rule {
 				s3Rule := s3.LifecycleRule{}
 
 				// assign the fields
-				s3Rule.ID = rule.ID  //Assigning the rule ID
+				s3Rule.ID = rule.ID //Assigning the rule ID
 
 				//Assigning the status value to s3 status
 				log.Logf("Status in rule file is %v\n", rule.Status)
@@ -65,9 +66,9 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 				s3Rule.Filter = convertRuleFilterToS3Filter(rule.Filter)
 
 				// Create the type of transition array
-				s3TransitionArr := make([]*s3.TransitionAction,0)
+				s3TransitionArr := make([]*s3.TransitionAction, 0)
 
-				for _, transition := range rule.Transition{
+				for _, transition := range rule.Transition {
 
 					//Defining the Transition array and assigning the values tp populate fields
 					s3Transition := s3.TransitionAction{}
@@ -89,7 +90,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 				s3Rule.Transition = s3TransitionArr
 
 				//Create the type of Expiration Array
-				s3ExpirationArr := make([]*s3.ExpirationAction,0)
+				s3ExpirationArr := make([]*s3.ExpirationAction, 0)
 
 				//Loop for getting the values from xml struct
 				for _, expiration := range rule.Expiration {
@@ -122,16 +123,14 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 }
 
-func convertRuleFilterToS3Filter(filter model.Filter) *s3.LifecycleFilter{
+func convertRuleFilterToS3Filter(filter model.Filter) *s3.LifecycleFilter {
 	retFilter := s3.LifecycleFilter{}
 	retFilter.Prefix = filter.Prefix
 	return &retFilter
 }
 
-func convertRuleUploadToS3Upload(upload model.AbortIncompleteMultipartUpload) *s3.AbortMultipartUpload{
+func convertRuleUploadToS3Upload(upload model.AbortIncompleteMultipartUpload) *s3.AbortMultipartUpload {
 	retUpload := s3.AbortMultipartUpload{}
 	retUpload.DaysAfterInitiation = upload.DaysAfterInitiation
 	return &retUpload
 }
-
-

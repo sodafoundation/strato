@@ -20,8 +20,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	//"net/http"
-	//	"github.com/micro/go-micro/errors"
 )
 
 func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *restful.Response) {
