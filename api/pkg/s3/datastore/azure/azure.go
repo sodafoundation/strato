@@ -105,8 +105,8 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 	// Currently, only support Hot
 	_, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
 	if err != nil {
-		log.Logf("[AzureAdapter] Set tier failed:%v\n", err)
-		return S3Error{Code: 500, Description: "azure set tier failed"}
+		log.Logf("set azure blob tier failed:%v\n", err)
+		return S3Error{Code: 500, Description: "set azure blob tier failed"}
 	}
 
 	log.Log("[AzureAdapter] Upload successfully.")
@@ -250,8 +250,8 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 		// Currently, only support Hot
 		_, err = blobURL.SetTier(context, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
 		if err != nil {
-			log.Logf("set blob tier failed:%v\n", err)
-			return nil, S3Error{Code: 500, Description: "azure set tier failed"}
+			log.Logf("set azure blob tier failed:%v\n", err)
+			return nil, S3Error{Code: 500, Description: "set azure blob tier failed"}
 		}
 	}
 

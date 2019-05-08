@@ -56,12 +56,12 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 	if !policy.Authorize(request, response, "backend:get") {
 		return
 	}
-	log.Logf("Received request for backend details: %s", request.PathParameter("id"))
+	log.Logf("Received request for backend details: %s\n", request.PathParameter("id"))
 	id := request.PathParameter("id")
 	ctx := context.Background()
 	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
 	if err != nil {
-		log.Logf("failed to get backend details: %v", err)
+		log.Logf("failed to get backend details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -75,7 +75,7 @@ func (s *APIService)listBackendDefault(request *restful.Request, response *restf
 
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Logf("Get pagination parameters failed: %v", err)
+		log.Logf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -84,7 +84,7 @@ func (s *APIService)listBackendDefault(request *restful.Request, response *restf
 
 	sortKeys, sortDirs, err := common.GetSortParam(request)
 	if err != nil {
-		log.Logf("Get sort parameters failed: %v", err)
+		log.Logf("get sort parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -94,7 +94,7 @@ func (s *APIService)listBackendDefault(request *restful.Request, response *restf
 	filterOpts := []string{"name", "type", "region"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("Get filter failed: %v", err)
+		log.Logf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -103,7 +103,7 @@ func (s *APIService)listBackendDefault(request *restful.Request, response *restf
 	ctx := context.Background()
 	res, err := s.backendClient.ListBackend(ctx, listBackendRequest)
 	if err != nil {
-		log.Logf("Failed to list backends: %v", err)
+		log.Logf("failed to list backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -149,7 +149,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 		tier, err := strconv.Atoi(para)
 		if err != nil {
 			log.Logf("list backends with tier as filter, but tier[%s] is invalid\n", tier)
-			response.WriteError(http.StatusBadRequest, errors.New("Invalid tier"))
+			response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
 			return
 		}
 		s.FilterBackendByTier(request, response, int32(tier))
@@ -166,7 +166,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	backendDetail := &backend.BackendDetail{}
 	err := request.ReadEntity(&backendDetail)
 	if err != nil {
-		log.Logf("failed to read request body: %v", err)
+		log.Logf("failed to read request body: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -174,7 +174,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	ctx := context.Background()
 	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
 	if err != nil {
-		log.Logf("failed to create backend: %v", err)
+		log.Logf("failed to create backend: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -187,11 +187,11 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 	if !policy.Authorize(request, response, "backend:update") {
 		return
 	}
-	log.Logf("Received request for updating backend: %v", request.PathParameter("id"))
+	log.Logf("Received request for updating backend: %v\n", request.PathParameter("id"))
 	updateBackendRequest := backend.UpdateBackendRequest{Id: request.PathParameter("id")}
 	err := request.ReadEntity(&updateBackendRequest)
 	if err != nil {
-		log.Logf("failed to read request body: %v", err)
+		log.Logf("failed to read request body: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -199,7 +199,7 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 	ctx := context.Background()
 	res, err := s.backendClient.UpdateBackend(ctx, &updateBackendRequest)
 	if err != nil {
-		log.Logf("failed to update backend: %v", err)
+		log.Logf("failed to update backend: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -213,7 +213,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 		return
 	}
 	id := request.PathParameter("id")
-	log.Logf("Received request for deleting backend: %s", id)
+	log.Logf("Received request for deleting backend: %s\n", id)
 	ctx := context.Background()
 	owner := "test"
 	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{Id: owner})
@@ -221,7 +221,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	for _, v := range res.Buckets {
 		res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
 		if err != nil {
-			log.Logf("Failed to get backend details: %v", err)
+			log.Logf("failed to get backend details: %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
@@ -237,7 +237,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	if count == 0 {
 		_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: id})
 		if err != nil {
-			log.Logf("Failed to delete backend: %v", err)
+			log.Logf("failed to delete backend: %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
@@ -245,7 +245,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 		response.WriteHeader(http.StatusOK)
 		return
 	} else {
-		log.Log("The backend can not be deleted. please delete bucket first.")
+		log.Log("the backend can not be deleted, need to delete bucket first.")
 		response.WriteError(http.StatusInternalServerError, BackendDeleteError.Error())
 		return
 	}
@@ -260,7 +260,7 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Logf("Get pagination parameters failed: %v", err)
+		log.Logf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -269,7 +269,7 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 
 	sortKeys, sortDirs, err := common.GetSortParam(request)
 	if err != nil {
-		log.Logf("Get sort parameters failed: %v", err)
+		log.Logf("get sort parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -279,7 +279,7 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	filterOpts := []string{"name"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("Get filter failed: %v", err)
+		log.Logf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -288,7 +288,7 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	ctx := context.Background()
 	res, err := s.backendClient.ListType(ctx, listTypeRequest)
 	if err != nil {
-		log.Logf("Failed to list types: %v", err)
+		log.Logf("failed to list types: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

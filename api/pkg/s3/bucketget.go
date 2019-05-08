@@ -25,7 +25,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"golang.org/x/net/context"
-
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -34,13 +33,13 @@ import (
 func checkLastmodifiedFilter(fmap *map[string]string) error {
 	for k, v := range *fmap {
 		if k != "lt" && k != "lte" && k != "gt" && k != "gte" {
-			log.Logf("Invalid query parameter:k=%s,v=%s\n", k, v)
-			return errors.New("Invalid query parameter")
+			log.Logf("invalid query parameter:k=%s,v=%s\n", k, v)
+			return errors.New("invalid query parameter")
 		} else {
 			_, err := strconv.Atoi(v)
 			if err != nil {
-				log.Logf("Invalid query parameter:k=%s,v=%s, err=%v\n", k, v, err)
-				return errors.New("Invalid query parameter")
+				log.Logf("invalid query parameter:k=%s,v=%s, err=%v\n", k, v, err)
+				return errors.New("invalid query parameter")
 			}
 		}
 	}
@@ -51,14 +50,14 @@ func checkLastmodifiedFilter(fmap *map[string]string) error {
 func checkObjKeyFilter(val string) (string, error) {
 	// val should be like: objeKey=like:parttern
 	if strings.HasPrefix(val,"like:") == false {
-		log.Logf("Invalid object key filter:%s", val)
-		return "", fmt.Errorf("Invalid object key filter:%s", val)
+		log.Logf("invalid object key filter:%s\n", val)
+		return "", fmt.Errorf("invalid object key filter:%s", val)
 	}
 
 	vals := strings.Split(val,":")
 	if len(vals) <= 1 {
-		log.Logf("Invalid object key filter:%s", val)
-		return "", fmt.Errorf("Invalid object key filter:%s", val)
+		log.Logf("invalid object key filter:%s\n", val)
+		return "", fmt.Errorf("invalid object key filter:%s", val)
 	}
 
 	var ret string
@@ -87,7 +86,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	filterOpts := []string{common.KObjKey, common.KLastModified}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("Get filter failed: %v\n", err)
+		log.Logf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusBadRequest, err)
 		return
 	} else {
@@ -99,9 +98,9 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		//filter[common.KObjKey] should be like: like:parttern
 		ret, err := checkObjKeyFilter(filter[common.KObjKey])
 		if err != nil {
-			log.Logf("Invalid objkey:%s\v", filter[common.KObjKey])
+			log.Logf("invalid objkey:%s\v", filter[common.KObjKey])
 			response.WriteError(http.StatusBadRequest,
-				fmt.Errorf("Invalid objkey, it should be like objkey=like:parttern"))
+				fmt.Errorf("invalid objkey, it should be like objkey=like:parttern"))
 			return
 		}
 		filter[common.KObjKey] = ret
@@ -112,16 +111,16 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		var tmFilter map[string]string
 		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
 		if err != nil {
-			log.Logf("Invalid lastModified:%s\v", filter[common.KLastModified])
+			log.Logf("invalid lastModified:%s\v", filter[common.KLastModified])
 			response.WriteError(http.StatusBadRequest,
-				fmt.Errorf("Invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
+				fmt.Errorf("invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
 			return
 		}
 		err = checkLastmodifiedFilter(&tmFilter)
 		if err != nil {
-			log.Logf("Invalid lastModified:%s\v", filter[common.KLastModified])
+			log.Logf("invalid lastModified:%s\v", filter[common.KLastModified])
 			response.WriteError(http.StatusBadRequest,
-				fmt.Errorf("Invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
+				fmt.Errorf("invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
 			return
 		}
 	}

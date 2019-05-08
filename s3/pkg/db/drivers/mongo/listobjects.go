@@ -44,7 +44,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 			var tmFilter map[string]string
 			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
 			if err != nil {
-				log.Logf("Unmarshal lastmodified value faild:%s\n", err)
+				log.Logf("unmarshal lastmodified value faild:%s\n", err)
 				return InvalidQueryParameter
 			}
 			for k, v := range tmFilter {
@@ -61,7 +61,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 				case "gte":
 					op = "$lte"
 				default:
-					log.Logf("Unsupport filter action:%s\n", k)
+					log.Logf("unsupport filter action:%s\n", k)
 					return InvalidQueryParameter
 				}
 				filter = append(filter, bson.M{"lastmodified": bson.M{op: secs}})
@@ -70,7 +70,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 		if in.Filter[common.KStorageTier] != "" {
 			tier, err := strconv.Atoi(in.Filter[common.KStorageTier])
 			if err != nil {
-				log.Logf("Invalid storage class:%s\n", in.Filter[common.KStorageTier])
+				log.Logf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
 				return InvalidQueryParameter
 			}
 			filter = append(filter, bson.M{"tier": bson.M{"$lt": tier}})
@@ -94,7 +94,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	}
 
 	if err != nil {
-		log.Logf("Find objects from database failed, err:%v\n", err)
+		log.Logf("find objects from database failed, err:%v\n", err)
 		return InternalError
 	}
 

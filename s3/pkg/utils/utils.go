@@ -20,6 +20,8 @@ type Database struct {
 	Endpoint   string `conf:"endpoint,localhost:27017"`
 }
 
+// Tier1, Tier99 and Tier999 just like the tiers of hot, warm, cold.
+// In the future, we will provide the ability for users to add new storage tiers, if we use 1, 2 and 3, then no space for new storage tiers.
 const (
 	Tier1 = 1
 	Tier99 = 99

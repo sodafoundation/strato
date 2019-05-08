@@ -70,7 +70,7 @@ func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, setting map
 	err := c.Update(selector, data)
 
 	if err != nil {
-		log.Logf("Update object metadata failed:%v.\n", err)
+		log.Logf("update object metadata failed:%v.\n", err)
 		return DBError
 	}
 

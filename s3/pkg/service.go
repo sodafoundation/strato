@@ -45,13 +45,13 @@ type s3Service struct{}
 func getTierFromName(className string) (int32, S3Error) {
 	v, ok := Ext2IntTierMap[OSTYPE_OPENSDS]
 	if !ok {
-		log.Logf("Get tier of storage class[%s] failed.\n", className)
+		log.Logf("get tier of storage class[%s] failed.\n", className)
 		return 0, InternalError
 	}
 
 	v2, ok := (*v)[className]
 	if !ok {
-		log.Logf("Get tier of storage class[%s] failed.\n", className)
+		log.Logf("get tier of storage class[%s] failed.\n", className)
 		return 0, InternalError
 	}
 
@@ -189,6 +189,7 @@ func loadDefaultStorageClass() error {
 	return nil
 }
 
+// Currently user defined storage tiers and classes are not supported.
 func loadUserDefinedStorageClass() error {
 	log.Log("user defined storage class is not supported now")
 	return fmt.Errorf("user defined storage class is not supported now")
@@ -461,13 +462,13 @@ func CheckReqObjMeta(req map[string]string, valid map[string]struct{}) (map[stri
 	ret := make(map[string]interface{})
 	for k, v := range req {
 		if _, ok := valid[k]; !ok {
-			log.Logf("CheckReqObjMeta: Invalid %s.\n", k)
+			log.Logf("s3 service check object metadata failed, invalid key: %s.\n", k)
 			return nil, BadRequest
 		}
 		if k == "tier" {
 			v1, err := strconv.Atoi(v)
 			if err != nil {
-				log.Logf("CheckReqObjMeta: Invalid tier:%s.\n", v)
+				log.Logf("s3 service check object metadata failed, invalid tier: %s.\n", v)
 				return nil, BadRequest
 			}
 			ret[k] = v1
