@@ -1,13 +1,14 @@
 package kafka
 
 import (
-	"github.com/Shopify/sarama"
-	"github.com/bsm/sarama-cluster"
-	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	"log"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/Shopify/sarama"
+	cluster "github.com/bsm/sarama-cluster"
+	migration "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 )
 
 var consumer *cluster.Consumer

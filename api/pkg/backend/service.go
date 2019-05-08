@@ -22,10 +22,10 @@ import (
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/dataflow/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 

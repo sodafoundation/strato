@@ -41,7 +41,7 @@ type KeystoneProvider struct {
 }
 
 type Blob struct {
-	Access    string `json:"access"`
+	Access string `json:"access"`
 	Secret string `json:"secret"`
 }
 
@@ -59,16 +59,15 @@ func NewProviderClient(accessKeyID string, options ...func(*KeystoneProvider)) c
 	}
 	kp.Identity = auth.GetIdentity(k)
 
-	log.V(4).Infof("Service Token Info: %s",  kp.Identity.TokenID)
+	log.V(4).Infof("Service Token Info: %s", kp.Identity.TokenID)
 
 	return kp
 }
 
 // NewCredentialsClient returns a Credentials wrapper for retrieving credentials
 func NewCredentialsClient(accessKeyID string, options ...func(*KeystoneProvider)) *credentials.Credentials {
-	return credentials.NewCredentials(NewProviderClient(accessKeyID,options...))
+	return credentials.NewCredentials(NewProviderClient(accessKeyID, options...))
 }
-
 
 // Retrieve will attempt to request the credentials from the Keystone
 // And error will be returned if the retrieval fails.
@@ -105,9 +104,9 @@ func (p *KeystoneProvider) getCredentials(accessKeyID string) (*getCredentialsOu
 
 	blob, err := getBlob(credentials, accessKeyID)
 
-	if blob != nil{
+	if blob != nil {
 		return &getCredentialsOutput{
-			AccessKeyID: blob.Access,
+			AccessKeyID:     blob.Access,
 			SecretAccessKey: blob.Secret,
 		}, nil
 	}
@@ -116,11 +115,11 @@ func (p *KeystoneProvider) getCredentials(accessKeyID string) (*getCredentialsOu
 
 // Returns a credential Blob for getting access and secret
 // And error will be returned if it fails.
-func getBlob(credentials []creds.Credential, accessKeyID string) (*Blob, error)  {
+func getBlob(credentials []creds.Credential, accessKeyID string) (*Blob, error) {
 	blob := &Blob{}
-	for _, credential := range credentials{
+	for _, credential := range credentials {
 		var blobStr = credential.Blob
-		b := strings.Replace(blobStr,"\\", "", -1 )
+		b := strings.Replace(blobStr, "\\", "", -1)
 		err := json.Unmarshal([]byte(b), blob)
 
 		if err != nil {

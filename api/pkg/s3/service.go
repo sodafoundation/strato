@@ -15,18 +15,21 @@
 package s3
 
 import (
+	"math"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/client"
-	"math"
+
 	//	"github.com/micro/go-micro/errors"
 	"context"
-	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-	"github.com/opensds/multi-cloud/backend/proto"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/s3/proto"
 	"io"
 	"io/ioutil"
+
+	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 const (

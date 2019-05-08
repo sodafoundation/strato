@@ -19,8 +19,8 @@ import (
 )
 
 type mockProvider struct {
-	credentials   Value
-	err     error
+	credentials Value
+	err         error
 }
 
 func (m *mockProvider) Retrieve() (Value, error) {

@@ -66,8 +66,11 @@ docker: build
 	chmod 755 datamover/datamover
 	docker build datamover -t opensdsio/multi-cloud-datamover:latest
 
+goimports:
+	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
+
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3
 
 version:
 	@echo ${VERSION}

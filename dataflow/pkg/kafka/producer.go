@@ -1,9 +1,10 @@
 package kafka
 
 import (
+	"time"
+
 	"github.com/Shopify/sarama"
 	"github.com/micro/go-log"
-	"time"
 )
 
 var Producer sarama.SyncProducer
