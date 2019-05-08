@@ -15,19 +15,19 @@
 package s3
 
 import (
-	"net/http"
-	"errors"
-	"strconv"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"golang.org/x/net/context"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 func checkLastmodifiedFilter(fmap *map[string]string) error {
@@ -49,12 +49,12 @@ func checkLastmodifiedFilter(fmap *map[string]string) error {
 
 func checkObjKeyFilter(val string) (string, error) {
 	// val should be like: objeKey=like:parttern
-	if strings.HasPrefix(val,"like:") == false {
+	if strings.HasPrefix(val, "like:") == false {
 		log.Logf("invalid object key filter:%s\n", val)
 		return "", fmt.Errorf("invalid object key filter:%s", val)
 	}
 
-	vals := strings.Split(val,":")
+	vals := strings.Split(val, ":")
 	if len(vals) <= 1 {
 		log.Logf("invalid object key filter:%s\n", val)
 		return "", fmt.Errorf("invalid object key filter:%s", val)
@@ -129,7 +129,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		Bucket: bucketName,
 		Filter: filter,
 		Offset: offset,
-		Limit: limit,
+		Limit:  limit,
 	}
 
 	ctx := context.Background()

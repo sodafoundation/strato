@@ -32,9 +32,9 @@ const (
 )
 
 const (
-	KLimit  = "limit"
-	KOffset = "offset"
-	KSort   = "sort"
+	KLimit        = "limit"
+	KOffset       = "offset"
+	KSort         = "sort"
 	KLastModified = "lastmodified"
 	KObjKey = "objkey"
 	KStorageTier = "tier"

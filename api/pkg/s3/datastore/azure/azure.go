@@ -27,7 +27,7 @@ import (
 
 	"github.com/micro/go-log"
 	"github.com/Azure/azure-storage-blob-go/azblob"
-
+	
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"

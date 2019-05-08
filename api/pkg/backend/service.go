@@ -15,21 +15,21 @@
 package backend
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
-	"errors"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
-	"golang.org/x/net/context"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/dataflow/proto"
-	"github.com/opensds/multi-cloud/s3/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -70,7 +70,7 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 	response.WriteEntity(res.Backend)
 }
 
-func (s *APIService)listBackendDefault(request *restful.Request, response *restful.Response) {
+func (s *APIService) listBackendDefault(request *restful.Request, response *restful.Response) {
 	listBackendRequest := &backend.ListBackendRequest{}
 
 	limit, offset, err := common.GetPaginationParam(request)
