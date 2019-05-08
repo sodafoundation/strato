@@ -15,11 +15,12 @@
 package mongo
 
 import (
+	"strings"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"strings"
 )
 
 func (ad *adapter) DeleteBucket(bucketName string) S3Error {

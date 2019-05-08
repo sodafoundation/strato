@@ -3,9 +3,11 @@
 
 package s3
 
-import proto "github.com/golang/protobuf/proto"
+	proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+
+	proto "github.com/golang/protobuf/proto"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

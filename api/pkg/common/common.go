@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"fmt"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 )
@@ -32,11 +33,11 @@ const (
 )
 
 const (
-	KLimit  = "limit"
-	KOffset = "offset"
-	KSort   = "sort"
+	KLimit        = "limit"
+	KOffset       = "offset"
+	KSort         = "sort"
 	KLastModified = "lastmodified"
-	KObjKey = "objkey"
+	KObjKey       = "objkey"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {

@@ -5,17 +5,18 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/binary"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 //TryTimeout indicates the maximum time allowed for any single try of an HTTP request.

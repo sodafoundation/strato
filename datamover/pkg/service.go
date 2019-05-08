@@ -15,12 +15,13 @@
 package pkg
 
 import (
+	"os"
+	"strings"
+
 	"github.com/go-log/log"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
-	"os"
-	"strings"
 )
 
 var dataMoverGroup = "datamover"

@@ -16,15 +16,16 @@ package datastore
 
 import (
 	"context"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/gcp"
 	"io"
+
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/gcp"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/ceph"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/azure"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/ibm"
+	ibmcos "github.com/opensds/multi-cloud/api/pkg/s3/datastore/ibm"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"

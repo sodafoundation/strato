@@ -17,6 +17,11 @@ package aws
 import (
 	"bytes"
 	"context"
+	"io"
+	"io/ioutil"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -27,10 +32,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"io"
-	"io/ioutil"
-	"strconv"
-	"time"
 )
 
 type AwsAdapter struct {

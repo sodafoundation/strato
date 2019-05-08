@@ -15,14 +15,15 @@
 package mongo
 
 import (
-	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"encoding/json"
 	"strconv"
 	"time"
+
+	"github.com/globalsign/mgo/bson"
+	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
@@ -36,7 +37,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	if in.Filter != nil {
 		if in.Filter[common.KObjKey] != "" {
 			//str := "^" + in.Filter[common.KObjKey]
-			filter = append(filter, bson.M{"objectkey":bson.M{"$regex": in.Filter[common.KObjKey]}})
+			filter = append(filter, bson.M{"objectkey": bson.M{"$regex": in.Filter[common.KObjKey]}})
 		}
 		if in.Filter[common.KLastModified] != "" {
 			var tmFilter map[string]string
@@ -46,8 +47,8 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 				return InvalidQueryParameter
 			}
 			for k, v := range tmFilter {
-				ts,_ := strconv.Atoi(v)
-				secs := time.Now().Unix() - int64(ts * 24 * 60 *60)
+				ts, _ := strconv.Atoi(v)
+				secs := time.Now().Unix() - int64(ts*24*60*60)
 				var op string
 				switch k {
 				case "lt":
@@ -70,7 +71,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	log.Logf("filter:%+v\n", filter)
 	var err error
 	if len(filter) > 0 {
-		err = c.Find(bson.M{"$and":filter}).All(out)
+		err = c.Find(bson.M{"$and": filter}).All(out)
 	} else {
 		err = c.Find(bson.M{}).All(out)
 	}
