@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package db
 import (
 	"fmt"
 
-	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/pkg/db/drivers/mongo"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -67,4 +67,5 @@ type DBAdapter interface {
 	DeleteObject(in *pb.DeleteObjectInput) S3Error
 	GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error
 	ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
+	UpdateObjMeta(objKey *string, bucketName *string, setting map[string]interface{}) S3Error
 }

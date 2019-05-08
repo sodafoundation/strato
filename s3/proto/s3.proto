@@ -11,6 +11,10 @@ service S3 {
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (Object) {}
 	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
+	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
+	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
+        rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
+	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
 }
 
 message ServerSideEncryption {
@@ -92,12 +96,14 @@ message LifecycleFilter {
 }
 
 message Action {
-	string name = 1;
-	string day = 2;
-	string deleteMarker = 4;
+	string name = 1;   // expiration or transition
+	int32 days = 2;
+	string deleteMarker = 4;  // for versioning
+	int32 tier = 5;  // only for transition
+	string backend = 6;		  // for cross-cloud transition, if it is not set, that means in-cloud transition
 }
 
-message LifecycleRole {
+message LifecycleRule {
 	string id = 1;
 	string status = 2;
 	LifecycleFilter filter = 3;
@@ -124,7 +130,7 @@ message Bucket {
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
-	repeated LifecycleRole lifecycleConfiguration = 14;
+	repeated LifecycleRule lifecycleConfiguration = 14;
 	string bucketPolicy = 15;
 }
 
@@ -171,6 +177,7 @@ message Object {
 	int64 lastModified =24;
 	string initFlag=25;
 	string ETag=26;
+	int32 tier = 27;
 }
 
 
@@ -194,6 +201,8 @@ message ListObjectsRequest {
     string Delimiter = 2;
     string Owner = 3;
 	map<string, string> Filter = 4;
+	int32  offset = 5;
+	int32  limit = 6;
 }
 
 message ListObjectResponse {
@@ -224,4 +233,40 @@ message ListParts {
     string uploadId = 3;
     int64	MaxParts = 4;
     int64	PartNumberMarker = 5;
+}
+
+message TList {
+	repeated int32 Tier = 1;
+}
+
+message Tier2ClassName {
+	map<int32, string> lst = 1;
+}
+
+message GetTierMapResponse {
+	repeated string Transition = 1;  // format:[from:to from:to ....]
+	map<string, Tier2ClassName> Tier2Name = 2;
+}
+
+message UpdateObjMetaRequest {
+	string ObjKey = 1;
+	string BucketName = 2;
+    map<string, string> Setting = 3;
+}
+
+message StorageClass {
+    string Name = 1;
+    int32  Tier = 2;
+}
+
+message GetStorageClassesResponse {
+    repeated StorageClass classes = 1;
+}
+
+message GetBackendTypeByTierRequest {
+	int32 Tier = 1;
+}
+
+message GetBackendTypeByTierResponse {
+	repeated string Types = 1;
 }
