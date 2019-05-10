@@ -28,7 +28,7 @@ import (
 
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -57,7 +57,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	object.Size = size
 	object.IsDeleteMarker = ""
 	object.InitFlag = ""
-	object.LastModified = time.Now().String()[:19]
+	object.LastModified = time.Now().Unix()
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)

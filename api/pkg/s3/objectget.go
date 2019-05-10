@@ -16,16 +16,17 @@ package s3
 
 import (
 	"bytes"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 

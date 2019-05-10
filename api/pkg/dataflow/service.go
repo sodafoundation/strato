@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@ package dataflow
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"io/ioutil"
+	"net/http"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
+	"golang.org/x/net/context"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/dataflow/proto"
-	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 const (
@@ -118,7 +118,7 @@ func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Re
 	err := request.ReadEntity(&pol)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
-		log.Logf("Read request body failed, err:%v.\n", err)
+		log.Logf("read request body failed, err:%v.\n", err)
 		return
 	}
 
@@ -150,7 +150,7 @@ func (s *APIService) UpdatePolicy(request *restful.Request, response *restful.Re
 	body, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
-		log.Logf("Read request body failed, err:%v.\n", err)
+		log.Logf("read request body failed, err:%v.\n", err)
 		return
 	}
 	log.Logf("Received request for update policy.body:%s\n", body)
@@ -203,7 +203,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	listPlanReq := &dataflow.ListPlanRequest{}
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Logf("Get pagination parameters failed: %v", err)
+		log.Logf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -212,7 +212,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 
 	sortKeys, sortDirs, err := common.GetSortParam(request)
 	if err != nil {
-		log.Logf("Get sort parameters failed: %v", err)
+		log.Logf("get sort parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -222,11 +222,11 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	filterOpts := []string{"name", "type", "bucketname"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("Get filter failed: %v", err)
+		log.Logf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	} else {
-		log.Logf("Get filter for list plan: %v", filter)
+		log.Logf("Get filter for list plan: %v\n", filter)
 	}
 	listPlanReq.Filter = filter
 
@@ -241,7 +241,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	}
 
 	//For debug -- begin
-	log.Logf("List plan reponse:%v", res)
+	log.Logf("List plans reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -250,7 +250,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	}
 	//For debug -- end
 
-	log.Log("Get plan details successfully.")
+	log.Log("List plans successfully.")
 	response.WriteEntity(res)
 }
 
@@ -260,7 +260,7 @@ func (s *APIService) GetPlan(request *restful.Request, response *restful.Respons
 	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
-	log.Logf("Received request for plan[id=%s] details.", id)
+	log.Logf("Received request for plan[id=%s] details.\n", id)
 	ctx := context.Background()
 	res, err := s.dataflowClient.GetPlan(ctx, &dataflow.GetPlanRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
@@ -269,7 +269,7 @@ func (s *APIService) GetPlan(request *restful.Request, response *restful.Respons
 	}
 
 	//For debug -- begin
-	log.Logf("Get plan reponse:%v", res)
+	log.Logf("Get plan reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -294,7 +294,7 @@ func (s *APIService) CreatePlan(request *restful.Request, response *restful.Resp
 	err := request.ReadEntity(&plan)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
-		log.Logf("Read request body failed, err:%v.\n", err)
+		log.Logf("read request body failed, err:%v.\n", err)
 		return
 	}
 
@@ -328,7 +328,7 @@ func (s *APIService) UpdatePlan(request *restful.Request, response *restful.Resp
 	body, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
-		log.Logf("Read request body failed, err:%v.\n", err)
+		log.Logf("read request body failed, err:%v.\n", err)
 		return
 	}
 	log.Logf("Req body: %s.\n", string(body))
@@ -360,7 +360,7 @@ func (s *APIService) DeletePlan(request *restful.Request, response *restful.Resp
 	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
-	log.Logf("Received request for delete plan[id=%s] details.", id)
+	log.Logf("Received request for delete plan[id=%s] details.\n", id)
 	ctx := context.Background()
 	res, err := s.dataflowClient.DeletePlan(ctx, &dataflow.DeletePlanRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
@@ -377,7 +377,7 @@ func (s *APIService) RunPlan(request *restful.Request, response *restful.Respons
 	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
-	log.Logf("Received request for run plan[id=%s] details.", id)
+	log.Logf("Received request for run plan[id=%s] details.\n", id)
 	ctx := context.Background()
 	res, err := s.dataflowClient.RunPlan(ctx, &dataflow.RunPlanRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
@@ -394,7 +394,7 @@ func (s *APIService) GetJob(request *restful.Request, response *restful.Response
 	}
 	actx := request.Attribute(c.KContext).(*c.Context)
 	id := request.PathParameter("id")
-	log.Logf("Received request jobs [id=%s] details.", id)
+	log.Logf("Received request jobs [id=%s] details.\n", id)
 	ctx := context.Background()
 	res, err := s.dataflowClient.GetJob(ctx, &dataflow.GetJobRequest{Context: actx.ToJson(), Id: id})
 	if err != nil {
@@ -403,7 +403,7 @@ func (s *APIService) GetJob(request *restful.Request, response *restful.Response
 	}
 
 	//For debug -- begin
-	log.Logf("Get jobs reponse:%v", res)
+	log.Logf("Get jobs reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -425,7 +425,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	listJobReq := &dataflow.ListJobRequest{}
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Logf("Get pagination parameters failed: %v", err)
+		log.Logf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -434,7 +434,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 
 	sortKeys, sortDirs, err := common.GetSortParam(request)
 	if err != nil {
-		log.Logf("Get sort parameters failed: %v", err)
+		log.Logf("get sort parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -444,11 +444,11 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	filterOpts := []string{"planName", "type"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("Get filter failed: %v", err)
+		log.Logf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	} else {
-		log.Logf("Get filter for list job: %v", filter)
+		log.Logf("Get filter for list job: %v\n", filter)
 	}
 	listJobReq.Filter = filter
 
@@ -463,7 +463,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	}
 
 	//For debug -- begin
-	log.Logf("Get jobs reponse:%v", res)
+	log.Logf("List jobs reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())
@@ -472,6 +472,6 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	}
 	//For debug -- end
 
-	log.Log("Get plan details successfully.")
+	log.Log("List jobs successfully.")
 	response.WriteEntity(res)
 }

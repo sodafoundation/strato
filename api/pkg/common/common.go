@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 package common
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
-	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 )
@@ -32,9 +32,12 @@ const (
 )
 
 const (
-	KLimit  = "limit"
-	KOffset = "offset"
-	KSort   = "sort"
+	KLimit        = "limit"
+	KOffset       = "offset"
+	KSort         = "sort"
+	KLastModified = "lastmodified"
+	KObjKey       = "objkey"
+	KStorageTier  = "tier"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {

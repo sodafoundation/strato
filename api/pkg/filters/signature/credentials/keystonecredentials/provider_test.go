@@ -69,30 +69,30 @@ func HandleListCredentialsSuccessfully(t *testing.T) {
 }
 
 func TestRetrieveKeystoneCredentials(t *testing.T) {
-		th.SetupHTTP()
-		defer th.TeardownHTTP()
+	th.SetupHTTP()
+	defer th.TeardownHTTP()
 
-		HandleListCredentialsSuccessfully(t)
+	HandleListCredentialsSuccessfully(t)
 
-		c := gophercloudclient.ServiceClient()
-		p := &keystonecredentials.KeystoneProvider{c, "access_key"}
-		credentials, err := p.Retrieve()
-		t.Log(credentials)
+	c := gophercloudclient.ServiceClient()
+	p := &keystonecredentials.KeystoneProvider{c, "access_key"}
+	credentials, err := p.Retrieve()
+	t.Log(credentials)
 
-		if err != nil {
-			t.Errorf("expect no error, got %v", err)
-		}
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
 
-		if e, a := "access_key", credentials.AccessKeyID; e != a {
-			t.Errorf("expect %v, got %v", e, a)
-		}
-		if e, a := "secret_key", credentials.SecretAccessKey; e != a {
-			t.Errorf("expect %v, got %v", e, a)
-		}
+	if e, a := "access_key", credentials.AccessKeyID; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "secret_key", credentials.SecretAccessKey; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 
-		if e, a := "KeystoneProvider", credentials.ProviderName; e != a {
-			t.Errorf("expect %v, got %v", e, a)
-		}
+	if e, a := "KeystoneProvider", credentials.ProviderName; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 
 }
 

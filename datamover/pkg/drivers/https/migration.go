@@ -5,23 +5,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"time"
 
+	Gcps3mover "github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
+
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/client"
-	"github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
-	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
+	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
+	blobmover "github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
+	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
-	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
+	obsmover "github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
@@ -511,7 +512,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	if succeed && destLoca.VirBucket != "" {
 		obj.BucketName = destLoca.VirBucket
 		obj.Backend = destLoca.BakendName
-		obj.LastModified = time.Now().String()[:19]
+		obj.LastModified = time.Now().Unix()
 		_, err := s3client.CreateObject(ctx, obj)
 		if err != nil {
 			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] failed,err:%v.\n", obj.ObjectKey,
