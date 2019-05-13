@@ -45,14 +45,14 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 		xmlRule.Filter = converts3FilterToRuleFilter(lcRule.Filter)
 		xmlRule.AbortIncompleteMultipartUpload = converts3UploadToRuleUpload(lcRule.AbortIncompleteMultipartUpload)
 		xmlRule.Transition = make([]model.Transition, 0)
-		for _, transition := range lcRule.Transition {
+		for _, transition := range lcRule.Actions {
 			xmlTransition := model.Transition{}
 			xmlTransition.Days = transition.Days
-			xmlTransition.StorageClass = transition.StorageClass
+			//xmlTransition.StorageClass = transition.Tier
 			xmlTransition.Backend = transition.Backend
 			xmlRule.Transition = append(xmlRule.Transition, xmlTransition)
 		}
-		for _, expiration := range lcRule.Expiration {
+		for _, expiration := range lcRule.Actions {
 			xmlExpiration := model.Expiration{}
 			xmlExpiration.Days = expiration.Days
 			xmlRule.Expiration = append(xmlRule.Expiration, xmlExpiration)

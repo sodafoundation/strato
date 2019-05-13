@@ -66,12 +66,12 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 				s3Rule.Filter = convertRuleFilterToS3Filter(rule.Filter)
 
 				// Create the type of transition array
-				s3TransitionArr := make([]*s3.TransitionAction, 0)
+				s3ActionArr := make([]*s3.Action, 0)
 
 				for _, transition := range rule.Transition {
 
 					//Defining the Transition array and assigning the values tp populate fields
-					s3Transition := s3.TransitionAction{}
+					s3Transition := s3.Action{Name: "Transition"}
 
 					//Assigning the value of days for transition to happen
 					s3Transition.Days = transition.Days
@@ -80,26 +80,25 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 					s3Transition.Backend = transition.Backend
 
 					//Assigning the storage class of the object to s3 struct
-					s3Transition.StorageClass = transition.StorageClass
+					//tier, err := s.class2tier(transition.StorageClass)
+					//if err != nil{
+					//	response.WriteError(http.StatusBadRequest, err)
+					//	return
+					//}
+					//s3Transition.Tier = tier
 
 					//Adding the transition value to the main rule
-					s3TransitionArr = append(s3TransitionArr, &s3Transition)
+					s3ActionArr = append(s3ActionArr, &s3Transition)
 				}
-
-				//Assigning the transition action in the s3 rule
-				s3Rule.Transition = s3TransitionArr
-
-				//Create the type of Expiration Array
-				s3ExpirationArr := make([]*s3.ExpirationAction, 0)
 
 				//Loop for getting the values from xml struct
 				for _, expiration := range rule.Expiration {
-					s3Expiration := s3.ExpirationAction{}
+					s3Expiration := s3.Action{Name: "Expiration"}
 					s3Expiration.Days = expiration.Days
-					s3ExpirationArr = append(s3ExpirationArr, &s3Expiration)
+					s3ActionArr = append(s3ActionArr, &s3Expiration)
 				}
 				//Assigning the Expiration action to s3 struct expiration
-				s3Rule.Expiration = s3ExpirationArr
+				s3Rule.Actions = s3ActionArr
 
 				s3Rule.AbortIncompleteMultipartUpload = convertRuleUploadToS3Upload(rule.AbortIncompleteMultipartUpload)
 				// add to the s3 array

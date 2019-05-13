@@ -182,6 +182,18 @@ func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	return nil
 }
 
+func (b *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput, out *pb.BaseResponse) error {
+	log.Log("DeleteBucketlifecycle is called in s3 service.")
+	getlifecycleinput := pb.DeleteLifecycleInput{Bucket: in.Bucket, RuleID: in.RuleID}
+	log.Logf("Delete bucket lifecycle input in s3 service %s", getlifecycleinput)
+	err := db.DbAdapter.DeleteBucketLifecycle(&getlifecycleinput)
+	if err.Code != ERR_OK {
+		return err.Error()
+	}
+	out.Msg = "Delete bucket lifecycle successfully."
+	return nil
+}
+
 func NewS3Service() pb.S3Handler {
 	host := os.Getenv("DB_HOST")
 	dbstor := Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}

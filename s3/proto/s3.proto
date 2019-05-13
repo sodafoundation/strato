@@ -11,6 +11,7 @@ service S3 {
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (Object) {}
 	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
+	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
 }
 
 message ServerSideEncryption {
@@ -93,20 +94,18 @@ message LifecycleFilter {
 	//repeated Tag tags = 2;
 }
 
-message TransitionAction {
+message Action {
+	//Name of the action transition/expiration
+	string name = 1;
 	//Days after creation of object
-	int32 Days = 1;
-	//Storage class of the object where object is to be transitioned
-	string StorageClass = 2;
+	int32 days = 2;
+	//Delete marker in case of expiration for versioned bucket
+	string deleteMarker = 3;
+	//Storage class tier of the object where object is to be transitioned
+	int32 tier = 4;
 	// Destination backend of the object/bucket for Cross-cloud transition
-	string Backend = 3;
-}
+	string backend = 5;
 
-message ExpirationAction {
-	//Days after creation of object
-	int32 Days = 1;
-	//Delete marker will be used when versioning feature is provided
-	//string deleteMarker = 2;
 }
 
 message AbortMultipartUpload {
@@ -118,8 +117,7 @@ message LifecycleRule {
 	string ID = 1;
 	string Status = 2;
 	LifecycleFilter Filter = 3;
-	repeated TransitionAction Transition = 4;
-	repeated ExpirationAction Expiration = 5;
+	repeated Action actions = 4;
 	AbortMultipartUpload AbortIncompleteMultipartUpload = 6;
 }
 
@@ -143,7 +141,7 @@ message Bucket {
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
-	repeated LifecycleRule LifecycleConfiguration = 14;
+	repeated LifecycleRule lifecycleConfiguration = 14;
 	string bucketPolicy = 15;
 }
 
@@ -243,5 +241,10 @@ message ListParts {
     string uploadId = 3;
     int64	MaxParts = 4;
     int64	PartNumberMarker = 5;
+}
+
+message DeleteLifecycleInput {
+	string Bucket = 1;
+	string ruleID = 2;
 }
 

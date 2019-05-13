@@ -20,6 +20,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"net/http"
 )
 
 func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *restful.Response) {
@@ -27,24 +28,23 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 		return
 	}
 	bucketName := request.PathParameter("bucketName")
+	ruleID := request.Request.URL.Query()["ruleID"]
+
 	ctx := context.Background()
-	log.Logf("Received request for bucket lifecycle delete for bucket: %s", bucketName)
+	log.Logf("Received request for bucket lifecycle delete for bucket: %s and the ruleID: %s", bucketName, ruleID)
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	log.Logf("We are in bucket lifecycle delete: ", bucket)
-	//TODO
-
-	/*
-		res1, err1 := s.s3Client.DeleteBucketLifecycle(ctx, bucket.LifecycleConfiguration})
-			if err1 != nil {
-				response.WriteError(http.StatusInternalServerError, err1)
-				return
+	for _, lcRule := range bucket.LifecycleConfiguration {
+		for _, id := range ruleID {
+			if lcRule.ID == id {
+				deleteInput := s3.DeleteLifecycleInput{Bucket: bucketName, RuleID: id}
+				res1, err := s.s3Client.DeleteBucketLifecycle(ctx, &deleteInput)
+				if err != nil {
+					response.WriteError(http.StatusInternalServerError, err)
+					return
+				}
+				response.WriteEntity(res1)
 			}
-			log.Log("Delete bucket successfully.")
-			response.WriteEntity(res1)
-		} else {
-			log.Log("The bucket can not be deleted. please delete objects first.\n")
-			response.WriteError(http.StatusInternalServerError, BucketDeleteError.Error())
 		}
-
-	*/
+	}
+	log.Log("Delete bucket lifecycle successfully.")
 }
