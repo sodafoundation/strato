@@ -11,7 +11,11 @@ service S3 {
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (Object) {}
 	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
-	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
+	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
+	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
+        rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
+	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
+	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}	
 }
 
 message ServerSideEncryption {
@@ -96,7 +100,7 @@ message LifecycleFilter {
 
 message Action {
 	//Name of the action transition/expiration
-	string name = 1;
+	string name = 1;   // expiration or transition
 	//Days after creation of object
 	int32 days = 2;
 	//Delete marker in case of expiration for versioned bucket
@@ -118,7 +122,7 @@ message LifecycleRule {
 	string Status = 2;
 	LifecycleFilter Filter = 3;
 	repeated Action actions = 4;
-	AbortMultipartUpload AbortIncompleteMultipartUpload = 6;
+	AbortMultipartUpload AbortIncompleteMultipartUpload = 5;
 }
 
 message ReplicationInfo {
@@ -188,6 +192,7 @@ message Object {
 	int64 lastModified =24;
 	string initFlag=25;
 	string ETag=26;
+	int32 tier = 27;
 }
 
 
@@ -211,6 +216,8 @@ message ListObjectsRequest {
     string Delimiter = 2;
     string Owner = 3;
 	map<string, string> Filter = 4;
+	int32  offset = 5;
+	int32  limit = 6;
 }
 
 message ListObjectResponse {
@@ -243,8 +250,43 @@ message ListParts {
     int64	PartNumberMarker = 5;
 }
 
+message TList {
+	repeated int32 Tier = 1;
+}
+
+message Tier2ClassName {
+	map<int32, string> lst = 1;
+}
+
+message GetTierMapResponse {
+	repeated string Transition = 1;  // format:[from:to from:to ....]
+	map<string, Tier2ClassName> Tier2Name = 2;
+}
+
+message UpdateObjMetaRequest {
+	string ObjKey = 1;
+	string BucketName = 2;
+    map<string, string> Setting = 3;
+}
+
+message StorageClass {
+    string Name = 1;
+    int32  Tier = 2;
+}
+
+message GetStorageClassesResponse {
+    repeated StorageClass classes = 1;
+}
+
+message GetBackendTypeByTierRequest {
+	int32 Tier = 1;
+}
+
+message GetBackendTypeByTierResponse {
+	repeated string Types = 1;
+}
+
 message DeleteLifecycleInput {
 	string Bucket = 1;
 	string ruleID = 2;
 }
-

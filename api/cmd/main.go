@@ -51,9 +51,10 @@ func main() {
 	backend.RegisterRouter(ws)
 	dataflow.RegisterRouter(ws)
 	// add filter for authentication context
-	wc.Filter(logging.FilterFactory())
-	wc.Filter(context.FilterFactory())
-
+	ws.Filter(logging.FilterFactory())
+	ws.Filter(context.FilterFactory())
+	ws.Filter(auth.FilterFactory())
+	
 	s3ws := new(restful.WebService)
 	s3ws.Path("/v1/s3")
 	s3ws.Doc("OpenSDS Multi-Cloud API")

@@ -17,7 +17,7 @@ package db
 import (
 	"fmt"
 
-	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/pkg/db/drivers/mongo"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -68,4 +68,5 @@ type DBAdapter interface {
 	GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error
 	ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
 	DeleteBucketLifecycle(in *pb.DeleteLifecycleInput) S3Error
+	UpdateObjMeta(objKey *string, bucketName *string, setting map[string]interface{}) S3Error
 }

@@ -35,3 +35,7 @@ const (
 	AuthorizationHeader = "Authorization"
 	SignDateHeader      = "X-Auth-Date"
 )
+
+const (
+	StorageClassAWSStandard = "STANDARD"
+)

@@ -23,6 +23,7 @@ import (
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
 	ws.Route(ws.GET("/").To(handler.ListBuckets)).Doc("Return list of buckets for the user")
+	ws.Route(ws.GET("/storageClasses").To(handler.GetStorageClasses)).Doc("Return supported storage classes.")
 	ws.Route(ws.PUT("/{bucketName}").To(handler.RouteBucketPut)).Doc("Create bucket for the user")
 	//ws.Route(ws.HEAD("/s3/{bucketName}").To(handler.BucketHead)).Doc("Determine if bucket exists and if user has permission to access it")
 	ws.Route(ws.GET("/{bucketName}").To(handler.RouteBucketGet)).Doc("Return list of objects in bucket")
