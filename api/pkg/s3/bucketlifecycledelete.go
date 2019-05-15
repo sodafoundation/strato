@@ -16,6 +16,7 @@ package s3
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
@@ -28,38 +29,62 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 	if !policy.Authorize(request, response, "bucket:delete") {
 		return
 	}
-	var foundID int
-	resp := make([]s3.BaseResponse, 0)
+	//var foundID int
+	FoundIDArray := []string{}
+	NonFoundIDArray := []string{}
 	bucketName := request.PathParameter("bucketName")
 	ruleID := request.Request.URL.Query()["ruleID"]
 	if ruleID != nil {
 		ctx := context.Background()
 		log.Logf("Received request for bucket lifecycle delete for bucket: %s and the ruleID: %s", bucketName, ruleID)
 		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-		for _, lcRule := range bucket.LifecycleConfiguration {
-			for _, id := range ruleID {
+		for _, id := range ruleID {
+			for _, lcRule := range bucket.LifecycleConfiguration {
 				if lcRule.ID == id {
-					foundID = foundID+1
-					deleteInput := s3.DeleteLifecycleInput{Bucket: bucketName, RuleID: id}
-					res1, err := s.s3Client.DeleteBucketLifecycle(ctx, &deleteInput)
-					if err != nil {
-						response.WriteError(http.StatusInternalServerError, err)
-						return
-					}
-					resp = append(resp, *res1)
+					FoundIDArray = append(FoundIDArray, id)
 				}
 			}
 		}
-		if foundID == 0 || (foundID < len(ruleID)){
-			response.WriteErrorString(http.StatusBadRequest, WrongRuleIDForLifecycleDelete)
-			return
+		NonFoundIDArray = differencebetweenArrays(ruleID, FoundIDArray)
+		for _, id := range NonFoundIDArray {
+			response.WriteErrorString(http.StatusBadRequest, strings.Replace("error: rule ID $1 doesn't exist \n\n", "$1", id, 1))
 		}
-		if resp != nil {
-			response.WriteEntity(resp[0])
+
+		for _, id := range FoundIDArray {
+			deleteInput := s3.DeleteLifecycleInput{Bucket: bucketName, RuleID: id}
+			res, err := s.s3Client.DeleteBucketLifecycle(ctx, &deleteInput)
+			if err != nil {
+				response.WriteError(http.StatusBadRequest, err)
+				return
+			}
+			response.WriteEntity(res)
 		}
+
 	} else {
 		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForLifecycleDelete)
 		return
 	}
 	log.Log("Delete bucket lifecycle successfully.")
+}
+
+func differencebetweenArrays(rulearr []string, foundarr []string) []string {
+	var notfoundarr []string
+	for i := 0; i < 2; i++ {
+		for _, ruleid := range rulearr {
+			found := false
+			for _, foundid := range foundarr {
+				if ruleid == foundid {
+					found = true
+					break
+				}
+			}
+			if !found {
+				notfoundarr = append(notfoundarr, ruleid)
+			}
+		}
+		if i == 0 {
+			rulearr, foundarr = foundarr, rulearr
+		}
+	}
+	return notfoundarr
 }

@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
@@ -407,9 +408,12 @@ func (b *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLife
 	log.Logf("Delete bucket lifecycle input in s3 service %s", getlifecycleinput)
 	err := db.DbAdapter.DeleteBucketLifecycle(&getlifecycleinput)
 	if err.Code != ERR_OK {
+		msg := "Delete bucket failed for $1"
+		out.Msg = strings.Replace(msg, "$1", in.RuleID, 1)
 		return err.Error()
 	}
-	out.Msg = "Delete bucket lifecycle successfully."
+	msg := "Delete bucket successfully for $1"
+	out.Msg = strings.Replace(msg, "$1", in.RuleID, 1)
 	return nil
 }
 
