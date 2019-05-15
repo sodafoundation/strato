@@ -22,4 +22,5 @@ const (
 	DaysInStorageClassBeforeTransition = "error: minimum days for an object in the current storage class is less before transition action"
 	NoRuleIDForLifecycleDelete = "error: No rule ID specified to delete from lifecycle configuration"
 	WrongRuleIDForLifecycleDelete = "error: The rule ID which is specified for delete does not exist"
+	InvalidTier = "error: Invalid tier"
 )
