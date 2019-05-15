@@ -31,10 +31,10 @@ func (ad *adapter) DeleteBucketLifecycle(in *pb.DeleteLifecycleInput) S3Error {
 	log.Logf("bucketName is %v:", in.Bucket)
 	err := c.Update(bson.M{"name": in.Bucket}, bson.M{"$pull": bson.M{"lifecycleconfiguration": bson.M{"id": in.RuleID}}})
 	if err != nil {
-		log.Logf("Delete lifecycle for bucket : %s and lifecycleruleId : %s failed,err:%v.\n", in.Bucket, in.RuleID, err)
+		log.Logf("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n", in.Bucket, in.RuleID, err)
 		return NoSuchBucket
 	} else {
-		log.Logf("Delete bucket lifecycle with rule id %s from database successfully", in.RuleID)
+		log.Logf("delete bucket lifecycle with rule id %s from database successfully", in.RuleID)
 		return NoError
 	}
 }
