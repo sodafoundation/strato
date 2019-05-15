@@ -48,6 +48,7 @@ type S3Service interface {
 	GetStorageClasses(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetStorageClassesResponse, error)
 	GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, opts ...client.CallOption) (*GetBackendTypeByTierResponse, error)
 	DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, opts ...client.CallOption) (*BaseResponse, error)
+	UpdateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 }
 
 type s3Service struct {
@@ -208,6 +209,16 @@ func (c *s3Service) DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecyc
 	return out, nil
 }
 
+func (c *s3Service) UpdateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.UpdateBucket", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for S3 service
 
 type S3Handler interface {
@@ -225,6 +236,7 @@ type S3Handler interface {
 	GetStorageClasses(context.Context, *BaseRequest, *GetStorageClassesResponse) error
 	GetBackendTypeByTier(context.Context, *GetBackendTypeByTierRequest, *GetBackendTypeByTierResponse) error
 	DeleteBucketLifecycle(context.Context, *DeleteLifecycleInput, *BaseResponse) error
+	UpdateBucket(context.Context, *Bucket, *BaseResponse) error
 }
 
 func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOption) error {
@@ -243,6 +255,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		GetStorageClasses(ctx context.Context, in *BaseRequest, out *GetStorageClassesResponse) error
 		GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, out *GetBackendTypeByTierResponse) error
 		DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, out *BaseResponse) error
+		UpdateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 	}
 	type S3 struct {
 		s3
@@ -309,4 +322,8 @@ func (h *s3Handler) GetBackendTypeByTier(ctx context.Context, in *GetBackendType
 
 func (h *s3Handler) DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, out *BaseResponse) error {
 	return h.S3Handler.DeleteBucketLifecycle(ctx, in, out)
+}
+
+func (h *s3Handler) UpdateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error {
+	return h.S3Handler.UpdateBucket(ctx, in, out)
 }

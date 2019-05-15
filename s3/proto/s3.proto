@@ -13,9 +13,10 @@ service S3 {
 	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
 	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
 	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
-        rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
+	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
-	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}	
+	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
+	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
 }
 
 message ServerSideEncryption {

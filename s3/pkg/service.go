@@ -413,6 +413,20 @@ func (b *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLife
 	return nil
 }
 
+func (b *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
+	log.Log("UpdateBucket is called in s3 service.")
+
+	in.Deleted = false
+	err := db.DbAdapter.UpdateBucket(in)
+	if err.Code != ERR_OK {
+		out.ErrorCode = fmt.Sprintf("%d", err.Code)
+		out.Msg = err.Description
+		return err.Error()
+	}
+	out.Msg = "Update bucket successfully."
+	return nil
+}
+
 func NewS3Service() pb.S3Handler {
 	host := os.Getenv("DB_HOST")
 	dbstor := Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}
