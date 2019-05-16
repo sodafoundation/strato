@@ -13,8 +13,10 @@ service S3 {
 	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
 	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
 	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
-        rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
+	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
+	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
+	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
 }
 
 message ServerSideEncryption {
@@ -91,23 +93,37 @@ message Tag {
 }
 
 message LifecycleFilter {
-	string prefix = 1;
-	repeated Tag tags = 2;
+	//Object prefix for lifecycle filter
+	string Prefix = 1;
+	//Tags will not be used for current release
+	//repeated Tag tags = 2;
 }
 
 message Action {
+	//Name of the action transition/expiration
 	string name = 1;   // expiration or transition
+	//Days after creation of object
 	int32 days = 2;
-	string deleteMarker = 4;  // for versioning
-	int32 tier = 5;  // only for transition
-	string backend = 6;		  // for cross-cloud transition, if it is not set, that means in-cloud transition
+	//Delete marker in case of expiration for versioned bucket
+	string deleteMarker = 3;
+	//Storage class tier of the object where object is to be transitioned
+	int32 tier = 4;
+	// Destination backend of the object/bucket for Cross-cloud transition
+	string backend = 5;
+
+}
+
+message AbortMultipartUpload {
+  	//Days after which the abort operation will be performed on incomplete upload
+	int32 DaysAfterInitiation = 1;
 }
 
 message LifecycleRule {
-	string id = 1;
-	string status = 2;
-	LifecycleFilter filter = 3;
+	string ID = 1;
+	string Status = 2;
+	LifecycleFilter Filter = 3;
 	repeated Action actions = 4;
+	AbortMultipartUpload AbortIncompleteMultipartUpload = 5;
 }
 
 message ReplicationInfo {
@@ -269,4 +285,9 @@ message GetBackendTypeByTierRequest {
 
 message GetBackendTypeByTierResponse {
 	repeated string Types = 1;
+}
+
+message DeleteLifecycleInput {
+	string Bucket = 1;
+	string ruleID = 2;
 }

@@ -49,7 +49,6 @@ func main() {
 	ws.Filter(auth.FilterFactory())
 
 	backend.RegisterRouter(ws)
-	//s3.RegisterRouter(ws)
 	dataflow.RegisterRouter(ws)
 	// add filter for authentication context
 	ws.Filter(logging.FilterFactory())

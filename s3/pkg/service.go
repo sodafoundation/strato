@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
@@ -398,6 +399,35 @@ func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		return err.Error()
 	}
 	out.Msg = "Delete object successfully."
+	return nil
+}
+
+func (b *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput, out *pb.BaseResponse) error {
+	log.Log("DeleteBucketlifecycle is called in s3 service.")
+	getlifecycleinput := pb.DeleteLifecycleInput{Bucket: in.Bucket, RuleID: in.RuleID}
+	log.Logf("Delete bucket lifecycle input in s3 service %s", getlifecycleinput)
+	err := db.DbAdapter.DeleteBucketLifecycle(&getlifecycleinput)
+	if err.Code != ERR_OK {
+		msg := "Delete bucket failed for $1"
+		out.Msg = strings.Replace(msg, "$1", in.RuleID, 1)
+		return err.Error()
+	}
+	msg := "Delete bucket successfully for $1"
+	out.Msg = strings.Replace(msg, "$1", in.RuleID, 1)
+	return nil
+}
+
+func (b *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
+	log.Log("UpdateBucket is called in s3 service.")
+
+	in.Deleted = false
+	err := db.DbAdapter.UpdateBucket(in)
+	if err.Code != ERR_OK {
+		out.ErrorCode = fmt.Sprintf("%d", err.Code)
+		out.Msg = err.Description
+		return err.Error()
+	}
+	out.Msg = "Update bucket successfully."
 	return nil
 }
 
