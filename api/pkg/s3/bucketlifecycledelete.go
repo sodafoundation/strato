@@ -39,13 +39,17 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 		log.Logf("Received request for bucket lifecycle delete for bucket: %s and the ruleID: %s", bucketName, ruleID)
 		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 		for _, id := range ruleID {
+			isfound := false
 			for _, lcRule := range bucket.LifecycleConfiguration {
 				if lcRule.ID == id {
+					isfound = true
 					FoundIDArray = append(FoundIDArray, id)
 				}
 			}
+			if !isfound {
+				NonFoundIDArray = append(NonFoundIDArray, id)
+			}
 		}
-		NonFoundIDArray = differencebetweenArrays(ruleID, FoundIDArray)
 		for _, id := range NonFoundIDArray {
 			response.WriteErrorString(http.StatusBadRequest, strings.Replace("error: rule ID $1 doesn't exist \n\n", "$1", id, 1))
 		}
@@ -67,24 +71,3 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 	log.Log("Delete bucket lifecycle successfully.")
 }
 
-func differencebetweenArrays(rulearr []string, foundarr []string) []string {
-	var notfoundarr []string
-	for i := 0; i < 2; i++ {
-		for _, ruleid := range rulearr {
-			found := false
-			for _, foundid := range foundarr {
-				if ruleid == foundid {
-					found = true
-					break
-				}
-			}
-			if !found {
-				notfoundarr = append(notfoundarr, ruleid)
-			}
-		}
-		if i == 0 {
-			rulearr, foundarr = foundarr, rulearr
-		}
-	}
-	return notfoundarr
-}
