@@ -23,6 +23,7 @@ import (
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -36,14 +37,13 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	filter := []bson.M{}
 	if in.Filter != nil {
 		if in.Filter[common.KObjKey] != "" {
-			//str := "^" + in.Filter[common.KObjKey]
 			filter = append(filter, bson.M{"objectkey": bson.M{"$regex": in.Filter[common.KObjKey]}})
 		}
 		if in.Filter[common.KLastModified] != "" {
 			var tmFilter map[string]string
 			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
 			if err != nil {
-				log.Logf("unmarshal lastmodified value faild:%s\n", err)
+				log.Logf("unmarshal lastmodified value failed:%s\n", err)
 				return InvalidQueryParameter
 			}
 			for k, v := range tmFilter {
@@ -72,19 +72,20 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 				log.Logf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
 				return InvalidQueryParameter
 			}
-			filter = append(filter, bson.M{"tier": bson.M{"$lt": tier}})
+			filter = append(filter, bson.M{"tier": bson.M{"$lte": tier}})
 		}
 	}
 
-	filter = append(filter, bson.M{"initflag": bson.M{"$ne": "0"}})
-	filter = append(filter, bson.M{"isdeletemarker": bson.M{"$ne": "1"}})
+	filter = append(filter, bson.M{utils.DBKEY_INITFLAG: bson.M{"$ne": "0"}})
+	filter = append(filter, bson.M{utils.DBKEY_DELETEMARKER: bson.M{"$ne": "1"}})
 
 	log.Logf("filter:%+v\n", filter)
 	var err error
 	offset := int(in.Offset)
 	limit := int(in.Limit)
 	if limit == 0 {
-		limit = 1000 // as default
+		// as default
+		limit = 1000
 	}
 	if len(filter) > 0 {
 		err = c.Find(bson.M{"$and": filter}).Skip(offset).Limit(limit).All(out)

@@ -37,7 +37,8 @@ const (
 )
 
 const (
-	StorageClassAWSStandard = "STANDARD"
+	StorageClassOpenSDSStandard = "STANDARD"
+	StorageClassAWSStandard     = "STANDARD"
 )
 
 const (
@@ -49,4 +50,9 @@ const (
 	ExpirationMinDays           = 1
 	TransitionMinDays           = 30
 	LifecycleTransitionDaysStep = 30 // The days an object should be save in the current tier before transition to the next tier
+	TransitionToArchiveMinDays  = 1
+)
+
+const (
+	Tier999                     = 999
 )
