@@ -165,9 +165,9 @@ func handleBucketLifecyle(bucket string, defaultBackend string, rules []*osdss3.
 		}
 	}
 
-	// Sort rules, in case different actions exist for an object at the same time, for example, transition to aws after
-	// 30 days and transition to azure after 30 days, we need to make sure only one action will be taken, and that needs
-	// the sorting be stable.
+	// Sort rules, in case different actions exist for an object at the same time, for example, expiration after 30 days
+	// and transition to azure after 60 days, we need to make sure only one action will be taken, and that needs the
+	// sorting be stable.
 	sort.Stable(inRules)
 	// Begin: Log for debug
 	for _, v := range inRules {
