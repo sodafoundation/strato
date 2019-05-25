@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,17 @@ type LocationInfo struct {
 	Access     string
 	Security   string
 	BakendName string
+	ClassName  string
+}
+
+type BackendInfo struct {
+	StorType   string // aws-s3,azure-blob,hw-obs,ceph-s3 etc.
+	Region     string
+	EndPoint   string
+	BucketName string // remote bucket name
+	Access     string
+	Security   string
+	BakendName string
 }
 
 type MoveWorker interface {
@@ -31,8 +42,20 @@ type MoveWorker interface {
 	DeleteObj(objKey string, loca *LocationInfo) error
 	MultiPartDownloadInit(srcLoca *LocationInfo) error
 	DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error)
-	MultiPartUploadInit(objKey string, destLoca *LocationInfo) error
+	MultiPartUploadInit(objKey string, destLoca *LocationInfo) (uploadId string, err error)
 	UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error
 	AbortMultipartUpload(objKey string, destLoca *LocationInfo) error
 	CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error
+	ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error
+}
+
+const (
+	OBJMETA_TIER    = "tier"
+	OBJMETA_BACKEND = "backend"
+)
+
+type GetMultipartUploadRequest struct {
+	Bucket string
+	Prefix string
+	Days   int32
 }

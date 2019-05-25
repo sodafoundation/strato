@@ -2,6 +2,7 @@ syntax = "proto3";
 
 service datamover {
 	rpc Runjob(RunJobRequest) returns (RunJobResponse) {}
+	rpc DoLifecycleAction(LifecycleActionRequest) returns (LifecycleActionResonse) {}
 }
 
 message KV {
