@@ -541,7 +541,7 @@ func (b *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendT
 func (b *s3Service) AddUploadRecord(ctx context.Context, record *pb.MultipartUploadRecord, out *pb.BaseResponse) error {
 	log.Logf("add multipart upload record")
 	err := db.DbAdapter.AddMultipartUpload(record)
-	if err != NoError {
+	if err.Code != ERR_OK {
 		return err.Error()
 	}
 
@@ -551,7 +551,7 @@ func (b *s3Service) AddUploadRecord(ctx context.Context, record *pb.MultipartUpl
 func (b *s3Service) DeleteUploadRecord(ctx context.Context, record *pb.MultipartUploadRecord, out *pb.BaseResponse) error {
 	log.Logf("delete multipart upload record")
 	err := db.DbAdapter.DeleteMultipartUpload(record)
-	if err != NoError {
+	if err.Code != ERR_OK {
 		return err.Error()
 	}
 
