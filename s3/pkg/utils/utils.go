@@ -23,15 +23,15 @@ type Database struct {
 // Tier1, Tier99 and Tier999 just like the tiers of hot, warm, cold.
 // In the future, we will provide the ability for users to add new storage tiers, if we use 1, 2 and 3, then no space for new storage tiers.
 const (
-	Tier1 = 1
-	Tier99 = 99
+	Tier1   = 1
+	Tier99  = 99
 	Tier999 = 999
 )
 
 const (
-	AWS_STANDARD = "STANDARD"
+	AWS_STANDARD    = "STANDARD"
 	AWS_STANDARD_IA = "STANDARD_IA"
-	AWS_GLACIER = "Glacier"
+	AWS_GLACIER     = "GLACIER"
 )
 
 const (
@@ -40,18 +40,28 @@ const (
 
 const (
 	GCS_MULTI_REGIONAL = "MULTI_REGIONAL"
-	GCS_REGIONAL = "REGIONAL"
-	GCS_NEARLINE = "NEARLINE"
-	GCS_COLDLINE = "COLDLINE"
+	GCS_REGIONAL       = "REGIONAL"
+	GCS_NEARLINE       = "NEARLINE"
+	GCS_COLDLINE       = "COLDLINE"
 )
 
 //Object Storage Type
 const (
-	OSTYPE_OPENSDS = "OpenSDS"
-	OSTYPE_AWS = "aws-s3"
-	OSTYPE_Azure = "azure-blob"
-	OSTYPE_OBS = "hw-obs"
-	OSTYPE_GCS = "gcp-s3"
-	OSTYPE_CEPTH = "ceph-s3"
+	OSTYPE_OPENSDS       = "OpenSDS"
+	OSTYPE_AWS           = "aws-s3"
+	OSTYPE_Azure         = "azure-blob"
+	OSTYPE_OBS           = "hw-obs"
+	OSTYPE_GCS           = "gcp-s3"
+	OSTYPE_CEPTH         = "ceph-s3"
 	OSTYPE_FUSIONSTORAGE = "fusionstorage-object"
+)
+
+const (
+	DBKEY_DELETEMARKER   = "isdeletemarker"
+	DBKEY_INITFLAG       = "initflag"
+	DBKEY_OBJECTKEY      = "objectkey"
+	DBKEY_UPLOADID       = "uploadid"
+	DBKEY_LASTMODIFIED   = "lastmodified"
+	DBKEY_SUPPOSEDSTATUS = "supposedstatus"
+	DBKEY_LOCKOBJ_OBJKEY = "objkey"
 )

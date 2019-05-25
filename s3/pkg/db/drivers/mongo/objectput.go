@@ -19,6 +19,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -27,7 +28,7 @@ func (ad *adapter) CreateObject(in *pb.Object) S3Error {
 	defer ss.Close()
 	out := pb.Object{}
 	c := ss.DB(DataBaseName).C(in.BucketName)
-	err := c.Find(bson.M{"objectkey": in.ObjectKey}).One(out)
+	err := c.Find(bson.M{DBKEY_OBJECTKEY: in.ObjectKey}).One(out)
 	if err == mgo.ErrNotFound {
 		err := c.Insert(&in)
 		if err != nil {
@@ -45,12 +46,13 @@ func (ad *adapter) UpdateObject(in *pb.Object) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.BucketName)
-	err := c.Update(bson.M{"objectkey": in.ObjectKey}, in)
+	log.Logf("update object:%+v\n", *in)
+	err := c.Update(bson.M{DBKEY_OBJECTKEY: in.ObjectKey}, in)
 	if err == mgo.ErrNotFound {
-		log.Log("Update object to database failed, err:%v\n", err)
+		log.Log("update object to database failed, err:%v\n", err)
 		return NoSuchObject
 	} else if err != nil {
-		log.Log("Update object to database failed, err:%v\n", err)
+		log.Log("update object to database failed, err:%v\n", err)
 		return InternalError
 	}
 
@@ -61,12 +63,12 @@ func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, setting map
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(*bucketName)
-	selector := bson.M{"objectkey":objKey}
+	selector := bson.M{"objectkey": objKey}
 	sets := []bson.M{}
 	for k, v := range setting {
-		sets = append(sets, bson.M{k:v})
+		sets = append(sets, bson.M{k: v})
 	}
-	data := bson.M{"$set":sets}
+	data := bson.M{"$set": sets}
 	err := c.Update(selector, data)
 
 	if err != nil {

@@ -44,7 +44,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.Deleted = false
 	bucket.OwnerDisplayName = ownerDisplayName
 	bucket.CreationDate = time.Now().Unix()
-	//log.Logf("Create bucket body: %s", string(body))
+
 	if body != nil {
 		createBucketConf := model.CreateBucketConfiguration{}
 		err := xml.Unmarshal(body, &createBucketConf)
@@ -62,8 +62,8 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 					return
 				}
 			} else {
-				log.Logf("backetName is %v\n", backendName)
-				response.WriteError(http.StatusNotFound, NoSuchBackend.Error())
+				log.Log("default backend is not provided.")
+				response.WriteError(http.StatusBadRequest, NoSuchBackend.Error())
 				return
 			}
 		}
@@ -76,5 +76,4 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	}
 	log.Log("Create bucket successfully.")
 	response.WriteEntity(res)
-
 }

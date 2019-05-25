@@ -44,7 +44,7 @@ func (s *APIService) loadStorageClassDefinition() error {
 	log.Log("Load storage classes.")
 	res, err := s.s3Client.GetStorageClasses(ctx, &s3.BaseRequest{})
 	if err != nil {
-		log.Logf("Get storage classes from s3 service failed: %v\n", err)
+		log.Logf("get storage classes from s3 service failed: %v\n", err)
 		return err
 	}
 	ClassAndTier = make(map[string]int32)
@@ -85,8 +85,18 @@ func checkValidationOfActions(actions []*s3.Action) error {
 				return fmt.Errorf("error: Days for Expiring object must not be less than %d", ExpirationMinDays)
 			}
 			if action.Name == ActionNameTransition && action.Days < TransitionMinDays {
-				// If only a Transition action for a rule, the days for that action should be more than TransitionMinDays
-				return fmt.Errorf("error: Days for Transitioning object must not be less than %d", TransitionMinDays)
+				// the days for transition to tiers except tier999 should not less than TransitionMinDays
+				minDays := int32(TransitionMinDays)
+				if action.Tier == Tier999 {
+					// the days for transition to tier999 should not less than TransitionToArchiveMinDays
+					minDays = TransitionToArchiveMinDays
+				}
+				if action.Days < minDays {
+					return fmt.Errorf("error: days for transitioning object to tier_%d must not be less than %d",
+						action.Tier, minDays)
+				}
+
+
 			}
 		} else {
 			if pre.Name == ActionNameExpiration {
