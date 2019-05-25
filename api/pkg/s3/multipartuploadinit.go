@@ -18,17 +18,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	"encoding/xml"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-
-	"encoding/xml"
-
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 )
 
 //ObjectPut -
@@ -77,7 +77,13 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-	
+
+	// Currently, only support tier1 as default
+	tier := int32(utils.Tier1)
+	object.Tier = tier
+	// standard as default
+	object.StorageClass = constants.StorageClassOpenSDSStandard
+
 	object.ObjectKey = objectKey
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
@@ -90,6 +96,8 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		objectMD.Backend = object.Backend
 		objectMD.Size = int64(size)
 		objectMD.LastModified = lastModified
+		objectMD.Tier = object.Tier
+		objectMD.StorageClass = object.StorageClass
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, objectMD)
 		if err != nil {
