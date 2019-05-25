@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 service S3 {
-	
 	rpc ListBuckets(BaseRequest) returns (ListBucketsResponse) {}
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
@@ -17,6 +16,9 @@ service S3 {
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
 	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
 	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
+	rpc AddUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
+	rpc DeleteUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
+	rpc ListUploadRecord(ListMultipartUploadRequest) returns (ListMultipartUploadResponse) {}
 }
 
 message ServerSideEncryption {
@@ -188,19 +190,17 @@ message Object {
 	string isDeleteMarker = 19;
 	repeated ReplicationInfo replicationInfo = 20;
 	int64 size = 21;
-	repeated Partion partions =22;
+	repeated Partion partions = 22;
 	repeated Tag tags = 23;
-	int64 lastModified =24;
-	string initFlag=25;
-	string ETag=26;
+	int64 lastModified = 24;
+	string initFlag = 25;
+	string ETag = 26;
 	int32 tier = 27;
 }
-
 
 message ListBucketsResponse {
 	repeated Bucket buckets = 1;
 }
-
 
 message BaseResponse {
 	string errorCode = 1;
@@ -229,6 +229,7 @@ message DeleteObjectInput {
     string Bucket = 1;
     string Key = 2;
     string Versionid = 3;
+    int64  Lastmodified = 4;
 }
 
 message GetObjectInput {
@@ -267,7 +268,8 @@ message GetTierMapResponse {
 message UpdateObjMetaRequest {
 	string ObjKey = 1;
 	string BucketName = 2;
-    map<string, string> Setting = 3;
+	int64 LastModified = 3;
+	map<string, string> Setting = 4;
 }
 
 message StorageClass {
@@ -290,4 +292,24 @@ message GetBackendTypeByTierResponse {
 message DeleteLifecycleInput {
 	string Bucket = 1;
 	string ruleID = 2;
+}
+
+message MultipartUploadRecord {
+	string ObjectKey = 1;
+	string Bucket	= 2;
+	string Backend	= 3;
+	string UploadId	= 4;
+	int64 InitTime	= 5;
+}
+
+message ListMultipartUploadRequest {
+	string Bucket = 1;
+	string Prefix = 2;
+	int32  Days = 3;
+	int32  limit = 4;
+	int32  offset = 5;
+}
+
+message ListMultipartUploadResponse {
+	repeated MultipartUploadRecord records = 1;
 }

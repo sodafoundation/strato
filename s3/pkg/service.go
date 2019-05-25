@@ -472,18 +472,18 @@ func (b *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 }
 
 func (b *s3Service) UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaRequest, out *pb.BaseResponse) error {
-	log.Logf("Update meatadata, setting:%v\n", in.Setting)
+	log.Logf("Update meatadata, objkey:%s, lastmodified:%d, setting:%v\n", in.ObjKey, in.LastModified, in.Setting)
 	valid := make(map[string]struct{})
 	valid["tier"] = struct{}{}
 	valid["backend"] = struct{}{}
-	ret, err := CheckReqObjMeta(in.Setting, valid)
+	set, err := CheckReqObjMeta(in.Setting, valid)
 	if err.Code != ERR_OK {
 		out.ErrorCode = fmt.Sprintf("%s", err.Code)
 		out.Msg = err.Description
 		return err.Error()
 	}
 
-	err = db.DbAdapter.UpdateObjMeta(&in.ObjKey, &in.BucketName, ret)
+	err = db.DbAdapter.UpdateObjMeta(&in.ObjKey, &in.BucketName, in.LastModified, set)
 	if err.Code != ERR_OK {
 		out.ErrorCode = fmt.Sprintf("%s", err.Code)
 		out.Msg = err.Description
@@ -535,6 +535,39 @@ func (b *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendT
 	}
 
 	log.Logf("GetBackendTypesByTier, types:%v\n", out.Types)
+
+	return nil
+}
+func (b *s3Service) AddUploadRecord(ctx context.Context, record *pb.MultipartUploadRecord, out *pb.BaseResponse) error {
+	log.Logf("add multipart upload record")
+	err := db.DbAdapter.AddMultipartUpload(record)
+	if err != NoError {
+		return err.Error()
+	}
+
+	return nil
+}
+
+func (b *s3Service) DeleteUploadRecord(ctx context.Context, record *pb.MultipartUploadRecord, out *pb.BaseResponse) error {
+	log.Logf("delete multipart upload record")
+	err := db.DbAdapter.DeleteMultipartUpload(record)
+	if err != NoError {
+		return err.Error()
+	}
+
+	return nil
+}
+
+func (b *s3Service) ListUploadRecord(ctx context.Context, in *pb.ListMultipartUploadRequest, out *pb.ListMultipartUploadResponse) error {
+	log.Logf("list multipart upload records")
+	records := []pb.MultipartUploadRecord{}
+	err := db.DbAdapter.ListUploadRecords(in, &records)
+	if err.Code != ERR_OK {
+		return err.Error()
+	}
+	for i := 0; i < len(records); i++ {
+		out.Records = append(out.Records, &records[i])
+	}
 
 	return nil
 }

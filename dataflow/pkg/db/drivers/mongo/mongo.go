@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -202,6 +202,20 @@ func (ad *adapter) UnlockSched(planId string) int {
 	defer ss.Close()
 
 	return unlock(ss, planId)
+}
+
+func (ad *adapter) LockBucketLifecycleSched(bucketName string) int {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	return lock(ss, bucketName, 300) //One schedule is supposed to be finished in 300 seconds
+}
+
+func (ad *adapter) UnlockBucketLifecycleSched(bucketName string) int {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	return unlock(ss, bucketName)
 }
 
 func (ad *adapter) CreatePolicy(ctx *Context, pol *Policy) (*Policy, error) {
