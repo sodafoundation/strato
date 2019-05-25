@@ -59,22 +59,20 @@ func (ad *adapter) UpdateObject(in *pb.Object) S3Error {
 	return NoError
 }
 
-func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, setting map[string]interface{}) S3Error {
+func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(*bucketName)
-	selector := bson.M{"objectkey": objKey}
-	sets := []bson.M{}
-	for k, v := range setting {
-		sets = append(sets, bson.M{k: v})
-	}
-	data := bson.M{"$set": sets}
-	err := c.Update(selector, data)
+	log.Logf("update object metadata: key=%s, bucket=%s, lastmodified=%d\n", *objKey, *bucketName, lastmod)
 
+	selector := bson.M{DBKEY_OBJECTKEY: *objKey, DBKEY_LASTMODIFIED: lastmod}
+	data := bson.M{"$set": setting}
+	err := c.Update(selector, data)
 	if err != nil {
-		log.Logf("update object metadata failed:%v.\n", err)
+		log.Logf("update object[key=%s] metadata failed:%v.\n", *objKey, err)
 		return DBError
 	}
 
 	return NoError
 }
+

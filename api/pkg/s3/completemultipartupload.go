@@ -55,11 +55,9 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 		return
 	}
 
-	//_, s3err = client.GetObjectInfo(bucketName, objectKey, ctx)
-	if s3err != NoError {
-		response.WriteError(http.StatusInternalServerError, s3err.Error())
-		return
-	}
+	// delete multipart upload record, if delete failed, it will be cleaned by lifecycle management
+	record := s3.MultipartUploadRecord{ObjectKey: objectKey, Bucket: bucketName, UploadId: UploadId}
+	s.s3Client.DeleteUploadRecord(context.Background(), &record)
 
 	objectMD.Partions = nil
 	objectMD.LastModified = time.Now().Unix()

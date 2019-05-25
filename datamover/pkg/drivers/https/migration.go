@@ -1,3 +1,17 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package migration
 
 import (
@@ -51,15 +65,15 @@ func HandleMsg(msgData []byte) error {
 	var job pb.RunJobRequest
 	err := json.Unmarshal(msgData, &job)
 	if err != nil {
-		logger.Printf("Unmarshal failed, err:%v\n", err)
+		logger.Printf("unmarshal failed, err:%v\n", err)
 		return err
 	}
 
 	//Check the status of job, and run it if needed
 	status := db.DbAdapter.GetJobStatus(job.Id)
 	if status != flowtype.JOB_STATUS_PENDING {
-		logger.Printf("Job[ID#%s] is not in %s status.\n", job.Id, flowtype.JOB_STATUS_PENDING)
-		return errors.New("Job already running.")
+		logger.Printf("job[id#%s] is not in %s status.\n", job.Id, flowtype.JOB_STATUS_PENDING)
+		return nil //No need to consume this message again
 	}
 
 	logger.Printf("HandleMsg:job=%+v\n", job)
@@ -83,17 +97,17 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 
 func getOsdsLocation(ctx context.Context, virtBkname string, backendName string) (*LocationInfo, error) {
 	if backendName == "" {
-		logger.Println("Get backend location failed, because backend name is null.")
+		logger.Println("get backend location failed, because backend name is null.")
 		return nil, errors.New("failed")
 	}
 
 	bk, err := db.DbAdapter.GetBackendByName(backendName)
 	if err != nil {
-		logger.Printf("Get backend information failed, err:%v\n", err)
+		logger.Printf("get backend information failed, err:%v\n", err)
 		return nil, errors.New("failed")
 	} else {
-		loca := &LocationInfo{bk.Type, bk.Region, bk.Endpoint, bk.BucketName,
-			virtBkname, bk.Access, bk.Security, backendName}
+		loca := &LocationInfo{StorType: bk.Type, Region: bk.Region, EndPoint: bk.Endpoint, BucketName: bk.BucketName,
+			VirBucket: virtBkname, Access: bk.Access, Security: bk.Security, BakendName: backendName}
 		logger.Printf("Refresh backend[name:%s,id:%s] successfully.\n", backendName, bk.Id.String())
 		return loca, nil
 	}
@@ -107,7 +121,7 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 			reqbk := osdss3.Bucket{Name: virtBkname}
 			rspbk, err := s3client.GetBucket(ctx, &reqbk)
 			if err != nil {
-				logger.Printf("Get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
+				logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
 				return nil, errors.New("get bucket information failed")
 			}
 			return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
@@ -130,20 +144,20 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 				case "security":
 					loca.Security = cfg[i].Value
 				default:
-					logger.Printf("Uknow key[%s] for connector.\n", cfg[i].Key)
+					logger.Printf("unknow key[%s] for connector.\n", cfg[i].Key)
 				}
 			}
 			return &loca, nil
 		}
 	default:
 		{
-			logger.Printf("Unsupport type:%s.\n", conn.Type)
+			logger.Printf("unsupport type:%s.\n", conn.Type)
 			return nil, errors.New("unsupport type")
 		}
 	}
 }
 
-func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
+func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
 	logger.Printf("*****Move object[%s] from #%s# to #%s#, size is %d.\n", obj.ObjectKey, srcLoca.BakendName,
 		destLoca.BakendName, obj.Size)
 	if obj.Size <= 0 {
@@ -179,13 +193,13 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 		size, err = downloader.DownloadObj(downloadObjKey, srcLoca, buf)
 	default:
 		{
-			logger.Printf("Not support source backend type:%v\n", srcLoca.StorType)
-			err = errors.New("Not support source backend type.")
+			logger.Printf("not support source backend type:%v\n", srcLoca.StorType)
+			err = errors.New("not support source backend type")
 		}
 	}
 
 	if err != nil {
-		logger.Printf("Download object[%s] failed.", obj.ObjectKey)
+		logger.Printf("download object[%s] failed.", obj.ObjectKey)
 		return err
 	}
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
@@ -216,13 +230,13 @@ func moveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 		uploader = &Gcps3mover.GcpS3Mover{}
 		err = uploader.UploadObj(uploadObjKey, destLoca, buf)
 	default:
-		logger.Printf("Not support destination backend type:%v\n", destLoca.StorType)
-		return errors.New("Not support destination backend type.")
+		logger.Printf("not support destination backend type:%v\n", destLoca.StorType)
+		return errors.New("not support destination backend type.")
 	}
 	if err != nil {
-		logger.Printf("Upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
+		logger.Printf("upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
 	} else {
-		logger.Printf("Upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
+		logger.Printf("upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
 	}
 
 	return err
@@ -256,43 +270,44 @@ func multiPartDownloadInit(srcLoca *LocationInfo) (mover MoveWorker, err error) 
 		return mover, err
 
 	default:
-		logger.Printf("Unsupport storType[%s] to init multipart download.\n", srcLoca.StorType)
+		logger.Printf("unsupport storType[%s] to init multipart download.\n", srcLoca.StorType)
 	}
 
-	return nil, errors.New("Unsupport storage type.")
+	return nil, errors.New("unsupport storage type.")
 }
 
-func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorker, err error) {
+func multiPartUploadInit(objKey string, destLoca *LocationInfo) (mover MoveWorker, uploadId string, err error) {
+	uploadId = ""
 	switch destLoca.StorType {
 	case flowtype.STOR_TYPE_AWS_S3:
-		mover := &s3mover.S3Mover{}
-		err := mover.MultiPartUploadInit(objKey, destLoca)
-		return mover, err
+		mover = &s3mover.S3Mover{}
+		uploadId, err = mover.MultiPartUploadInit(objKey, destLoca)
+		return
 	case flowtype.STOR_TYPE_IBM_COS:
-		mover := &ibmcosmover.IBMCOSMover{}
-		err := mover.MultiPartUploadInit(objKey, destLoca)
-		return mover, err
+		mover = &ibmcosmover.IBMCOSMover{}
+		uploadId, err = mover.MultiPartUploadInit(objKey, destLoca)
+		return
 	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
-		mover := &obsmover.ObsMover{}
-		err := mover.MultiPartUploadInit(objKey, destLoca)
-		return mover, err
+		mover = &obsmover.ObsMover{}
+		uploadId, err = mover.MultiPartUploadInit(objKey, destLoca)
+		return
 	case flowtype.STOR_TYPE_AZURE_BLOB:
-		mover := &blobmover.BlobMover{}
-		err := mover.MultiPartUploadInit(objKey, destLoca)
-		return mover, err
+		mover = &blobmover.BlobMover{}
+		uploadId, err = mover.MultiPartUploadInit(objKey, destLoca)
+		return
 	case flowtype.STOR_TYPE_CEPH_S3:
-		mover := &cephs3mover.CephS3Mover{}
-		err := mover.MultiPartUploadInit(objKey, destLoca)
-		return mover, err
+		mover = &cephs3mover.CephS3Mover{}
+		uploadId, err = mover.MultiPartUploadInit(objKey, destLoca)
+		return
 	case flowtype.STOR_TYPE_GCP_S3:
-		mover := &Gcps3mover.GcpS3Mover{}
-		err := mover.MultiPartUploadInit(objKey, destLoca)
-		return mover, err
+		mover = &Gcps3mover.GcpS3Mover{}
+		uploadId, err = mover.MultiPartUploadInit(objKey, destLoca)
+		return mover, uploadId, err
 	default:
-		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
+		logger.Printf("unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
-	return nil, errors.New("Unsupport storage type.")
+	return nil, uploadId, errors.New("unsupport storage type")
 }
 
 func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorker) error {
@@ -301,10 +316,10 @@ func abortMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorke
 		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		return mover.AbortMultipartUpload(objKey, destLoca)
 	default:
-		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
+		logger.Printf("unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
-	return errors.New("Unsupport storage type.")
+	return errors.New("unsupport storage type")
 }
 
 func completeMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWorker) error {
@@ -313,13 +328,38 @@ func completeMultipartUpload(objKey string, destLoca *LocationInfo, mover MoveWo
 		flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		return mover.CompleteMultipartUpload(objKey, destLoca)
 	default:
-		logger.Printf("Unsupport storType[%s] to download.\n", destLoca.StorType)
+		logger.Printf("unsupport storType[%s] to download.\n", destLoca.StorType)
 	}
 
-	return errors.New("Unsupport storage type.")
+	return errors.New("unsupport storage type")
 }
 
-func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
+func addMultipartUpload(objKey, virtBucket, backendName, uploadId string) {
+	// some cloud vendor, like azure, does not support user to delete uncomplete multipart upload data, and no uploadId provided,
+	// so we do not need to manage the uncomplete multipart upload data.
+	if len(uploadId) == 0 {
+		return
+	}
+
+	record := osdss3.MultipartUploadRecord{ObjectKey: objKey, Bucket: virtBucket, Backend: backendName, UploadId: uploadId}
+	record.InitTime = time.Now().Unix()
+
+	s3client.AddUploadRecord(context.Background(), &record)
+	// TODO: Need consider if add failed
+}
+
+func deleteMultipartUpload(objKey, virtBucket, backendName, uploadId string) {
+	// some cloud vendor, like azure, does not support user to delete uncomplete multipart upload data, and no uploadId provided,
+	// so we do not need to manage the uncomplete multipart upload data.
+	if len(uploadId) == 0 {
+		return
+	}
+
+	record := osdss3.MultipartUploadRecord{ObjectKey: objKey, Bucket: virtBucket, Backend: backendName, UploadId: uploadId}
+	s3client.DeleteUploadRecord(context.Background(), &record)
+}
+
+func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
 	partCount := int64(obj.Size / PART_SIZE)
 	if obj.Size%PART_SIZE != 0 {
 		partCount++
@@ -340,6 +380,7 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	var i int64
 	var err error
 	var uploadMover, downloadMover MoveWorker
+	var uploadId string
 	currPartSize := PART_SIZE
 	for i = 0; i < partCount; i++ {
 		partNumber := i + 1
@@ -361,20 +402,22 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		}
 		readSize, err := downloadMover.DownloadRange(downloadObjKey, srcLoca, buf, start, end)
 		if err != nil {
-			return errors.New("Download failed.")
+			return errors.New("download failed")
 		}
 		//fmt.Printf("Download part %d range[%d:%d] successfully.\n", partNumber, offset, end)
 		if int64(readSize) != currPartSize {
-			logger.Printf("Internal error, currPartSize=%d, readSize=%d\n", currPartSize, readSize)
-			return errors.New("Internal error")
+			logger.Printf("internal error, currPartSize=%d, readSize=%d\n", currPartSize, readSize)
+			return errors.New(DMERR_InternalError)
 		}
 
 		//upload
 		if partNumber == 1 {
 			//init multipart upload
-			uploadMover, err = multiPartUploadInit(uploadObjKey, destLoca)
+			uploadMover, uploadId, err = multiPartUploadInit(uploadObjKey, destLoca)
 			if err != nil {
 				return err
+			} else {
+				addMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 			}
 		}
 		err1 := uploadMover.UploadPart(uploadObjKey, destLoca, currPartSize, buf, partNumber, offset)
@@ -382,8 +425,10 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			err := abortMultipartUpload(obj.ObjectKey, destLoca, uploadMover)
 			if err != nil {
 				logger.Printf("Abort s3 multipart upload failed, err:%v\n", err)
+			} else {
+				deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 			}
-			return errors.New("S3 multipart upload failed.")
+			return errors.New("multipart upload failed")
 		}
 		//completeParts = append(completeParts, completePart)
 	}
@@ -393,8 +438,12 @@ func multipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		logger.Println(err.Error())
 		err := abortMultipartUpload(obj.ObjectKey, destLoca, uploadMover)
 		if err != nil {
-			logger.Printf("Abort s3 multipart upload failed, err:%v\n", err)
+			logger.Printf("abort s3 multipart upload failed, err:%v\n", err)
+		} else {
+			deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 		}
+	} else {
+		deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 	}
 
 	return err
@@ -426,8 +475,8 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 		mover := Gcps3mover.GcpS3Mover{}
 		err = mover.DeleteObj(objKey, loca)
 	default:
-		logger.Printf("Delete object[objkey:%s] from backend storage failed.\n", obj.ObjectKey)
-		err = errors.New("Unspport storage type.")
+		logger.Printf("delete object[objkey:%s] from backend storage failed.\n", obj.ObjectKey)
+		err = errors.New(DMERR_UnSupportBackendType)
 	}
 
 	if err != nil {
@@ -439,7 +488,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 		delMetaReq := osdss3.DeleteObjectInput{Bucket: loca.VirBucket, Key: obj.ObjectKey}
 		_, err = s3client.DeleteObject(ctx, &delMetaReq)
 		if err != nil {
-			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n", loca.VirBucket,
+			logger.Printf("delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n", loca.VirBucket,
 				obj.ObjectKey, err)
 		} else {
 			logger.Printf("Delete object metadata of obj[bucket:%s,objKey:%s] successfully.\n", loca.VirBucket,
@@ -497,9 +546,9 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 			}
 		}
 		if obj.Size <= PART_SIZE {
-			err = moveObj(obj, newSrcLoca, destLoca)
+			err = MoveObj(obj, newSrcLoca, destLoca)
 		} else {
-			err = multipartMoveObj(obj, newSrcLoca, destLoca)
+			err = MultipartMoveObj(obj, newSrcLoca, destLoca)
 		}
 
 		if err != nil {
@@ -515,10 +564,10 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		obj.LastModified = time.Now().Unix()
 		_, err := s3client.CreateObject(ctx, obj)
 		if err != nil {
-			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] failed,err:%v.\n", obj.ObjectKey,
+			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] failed, err:%v.\n", obj.ObjectKey,
 				obj.BucketName, err)
 		} else {
-			logger.Printf("Add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.ObjectKey,
+			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.ObjectKey,
 				obj.BucketName)
 		}
 	}
@@ -566,9 +615,9 @@ func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		}
 		if valid == true {
 			srcObjs = append(srcObjs, objs.ListObjects[i])
-			logger.Printf("Object[%s] match, will be migrated.\n", objs.ListObjects[i].ObjectKey)
+			logger.Printf("object[%s] match, will be migrated.\n", objs.ListObjects[i].ObjectKey)
 		} else {
-			logger.Printf("Object[%s] does not match, will not be migrated.\n", objs.ListObjects[i].ObjectKey)
+			logger.Printf("object[%s] does not match, will not be migrated.\n", objs.ListObjects[i].ObjectKey)
 		}
 	}
 	return srcObjs, nil
@@ -685,11 +734,11 @@ func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return getGcpS3Objs(ctx, conn, filt, defaultSrcLoca)
 	default:
 		{
-			logger.Printf("Unsupport storage type:%v\n", conn.Type)
-			return nil, errors.New("unsupport storage type")
+			logger.Printf("unsupport storage type:%v\n", conn.Type)
+			return nil, errors.New(DMERR_UnSupportBackendType)
 		}
 	}
-	return nil, errors.New("Get source objects failed")
+	return nil, errors.New(DMERR_InternalError)
 }
 
 func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (srcLoca *LocationInfo, destLoca *LocationInfo,
@@ -719,7 +768,7 @@ func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (sr
 	objs, err = getSourceObjs(ctx, in.SourceConn, in.GetFilt(), srcLoca)
 	totalObjs := len(objs)
 	if err != nil {
-		logger.Printf("List objects failed, err:%v, total objects:%d\n", err, totalObjs)
+		logger.Printf("list objects failed, err:%v, total objects:%d\n", err, totalObjs)
 		//update database
 		j.Status = flowtype.JOB_STATUS_FAILED
 		j.EndTime = time.Now()
@@ -831,7 +880,7 @@ func runjob(in *pb.RunJobRequest) error {
 	j.PassedCount = int64(passedCount)
 	if passedCount < totalObjs {
 		errmsg := strconv.FormatInt(totalObjs, 10) + " objects, passed " + strconv.FormatInt(passedCount, 10)
-		logger.Printf("Run job failed: %s\n", errmsg)
+		logger.Printf("run job failed: %s\n", errmsg)
 		ret = errors.New("failed")
 		j.Status = flowtype.JOB_STATUS_FAILED
 	} else {

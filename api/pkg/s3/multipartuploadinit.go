@@ -67,8 +67,18 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
-	object.ObjectKey = objectKey
+
 	lastModified := time.Now().Unix()
+	record := s3.MultipartUploadRecord{ObjectKey: objectKey, Bucket: bucketName, Backend: object.Backend, UploadId: res.UploadId}
+	record.InitTime = lastModified
+	_, err := s.s3Client.AddUploadRecord(context.Background(), &record)
+	if err != nil {
+		client.AbortMultipartUpload(res, ctx)
+		response.WriteError(http.StatusInternalServerError, s3err.Error())
+		return
+	}
+	
+	object.ObjectKey = objectKey
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	if objectMD != nil {
