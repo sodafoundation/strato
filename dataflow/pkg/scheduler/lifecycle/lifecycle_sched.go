@@ -102,7 +102,7 @@ func ScheduleLifecycle() {
 	log.Log("[ScheduleLifecycle] end ...")
 }
 
-// Need to lock the bucket, incase the schedule period is too shoort and the bucket is scheduled at the same time.
+// Need to lock the bucket, incase the schedule period is too short and the bucket is scheduled at the same time.
 // Need to consider confliction between rules.
 func handleBucketLifecyle(bucket string, defaultBackend string, rules []*osdss3.LifecycleRule) error {
 	// Translate rules set by user to internal rules which can be sorted.
@@ -383,4 +383,3 @@ func (r InterRules) Swap(i, j int) {
 	r[i] = r[j]
 	r[j] = tmp
 }
-
