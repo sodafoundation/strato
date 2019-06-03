@@ -43,6 +43,10 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 		return
 	}
 
+	// delete multipart upload record, if delete failed, it will be cleaned by lifecycle management
+	record := s3.MultipartUploadRecord{ObjectKey: objectKey, Bucket: bucketName, UploadId: uploadId}
+	s.s3Client.DeleteUploadRecord(context.Background(), &record)
+
 	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
 	res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
 	if err != nil {

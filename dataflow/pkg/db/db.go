@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,6 +76,8 @@ type DBAdapter interface {
 	GetPlanByPolicy(ctx *c.Context, policyId string, limit int, offset int) ([]model.Plan, error)
 	LockSched(planId string) int
 	UnlockSched(planId string) int
+	LockBucketLifecycleSched(bucketName string) int
+	UnlockBucketLifecycleSched(bucketName string) int
 	//Job
 	CreateJob(ctx *c.Context, job *model.Job) (*model.Job, error)
 	GetJob(ctx *c.Context, id string) (*model.Job, error)

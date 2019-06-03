@@ -22,6 +22,7 @@ It has these top-level messages:
 	Tag
 	LifecycleFilter
 	Action
+	AbortMultipartUpload
 	LifecycleRule
 	ReplicationInfo
 	Bucket
@@ -45,6 +46,10 @@ It has these top-level messages:
 	GetStorageClassesResponse
 	GetBackendTypeByTierRequest
 	GetBackendTypeByTierResponse
+	DeleteLifecycleInput
+	MultipartUploadRecord
+	ListMultipartUploadRequest
+	ListMultipartUploadResponse
 */
 package s3
 
@@ -90,6 +95,11 @@ type S3Service interface {
 	UpdateObjMeta(ctx context.Context, in *UpdateObjMetaRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetStorageClasses(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetStorageClassesResponse, error)
 	GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, opts ...client.CallOption) (*GetBackendTypeByTierResponse, error)
+	DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, opts ...client.CallOption) (*BaseResponse, error)
+	UpdateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
+	AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error)
+	DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error)
+	ListUploadRecord(ctx context.Context, in *ListMultipartUploadRequest, opts ...client.CallOption) (*ListMultipartUploadResponse, error)
 }
 
 type s3Service struct {
@@ -240,6 +250,56 @@ func (c *s3Service) GetBackendTypeByTier(ctx context.Context, in *GetBackendType
 	return out, nil
 }
 
+func (c *s3Service) DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.DeleteBucketLifecycle", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) UpdateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.UpdateBucket", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.AddUploadRecord", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.DeleteUploadRecord", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) ListUploadRecord(ctx context.Context, in *ListMultipartUploadRequest, opts ...client.CallOption) (*ListMultipartUploadResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.ListUploadRecord", in)
+	out := new(ListMultipartUploadResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for S3 service
 
 type S3Handler interface {
@@ -256,6 +316,11 @@ type S3Handler interface {
 	UpdateObjMeta(context.Context, *UpdateObjMetaRequest, *BaseResponse) error
 	GetStorageClasses(context.Context, *BaseRequest, *GetStorageClassesResponse) error
 	GetBackendTypeByTier(context.Context, *GetBackendTypeByTierRequest, *GetBackendTypeByTierResponse) error
+	DeleteBucketLifecycle(context.Context, *DeleteLifecycleInput, *BaseResponse) error
+	UpdateBucket(context.Context, *Bucket, *BaseResponse) error
+	AddUploadRecord(context.Context, *MultipartUploadRecord, *BaseResponse) error
+	DeleteUploadRecord(context.Context, *MultipartUploadRecord, *BaseResponse) error
+	ListUploadRecord(context.Context, *ListMultipartUploadRequest, *ListMultipartUploadResponse) error
 }
 
 func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOption) error {
@@ -273,6 +338,11 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		UpdateObjMeta(ctx context.Context, in *UpdateObjMetaRequest, out *BaseResponse) error
 		GetStorageClasses(ctx context.Context, in *BaseRequest, out *GetStorageClassesResponse) error
 		GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, out *GetBackendTypeByTierResponse) error
+		DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, out *BaseResponse) error
+		UpdateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
+		AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error
+		DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error
+		ListUploadRecord(ctx context.Context, in *ListMultipartUploadRequest, out *ListMultipartUploadResponse) error
 	}
 	type S3 struct {
 		s3
@@ -335,4 +405,24 @@ func (h *s3Handler) GetStorageClasses(ctx context.Context, in *BaseRequest, out 
 
 func (h *s3Handler) GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, out *GetBackendTypeByTierResponse) error {
 	return h.S3Handler.GetBackendTypeByTier(ctx, in, out)
+}
+
+func (h *s3Handler) DeleteBucketLifecycle(ctx context.Context, in *DeleteLifecycleInput, out *BaseResponse) error {
+	return h.S3Handler.DeleteBucketLifecycle(ctx, in, out)
+}
+
+func (h *s3Handler) UpdateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error {
+	return h.S3Handler.UpdateBucket(ctx, in, out)
+}
+
+func (h *s3Handler) AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error {
+	return h.S3Handler.AddUploadRecord(ctx, in, out)
+}
+
+func (h *s3Handler) DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error {
+	return h.S3Handler.DeleteUploadRecord(ctx, in, out)
+}
+
+func (h *s3Handler) ListUploadRecord(ctx context.Context, in *ListMultipartUploadRequest, out *ListMultipartUploadResponse) error {
+	return h.S3Handler.ListUploadRecord(ctx, in, out)
 }

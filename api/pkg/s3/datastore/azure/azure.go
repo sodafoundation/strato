@@ -27,7 +27,6 @@ import (
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
-
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -161,6 +160,13 @@ func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context
 	delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 	log.Logf("blobURL=%v,err=%v\n", blobURL, err)
 	if err != nil {
+		if serr, ok := err.(azblob.StorageError); ok { // This error is a Service-specific
+			log.Logf("service code:%s\n", serr.ServiceCode())
+			if string(serr.ServiceCode()) == string(azblob.StorageErrorCodeBlobNotFound) {
+				return NoError
+			}
+		}
+
 		log.Logf("[AzureAdapter] Delete failed:%v\n", err)
 		return S3Error{Code: 500, Description: "Delete failed"}
 	}
