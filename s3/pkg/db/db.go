@@ -67,6 +67,7 @@ type DBAdapter interface {
 	DeleteObject(in *pb.DeleteObjectInput) S3Error
 	GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error
 	ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
+	CountObjects(in *pb.ListObjectsRequest, out *ObjsCountInfo) S3Error
 	DeleteBucketLifecycle(in *pb.DeleteLifecycleInput) S3Error
 	UpdateObjMeta(objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error
 	AddMultipartUpload(record *pb.MultipartUploadRecord) S3Error

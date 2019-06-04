@@ -18,14 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"time"
-
-	Gcps3mover "github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/client"
@@ -35,10 +31,12 @@ import (
 	blobmover "github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
 	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
+	Gcps3mover "github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
 	obsmover "github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
 	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
+	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -87,73 +85,16 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 	//th := make(chan int, simuRoutines)
 	locMap := make(map[string]*LocationInfo)
 	for i := 0; i < len(objs); i++ {
+		if objs[i].Tier == s3utils.Tier999 {
+			// archived object cannot be moved currently
+			logger.Printf("Object(key:%s) is archived, cannot be migrated.\n", objs[i].ObjectKey)
+			continue
+		}
 		logger.Printf("************Begin to move obj(key:%s)\n", objs[i].ObjectKey)
 		go move(ctx, objs[i], capa, th, srcLoca, destLoca, remainSource, locMap)
 		//Create one routine
 		th <- 1
 		logger.Printf("doMigrate: produce 1 routine, len(th):%d.\n", len(th))
-	}
-}
-
-func getOsdsLocation(ctx context.Context, virtBkname string, backendName string) (*LocationInfo, error) {
-	if backendName == "" {
-		logger.Println("get backend location failed, because backend name is null.")
-		return nil, errors.New("failed")
-	}
-
-	bk, err := db.DbAdapter.GetBackendByName(backendName)
-	if err != nil {
-		logger.Printf("get backend information failed, err:%v\n", err)
-		return nil, errors.New("failed")
-	} else {
-		loca := &LocationInfo{StorType: bk.Type, Region: bk.Region, EndPoint: bk.Endpoint, BucketName: bk.BucketName,
-			VirBucket: virtBkname, Access: bk.Access, Security: bk.Security, BakendName: backendName}
-		logger.Printf("Refresh backend[name:%s,id:%s] successfully.\n", backendName, bk.Id.String())
-		return loca, nil
-	}
-}
-
-func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, error) {
-	switch conn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:
-		{
-			virtBkname := conn.GetBucketName()
-			reqbk := osdss3.Bucket{Name: virtBkname}
-			rspbk, err := s3client.GetBucket(ctx, &reqbk)
-			if err != nil {
-				logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
-				return nil, errors.New("get bucket information failed")
-			}
-			return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
-		}
-	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
-		{
-			cfg := conn.ConnConfig
-			loca := LocationInfo{}
-			loca.StorType = conn.Type
-			for i := 0; i < len(cfg); i++ {
-				switch cfg[i].Key {
-				case "region":
-					loca.Region = cfg[i].Value
-				case "endpoint":
-					loca.EndPoint = cfg[i].Value
-				case "bucketname":
-					loca.BucketName = cfg[i].Value
-				case "access":
-					loca.Access = cfg[i].Value
-				case "security":
-					loca.Security = cfg[i].Value
-				default:
-					logger.Printf("unknow key[%s] for connector.\n", cfg[i].Key)
-				}
-			}
-			return &loca, nil
-		}
-	default:
-		{
-			logger.Printf("unsupport type:%s.\n", conn.Type)
-			return nil, errors.New("unsupport type")
-		}
 	}
 }
 
@@ -499,28 +440,6 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 	return err
 }
 
-func refreshSrcLocation(ctx context.Context, obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo,
-	locMap map[string]*LocationInfo) (newSrcLoca *LocationInfo, err error) {
-	if obj.Backend != srcLoca.BakendName && obj.Backend != "" {
-		//If oject does not use the default backend
-		logger.Printf("locaMap:%+v\n", locMap)
-		//for selfdefined connector, obj.backend and srcLoca.backendname would be ""
-		//TODO: use read/wirte lock
-		newLoc, exists := locMap[obj.Backend]
-		if !exists {
-			newLoc, err = getOsdsLocation(ctx, obj.BucketName, obj.Backend)
-			if err != nil {
-				return nil, err
-			}
-		}
-		locMap[obj.Backend] = newLoc
-		logger.Printf("newSrcLoca=%+v\n", newLoc)
-		return newLoc, nil
-	}
-
-	return srcLoca, nil
-}
-
 func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
 	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo) {
 	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
@@ -556,7 +475,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		}
 	}
 
-	//TODO: what if update meatadata failed
+	//TODO: what if update metadata failed
 	//add object metadata to the destination bucket if destination is not self-defined
 	if succeed && destLoca.VirBucket != "" {
 		obj.BucketName = destLoca.VirBucket
@@ -591,267 +510,100 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	logger.Printf("  migrate: consume %d routine, len(th)=%d\n", t, len(th))
 }
 
-func getOsdsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO:need to support filter
-	req := osdss3.ListObjectsRequest{Bucket: conn.BucketName}
-	objs, err := s3client.ListObjects(ctx, &req)
-	totalObjs := len(objs.ListObjects)
-	if err != nil {
-		logger.Printf("List objects failed, err:%v\n", err)
-		return nil, err
-	}
-
-	srcObjs := []*osdss3.Object{}
-	pattern := fmt.Sprintf("^%s", filt.Prefix)
-	logger.Printf("pattern:%s\n", pattern)
-	for i := 0; i < totalObjs; i++ {
-		valid := true
-		if filt != nil && filt.Prefix != "" {
-			match, _ := regexp.MatchString(pattern, objs.ListObjects[i].ObjectKey)
-			if match == false {
-				valid = false
-			}
+func updateJob(j *flowtype.Job) {
+	for i := 1; i <= 3; i++ {
+		err := db.DbAdapter.UpdateJob(j)
+		if err == nil {
+			break
 		}
-		if valid == true {
-			srcObjs = append(srcObjs, objs.ListObjects[i])
-			logger.Printf("object[%s] match, will be migrated.\n", objs.ListObjects[i].ObjectKey)
-		} else {
-			logger.Printf("object[%s] does not match, will not be migrated.\n", objs.ListObjects[i].ObjectKey)
+		if i == 3 {
+			logger.Printf("update the finish status of job in database failed three times, no need to try more.")
 		}
 	}
-	return srcObjs, nil
-}
-
-func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO(acorbellini): reuse getAWSS3Objs function
-	srcObjs := []*osdss3.Object{}
-	objs, err := ibmcosmover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO:need to support filter
-	srcObjs := []*osdss3.Object{}
-	objs, err := s3mover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
-		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO:need to support filter
-	srcObjs := []*osdss3.Object{}
-	objs, err := obsmover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	srcObjs := []*osdss3.Object{}
-	objs, err := blobmover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name, Backend: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-//to get object details from ceph backend
-func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	srcObjs := []*osdss3.Object{}
-	objs, err := cephs3mover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
-		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-//to get object details from gcp backend
-func getGcpS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	srcObjs := []*osdss3.Object{}
-	objs, err := Gcps3mover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
-		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-func getSourceObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	switch conn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:
-		return getOsdsS3Objs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_AWS_S3:
-		return getAwsS3Objs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_IBM_COS:
-		return getIBMCosObjs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
-		return getHwObjs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_AZURE_BLOB:
-		return getAzureBlobs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_CEPH_S3:
-		return getCephS3Objs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_GCP_S3:
-		return getGcpS3Objs(ctx, conn, filt, defaultSrcLoca)
-	default:
-		{
-			logger.Printf("unsupport storage type:%v\n", conn.Type)
-			return nil, errors.New(DMERR_UnSupportBackendType)
-		}
-	}
-	return nil, errors.New(DMERR_InternalError)
-}
-
-func prepare4Run(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest) (srcLoca *LocationInfo, destLoca *LocationInfo,
-	objs []*osdss3.Object, err error) {
-	srcLoca, err = getConnLocation(ctx, in.SourceConn)
-	if err != nil {
-		j.Status = flowtype.JOB_STATUS_FAILED
-		j.EndTime = time.Now()
-		db.DbAdapter.UpdateJob(j)
-		logger.Printf("err:%v\n", err)
-		return nil, nil, nil, err
-	}
-	logger.Printf("srcLoca:StorType=%s,VirBucket=%s,BucketName=%s,Region=%s\n",
-		srcLoca.StorType, srcLoca.VirBucket, srcLoca.BucketName, srcLoca.Region)
-	destLoca, err = getConnLocation(ctx, in.DestConn)
-	if err != nil {
-		j.Status = flowtype.JOB_STATUS_FAILED
-		j.EndTime = time.Now()
-		db.DbAdapter.UpdateJob(j)
-		return nil, nil, nil, err
-	}
-	logger.Printf("destLoca:srcLoca:StorType=%s,VirBucket=%s,BucketName=%s,Region=%s\n",
-		destLoca.StorType, destLoca.VirBucket, destLoca.BucketName, destLoca.Region)
-	logger.Println("Get connector information succeed.")
-
-	//Get Objects which need to be migrated. Calculate the total number and capacity of objects
-	objs, err = getSourceObjs(ctx, in.SourceConn, in.GetFilt(), srcLoca)
-	totalObjs := len(objs)
-	if err != nil {
-		logger.Printf("list objects failed, err:%v, total objects:%d\n", err, totalObjs)
-		//update database
-		j.Status = flowtype.JOB_STATUS_FAILED
-		j.EndTime = time.Now()
-		db.DbAdapter.UpdateJob(j)
-		return srcLoca, destLoca, nil, err
-	}
-	for i := 0; i < totalObjs; i++ {
-		j.TotalCount++
-		j.TotalCapacity += objs[i].Size
-	}
-	if totalObjs == 0 {
-		logger.Printf("No data need to migrate. totalObjs=%d, TotalCapacity=%d\n", totalObjs, j.TotalCapacity)
-		j.Status = flowtype.JOB_STATUS_SUCCEED
-		j.EndTime = time.Now()
-		j.Progress = 100
-	} else {
-		logger.Printf("List objects succeed, total count:%d, total capacity:%d\n", j.TotalCount, j.TotalCapacity)
-		j.Status = flowtype.JOB_STATUS_RUNNING
-	}
-	db.DbAdapter.UpdateJob(j)
-
-	return srcLoca, destLoca, objs, nil
 }
 
 func runjob(in *pb.RunJobRequest) error {
 	logger.Println("Runjob is called in datamover service.")
 	logger.Printf("Request: %+v\n", in)
 
-	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
-	j.StartTime = time.Now()
-
-	//TODO:Check if source and destination connectors can access.
+	// set context tiemout
 	ctx := context.Background()
+	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()
 	if !ok {
-		tmoutCfg, err := strconv.ParseInt(os.Getenv("JOB_MAX_RUN_TIME"), 10, 64)
-		if err != nil || tmoutCfg < 60 || tmoutCfg > 2592000 {
-			tmoutCfg = int64(JOB_RUN_TIME_MAX)
-		}
-		durStr := fmt.Sprintf("%ds", tmoutCfg)
-		logger.Printf("Vaule of JOB_MAX_RUN_TIME is: %d seconds, durStr:%s.\n", tmoutCfg, durStr)
-		tmout, err := time.ParseDuration(durStr)
-		if err == nil {
-			ctx, _ = context.WithTimeout(ctx, tmout)
-		} else {
-			logger.Println("Set timeout to the default value.")
-			ctx, _ = context.WithTimeout(ctx, 86400*time.Second) //1 day as default
-		}
+		ctx, _ = context.WithTimeout(ctx, dur)
 	}
 
-	//prepare for running
-	srcLoca, destLoca, objs, err := prepare4Run(ctx, &j, in)
+	// init job
+	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
+	j.StartTime = time.Now()
+	j.Status = flowtype.JOB_STATUS_RUNNING
+	updateJob(&j)
+
+	// get location information
+	srcLoca, destLoca, err := getLocationInfo(ctx, &j, in)
 	if err != nil {
+		j.Status = flowtype.JOB_STATUS_FAILED
+		j.EndTime = time.Now()
+		updateJob(&j)
 		return err
 	}
-	if j.TotalCount == 0 || j.TotalCapacity == 0 {
-		return nil
+
+	// get total count and total size of objects need to be migrated
+	totalCount, totalSize, err := countObjs(ctx, in)
+	j.TotalCount = totalCount
+	j.TotalCapacity = totalSize
+	if err != nil || totalCount == 0 || totalSize == 0 {
+		if err != nil {
+			j.Status = flowtype.JOB_STATUS_FAILED
+		} else {
+			j.Status = flowtype.JOB_STATUS_SUCCEED
+		}
+		j.EndTime = time.Now()
+		updateJob(&j)
+		return err
 	}
 
-	//Make channel
-	capa := make(chan int64)           //used to transfer capacity of objects
-	th := make(chan int, simuRoutines) //concurrent go routines is limited to be  simuRoutines
+	// used to transfer capacity(size) of objects
+	capa := make(chan int64)
+	// concurrent go routines is limited to be simuRoutines
+	th := make(chan int, simuRoutines)
+	var offset, limit int32 = 0, 1000
+	for {
+		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
+		if err != nil {
+			//update database
+			j.Status = flowtype.JOB_STATUS_FAILED
+			j.EndTime = time.Now()
+			db.DbAdapter.UpdateJob(&j)
+			return err
+		}
 
-	//Do migration for each object.
-	go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource)
+		num := len(objs)
+		if num == 0 {
+			break
+		}
 
-	var capacity, count, passedCount, totalObjs int64
-	//TODO: What if a part of objects succeed, but the others failed.
-	count = 0
-	capacity = 0
-	passedCount = 0
-	totalObjs = j.TotalCount
+		//Do migration for each object.
+		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource)
+		if len(objs) < int(limit) {
+			break
+		}
+		offset = offset + int32(num)
+	}
+
+	var capacity, count, passedCount, totalObjs int64 = 0, 0, 0, j.TotalCount
 	tmout := false
 	for {
 		select {
 		case c := <-capa:
-			{ //if c equals 0, that means the object is migrated failed.
+			{ //if c is less than 0, that means the object is migrated failed.
 				count++
 				if c >= 0 {
 					passedCount++
 					capacity += c
 				}
-				//TODO:update job in database, need to consider the update frequency
+
 				var deci int64 = totalObjs / 10
 				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 					//update database
@@ -894,7 +646,7 @@ func runjob(in *pb.RunJobRequest) error {
 			break
 		}
 		if i == 3 {
-			logger.Printf("Update the finish status of job in database failed three times, no need to try more.")
+			logger.Printf("update the finish status of job in database failed three times, no need to try more.")
 		}
 	}
 
