@@ -104,45 +104,40 @@ func getOsdsLocation(ctx context.Context, virtBkname string, backendName string)
 func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, error) {
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
-		{
-			virtBkname := conn.GetBucketName()
-			reqbk := osdss3.Bucket{Name: virtBkname}
-			rspbk, err := s3client.GetBucket(ctx, &reqbk)
-			if err != nil {
-				logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
-				return nil, errors.New("get bucket information failed")
-			}
-			return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
+		virtBkname := conn.GetBucketName()
+		reqbk := osdss3.Bucket{Name: virtBkname}
+		rspbk, err := s3client.GetBucket(ctx, &reqbk)
+		if err != nil {
+			logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
+			return nil, errors.New("get bucket information failed")
 		}
+		return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
-		{
-			cfg := conn.ConnConfig
-			loca := LocationInfo{}
-			loca.StorType = conn.Type
-			for i := 0; i < len(cfg); i++ {
-				switch cfg[i].Key {
-				case "region":
-					loca.Region = cfg[i].Value
-				case "endpoint":
-					loca.EndPoint = cfg[i].Value
-				case "bucketname":
-					loca.BucketName = cfg[i].Value
-				case "access":
-					loca.Access = cfg[i].Value
-				case "security":
-					loca.Security = cfg[i].Value
-				default:
-					logger.Printf("unknow key[%s] for connector.\n", cfg[i].Key)
-				}
+		cfg := conn.ConnConfig
+		loca := LocationInfo{}
+		loca.StorType = conn.Type
+		for i := 0; i < len(cfg); i++ {
+			switch cfg[i].Key {
+			case "region":
+				loca.Region = cfg[i].Value
+			case "endpoint":
+				loca.EndPoint = cfg[i].Value
+			case "bucketname":
+				loca.BucketName = cfg[i].Value
+			case "access":
+				loca.Access = cfg[i].Value
+			case "security":
+				loca.Security = cfg[i].Value
+			default:
+				logger.Printf("unknow key[%s] for connector.\n", cfg[i].Key)
 			}
-			return &loca, nil
 		}
+		return &loca, nil
 	default:
-		{
-			logger.Printf("unsupport type:%s.\n", conn.Type)
-			return nil, errors.New("unsupport type")
-		}
+		logger.Printf("unsupport type:%s.\n", conn.Type)
 	}
+
+	return nil, errors.New("unsupport type")
 }
 
 func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *LocationInfo, offset, limit int32) ([]*osdss3.Object, error) {

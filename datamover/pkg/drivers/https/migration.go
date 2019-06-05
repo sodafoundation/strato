@@ -564,6 +564,7 @@ func runjob(in *pb.RunJobRequest) error {
 		return err
 	}
 
+	updateJob(&j)
 	// used to transfer capacity(size) of objects
 	capa := make(chan int64)
 	// concurrent go routines is limited to be simuRoutines
