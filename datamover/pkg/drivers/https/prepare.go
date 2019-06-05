@@ -149,18 +149,6 @@ func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *Location
 	switch in.SourceConn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		return getOsdsS3Objs(ctx, in, offset, limit)
-	/*case flowtype.STOR_TYPE_AWS_S3:
-		return getAwsS3Objs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_IBM_COS:
-		return getIBMCosObjs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
-		return getHwObjs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_AZURE_BLOB:
-		return getAzureBlobs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_CEPH_S3:
-		return getCephS3Objs(ctx, conn, filt, defaultSrcLoca)
-	case flowtype.STOR_TYPE_GCP_S3:
-		return getGcpS3Objs(ctx, conn, filt, defaultSrcLoca)*/
 	default:
 		{
 			logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
@@ -224,26 +212,6 @@ func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, offset, limit int3
 
 	logger.Println("get osds objects successfully")
 	return rsp.ListObjects, nil
-
-	/*srcObjs := []*osdss3.Object{}
-	pattern := fmt.Sprintf("^%s", in.Filt.Prefix)
-	logger.Printf("pattern:%s\n", pattern)
-	for i := 0; i < totalObjs; i++ {
-		valid := true
-		if filt != nil && filt.Prefix != "" {
-			match, _ := regexp.MatchString(pattern, objs.ListObjects[i].ObjectKey)
-			if match == false {
-				valid = false
-			}
-		}
-		if valid == true {
-			srcObjs = append(srcObjs, objs.ListObjects[i])
-			logger.Printf("object[%s] match, will be migrated.\n", objs.ListObjects[i].ObjectKey)
-		} else {
-			logger.Printf("object[%s] does not match, will not be migrated.\n", objs.ListObjects[i].ObjectKey)
-		}
-	}
-	return srcObjs, nil*/
 }
 
 func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
@@ -271,7 +239,6 @@ func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	}
 	for i := 0; i < len(objs); i++ {
 		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
-		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -316,7 +283,6 @@ func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	}
 	for i := 0; i < len(objs); i++ {
 		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
-		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -332,7 +298,6 @@ func getGcpS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	}
 	for i := 0; i < len(objs); i++ {
 		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
-		//srcObjs = append(srcObjs, &SourceOject{StorType:defaultSrcLoca.StorType, Obj:&obj})
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
