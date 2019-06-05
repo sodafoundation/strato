@@ -150,9 +150,7 @@ func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *Location
 	case flowtype.STOR_TYPE_OPENSDS:
 		return getOsdsS3Objs(ctx, in, offset, limit)
 	default:
-		{
-			logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
-		}
+		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
 	}
 
 	return nil, errors.New(DMERR_InternalError)
@@ -183,9 +181,7 @@ func countObjs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, er
 	case flowtype.STOR_TYPE_OPENSDS:
 		return countOsdsS3Objs(ctx, in)
 	default:
-		{
-			logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
-		}
+		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
 	}
 
 	return 0, 0, errors.New(DMERR_UnSupportBackendType)
