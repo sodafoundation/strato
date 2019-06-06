@@ -30,6 +30,7 @@ import (
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
+	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"golang.org/x/net/context"
 )
 
@@ -227,6 +228,7 @@ func getObjects(r *InternalLifecycleRule, offset, limit int32) ([]*osdss3.Object
 }
 
 func schedSortedAbortRules(inRules *InterRules) {
+	log.Log("schedSortedAbortRules begin ...")
 	dupCheck := map[string]struct{}{}
 	for _, r := range *inRules {
 		var offset, limit int32 = 0, 1000
@@ -265,9 +267,11 @@ func schedSortedAbortRules(inRules *InterRules) {
 			}
 		}
 	}
+	log.Log("schedSortedAbortRules end ...")
 }
 
 func schedSortedActionsRules(inRules *InterRules) {
+	log.Log("schedSortedActionsRules begin ...")
 	dupCheck := map[string]struct{}{}
 	for _, r := range *inRules {
 		var offset, limit int32 = 0, 1000
@@ -282,6 +286,11 @@ func schedSortedActionsRules(inRules *InterRules) {
 			for _, obj := range objs {
 				if obj.IsDeleteMarker == "1" {
 					log.Logf("deleteMarker of object[%s] is set, no lifecycle action need.\n", obj.ObjectKey)
+					continue
+				}
+				if r.ActionType != ActionExpiration && obj.Tier == s3utils.Tier999 {
+					// archived object cannot be transit
+					log.Logf("object[%s] is already archived.\n", obj.ObjectKey)
 					continue
 				}
 				if _, ok := dupCheck[obj.ObjectKey]; !ok {
@@ -340,6 +349,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 			}
 		}
 	}
+	log.Log("schedSortedActionsRules end ...")
 }
 
 func sendActionRequest(req *datamover.LifecycleActionRequest) error {

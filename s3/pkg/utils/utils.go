@@ -65,3 +65,8 @@ const (
 	DBKEY_SUPPOSEDSTATUS = "supposedstatus"
 	DBKEY_LOCKOBJ_OBJKEY = "objkey"
 )
+
+type ObjsCountInfo struct {
+	Size int64
+	Count int64
+}
