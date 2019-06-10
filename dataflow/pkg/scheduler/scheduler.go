@@ -24,6 +24,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/lifecycle"
+	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/restoreobject"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/robfig/cron"
 )
@@ -66,17 +67,35 @@ func LoadAllPlans() {
 //This scheduler will scan all buckets periodically to get lifecycle rules, and scheduling according to these rules.
 func LoadLifecycleScheduler() error {
 	spec := os.Getenv("LIFECYCLE_CRON_CONFIG")
-	log.Logf("Value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
+	log.Logf("value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
 
 	//TODO: Check the validation of spec
 	cn := cron.New()
 	//0 */10 * * * ?
 	if err := cn.AddFunc(spec, lifecycle.ScheduleLifecycle); err != nil {
-		log.Logf("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
+		log.Logf("add lifecycle scheduler to cron trigger failed: %v.\n", err)
 		return fmt.Errorf("add lifecyecle scheduler to cron trigger failed: %v", err)
 	}
 	cn.Start()
 
 	log.Log("add lifecycle scheduler to cron trigger successfully.")
+	return nil
+}
+
+//This scheduler will scan all buckets periodically to get lifecycle rules, and scheduling according to these rules.
+func LoadObjectRestoreScheduler() error {
+	spec := os.Getenv("RESTORE_CRON_CONFIG")
+	log.Logf("value of RESTORE_CRON_CONFIG is: %s\n", spec)
+
+	//TODO: Check the validation of spec
+	cn := cron.New()
+	//0 */10 * * * ?
+	if err := cn.AddFunc(spec, restoreobject.ScheduleRestoreObject); err != nil {
+		log.Logf("add restore object scheduler to cron trigger failed: %v.\n", err)
+		return fmt.Errorf("add restore object scheduler to cron trigger failed: %v", err)
+	}
+	cn.Start()
+
+	log.Log("add restore object scheduler to cron trigger successfully.")
 	return nil
 }

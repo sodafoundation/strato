@@ -78,6 +78,8 @@ type DBAdapter interface {
 	UnlockSched(planId string) int
 	LockBucketLifecycleSched(bucketName string) int
 	UnlockBucketLifecycleSched(bucketName string) int
+	LockRestoreObjectSched(ObjectKey string) int
+	UnlockRestoreObjectSched(ObjectKey string) int
 	//Job
 	CreateJob(ctx *c.Context, job *model.Job) (*model.Job, error)
 	GetJob(ctx *c.Context, id string) (*model.Job, error)

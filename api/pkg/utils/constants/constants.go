@@ -56,3 +56,8 @@ const (
 const (
 	Tier999                     = 999
 )
+
+const (
+	ActionStateRestoring = "restoring"
+	ActionStateRestored = "restored"
+)

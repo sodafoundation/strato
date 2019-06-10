@@ -62,7 +62,8 @@ services:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - LIFECYCLE_CRON_CONFIG=0 0 0 * * ?
+      - LIFECYCLE_CRON_CONFIG=* * * * *
+      - RESTORE_CRON_CONFIG=* * * * *
     volumes:
       - /etc/localtime:/etc/localtime
     depends_on:

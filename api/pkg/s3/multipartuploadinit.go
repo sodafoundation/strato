@@ -23,12 +23,12 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 )
 
 //ObjectPut -

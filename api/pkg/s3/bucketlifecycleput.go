@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 
-	//"sort"
 	"strings"
 	"sync"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/micro/go-log"
 
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
@@ -41,7 +41,6 @@ var mutext sync.Mutex
 
 func (s *APIService) loadStorageClassDefinition() error {
 	ctx := context.Background()
-	log.Log("Load storage classes.")
 	res, err := s.s3Client.GetStorageClasses(ctx, &s3.BaseRequest{})
 	if err != nil {
 		log.Logf("get storage classes from s3 service failed: %v\n", err)
@@ -82,7 +81,7 @@ func checkValidationOfActions(actions []*s3.Action) error {
 		if pre == nil {
 			if action.Name == ActionNameExpiration && action.Days < ExpirationMinDays {
 				// If only an expiration action for a rule, the days for that action should be more than ExpirationMinDays
-				return fmt.Errorf("error: Days for Expiring object must not be less than %d", ExpirationMinDays)
+				return fmt.Errorf("error: days for Expiring object must not be less than %d", ExpirationMinDays)
 			}
 			if action.Name == ActionNameTransition && action.Days < TransitionMinDays {
 				// the days for transition to tiers except tier999 should not less than TransitionMinDays
@@ -95,7 +94,6 @@ func checkValidationOfActions(actions []*s3.Action) error {
 					return fmt.Errorf("error: days for transitioning object to tier_%d must not be less than %d",
 						action.Tier, minDays)
 				}
-
 
 			}
 		} else {
@@ -122,7 +120,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 		return
 	}
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for create bucket lifecycle: %s", bucketName)
+	log.Logf("received request for create bucket lifecycle: %s", bucketName)
 	ctx := context.Background()
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	body := ReadBody(request)
@@ -136,23 +134,22 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 			return
 		} else {
 			dupIdCheck := make(map[string]interface{})
-			s3RulePtrArr := make([]*s3.LifecycleRule, 0)
 			for _, rule := range createLifecycleConf.Rule {
 				s3Rule := s3.LifecycleRule{}
 
 				//check if the ruleID has any duplicate values
 				if _, ok := dupIdCheck[rule.ID]; ok {
-					log.Logf("Duplicate ruleID found for rule : %s\n", rule.ID)
+					log.Logf("duplicate ruleID found for rule : %s\n", rule.ID)
 					ErrStr := strings.Replace(DuplicateRuleIDError, "$1", rule.ID, 1)
 					response.WriteError(http.StatusBadRequest, fmt.Errorf(ErrStr))
 					return
 				}
 				// Assigning the rule ID
 				dupIdCheck[rule.ID] = struct{}{}
-				s3Rule.ID = rule.ID
+				s3Rule.Id = rule.ID
 
 				//Assigning the status value to s3 status
-				log.Logf("Status in rule file is %v\n", rule.Status)
+				log.Logf("status in rule file is %v\n", rule.Status)
 				s3Rule.Status = rule.Status
 
 				//Assigning the filter, using convert function to convert xml struct to s3 struct
@@ -205,14 +202,12 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 				s3Rule.AbortIncompleteMultipartUpload = convertRuleUploadToS3Upload(rule.AbortIncompleteMultipartUpload)
 
 				// add to the s3 array
-				s3RulePtrArr = append(s3RulePtrArr, &s3Rule)
+				bucket.LifecycleConfiguration = append(bucket.LifecycleConfiguration, &s3Rule)
 			}
-			// assign lifecycle rules to s3 bucket
-			bucket.LifecycleConfiguration = s3RulePtrArr
 		}
 	} else {
-		log.Log("No request body provided for creating lifecycle configuration")
-		response.WriteError(http.StatusBadRequest, fmt.Errorf(NoRequestBody))
+		log.Log("no request body provided for creating lifecycle configuration")
+		response.WriteError(http.StatusBadRequest, fmt.Errorf(NoRequestBodyLifecycle))
 		return
 	}
 
@@ -223,13 +218,16 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Create bucket lifecycle successfully.")
+	log.Log("create bucket lifecycle successful.")
 	response.WriteEntity(res)
 
 }
 
 func convertRuleFilterToS3Filter(filter model.Filter) *s3.LifecycleFilter {
 	retFilter := s3.LifecycleFilter{}
+	/*
+		check if prefix is not empty
+	*/
 	if filter.Prefix != "" {
 		retFilter.Prefix = filter.Prefix
 		return &retFilter

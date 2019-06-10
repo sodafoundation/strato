@@ -114,11 +114,21 @@ type AbortIncompleteMultipartUpload struct {
 }
 
 type StorageClass struct {
-	Name               string `xml:"Name"`
-	Tier               int32 `xml:"Tier"`
+	Name string `xml:"Name"`
+	Tier int32  `xml:"Tier"`
 }
 
 type ListStorageClasses struct {
-	Xmlns       string `xml:"xmlns,attr"`
-	Classes     []StorageClass `xml:"Class"`
+	Xmlns   string         `xml:"xmlns,attr"`
+	Classes []StorageClass `xml:"Class"`
+}
+
+type RestoreRequest struct {
+	Days                 int32         `xml:"Days"`
+	GlacierJobParameters JobParameters `xml:"GlacierJobParameters"`
+}
+
+type JobParameters struct {
+	//Only STANDARD is supported in this release, expedited and Bulk will be supported in future
+	Tier string `xml:"Tier"`
 }

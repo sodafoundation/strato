@@ -33,6 +33,7 @@ func main() {
 	pb.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService())
 	scheduler.LoadAllPlans()
 	scheduler.LoadLifecycleScheduler()
+	scheduler.LoadObjectRestoreScheduler()
 	if err := service.Run(); err != nil {
 		log.Log(err)
 	}
