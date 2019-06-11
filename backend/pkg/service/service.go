@@ -117,8 +117,8 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 			Region:     item.Region,
 			Endpoint:   item.Endpoint,
 			BucketName: item.BucketName,
-			Access:     item.Access,
-			Security:   item.Security,
+			Access:     "",
+			Security:   "",
 		})
 	}
 	out.Backends = backends
