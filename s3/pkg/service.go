@@ -25,6 +25,7 @@ import (
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -343,21 +344,22 @@ func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 }
 
 func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
-	log.Log("PutObject is called in s3 service.")
+	log.Log("CreateObject is called in s3 service.")
 	getObjectInput := pb.GetObjectInput{Bucket: in.BucketName, Key: in.ObjectKey}
 	object := pb.Object{}
 	err := db.DbAdapter.GetObject(&getObjectInput, &object)
 	if err.Code != ERR_OK && err.Code != http.StatusNotFound {
+		log.Logf("create object err:%v\n", err)
 		return err.Error()
 	}
 	if err.Code == http.StatusNotFound {
-		log.Log("CreateObject is called in s3 service.")
+		log.Log("create object")
 		err1 := db.DbAdapter.CreateObject(in)
 		if err1.Code != ERR_OK {
 			return err.Error()
 		}
 	} else {
-		log.Log("UpdateObject is called in s3 service.")
+		log.Log("update object")
 		err1 := db.DbAdapter.UpdateObject(in)
 		if err1.Code != ERR_OK {
 			return err.Error()
@@ -568,6 +570,20 @@ func (b *s3Service) ListUploadRecord(ctx context.Context, in *pb.ListMultipartUp
 	for i := 0; i < len(records); i++ {
 		out.Records = append(out.Records, &records[i])
 	}
+
+	return nil
+}
+
+func (b *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.CountObjectsResponse) error {
+	log.Log("Count objects is called in s3 service.")
+
+	countInfo := ObjsCountInfo{}
+	err := db.DbAdapter.CountObjects(in, &countInfo)
+	if err.Code != ERR_OK {
+		return err.Error()
+	}
+	out.Count = countInfo.Count
+	out.Size = countInfo.Size
 
 	return nil
 }

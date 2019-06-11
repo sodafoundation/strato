@@ -80,7 +80,7 @@ func (mover *S3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId string, l
 	_, err = svc.AbortMultipartUpload(abortInput)
 	e := handleAWSS3Errors(err)
 	if e == nil || e.Error() == DMERR_NoSuchUpload {
-		log.Logf("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully, err:%v.\n", objKey, uploadId)
+		log.Logf("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully.\n", objKey, uploadId)
 		return nil
 	} else {
 		log.Logf("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)

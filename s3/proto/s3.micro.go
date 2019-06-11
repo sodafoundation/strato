@@ -34,6 +34,7 @@ It has these top-level messages:
 	BaseRequest
 	ListObjectsRequest
 	ListObjectResponse
+	CountObjectsResponse
 	DeleteObjectInput
 	GetObjectInput
 	MultipartUpload
@@ -87,6 +88,7 @@ type S3Service interface {
 	DeleteBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*Bucket, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectResponse, error)
+	CountObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*CountObjectsResponse, error)
 	CreateObject(ctx context.Context, in *Object, opts ...client.CallOption) (*BaseResponse, error)
 	UpdateObject(ctx context.Context, in *Object, opts ...client.CallOption) (*BaseResponse, error)
 	GetObject(ctx context.Context, in *GetObjectInput, opts ...client.CallOption) (*Object, error)
@@ -163,6 +165,16 @@ func (c *s3Service) GetBucket(ctx context.Context, in *Bucket, opts ...client.Ca
 func (c *s3Service) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.ListObjects", in)
 	out := new(ListObjectResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) CountObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*CountObjectsResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.CountObjects", in)
+	out := new(CountObjectsResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -308,6 +320,7 @@ type S3Handler interface {
 	DeleteBucket(context.Context, *Bucket, *BaseResponse) error
 	GetBucket(context.Context, *Bucket, *Bucket) error
 	ListObjects(context.Context, *ListObjectsRequest, *ListObjectResponse) error
+	CountObjects(context.Context, *ListObjectsRequest, *CountObjectsResponse) error
 	CreateObject(context.Context, *Object, *BaseResponse) error
 	UpdateObject(context.Context, *Object, *BaseResponse) error
 	GetObject(context.Context, *GetObjectInput, *Object) error
@@ -330,6 +343,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		DeleteBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		GetBucket(ctx context.Context, in *Bucket, out *Bucket) error
 		ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectResponse) error
+		CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error
 		CreateObject(ctx context.Context, in *Object, out *BaseResponse) error
 		UpdateObject(ctx context.Context, in *Object, out *BaseResponse) error
 		GetObject(ctx context.Context, in *GetObjectInput, out *Object) error
@@ -373,6 +387,10 @@ func (h *s3Handler) GetBucket(ctx context.Context, in *Bucket, out *Bucket) erro
 
 func (h *s3Handler) ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectResponse) error {
 	return h.S3Handler.ListObjects(ctx, in, out)
+}
+
+func (h *s3Handler) CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error {
+	return h.S3Handler.CountObjects(ctx, in, out)
 }
 
 func (h *s3Handler) CreateObject(ctx context.Context, in *Object, out *BaseResponse) error {

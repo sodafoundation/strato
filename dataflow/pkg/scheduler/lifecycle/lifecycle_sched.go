@@ -30,11 +30,13 @@ import (
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
+	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"golang.org/x/net/context"
 )
 
 var topicLifecycle = "lifecycle"
 var s3client = osdss3.NewS3Service("s3", client.DefaultClient)
+
 type InterRules []*InternalLifecycleRule
 
 // map from a specific tier to an array of tiers, that means transition can happens from the specific tier to those tiers in the array.
@@ -92,7 +94,7 @@ func ScheduleLifecycle() {
 
 		log.Logf("[ScheduleLifecycle]bucket[%s] has lifecycle rule.\n", v.Name)
 
-		err := handleBucketLifecyle(v.Name, v.Backend, v.LifecycleConfiguration)
+		err := handleBucketLifecyle(v.Name, v.LifecycleConfiguration)
 		if err != nil {
 			log.Logf("[ScheduleLifecycle]handle bucket lifecycle for bucket[%s] failed, err:%v.\n", v.Name, err)
 			continue
@@ -104,7 +106,7 @@ func ScheduleLifecycle() {
 
 // Need to lock the bucket, incase the schedule period is too short and the bucket is scheduled at the same time.
 // Need to consider confliction between rules.
-func handleBucketLifecyle(bucket string, defaultBackend string, rules []*osdss3.LifecycleRule) error {
+func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 	// Translate rules set by user to internal rules which can be sorted.
 
 	// Lifecycle scheduling must be mutual excluded among several schedulers, so get lock first.
@@ -134,15 +136,11 @@ func handleBucketLifecyle(bucket string, defaultBackend string, rules []*osdss3.
 
 		// actions
 		for _, ac := range rule.Actions {
-			if ac.Backend == "" {
-				// if no backend specified, then use the default backend of the bucket
-				ac.Backend = defaultBackend
-			}
 			var acType int
 			if ac.Name == ActionNameExpiration {
 				// Expiration
 				acType = ActionExpiration
-			} else if ac.Backend == defaultBackend {
+			} else if ac.Backend == "" {
 				acType = ActionIncloudTransition
 			} else {
 				acType = ActionCrosscloudTransition
@@ -227,6 +225,7 @@ func getObjects(r *InternalLifecycleRule, offset, limit int32) ([]*osdss3.Object
 }
 
 func schedSortedAbortRules(inRules *InterRules) {
+	log.Log("schedSortedAbortRules begin ...")
 	dupCheck := map[string]struct{}{}
 	for _, r := range *inRules {
 		var offset, limit int32 = 0, 1000
@@ -265,9 +264,11 @@ func schedSortedAbortRules(inRules *InterRules) {
 			}
 		}
 	}
+	log.Log("schedSortedAbortRules end ...")
 }
 
 func schedSortedActionsRules(inRules *InterRules) {
+	log.Log("schedSortedActionsRules begin ...")
 	dupCheck := map[string]struct{}{}
 	for _, r := range *inRules {
 		var offset, limit int32 = 0, 1000
@@ -284,9 +285,14 @@ func schedSortedActionsRules(inRules *InterRules) {
 					log.Logf("deleteMarker of object[%s] is set, no lifecycle action need.\n", obj.ObjectKey)
 					continue
 				}
+				if r.ActionType != ActionExpiration && obj.Tier == s3utils.Tier999 {
+					// archived object cannot be transit
+					log.Logf("object[%s] is already archived.\n", obj.ObjectKey)
+					continue
+				}
 				if _, ok := dupCheck[obj.ObjectKey]; !ok {
 					// Not exist means this object has is not processed in this round of scheduling.
-					if r.ActionType != ActionExpiration && obj.Backend == r.Backend && obj.Tier == r.Tier {
+					if r.ActionType != ActionExpiration && obj.Tier == r.Tier && (obj.Backend == r.Backend || r.Backend == "") {
 						// For transition, if target backend and storage class is the same as source backend and storage class, then no transition is need.
 						log.Logf("no need transition for object[%s], backend=%s, tier=%d\n", obj.ObjectKey, r.Backend, r.Tier)
 						// in case different actions exist for an object at the same time, for example transition to aws after 30 days
@@ -299,7 +305,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 					var action int32
 					if r.ActionType == ActionExpiration {
 						action = int32(ActionExpiration)
-					} else if obj.Backend == r.Backend {
+					} else if r.Backend == "" || obj.Backend == r.Backend {
 						action = int32(ActionIncloudTransition)
 					} else {
 						action = int32(ActionCrosscloudTransition)
@@ -340,6 +346,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 			}
 		}
 	}
+	log.Log("schedSortedActionsRules end ...")
 }
 
 func sendActionRequest(req *datamover.LifecycleActionRequest) error {

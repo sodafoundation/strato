@@ -25,6 +25,7 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/globalsign/mgo"
 )
 
 func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
@@ -95,6 +96,52 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 
 	if err != nil {
 		log.Logf("find objects from database failed, err:%v\n", err)
+		return InternalError
+	}
+
+	return NoError
+}
+
+func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
+	ss := ad.s.Copy()
+	defer ss.Close()
+	c := ss.DB(DataBaseName).C(in.Bucket)
+
+	filt := ""
+	if in.Filter[common.KObjKey] != "" {
+		filt = in.Filter[common.KObjKey]
+	}
+
+	q1 := bson.M{
+		"$match": bson.M{
+			"objectkey": bson.M{"$regex": filt},
+			"initflag": bson.M{"$ne": "0"},
+			"isdeletemarker": bson.M{"$ne": "1"},
+		},
+	}
+
+	q2 := bson.M{
+		"$group": bson.M{
+			"_id": nil,
+			"size": bson.M{"$sum": "$size"},
+			"count": bson.M{"$sum": 1},
+		},
+	}
+
+	operations := []bson.M{q1, q2}
+	pipe := c.Pipe(operations)
+	var ret utils.ObjsCountInfo
+	err := pipe.One(&ret)
+	if err == nil {
+		out.Count = ret.Count
+		out.Size = ret.Size
+		log.Logf("count objects of bucket[%s] successfully, count=%d, size=%d\n", in.Bucket, out.Count, out.Size)
+	} else if err == mgo.ErrNotFound {
+		out.Count = 0
+		out.Size = 0
+		log.Logf("count objects of bucket[%s] successfully, count=0, size=0\n", in.Bucket)
+	} else {
+		log.Logf("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
 		return InternalError
 	}
 

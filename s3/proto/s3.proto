@@ -6,6 +6,7 @@ service S3 {
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
 	rpc GetBucket(Bucket) returns (Bucket) {}
 	rpc ListObjects(ListObjectsRequest) returns (ListObjectResponse) {}
+	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
 	rpc CreateObject(Object) returns (BaseResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (Object) {}
@@ -223,6 +224,11 @@ message ListObjectsRequest {
 
 message ListObjectResponse {
 	repeated Object ListObjects = 1;
+}
+
+message CountObjectsResponse {
+	int64 Count = 1;
+	int64 Size = 2;
 }
 
 message DeleteObjectInput {
