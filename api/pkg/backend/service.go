@@ -66,6 +66,10 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 		return
 	}
 
+	// do not return sensitive information
+	res.Backend.Access = ""
+	res.Backend.Security = ""
+
 	log.Log("Get backend details successfully.")
 	response.WriteEntity(res.Backend)
 }
@@ -106,6 +110,12 @@ func (s *APIService) listBackendDefault(request *restful.Request, response *rest
 		log.Logf("failed to list backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
+	}
+
+	// do not return sensitive information
+	for _, v := range res.Backends {
+		v.Access = ""
+		v.Security = ""
 	}
 
 	log.Log("List backends successfully.")
