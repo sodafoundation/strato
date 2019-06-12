@@ -49,29 +49,29 @@ func md5Content(data []byte) string {
 }
 
 func (mover *GcpS3Mover) UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
-	log.Logf("[gcps3mover] UploadObj object, key:%s.", objKey)
+	log.Logf("[gcps3mover] upload object, key:%s.\n", objKey)
 	sess := NewClient(destLoca.EndPoint, destLoca.Access, destLoca.Security)
 	bucket := sess.NewBucket()
 	gcpObject := bucket.NewObject(destLoca.BucketName)
 	contentMD5 := md5Content(buf)
 	length := int64(len(buf))
 	body := ioutil.NopCloser(bytes.NewReader(buf))
-	log.Logf("[gcps3mover] Try to upload, bucket:%s,obj:%s\n", destLoca.BucketName, objKey)
+	log.Logf("[gcps3mover] try to upload, bucket:%s,obj:%s\n", destLoca.BucketName, objKey)
 	for tries := 1; tries <= 3; tries++ {
 		err := gcpObject.Create(objKey, contentMD5, "", length, body, models.Private)
 		if err != nil {
-			log.Logf("[gcps3mover] Upload object[%s] failed %d times, err:%v\n", objKey, tries, err)
+			log.Logf("[gcps3mover] upload object[%s] failed %d times, err:%v\n", objKey, tries, err)
 			if tries == 3 {
 				return err
 			}
 		} else {
-			log.Logf("[gcps3mover] Upload object[%s] successfully.", objKey)
+			log.Logf("[gcps3mover] upload object[%s] successfully.\n", objKey)
 			return nil
 		}
 
 	}
-	log.Logf("[gcps3mover] Upload object, bucket:%s,obj:%s, should not be here.\n", destLoca.BucketName, objKey)
-	return errors.New("internal error")
+	log.Logf("[gcps3mover] upload object, bucket:%s,obj:%s, should not be here.\n", destLoca.BucketName, objKey)
+	return errors.New(DMERR_InternalError)
 }
 
 func (mover *GcpS3Mover) DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
@@ -103,7 +103,7 @@ func (mover *GcpS3Mover) DownloadObj(objKey string, srcLoca *LocationInfo, buf [
 	}
 
 	log.Logf("[gcps3mover]download object[bucket:%s,key:%s], should not be here.\n", srcLoca.BucketName, objKey)
-	return 0, errors.New("internal error")
+	return 0, errors.New(DMERR_InternalError)
 }
 
 func (mover *GcpS3Mover) MultiPartDownloadInit(srcLoca *LocationInfo) error {
@@ -136,7 +136,7 @@ func (mover *GcpS3Mover) DownloadRange(objKey string, srcLoca *LocationInfo, buf
 		size = int64(len(data))
 		copy(buf, data)
 		if err != nil {
-			log.Logf("[gcps3mover] Download object[%s] range[%d - %d] faild %d times, err:%v\n",
+			log.Logf("[gcps3mover] download object[%s] range[%d - %d] failed %d times, err:%v\n",
 				objKey, start, end, tries, err)
 			if tries == 3 {
 				return 0, err
@@ -147,11 +147,11 @@ func (mover *GcpS3Mover) DownloadRange(objKey string, srcLoca *LocationInfo, buf
 		}
 	}
 
-	log.Logf("[gcps3mover] Download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
-	return 0, errors.New("internal error")
+	log.Logf("[gcps3mover] download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
+	return 0, errors.New(DMERR_InternalError)
 }
 
-func (mover *GcpS3Mover) MultiPartUploadInit(objKey string, destLoca *LocationInfo) error {
+func (mover *GcpS3Mover) MultiPartUploadInit(objKey string, destLoca *LocationInfo) (string, error) {
 	sess := NewClient(destLoca.EndPoint, destLoca.Access, destLoca.Security)
 	bucket := sess.NewBucket()
 	gcpObject := bucket.NewObject(destLoca.BucketName)
@@ -161,18 +161,18 @@ func (mover *GcpS3Mover) MultiPartUploadInit(objKey string, destLoca *LocationIn
 
 		resp, err := mover.svc.Initiate(nil)
 		if err != nil {
-			log.Logf("[gcps3mover] Init multipart upload[objkey:%s] failed %d times.\n", objKey, tries)
+			log.Logf("[gcps3mover] init multipart upload[objkey:%s] failed %d times.\n", objKey, tries)
 			if tries == 3 {
-				return err
+				return "", err
 			}
 		} else {
 			mover.multiUploadInitOut = &CreateMultipartUploadOutput{resp.UploadID}
-			log.Logf("[gcps3mover] Init multipart upload[objkey:%s] successfully, UploadId:%s\n", objKey, resp.UploadID)
-			return nil
+			log.Logf("[gcps3mover] init multipart upload[objkey:%s] successfully, UploadId:%s\n", objKey, resp.UploadID)
+			return resp.UploadID, nil
 		}
 	}
-	log.Logf("[gcps3mover] Init multipart upload[objkey:%s], should not be here.\n", objKey)
-	return errors.New("internal error")
+	log.Logf("[gcps3mover] init multipart upload[objkey:%s], should not be here.\n", objKey)
+	return "", errors.New(DMERR_InternalError)
 
 }
 
@@ -188,7 +188,7 @@ func (mover *GcpS3Mover) UploadPart(objKey string, destLoca *LocationInfo, upByt
 	for tries := 1; tries <= 3; tries++ {
 		upRes, err := mover.svc.UploadPart(int(partNumber), mover.multiUploadInitOut.UploadID, contentMD5, "", length, body)
 		if err != nil {
-			log.Logf("[gcps3mover] Upload range[objkey:%s, partnumber#%d, offset#%d] failed %d times, err:%v\n",
+			log.Logf("[gcps3mover] upload range[objkey:%s, partnumber#%d, offset#%d] failed %d times, err:%v\n",
 				objKey, partNumber, offset, tries, err)
 			if tries == 3 {
 				return err
@@ -200,8 +200,8 @@ func (mover *GcpS3Mover) UploadPart(objKey string, destLoca *LocationInfo, upByt
 			return nil
 		}
 	}
-	log.Logf("[gcps3mover] Upload range[objkey:%s, partnumber#%d, offset#%d], should not be here.\n", objKey, partNumber, offset)
-	return errors.New("internal error")
+	log.Logf("[gcps3mover] upload range[objkey:%s, partnumber#%d, offset#%d], should not be here.\n", objKey, partNumber, offset)
+	return errors.New(DMERR_InternalError)
 }
 
 func (mover *GcpS3Mover) AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
@@ -212,7 +212,7 @@ func (mover *GcpS3Mover) AbortMultipartUpload(objKey string, destLoca *LocationI
 	for tries := 1; tries <= 3; tries++ {
 		err := uploader.RemoveUploads(mover.multiUploadInitOut.UploadID)
 		if err != nil {
-			log.Logf("[gcps3mover] Abort multipart upload[objkey:%s] for uploadId#%s failed %d times.\n",
+			log.Logf("[gcps3mover] abort multipart upload[objkey:%s] for uploadId#%s failed %d times.\n",
 				objKey, mover.multiUploadInitOut.UploadID, tries)
 			if tries == 3 {
 				return err
@@ -223,9 +223,9 @@ func (mover *GcpS3Mover) AbortMultipartUpload(objKey string, destLoca *LocationI
 			return nil
 		}
 	}
-	log.Logf("[gcps3mover] Abort multipart upload[objkey:%s] for uploadId#%s, should not be here.\n",
+	log.Logf("[gcps3mover] abort multipart upload[objkey:%s] for uploadId#%s, should not be here.\n",
 		objKey, mover.multiUploadInitOut.UploadID)
-	return errors.New("internal error")
+	return errors.New(DMERR_InternalError)
 }
 
 func (mover *GcpS3Mover) CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error {
@@ -251,7 +251,7 @@ func (mover *GcpS3Mover) CompleteMultipartUpload(objKey string, destLoca *Locati
 		}
 	}
 	log.Logf("[gcps3mover] completeMultipartUpload [objkey:%s], should not be here.\n", objKey)
-	return errors.New("internal error")
+	return errors.New(DMERR_InternalError)
 }
 
 func (mover *GcpS3Mover) DeleteObj(objKey string, loca *LocationInfo) error {
@@ -262,7 +262,7 @@ func (mover *GcpS3Mover) DeleteObj(objKey string, loca *LocationInfo) error {
 	err := gcpObject.Remove(objKey)
 
 	if err != nil {
-		log.Logf("[gcps3mover] Error occurred while waiting for object[%s] to be deleted.\n", objKey)
+		log.Logf("[gcps3mover] error occurred while waiting for object[%s] to be deleted.\n", objKey)
 		return err
 	}
 
@@ -283,7 +283,7 @@ func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]models.GetBucketResponseCo
 		output, err = bucket.Get(string(loca.BucketName), "", "", "", 1000)
 	}
 	if err != nil {
-		log.Logf("[gcps3mover] List bucket failed, err:%v\n", err)
+		log.Logf("[gcps3mover] list bucket failed, err:%v\n", err)
 		return nil, err
 	}
 

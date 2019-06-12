@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,40 +15,41 @@
 package pkg
 
 import (
-	"github.com/go-log/log"
 	"os"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
 	"strings"
+
+	"github.com/go-log/log"
+	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
+	"github.com/opensds/multi-cloud/datamover/pkg/db"
+	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
 )
 
 var dataMoverGroup = "datamover"
 
 func InitDatamoverService() error {
 	host := os.Getenv("DB_HOST")
-	dbstor := utils.Database{Credential:"unkonwn", Driver:"mongodb", Endpoint:host}
+	dbstor := utils.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}
 	db.Init(&dbstor)
 
 	addrs := []string{}
 	config := strings.Split(os.Getenv("KAFKA_ADVERTISED_LISTENERS"), ";")
-	for i:=0; i < len(config); i++ {
+	for i := 0; i < len(config); i++ {
 		addr := strings.Split(config[i], "//")
 		if len(addr) != 2 {
-			log.Log("Invalid addr:", config[i])
-		}else {
+			log.Log("invalid addr:", config[i])
+		} else {
 			addrs = append(addrs, addr[1])
 		}
 	}
-	topics := []string{"migration"}
+	topics := []string{"migration", "lifecycle"}
 	err := kafka.Init(addrs, dataMoverGroup, topics)
 	if err != nil {
-		log.Log("Init kafka consumer failed.")
+		log.Log("init kafka consumer failed.")
 		return nil
 	}
 	go kafka.LoopConsume()
 
 	datamoverID := os.Getenv("HOSTNAME")
-	log.Logf("Init datamover[ID#%s] finished.\n", datamoverID)
+	log.Logf("init datamover[ID#%s] finished.\n", datamoverID)
 	return nil
 }

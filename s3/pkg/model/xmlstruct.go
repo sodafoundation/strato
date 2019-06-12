@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -78,4 +78,47 @@ type ListPartsOutput struct {
 	IsTruncated bool   `xml:"IsTruncated"`
 	Owner       Owner  `xml:"Owner"`
 	Parts       []Part `xml:"Part"`
+}
+
+type LifecycleConfiguration struct {
+	Rule []Rule `xml:"Rule"`
+}
+
+type Rule struct {
+	ID                             string                         `xml:"ID"`
+	Filter                         Filter                         `xml:"Filter"`
+	Status                         string                         `xml:"Status"`
+	Transition                     []Transition                   `xml:"Transition"`
+	Expiration                     []Expiration                   `xml:"Expiration"`
+	AbortIncompleteMultipartUpload AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload"`
+}
+
+type Filter struct {
+	Prefix string `xml:"Prefix"`
+}
+
+type Transition struct {
+	Days         int32  `xml:"Days"`
+	StorageClass string `xml:"StorageClass"`
+	Backend      string `xml:"Backend"`
+}
+
+type Expiration struct {
+	Days int32 `xml:"Days"`
+	//Delete marker will be used in later release
+	//ExpiredObjectDeleteMarker string   `xml:"ExpiredObjectDeleteMArker"`
+}
+
+type AbortIncompleteMultipartUpload struct {
+	DaysAfterInitiation int32 `xml:"DaysAfterInitiation"`
+}
+
+type StorageClass struct {
+	Name               string `xml:"Name"`
+	Tier               int32 `xml:"Tier"`
+}
+
+type ListStorageClasses struct {
+	Xmlns       string `xml:"xmlns,attr"`
+	Classes     []StorageClass `xml:"Class"`
 }

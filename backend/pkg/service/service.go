@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendReques
 	log.Log("Received GetBackend request.")
 	res, err := db.Repo.GetBackend(in.Id)
 	if err != nil {
-		log.Logf("Failed to get backend: %v", err)
+		log.Logf("failed to get backend: %v\n", err)
 		return err
 	}
 	out.Backend = &pb.BackendDetail{
@@ -95,14 +95,14 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 	// (query *model.QueryField, sort *model.SortField, sortBy *model.SortBy, page *model.Pagination
 
 	if in.Limit < 0 || in.Offset < 0 {
-		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		msg := fmt.Sprintf("invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
 		log.Log(msg)
 		return errors.New(msg)
 	}
 
 	res, err := db.Repo.ListBackend(int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("Failed to list backend: %v", err)
+		log.Logf("failed to list backend: %v\n", err)
 		return err
 	}
 
@@ -117,8 +117,8 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 			Region:     item.Region,
 			Endpoint:   item.Endpoint,
 			BucketName: item.BucketName,
-			Access:     item.Access,
-			Security:   item.Security,
+			Access:     "",
+			Security:   "",
 		})
 	}
 	out.Backends = backends
@@ -132,7 +132,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 	log.Log("Received UpdateBackend request.")
 	backend, err := db.Repo.GetBackend(in.Id)
 	if err != nil {
-		log.Logf("Failed to get backend: %v", err)
+		log.Logf("failed to get backend: %v\n", err)
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 	backend.Security = in.Security
 	res, err := db.Repo.UpdateBackend(backend)
 	if err != nil {
-		log.Logf("Failed to update backend: %v", err)
+		log.Logf("failed to update backend: %v\n", err)
 		return err
 	}
 
@@ -165,7 +165,7 @@ func (b *backendService) DeleteBackend(ctx context.Context, in *pb.DeleteBackend
 	log.Log("Received DeleteBackend request.")
 	err := db.Repo.DeleteBackend(in.Id)
 	if err != nil {
-		log.Logf("Failed to delete backend: %v", err)
+		log.Logf("failed to delete backend: %v\n", err)
 		return err
 	}
 	log.Log("Delete backend successfully.")
@@ -198,6 +198,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 		{
 			Name:        constants.BackendFusionStorage,
 			Description: "Huawei Fusionstorage Object Storage",
+		},
+		{
+			Name:        constants.BackendTypeIBMCos,
+			Description: "IBM Cloud Object Storage",
 		},
 	}
 

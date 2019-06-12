@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
 package mongo
 
 import (
-	"time"
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"fmt"
 )
 
 var adap = &adapter{}
@@ -49,7 +50,7 @@ func setIndex(session *mgo.Session, colName string, key string, unique bool, dro
 	//Check if index is already set, if not set it.
 	indxs, err := coll.Indexes()
 	if err == nil {
-		for _,indx := range indxs {
+		for _, indx := range indxs {
 			for _, k := range indx.Key {
 				if k == key {
 					log.Logf("Collection[%s] has set unique index of %s.\n", colName, key)
@@ -61,8 +62,8 @@ func setIndex(session *mgo.Session, colName string, key string, unique bool, dro
 
 	index := mgo.Index{
 		Key:      []string{key}, //index key
-		Unique:   unique,                //Prevent two documents from having the same index key
-		DropDups: dropDups,               //Drop documents with the same index key as a previously indexed one.
+		Unique:   unique,        //Prevent two documents from having the same index key
+		DropDups: dropDups,      //Drop documents with the same index key as a previously indexed one.
 		// Invalid when Unique equals true.
 		Background: backgroudn, //If Background is true, other connections will be allowed to proceed
 		// using the collection without the index while it's being built.
@@ -201,6 +202,20 @@ func (ad *adapter) UnlockSched(planId string) int {
 	defer ss.Close()
 
 	return unlock(ss, planId)
+}
+
+func (ad *adapter) LockBucketLifecycleSched(bucketName string) int {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	return lock(ss, bucketName, 300) //One schedule is supposed to be finished in 300 seconds
+}
+
+func (ad *adapter) UnlockBucketLifecycleSched(bucketName string) int {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	return unlock(ss, bucketName)
 }
 
 func (ad *adapter) CreatePolicy(ctx *Context, pol *Policy) (*Policy, error) {
@@ -532,9 +547,9 @@ func (ad *adapter) doListPlan(ctx *Context, limit int, offset int, filter interf
 			err = c.Find(filter).Skip(offset).Limit(limit).All(&plans)
 		} else {
 			query := []bson.M{}
-			query = append(query, bson.M{"srcConn.bucketName":filt["bucketname"]})
-			query = append(query, bson.M{"destConn.bucketName":filt["bucketname"]})
-			err = c.Find(bson.M{"$or":query}).Skip(offset).Limit(limit).All(&plans)
+			query = append(query, bson.M{"srcConn.bucketName": filt["bucketname"]})
+			query = append(query, bson.M{"destConn.bucketName": filt["bucketname"]})
+			err = c.Find(bson.M{"$or": query}).Skip(offset).Limit(limit).All(&plans)
 		}
 	}
 

@@ -13,6 +13,8 @@ It has these top-level messages:
 	Connector
 	RunJobRequest
 	RunJobResponse
+	LifecycleActionRequest
+	LifecycleActionResonse
 */
 package datamover
 
@@ -46,6 +48,7 @@ var _ server.Option
 
 type DatamoverService interface {
 	Runjob(ctx context.Context, in *RunJobRequest, opts ...client.CallOption) (*RunJobResponse, error)
+	DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, opts ...client.CallOption) (*LifecycleActionResonse, error)
 }
 
 type datamoverService struct {
@@ -76,15 +79,27 @@ func (c *datamoverService) Runjob(ctx context.Context, in *RunJobRequest, opts .
 	return out, nil
 }
 
+func (c *datamoverService) DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, opts ...client.CallOption) (*LifecycleActionResonse, error) {
+	req := c.c.NewRequest(c.name, "Datamover.DoLifecycleAction", in)
+	out := new(LifecycleActionResonse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Datamover service
 
 type DatamoverHandler interface {
 	Runjob(context.Context, *RunJobRequest, *RunJobResponse) error
+	DoLifecycleAction(context.Context, *LifecycleActionRequest, *LifecycleActionResonse) error
 }
 
 func RegisterDatamoverHandler(s server.Server, hdlr DatamoverHandler, opts ...server.HandlerOption) error {
 	type datamover interface {
 		Runjob(ctx context.Context, in *RunJobRequest, out *RunJobResponse) error
+		DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, out *LifecycleActionResonse) error
 	}
 	type Datamover struct {
 		datamover
@@ -99,4 +114,8 @@ type datamoverHandler struct {
 
 func (h *datamoverHandler) Runjob(ctx context.Context, in *RunJobRequest, out *RunJobResponse) error {
 	return h.DatamoverHandler.Runjob(ctx, in, out)
+}
+
+func (h *datamoverHandler) DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, out *LifecycleActionResonse) error {
+	return h.DatamoverHandler.DoLifecycleAction(ctx, in, out)
 }

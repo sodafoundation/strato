@@ -1,3 +1,17 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package azure
 
 import (
@@ -5,20 +19,21 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/binary"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-log"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"time"
 )
 
-//TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
+// TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
 var MaxTimeForSingleHttpRequest = 50 * time.Minute
 
 type AzureAdapter struct {
@@ -77,13 +92,20 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 		log.Logf("[AzureAdapter] Upload faild,err = %v\n", err)
 		return S3Error{Code: 500, Description: "Upload to azure failed"}
 	} else {
-		object.LastModified = time.Now().String()[:19]
+		object.LastModified = time.Now().Unix()
 		log.Logf("LastModified is:%v\n", object.LastModified)
 	}
 
 	if uploadResp.StatusCode() != http.StatusCreated {
 		log.Logf("[AzureAdapter] Upload StatusCode:%d\n", uploadResp.StatusCode())
 		return S3Error{Code: 500, Description: "azure failed"}
+	}
+
+	// Currently, only support Hot
+	_, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+	if err != nil {
+		log.Logf("set azure blob tier failed:%v\n", err)
+		return S3Error{Code: 500, Description: "set azure blob tier failed"}
 	}
 
 	log.Log("[AzureAdapter] Upload successfully.")
@@ -124,7 +146,7 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context, start in
 		}
 		body := bytes.NewReader(buf)
 		ioReaderClose := ioutil.NopCloser(body)
-		return ioReaderClose,NoError
+		return ioReaderClose, NoError
 	}
 
 	return nil, NoError
@@ -138,6 +160,13 @@ func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context
 	delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 	log.Logf("blobURL=%v,err=%v\n", blobURL, err)
 	if err != nil {
+		if serr, ok := err.(azblob.StorageError); ok { // This error is a Service-specific
+			log.Logf("service code:%s\n", serr.ServiceCode())
+			if string(serr.ServiceCode()) == string(azblob.StorageErrorCodeBlobNotFound) {
+				return NoError
+			}
+		}
+
 		log.Logf("[AzureAdapter] Delete failed:%v\n", err)
 		return S3Error{Code: 500, Description: "Delete failed"}
 	}
@@ -197,6 +226,7 @@ func (ad *AzureAdapter) UploadPart(stream io.Reader, multipartUpload *pb.Multipa
 	result := &model.UploadPartResult{PartNumber: partNumber, ETag: newObjectKey}
 	return result, NoError
 }
+
 func (ad *AzureAdapter) CompleteMultipartUpload(
 	multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload,
@@ -222,16 +252,24 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 		log.Logf("[AzureAdapter] Commit blocks faild:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
-		log.Logf("[AzureAdapter] Commit blocks succeed:\n")
-		return &result, NoError
+		log.Logf("[AzureAdapter] Commit blocks succeed.\n")
+		// Currently, only support Hot
+		_, err = blobURL.SetTier(context, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+		if err != nil {
+			log.Logf("set azure blob tier failed:%v\n", err)
+			return nil, S3Error{Code: 500, Description: "set azure blob tier failed"}
+		}
 	}
-	return nil, NoError
+
+	return &result, NoError
 }
+
 func (ad *AzureAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, context context.Context) S3Error {
 	bucket := ad.backend.BucketName
 	log.Logf("No need to abort multipart upload[objkey:%s].\n", bucket)
 	return NoError
 }
+
 func (ad *AzureAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
 	return nil, NoError
 }

@@ -79,7 +79,7 @@ func (ad *GcpAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			log.Logf("Upload to Gcp failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to Gcp failed"}
 		} else {
-			object.LastModified = time.Now().String()[:19]
+			object.LastModified = time.Now().Unix()
 			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
 	}

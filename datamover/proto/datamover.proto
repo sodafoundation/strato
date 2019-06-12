@@ -2,6 +2,7 @@ syntax = "proto3";
 
 service datamover {
 	rpc Runjob(RunJobRequest) returns (RunJobResponse) {}
+	rpc DoLifecycleAction(LifecycleActionRequest) returns (LifecycleActionResonse) {}
 }
 
 message KV {
@@ -29,5 +30,22 @@ message RunJobRequest{
 }
 
 message RunJobResponse {
+	string err = 1;
+}
+
+message LifecycleActionRequest {
+	string objKey = 1;      // for transition and expiration
+	string bucketName = 2;
+	int32 action = 3;		// 0-Expiration, 1-IncloudTransition, 2-CrossCloudTransition, 3-AbortMultipartUpload
+	int32 sourceTier = 4;   // only for transition
+	int32 targetTier = 5;   // only for transtion
+	string sourceBackend = 6; // for transition and expiration
+	string targetBackend = 7; // for transition and abort incomplete multipart upload
+	int64 objSize = 8;  	  // for transition
+	int64 lastModified = 9;   // for transition and expiration
+	string uploadId = 10;     // only for abort incomplete multipart upload
+}
+
+message LifecycleActionResonse {
 	string err = 1;
 }

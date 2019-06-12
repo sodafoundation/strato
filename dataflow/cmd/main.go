@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ import (
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro"
 	handler "github.com/opensds/multi-cloud/dataflow/pkg"
-	pb "github.com/opensds/multi-cloud/dataflow/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler"
 	_ "github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger/crontrigger"
+	pb "github.com/opensds/multi-cloud/dataflow/proto"
 )
 
 func main() {
@@ -32,7 +32,9 @@ func main() {
 	service.Init()
 	pb.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService())
 	scheduler.LoadAllPlans()
+	scheduler.LoadLifecycleScheduler()
 	if err := service.Run(); err != nil {
 		log.Log(err)
 	}
 }
+

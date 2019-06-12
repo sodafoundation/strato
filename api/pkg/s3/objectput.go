@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,19 +16,18 @@ package s3
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-
-	//	"github.com/micro/go-micro/errors"
-	"strconv"
-
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -50,6 +49,10 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	contentLenght := request.HeaderParameter("content-length")
 	backendName := request.HeaderParameter("x-amz-storage-class")
 	log.Logf("backendName is :%v\n", backendName)
+
+	// Currently, only support tier1 as default
+	tier := int32(utils.Tier1)
+
 	object := s3.Object{}
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
@@ -57,7 +60,11 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	object.Size = size
 	object.IsDeleteMarker = ""
 	object.InitFlag = ""
-	object.LastModified = time.Now().String()[:19]
+	object.LastModified = time.Now().Unix()
+	object.Tier = tier
+	// standard as default
+	object.StorageClass = constants.StorageClassOpenSDSStandard
+
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
 	log.Logf("Received request for create bucket: %s", bucketName)
@@ -86,6 +93,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
 	}
+
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
 		log.Logf("err is %v\n", err)

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,30 +15,131 @@
 package s3
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	//	"github.com/micro/go-micro/errors"
-	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
+
+func checkLastmodifiedFilter(fmap *map[string]string) error {
+	for k, v := range *fmap {
+		if k != "lt" && k != "lte" && k != "gt" && k != "gte" {
+			log.Logf("invalid query parameter:k=%s,v=%s\n", k, v)
+			return errors.New("invalid query parameter")
+		} else {
+			_, err := strconv.Atoi(v)
+			if err != nil {
+				log.Logf("invalid query parameter:k=%s,v=%s, err=%v\n", k, v, err)
+				return errors.New("invalid query parameter")
+			}
+		}
+	}
+
+	return nil
+}
+
+func checkObjKeyFilter(val string) (string, error) {
+	// val should be like: objeKey=like:parttern
+	if strings.HasPrefix(val, "like:") == false {
+		log.Logf("invalid object key filter:%s\n", val)
+		return "", fmt.Errorf("invalid object key filter:%s", val)
+	}
+
+	vals := strings.Split(val, ":")
+	if len(vals) <= 1 {
+		log.Logf("invalid object key filter:%s\n", val)
+		return "", fmt.Errorf("invalid object key filter:%s", val)
+	}
+
+	var ret string
+	for i := 1; i < len(vals); i++ {
+		ret = ret + vals[i]
+	}
+
+	return ret, nil
+}
 
 func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "bucket:get") {
 		return
 	}
+
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Logf("get pagination parameters failed: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
 	bucketName := request.PathParameter("bucketName")
+	log.Logf("Received request for bucket details: %s\n", bucketName)
+
+	filterOpts := []string{common.KObjKey, common.KLastModified}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Logf("get filter failed: %v\n", err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	} else {
+		log.Logf("Get filter for BucketGet, filterOpts=%+v, filter=%+v\n",
+			filterOpts, filter)
+	}
+
+	if filter[common.KObjKey] != "" {
+		//filter[common.KObjKey] should be like: like:parttern
+		ret, err := checkObjKeyFilter(filter[common.KObjKey])
+		if err != nil {
+			log.Logf("invalid objkey:%s\v", filter[common.KObjKey])
+			response.WriteError(http.StatusBadRequest,
+				fmt.Errorf("invalid objkey, it should be like objkey=like:parttern"))
+			return
+		}
+		filter[common.KObjKey] = ret
+	}
+
+	// Check validation of query parameter. Example of lastmodified: {"lt":"100", "gt":"30"}
+	if filter[common.KLastModified] != "" {
+		var tmFilter map[string]string
+		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
+		if err != nil {
+			log.Logf("invalid lastModified:%s\v", filter[common.KLastModified])
+			response.WriteError(http.StatusBadRequest,
+				fmt.Errorf("invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
+			return
+		}
+		err = checkLastmodifiedFilter(&tmFilter)
+		if err != nil {
+			log.Logf("invalid lastModified:%s\v", filter[common.KLastModified])
+			response.WriteError(http.StatusBadRequest,
+				fmt.Errorf("invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
+			return
+		}
+	}
+
+	req := s3.ListObjectsRequest{
+		Bucket: bucketName,
+		Filter: filter,
+		Offset: offset,
+		Limit:  limit,
+	}
+
 	ctx := context.Background()
-	log.Logf("Received request for bucket details: %s", bucketName)
-	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
-	log.Logf("list objects is: %v\n", res)
+	res, err := s.s3Client.ListObjects(ctx, &req)
+	log.Logf("list objects result: %v\n", res)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+
 	log.Log("Get bucket successfully.")
 	response.WriteEntity(res)
-
 }

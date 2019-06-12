@@ -1,20 +1,22 @@
 package kafka
 
 import (
-	"github.com/Shopify/sarama"
-	"github.com/bsm/sarama-cluster"
-	"os"
 	"log"
-	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
+	"os"
 	"os/signal"
 	"time"
+
+	"github.com/Shopify/sarama"
+	cluster "github.com/bsm/sarama-cluster"
+	migration "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
+	"github.com/opensds/multi-cloud/datamover/pkg/drivers/lifecycle"
 )
 
 var consumer *cluster.Consumer
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
-func Init(addrs []string, group string, topics []string) error{
+func Init(addrs []string, group string, topics []string) error {
 	logger.Println("Init consumer ...")
 
 	config := cluster.NewConfig()
@@ -26,12 +28,12 @@ func Init(addrs []string, group string, topics []string) error{
 	config.Config.Admin.Timeout = 10 * time.Second
 
 	var err error
-	consumer,err = cluster.NewConsumer(addrs, group, topics, config)
+	consumer, err = cluster.NewConsumer(addrs, group, topics, config)
 	for try := 0; try < 10; try++ {
 		if err == sarama.ErrOutOfBrokers {
 			time.Sleep(2 * time.Second)
-			consumer,err = cluster.NewConsumer(addrs, group, topics, config)
-		}else {
+			consumer, err = cluster.NewConsumer(addrs, group, topics, config)
+		} else {
 			break
 		}
 	}
@@ -41,13 +43,14 @@ func Init(addrs []string, group string, topics []string) error{
 	}
 
 	migration.Init()
+	lifecycle.Init()
 
 	//log.Logf("Init consumer finish, err:%v\n", err)
 	logger.Println("Init consumer finish")
 	return err
 }
 
-func LoopConsume(){
+func LoopConsume() {
 	defer consumer.Close()
 
 	//trap SIGINT to trigger a shutdown.
@@ -77,17 +80,21 @@ func LoopConsume(){
 			if ok {
 				switch msg.Topic {
 				case "migration":
-					//TODO: think about how many jobs can run concurrently
-					logger.Printf("Got an migration job:%s\n", msg.Value)
+					// TODO: think about how many jobs can run concurrently
+					logger.Printf("got an migration job:%s\n", msg.Value)
 					err = migration.HandleMsg(msg.Value)
+				case "lifecycle":
+					// Do lifecycle actions.
+					logger.Printf("got an lifecycle action request:%s\n", msg.Value)
+					err = lifecycle.HandleMsg(msg.Value)
 				default:
-					logger.Printf("Not support topic:%s\n", msg.Topic)
+					logger.Printf("not supported topic:%s\n", msg.Topic)
 				}
 				if err == nil {
 					consumer.MarkOffset(msg, "")
 				}
 			}
-		case <- signals:
+		case <-signals:
 			logger.Println("trap system SIGINT signal")
 			return
 		}

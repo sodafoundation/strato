@@ -17,9 +17,9 @@ package auth
 
 import (
 	"net/http"
-	"time"
-	"strings"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/golang/glog"
@@ -33,6 +33,10 @@ import (
 
 type Keystone struct {
 	identity *gophercloud.ServiceClient
+}
+
+func GetIdentity(k *Keystone) *gophercloud.ServiceClient {
+	return k.identity
 }
 
 func NewKeystone() AuthBase {
@@ -50,7 +54,7 @@ func (k *Keystone) SetUp() error {
 		DomainName:       os.Getenv("OS_USER_DOMIN_ID"),
 		Username:         os.Getenv("OS_USERNAME"),
 		Password:         os.Getenv("OS_PASSWORD"),
-		TenantName:       os.Getenv("OS_PROJECT_NAME"),	
+		TenantName:       os.Getenv("OS_PROJECT_NAME"),
 	}
 	log.Infof("opts:%v", opts)
 	provider, err := openstack.AuthenticatedClient(opts)
@@ -72,7 +76,7 @@ func (k *Keystone) Filter(req *restful.Request, resp *restful.Response, chain *r
 	// Strip the spaces around the token  ctx.Input.Header(constants.AuthTokenHeader)
 	token := strings.TrimSpace(req.HeaderParameter(constants.AuthTokenHeader))
 	if err := k.validateToken(req, resp, token); err != nil {
-		return 
+		return
 	}
 	chain.ProcessFilter(req, resp)
 }

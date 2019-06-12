@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -29,9 +30,9 @@ import (
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 )
 
-type S3Mover struct{
-	downloader *s3manager.Downloader //for multipart download
-	svc *s3.S3 //for multipart upload
+type S3Mover struct {
+	downloader         *s3manager.Downloader           //for multipart download
+	svc                *s3.S3                          //for multipart upload
 	multiUploadInitOut *s3.CreateMultipartUploadOutput //for multipart upload
 	//uploadId string //for multipart upload
 	completeParts []*s3.CompletedPart //for multipart upload
@@ -51,7 +52,26 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
-func (mover *S3Mover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
+func handleAWSS3Errors(err error) error {
+	if err != nil {
+		if serr, ok := err.(awserr.Error); ok { // This error is a Service-specific
+			switch serr.Code() { // Compare serviceCode to ServiceCodeXxx constants
+			case "InvalidAccessKeyId":
+				log.Log("aws s3 error: permission denied.")
+				return errors.New(DMERR_NoPermission)
+			case "NoSuchUpload":
+				return errors.New(DMERR_NoSuchUpload)
+			default:
+				return err
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (mover *S3Mover) UploadObj(objKey string, destLoca *LocationInfo, buf []byte) error {
 	log.Logf("[s3mover] UploadObj object, key:%s.", objKey)
 	s3c := s3Cred{ak: destLoca.Access, sk: destLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
@@ -62,22 +82,27 @@ func (mover *S3Mover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte
 	})
 	if err != nil {
 		log.Logf("[s3mover] New session failed, err:%v\n", err)
-		return err
+		return handleAWSS3Errors(err)
 	}
 
 	reader := bytes.NewReader(buf)
 	uploader := s3manager.NewUploader(sess)
 	log.Logf("[s3mover] Try to upload, bucket:%s,obj:%s\n", destLoca.BucketName, objKey)
+	input := s3manager.UploadInput{
+		Bucket: aws.String(destLoca.BucketName),
+		Key:    aws.String(objKey),
+		Body:   reader,
+	}
+	if destLoca.ClassName != "" {
+		input.StorageClass = aws.String(destLoca.ClassName)
+	}
 	for tries := 1; tries <= 3; tries++ {
-		_, err = uploader.Upload(&s3manager.UploadInput{
-			Bucket: aws.String(destLoca.BucketName),
-			Key:    aws.String(objKey),
-			Body:   reader,
-		})
+		_, err = uploader.Upload(&input)
 		if err != nil {
 			log.Logf("[s3mover] Upload object[%s] failed %d times, err:%v\n", objKey, tries, err)
-			if tries == 3 {
-				return err
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return e
 			}
 		} else {
 			log.Logf("[s3mover] Upload object[%s] successfully.", objKey)
@@ -86,10 +111,10 @@ func (mover *S3Mover)UploadObj(objKey string, destLoca *LocationInfo, buf []byte
 	}
 
 	log.Logf("[s3mover] Upload object, bucket:%s,obj:%s, should not be here.\n", destLoca.BucketName, objKey)
-	return errors.New("internal error")
+	return errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
+func (mover *S3Mover) DownloadObj(objKey string, srcLoca *LocationInfo, buf []byte) (size int64, err error) {
 	s3c := s3Cred{ak: srcLoca.Access, sk: srcLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -99,14 +124,14 @@ func (mover *S3Mover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byt
 	})
 	if err != nil {
 		log.Logf("[s3mover] New session failed, err:%v\n", err)
-		return 0, err
+		return 0, handleAWSS3Errors(err)
 	}
 
 	writer := aws.NewWriteAtBuffer(buf)
 	downLoader := s3manager.NewDownloader(sess)
 	getObjInput := s3.GetObjectInput{
-		Bucket:aws.String(srcLoca.BucketName),
-		Key:aws.String(objKey),
+		Bucket: aws.String(srcLoca.BucketName),
+		Key:    aws.String(objKey),
 	}
 	log.Logf("[s3mover] Try to download, bucket:%s,obj:%s\n", srcLoca.BucketName, objKey)
 	for tries := 1; tries <= 3; tries++ {
@@ -114,20 +139,21 @@ func (mover *S3Mover)DownloadObj(objKey string, srcLoca *LocationInfo, buf []byt
 		if err != nil {
 			log.Logf("[s3mover]download object[bucket:%s,key:%s] failed %d times, err:%v\n",
 				srcLoca.BucketName, objKey, tries, err)
-			if tries == 3 {
-				return 0, err
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return 0, e
 			}
 		} else {
-			log.Logf("[s3mover]downlad object[bucket:%s,key:%s] succeed, bytes:%d\n", srcLoca.BucketName, objKey,numBytes)
-			return numBytes, err
+			log.Logf("[s3mover]downlad object[bucket:%s,key:%s] succeed, bytes:%d\n", srcLoca.BucketName, objKey, numBytes)
+			return numBytes, nil
 		}
 	}
 
 	log.Logf("[s3mover]downlad object[bucket:%s,key:%s], should not be here.\n", srcLoca.BucketName, objKey)
-	return 0, errors.New("internal error")
+	return 0, errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
+func (mover *S3Mover) MultiPartDownloadInit(srcLoca *LocationInfo) error {
 	s3c := s3Cred{ak: srcLoca.Access, sk: srcLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -136,8 +162,8 @@ func (mover *S3Mover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("[s3mover] New session for multipart download failed, err:%v\n", err)
-		return err
+		log.Logf("[s3mover] new session for multipart download failed, err:%v\n", err)
+		return handleAWSS3Errors(err)
 	}
 
 	mover.downloader = s3manager.NewDownloader(sess)
@@ -145,7 +171,7 @@ func (mover *S3Mover)MultiPartDownloadInit(srcLoca *LocationInfo) error {
 	return nil
 }
 
-func (mover *S3Mover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
+func (mover *S3Mover) DownloadRange(objKey string, srcLoca *LocationInfo, buf []byte, start int64, end int64) (size int64, err error) {
 	log.Logf("[s3mover] Download object[%s] range[%d - %d]...\n", objKey, start, end)
 	writer := aws.NewWriteAtBuffer(buf)
 	getObjInput := s3.GetObjectInput{
@@ -160,22 +186,23 @@ func (mover *S3Mover)DownloadRange(objKey string, srcLoca *LocationInfo, buf []b
 	for tries := 1; tries <= 3; tries++ {
 		numBytes, err := mover.downloader.Download(writer, &getObjInput)
 		if err != nil {
-			log.Logf("[s3mover] Download object[%s] range[%d - %d] faild %d times, err:%v\n",
+			log.Logf("[s3mover] download object[%s] range[%d - %d] failed %d times, err:%v\n",
 				objKey, start, end, tries, err)
-			if tries == 3 {
-				return 0, err
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return 0, e
 			}
 		} else {
-			log.Logf("[s3mover] Download object[%s] range[%d - %d] succeed, bytes:%d\n", objKey, start, end, numBytes)
-			return numBytes, err
+			log.Logf("[s3mover] download object[%s] range[%d - %d] succeed, bytes:%d\n", objKey, start, end, numBytes)
+			return numBytes, nil
 		}
 	}
 
-	log.Logf("[s3mover] Download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
-	return 0, errors.New("internal error")
+	log.Logf("[s3mover] download object[%s] range[%d - %d], should not be here.\n", objKey, start, end)
+	return 0, errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) error {
+func (mover *S3Mover) MultiPartUploadInit(objKey string, destLoca *LocationInfo) (string, error) {
 	s3c := s3Cred{ak: destLoca.Access, sk: destLoca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -184,8 +211,8 @@ func (mover *S3Mover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) 
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("[s3mover] New session failed, err:%v\n", err)
-		return err
+		log.Logf("[s3mover] new session failed, err:%v\n", err)
+		return "", handleAWSS3Errors(err)
 	}
 
 	mover.svc = s3.New(sess)
@@ -193,28 +220,32 @@ func (mover *S3Mover)MultiPartUploadInit(objKey string, destLoca *LocationInfo) 
 		Bucket: aws.String(destLoca.BucketName),
 		Key:    aws.String(objKey),
 	}
+	if destLoca.ClassName != "" {
+		multiUpInput.StorageClass = aws.String(destLoca.ClassName)
+	}
 	log.Logf("[s3mover] Try to init multipart upload[objkey:%s].\n", objKey)
 	for tries := 1; tries <= 3; tries++ {
 		resp, err := mover.svc.CreateMultipartUpload(multiUpInput)
 		if err != nil {
-			log.Logf("[s3mover] Init multipart upload[objkey:%s] failed %d times.\n", objKey, tries)
-			if tries == 3 {
-				return err
+			log.Logf("[s3mover] init multipart upload[objkey:%s] failed %d times, err:%v.\n", objKey, tries, err)
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return "", e
 			}
 		} else {
 			mover.multiUploadInitOut = resp
-			log.Logf("[s3mover] Init multipart upload[objkey:%s] successfully, UploadId:%s\n", objKey, *resp.UploadId)
-			return nil
+			log.Logf("[s3mover] init multipart upload[objkey:%s] successfully, UploadId:%s\n", objKey, *resp.UploadId)
+			return "", nil
 		}
 	}
 
-	log.Logf("[s3mover] Init multipart upload[objkey:%s], should not be here.\n", objKey)
-	return errors.New("internal error")
+	log.Logf("[s3mover] init multipart upload[objkey:%s], should not be here.\n", objKey)
+	return *mover.multiUploadInitOut.UploadId, errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error {
+func (mover *S3Mover) UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error {
 	log.Logf("[s3mover] Upload range[objkey:%s, partnumber#%d,offset#%d,upBytes#%d,uploadid#%s]...\n", objKey, partNumber,
-		offset,	upBytes, *mover.multiUploadInitOut.UploadId)
+		offset, upBytes, *mover.multiUploadInitOut.UploadId)
 
 	upPartInput := &s3.UploadPartInput{
 		Body:          bytes.NewReader(buf),
@@ -229,10 +260,11 @@ func (mover *S3Mover)UploadPart(objKey string, destLoca *LocationInfo, upBytes i
 	for tries := 1; tries <= 3; tries++ {
 		upRes, err := mover.svc.UploadPart(upPartInput)
 		if err != nil {
-			log.Logf("[s3mover] Upload range[objkey:%s, partnumber#%d, offset#%d] failed %d times, err:%v\n",
+			log.Logf("[s3mover] upload range[objkey:%s, partnumber#%d, offset#%d] failed %d times, err:%v\n",
 				objKey, partNumber, offset, tries, err)
-			if tries == 3 {
-				return err
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return e
 			}
 		} else {
 			part := s3.CompletedPart{
@@ -245,11 +277,11 @@ func (mover *S3Mover)UploadPart(objKey string, destLoca *LocationInfo, upBytes i
 		}
 	}
 
-	log.Logf("[s3mover] Upload range[objkey:%s, partnumber#%d, offset#%d], should not be here.\n", objKey, partNumber, offset)
-	return errors.New("internal error")
+	log.Logf("[s3mover] upload range[objkey:%s, partnumber#%d, offset#%d], should not be here.\n", objKey, partNumber, offset)
+	return errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
+func (mover *S3Mover) AbortMultipartUpload(objKey string, destLoca *LocationInfo) error {
 	log.Logf("[s3mover] Abort multipart upload[objkey:%s] for uploadId#%s.\n", objKey, *mover.multiUploadInitOut.UploadId)
 	abortInput := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(destLoca.BucketName),
@@ -260,23 +292,24 @@ func (mover *S3Mover)AbortMultipartUpload(objKey string, destLoca *LocationInfo)
 	for tries := 1; tries <= 3; tries++ {
 		_, err := mover.svc.AbortMultipartUpload(abortInput)
 		if err != nil {
-			log.Logf("[s3mover] Abort multipart upload[objkey:%s] for uploadId#%s failed %d times.\n",
-				objKey, *mover.multiUploadInitOut.UploadId, tries)
-			if tries == 3 {
-				return err
+			log.Logf("[s3mover] abort multipart upload[objkey:%s] for uploadId#%s failed %d times, err:%v.\n",
+				objKey, *mover.multiUploadInitOut.UploadId, tries, err)
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return e
 			}
 		} else {
-			log.Logf("[s3mover] Abort multipart upload[objkey:%s] for uploadId#%s successfully.\n",
+			log.Logf("[s3mover] abort multipart upload[objkey:%s] for uploadId#%s successfully.\n",
 				objKey, *mover.multiUploadInitOut.UploadId, tries)
 			return nil
 		}
 	}
-	log.Logf("[s3mover] Abort multipart upload[objkey:%s] for uploadId#%s, should not be here.\n",
+	log.Logf("[s3mover] abort multipart upload[objkey:%s] for uploadId#%s, should not be here.\n",
 		objKey, *mover.multiUploadInitOut.UploadId)
-	return errors.New("internal error")
+	return errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error {
+func (mover *S3Mover) CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error {
 	completeInput := &s3.CompleteMultipartUploadInput{
 		Bucket:   aws.String(destLoca.BucketName),
 		Key:      aws.String(objKey),
@@ -291,8 +324,9 @@ func (mover *S3Mover)CompleteMultipartUpload(objKey string, destLoca *LocationIn
 		rsp, err := mover.svc.CompleteMultipartUpload(completeInput)
 		if err != nil {
 			log.Logf("[s3mover] completeMultipartUpload [objkey:%s] failed %d times, err:%v\n", objKey, tries, err)
-			if tries == 3 {
-				return err
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return e
 			}
 		} else {
 			log.Logf("[s3mover] completeMultipartUpload successfully [objkey:%s], rsp:%v\n", objKey, rsp)
@@ -301,10 +335,10 @@ func (mover *S3Mover)CompleteMultipartUpload(objKey string, destLoca *LocationIn
 	}
 
 	log.Logf("[s3mover] completeMultipartUpload [objkey:%s], should not be here.\n", objKey)
-	return errors.New("internal error")
+	return errors.New(DMERR_InternalError)
 }
 
-func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
+func (mover *S3Mover) DeleteObj(objKey string, loca *LocationInfo) error {
 	s3c := s3Cred{ak: loca.Access, sk: loca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -313,7 +347,7 @@ func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("[s3mover] New session failed, err:%v\n", err)
+		log.Logf("[s3mover] new session failed, err:%v\n", err)
 		return err
 	}
 
@@ -322,10 +356,11 @@ func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
 	for tries := 1; tries <= 3; tries++ {
 		_, err = svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(loca.BucketName), Key: aws.String(objKey)})
 		if err != nil {
-			log.Logf("[s3mover] Delete object[key:%s] from bucket %s failed %d times, err:%v\n",
+			log.Logf("[s3mover] delete object[key:%s] from bucket %s failed %d times, err:%v\n",
 				objKey, loca.BucketName, tries, err)
-			if tries == 3 {
-				return err
+			e := handleAWSS3Errors(err)
+			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
+				return e
 			}
 		} else {
 			err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
@@ -333,16 +368,16 @@ func (mover *S3Mover)DeleteObj(objKey string, loca *LocationInfo) error {
 				Key:    aws.String(objKey),
 			})
 			if err != nil {
-				log.Logf("[s3mover] Error occurred while waiting for object[%s] to be deleted.\n", objKey)
+				log.Logf("[s3mover] error occurred while waiting for object[%s] to be deleted.\n", objKey)
 			} else {
-				log.Logf("[s3mover] Delete object[key:%s] from bucket %s successfully.\n", objKey, loca.BucketName)
+				log.Logf("[s3mover] delete object[key:%s] from bucket %s successfully.\n", objKey, loca.BucketName)
 			}
 			return err
 		}
 	}
 
 	log.Logf("[s3mover] Delete Object[%s], should not be here.\n", objKey)
-	return errors.New("internal error")
+	return errors.New(DMERR_InternalError)
 }
 
 func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]*s3.Object, error) {
@@ -354,32 +389,34 @@ func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]*s3.Object, error) {
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("[s3mover] New session failed, err:%v\n", err)
-		return nil,err
+		log.Logf("[s3mover] new session failed, err:%v\n", err)
+		return nil, handleAWSS3Errors(err)
 	}
 
 	svc := s3.New(sess)
-	input := &s3.ListObjectsInput{Bucket:aws.String(loca.BucketName)}
+	input := &s3.ListObjectsInput{Bucket: aws.String(loca.BucketName)}
 	if filt != nil {
 		input.Prefix = &filt.Prefix
 	}
-	output, e := svc.ListObjects(input)
+	output, err := svc.ListObjects(input)
+	e := handleAWSS3Errors(err)
 	if e != nil {
-		log.Logf("[s3mover] List aws bucket failed, err:%v\n", e)
-		return nil,e
+		log.Logf("[s3mover] list aws bucket failed, err:%v\n", e)
+		return nil, e
 	}
 
 	objs := output.Contents
-	for ; *output.IsTruncated == true ; {
+	for *output.IsTruncated == true {
 		input.Marker = output.NextMarker
 		output, err = svc.ListObjects(input)
-		if err != nil {
-			log.Logf("[s3mover] List objects failed, err:%v\n", err)
-			return nil,err
+		e := handleAWSS3Errors(err)
+		if e != nil {
+			log.Logf("[s3mover] list objects failed, err:%v\n", e)
+			return nil, e
 		}
 		objs = append(objs, output.Contents...)
 	}
 
 	log.Logf("[s3mover] Number of objects in bucket[%s] is %d.\n", loca.BucketName, len(objs))
-	return output.Contents,nil
+	return output.Contents, nil
 }

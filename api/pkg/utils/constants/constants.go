@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,4 +34,29 @@ const (
 
 	// OpenSDS multi-cloud current api version
 	APIVersion = "v1"
+
+	//Signature parameter name
+	AuthorizationHeader = "Authorization"
+	SignDateHeader      = "X-Auth-Date"
+)
+
+const (
+	StorageClassOpenSDSStandard = "STANDARD"
+	StorageClassAWSStandard     = "STANDARD"
+)
+
+const (
+	ActionNameExpiration = "expiration"
+	ActionNameTransition = "transition"
+)
+
+const (
+	ExpirationMinDays           = 1
+	TransitionMinDays           = 30
+	LifecycleTransitionDaysStep = 30 // The days an object should be save in the current tier before transition to the next tier
+	TransitionToArchiveMinDays  = 1
+)
+
+const (
+	Tier999                     = 999
 )

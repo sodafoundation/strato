@@ -21,7 +21,7 @@ import (
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 	//	"github.com/micro/go-micro/errors"
 )

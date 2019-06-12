@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey
 		input.Body = stream
+		input.StorageClass = obs.StorageClassStandard // Currently, only support standard.
 
 		out, err := ad.client.PutObject(input)
 
@@ -64,7 +65,7 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			return S3Error{Code: 500, Description: "Upload to obs failed"}
 
 		} else {
-			object.LastModified = time.Now().String()[:19]
+			object.LastModified = time.Now().Unix()
 			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
 		log.Logf("Upload %s to obs successfully.", out.VersionId)
@@ -123,6 +124,7 @@ func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 		input := &obs.InitiateMultipartUploadInput{}
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey
+		input.StorageClass = obs.StorageClassStandard // Currently, only support standard.
 		out, err := ad.client.InitiateMultipartUpload(input)
 		if err != nil {
 			log.Logf("initmultipartupload failed:%v", err)

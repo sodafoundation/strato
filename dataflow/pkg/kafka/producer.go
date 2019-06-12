@@ -1,9 +1,10 @@
 package kafka
 
 import (
+	"time"
+
 	"github.com/Shopify/sarama"
 	"github.com/micro/go-log"
-	"time"
 )
 
 var Producer sarama.SyncProducer
@@ -24,7 +25,7 @@ func Init(addrs []string) error {
 		if err == sarama.ErrOutOfBrokers {
 			time.Sleep(2 * time.Second)
 			Producer, err = sarama.NewSyncProducer(addrs, config)
-		}else {
+		} else {
 			break
 		}
 	}
@@ -35,8 +36,8 @@ func Init(addrs []string) error {
 	return err
 }
 
-func ProduceMsg(topic string, msg []byte) error{
-	kafkaMsg := &sarama.ProducerMessage{Topic:topic}
+func ProduceMsg(topic string, msg []byte) error {
+	kafkaMsg := &sarama.ProducerMessage{Topic: topic}
 	kafkaMsg.Value = sarama.ByteEncoder(msg)
 
 	//producer.Input() <- msg
@@ -44,7 +45,7 @@ func ProduceMsg(topic string, msg []byte) error{
 	partition, offset, err := Producer.SendMessage(kafkaMsg)
 	if err != nil {
 		log.Logf("Producer send message failed, err:%v\n", err)
-	}else {
+	} else {
 		log.Logf("message is stored in topic(%s)/partition(%d)/offset(%d)\n", topic, partition, offset)
 	}
 

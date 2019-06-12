@@ -169,12 +169,12 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
+  digest = "1:318f1c959a8a740366fce4b1e1eb2fd914036b4af58fbd0a003349b305f118ad"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "NUT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   branch = "master"
@@ -194,19 +194,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3f5485f5f0ea50de409c25414eaf4154bd54b2fa9ef03fc4a0a278967daac906"
+  digest = "1:f8bd440f3341ad2c15065da539a99450670e5b7d98fcbdb8513c911e4c249df5"
   name = "github.com/gophercloud/gophercloud"
   packages = [
     ".",
     "openstack",
     "openstack/identity/v2/tenants",
     "openstack/identity/v2/tokens",
+    "openstack/identity/v3/credentials",
     "openstack/identity/v3/tokens",
     "openstack/utils",
     "pagination",
   ]
   pruneopts = "NUT"
-  revision = "3a7818a07cfc862267a0b03635075a444c92dcda"
+  revision = "ff9851476e985a4f27ed846d6babd7b24b763da5"
 
 [[projects]]
   digest = "1:18946bd9b414130ef9badcb577a50ac093168363778a06e0bbb2697a6e54757a"
@@ -548,6 +549,7 @@
     "github.com/golang/protobuf/proto",
     "github.com/gophercloud/gophercloud",
     "github.com/gophercloud/gophercloud/openstack",
+    "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
