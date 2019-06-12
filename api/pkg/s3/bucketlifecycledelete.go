@@ -36,11 +36,12 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 	ruleID := request.Request.URL.Query()["ruleID"]
 	if ruleID != nil {
 		ctx := context.Background()
+		log.Logf("Received request for bucket lifecycle delete for bucket: %s and the ruleID: %s", bucketName, ruleID)
 		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 		for _, id := range ruleID {
 			isfound := false
 			for _, lcRule := range bucket.LifecycleConfiguration {
-				if lcRule.Id == id {
+				if lcRule.ID == id {
 					isfound = true
 					FoundIDArray = append(FoundIDArray, id)
 				}
@@ -67,5 +68,6 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForLifecycleDelete)
 		return
 	}
-	log.Log("delete bucket lifecycle successful.")
+	log.Log("Delete bucket lifecycle successfully.")
 }
+
