@@ -58,7 +58,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 		return
 	}
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for bucket details in GET lifecycle: %s", bucketName)
+	log.Logf("received request for bucket details in GET lifecycle: %s", bucketName)
 
 	ctx := context.Background()
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
@@ -72,14 +72,14 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 			xmlRule := model.Rule{}
 
 			xmlRule.Status = lcRule.Status
-			xmlRule.ID = lcRule.ID
+			xmlRule.ID = lcRule.Id
 			xmlRule.Filter = converts3FilterToRuleFilter(lcRule.Filter)
 			xmlRule.AbortIncompleteMultipartUpload = converts3UploadToRuleUpload(lcRule.AbortIncompleteMultipartUpload)
 			xmlRule.Transition = make([]model.Transition, 0)
 
 			//Arranging the transition and expiration actions in XML
 			for _, action := range lcRule.Actions {
-				log.Logf("Action is : %v\n", action)
+				log.Logf("action is : %v\n", action)
 
 				if action.Name == ActionNameTransition {
 					xmlTransition := model.Transition{}
@@ -104,7 +104,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 
 	// marshall the array back to xml format
 	response.WriteAsXml(getLifecycleConf)
-	log.Log("Get bucket lifecycle successfully.")
+	log.Log("GET lifecycle successful.")
 }
 
 func converts3FilterToRuleFilter(filter *s3.LifecycleFilter) model.Filter {
