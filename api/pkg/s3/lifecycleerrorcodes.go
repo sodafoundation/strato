@@ -23,4 +23,6 @@ const (
 	NoRuleIDForLifecycleDelete         = "error: No rule ID specified to delete from lifecycle configuration"
 	WrongRuleIDForLifecycleDelete      = "error: The rule ID which is specified for delete does not exist"
 	InvalidTier                        = "error: Invalid tier"
+	NoRequestBodyRestoreObject         = "error: No request body specified for restoring object"
+	NoObjectExist                      = "error: specified object $1 does not exist"
 )
