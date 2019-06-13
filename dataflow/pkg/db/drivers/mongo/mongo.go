@@ -218,6 +218,20 @@ func (ad *adapter) UnlockBucketLifecycleSched(bucketName string) int {
 	return unlock(ss, bucketName)
 }
 
+func (ad *adapter) LockRestoreObjectSched(ObjectKey string) int {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	return lock(ss, ObjectKey, 300) //One schedule is supposed to be finished in 300 seconds
+}
+
+func (ad *adapter) UnlockRestoreObjectSched(ObjectKey string) int {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	return unlock(ss, ObjectKey)
+}
+
 func (ad *adapter) CreatePolicy(ctx *Context, pol *Policy) (*Policy, error) {
 	pol.Tenant = ctx.TenantId
 	pol.Id = bson.NewObjectId()
