@@ -98,16 +98,14 @@ func (s *APIService) ObjectRestore(request *restful.Request, response *restful.R
 
 			s3err := client.RestoreObject(&restoreInput, ctx)
 			if s3err.Code != ERR_OK {
-				s3restore.RestoreState = ActionStateRestoring
+				s3restore.RestoreState = ActionStateRestoreFailed
 				response.WriteError(http.StatusInternalServerError, s3err.Error())
 				return
 			} else {
-				s3restore.RestoreState = ActionStateRestoreFailed
+				s3restore.RestoreState = ActionStateRestoring
 			}
 
 			objectMD.RestoreStatus = &s3restore
-
-			//log.Logf("Restore state is : %v\n", object.RestoreStatus.RestoreState)
 
 			res, err := s.s3Client.UpdateObject(ctx, objectMD)
 			if err != nil {
