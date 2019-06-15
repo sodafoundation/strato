@@ -97,7 +97,7 @@ message Tag {
 
 message LifecycleFilter {
 	//Object prefix for lifecycle filter
-	string Prefix = 1;
+	string prefix = 1;
 	//Tags will not be used for current release
 	//repeated Tag tags = 2;
 }
@@ -118,15 +118,15 @@ message Action {
 
 message AbortMultipartUpload {
   	//Days after which the abort operation will be performed on incomplete upload
-	int32 DaysAfterInitiation = 1;
+	int32 daysAfterInitiation = 1;
 }
 
 message LifecycleRule {
-	string ID = 1;
-	string Status = 2;
-	LifecycleFilter Filter = 3;
+	string id = 1;
+	string status = 2;
+	LifecycleFilter filter = 3;
 	repeated Action actions = 4;
-	AbortMultipartUpload AbortIncompleteMultipartUpload = 5;
+	AbortMultipartUpload abortIncompleteMultipartUpload = 5;
 }
 
 message ReplicationInfo {
@@ -296,7 +296,7 @@ message GetBackendTypeByTierResponse {
 }
 
 message DeleteLifecycleInput {
-	string Bucket = 1;
+	string bucket = 1;
 	string ruleID = 2;
 }
 

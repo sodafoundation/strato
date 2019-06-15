@@ -144,6 +144,12 @@ func (s *APIService) FilterBackendByTier(request *restful.Request, response *res
 	}
 	//TODO: Need to consider pagination
 
+	// do not return sensitive information
+	for _, v := range resp.Backends {
+		v.Access = ""
+		v.Security = ""
+	}
+
 	log.Log("fiterBackendByTier backends successfully.")
 	response.WriteEntity(resp)
 }
