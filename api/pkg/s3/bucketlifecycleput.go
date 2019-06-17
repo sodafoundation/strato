@@ -19,6 +19,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	//"sort"
 	"strings"
@@ -116,6 +117,18 @@ func checkValidationOfActions(actions []*s3.Action) error {
 	return nil
 }
 
+func (s *APIService) checkModifyLifecycleConfig(bucketLcCfg *s3.LifecycleRule, rule *s3.LifecycleRule) bool {
+	//check if the rule already exists in lifecycle configuration of the bucket
+	var modifyFlg = false
+
+	res := reflect.DeepEqual(bucketLcCfg, rule)
+	if !res {
+		modifyFlg = true
+		log.Logf("update lifecycle rule is requested")
+	}
+	return modifyFlg
+}
+
 func (s *APIService) BucketLifecyclePut(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "bucket:put") {
 		return
@@ -126,6 +139,9 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	body := ReadBody(request)
 	log.Logf("MD5 sum for body is %x", md5.Sum(body))
+	modifyFlg := false
+	newbucket := &s3.Bucket{}
+	finalbucket := bucket
 
 	if body != nil {
 		createLifecycleConf := model.LifecycleConfiguration{}
@@ -202,8 +218,50 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 				s3Rule.AbortIncompleteMultipartUpload = convertRuleUploadToS3Upload(rule.AbortIncompleteMultipartUpload)
 
-				// add to the s3 array
-				bucket.LifecycleConfiguration = append(bucket.LifecycleConfiguration, &s3Rule)
+				//check if the there is any modification in rule if it already exists
+				//TODO need to write another modify lifecycle API
+				//Fixme
+				lcCfg := bucket.GetLifecycleConfiguration()
+				for _, cfg := range lcCfg {
+					if cfg.Id == s3Rule.Id {
+						isModifyRequest := s.checkModifyLifecycleConfig(cfg, &s3Rule)
+						if isModifyRequest {
+
+							/*
+								set the modify flag
+							 */
+							modifyFlg = true
+
+							/*
+							Delete previous existing rule from bucket and add new rule with changes
+							 */
+							deleteLcInput := s3.DeleteLifecycleInput{Bucket: bucket.Name, RuleID: cfg.Id}
+							_, err := s.s3Client.DeleteBucketLifecycle(ctx, &deleteLcInput)
+							if err != nil {
+								response.WriteError(http.StatusBadRequest, err)
+								return
+							}
+
+							/*
+							get updated bucket from database after deleting the old rule
+							 */
+							newbucket, _ = s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+						} else {
+
+							/*
+							no changes in rule and it is been called again to create
+							 */
+							log.Logf("this rule already exists in configuration : %s\n", rule.ID)
+							ErrStr := strings.Replace(RuleIDAlreadyExistError, "$1", rule.ID, 1)
+							response.WriteError(http.StatusBadRequest, fmt.Errorf(ErrStr))
+							return
+						}
+					}
+				}
+				if modifyFlg{
+					finalbucket = newbucket
+				}
+				finalbucket.LifecycleConfiguration = append(finalbucket.LifecycleConfiguration, &s3Rule)
 			}
 		}
 	} else {
@@ -214,7 +272,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 	// Create bucket with bucket name will check if the bucket exists or not, if it exists
 	// it will internally call UpdateBucket function
-	res, err := s.s3Client.UpdateBucket(ctx, bucket)
+	res, err := s.s3Client.UpdateBucket(ctx, finalbucket)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
