@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,7 @@
 
 package client
 
-import (
-	"log"
-	"strings"
-)
+import "os"
 
 const (
 	// Keystone value of OS_AUTH_AUTHSTRATEGY
@@ -41,6 +38,10 @@ const (
 	OsProjectName = "OS_PROJECT_NAME"
 	// OsUserDominID Api environment variable name in docker-compose.yml
 	OsUserDominID = "OS_USER_DOMIN_ID"
+	// OsAccesskey Api environment variable name in docker-compose.yml
+	OsAccesskey = "OS_ACCESS_KEY"
+	// OsRegion Api environment variable name in docker-compose.yml
+	OsRegion = "OS_REGION"
 )
 
 // AuthOptions Auth Options
@@ -65,6 +66,8 @@ type KeystoneAuthOptions struct {
 	TenantName       string
 	AllowReauth      bool
 	TokenID          string
+	Accesskey        string
+	Region           string
 }
 
 // GetTenantID Get TenantId
@@ -87,40 +90,21 @@ func (n *NoAuthOptions) GetTenantID() string {
 	return n.TenantID
 }
 
-// GetValueFromStrArray implementation
-func GetValueFromStrArray(strArray []string, key string) string {
-	value := ""
-
-	for _, str := range strArray {
-		if strings.HasPrefix(str, key+"=") {
-			authArray := strings.Split(str, "=")
-
-			if len(authArray) > 1 {
-				value = authArray[1]
-			} else {
-				log.Printf("There is no value in %+v ", key)
-			}
-
-			break
-		}
-	}
-
-	log.Printf("There is no %+v in %+v ", key, strArray)
-	return value
-}
-
 // LoadKeystoneAuthOptions implementation
-func LoadKeystoneAuthOptions(envs []string) *KeystoneAuthOptions {
+func LoadKeystoneAuthOptions() *KeystoneAuthOptions {
 	opt := NewKeystoneAuthOptions()
-	opt.IdentityEndpoint = GetValueFromStrArray(envs, OsAuthURL)
-	opt.Username = GetValueFromStrArray(envs, OsUserName)
-	opt.Password = GetValueFromStrArray(envs, OsPassword)
-	opt.TenantName = GetValueFromStrArray(envs, OsTenantName)
-	projectName := GetValueFromStrArray(envs, OsProjectName)
-	opt.DomainID = GetValueFromStrArray(envs, OsUserDominID)
+	opt.IdentityEndpoint = os.Getenv(OsAuthURL)
+	opt.Username = os.Getenv(OsUserName)
+	opt.Password = os.Getenv(OsPassword)
+	opt.TenantName = os.Getenv(OsProjectName)
+	projectName := os.Getenv(OsProjectName)
+	opt.DomainID = os.Getenv(OsUserDominID)
 	if opt.TenantName == "" {
 		opt.TenantName = projectName
 	}
+
+	opt.Accesskey = os.Getenv(OsAccesskey)
+	opt.Region = os.Getenv(OsRegion)
 
 	return opt
 }

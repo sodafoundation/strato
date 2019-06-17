@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
@@ -81,6 +83,41 @@ func NewReceiver() Receiver {
 	return &receiver{}
 }
 
+func CalculateSignature(headers HeaderOption, req *http.Request) string {
+	authorization, ok := headers[constants.AuthorizationHeader]
+	if !ok {
+		log.Printf("There is no %v in headers", constants.AuthorizationHeader)
+		return ""
+	}
+
+	requestDateTime, ok := headers[constants.SignDateHeader]
+	if !ok {
+		log.Printf("There is no %v in headers", constants.SignDateHeader)
+		return ""
+	}
+
+	authorizationParts := strings.Split(authorization, ",")
+	credential, _ := strings.TrimSpace(authorizationParts[0]), strings.TrimSpace(authorizationParts[2])
+	credentialParts := strings.Split(credential, " ")
+	creds := credentialParts[1]
+	credsParts := strings.Split(creds, "=")
+	credentialStr := credsParts[1]
+	credentialStrParts := strings.Split(credentialStr, "/")
+	accessKeyID, requestDate, region, service := credentialStrParts[0], credentialStrParts[1], credentialStrParts[2], credentialStrParts[3]
+	//TODO Get Request Body
+	body := ""
+	credentials := keystonecredentials.NewCredentialsClient(accessKeyID)
+	Signer := signer.NewSigner(credentials)
+	calculatedSignature, err := Signer.Sign(req, body, service, region, requestDateTime, requestDate, credentialStr)
+	if err != nil {
+		log.Printf("signer.Sign err:%+v", err)
+		return ""
+	}
+
+	log.Printf("calculatedSignature:%+v", calculatedSignature)
+	return calculatedSignature
+}
+
 // request implementation
 func request(url string, method string, headers HeaderOption,
 	reqBody interface{}, respBody interface{}, needMarshal bool, outFileName string) error {
@@ -130,6 +167,11 @@ func request(url string, method string, headers HeaderOption,
 		for k, v := range headers {
 			req.Header(k, v)
 		}
+	}
+
+	calculatedSignature := CalculateSignature(headers, req.GetRequest())
+	if "" != calculatedSignature {
+		req.Header(constants.AuthorizationHeader, headers[constants.AuthorizationHeader]+calculatedSignature)
 	}
 
 	// Get http response.
@@ -280,6 +322,13 @@ func (k *KeystoneReciver) Recv(url string, method string, headers HeaderOption,
 		}
 
 		headers[constants.AuthTokenHeader] = k.Auth.TokenID
+		if strings.Contains(url, "/s3") {
+			now := time.Now().Format("20060102T150405Z")
+			authorizationStr := fmt.Sprintf("OPENSDS-HMAC-SHA256 Credential=%s/%s/%s/s3,SignedHeaders=authorization;host;x-auth-date,Signature=",
+				k.Auth.Accesskey, now, k.Auth.Region)
+			headers[constants.AuthorizationHeader] = authorizationStr
+			headers[constants.SignDateHeader] = now
+		}
 
 		return request(url, method, headers, reqBody, respBody, needMarshal, outFileName)
 	})
