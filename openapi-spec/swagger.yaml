@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+# Copyright 2019 The OpenSDS Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ servers:
 info:
   description: |
     OpenSDS Multi-cloud API to manage multi-cloud backend storages.
-    You can find out more about Swagger at 
-    [https://www.opensds.io](https://www.opensds.io) 
+    You can find out more about Swagger at
+    [https://www.opensds.io](https://www.opensds.io)
   version: 1.0.0
   title: OpenSDS Multi-Cloud API
   termsOfService: '://www.linuxfoundation.org/terms'
@@ -855,7 +855,7 @@ components:
         PolicyId:
           description: >-
             Related policy id, plan will be scheduled automatically according this policy if PolicyEnabled is true.
-          type: string  
+          type: string
         RemainSource:
           description: Remain the source objects or not.
           type: boolean
