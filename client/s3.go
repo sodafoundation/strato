@@ -160,3 +160,17 @@ func (b *BucketMgr) DeleteObject(BucketName string, ObjectKey string) (*CBaseRes
 
 	return &res, nil
 }
+
+// GetStorageClasses implementation
+func (b *BucketMgr) GetStorageClasses() ([]S3model.StorageClass, error) {
+	url := strings.Join([]string{
+		b.Endpoint,
+		GenerateS3URL(b.TenantID), "storageClasses"}, "/")
+
+	res := S3model.ListStorageClasses{}
+	if err := b.Recv(url, "GET", XMLHeaders, nil, &res, true, ""); err != nil {
+		return nil, err
+	}
+
+	return res.Classes, nil
+}

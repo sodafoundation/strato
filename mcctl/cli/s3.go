@@ -87,6 +87,18 @@ var objectDeleteCommand = &cobra.Command{
 	Run:   objectDeleteAction,
 }
 
+var storageClassesCommand = &cobra.Command{
+	Use:   "storageclasses",
+	Short: "manage storage classes",
+	Run:   objectAction,
+}
+
+var storageClassesListCommand = &cobra.Command{
+	Use:   "list",
+	Short: "get supported storage classes",
+	Run:   storageClassesListAction,
+}
+
 func init() {
 	bucketCommand.AddCommand(bucketCreateCommand)
 	bucketCreateCommand.Flags().StringVarP(&xmlns, "xmlns", "x", "", "the xmlns of updated bucket")
@@ -99,6 +111,8 @@ func init() {
 	objectCommand.AddCommand(objectUploadCommand)
 	objectCommand.AddCommand(objectDownloadCommand)
 	objectCommand.AddCommand(objectDeleteCommand)
+	
+	storageClassesCommand.AddCommand(storageClassesListCommand)
 }
 
 func bucketAction(cmd *cobra.Command, args []string) {
@@ -216,3 +230,14 @@ func objectDeleteAction(cmd *cobra.Command, args []string) {
 
 	PrintS3BaseResp(resp)
 }
+
+func storageClassesListAction(cmd *cobra.Command, args []string) {
+	resp, err := client.GetStorageClasses()
+	if err != nil {
+		Fatalln(HTTPErrStrip(err))
+	}
+
+	keys := KeyList{"Name", "Tier"}
+	PrintList(resp, keys, FormatterList{})
+}
+

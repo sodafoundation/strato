@@ -105,6 +105,7 @@ func init() {
 	rootCommand.AddCommand(policyCommand)
 	rootCommand.AddCommand(jobCommand)
 	rootCommand.AddCommand(typeCommand)
+	rootCommand.AddCommand(storageClassesCommand)
 
 	flags := rootCommand.PersistentFlags()
 	flags.BoolVar(&Debug, "debug", false, "shows debugging output.")

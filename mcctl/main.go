@@ -20,7 +20,6 @@ This module implements a entry into the OpenSDS multi-cloud CLI service.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -29,7 +28,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
 	// Assign it to the standard logger
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
