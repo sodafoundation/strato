@@ -31,6 +31,10 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 )
 
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
+
 type Keystone struct {
 	identity *gophercloud.ServiceClient
 }
