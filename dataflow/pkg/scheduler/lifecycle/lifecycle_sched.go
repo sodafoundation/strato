@@ -371,8 +371,10 @@ func (r InterRules) Len() int {
 */
 func (r InterRules) Less(i, j int) bool {
 	var ret bool
-	if r[i].ActionType < r[j].ActionType {
+	if r[i].ActionType == ActionExpiration && r[i].ActionType < r[j].ActionType {
 		ret = true
+	} else if r[i].ActionType > r[j].ActionType && r[j].ActionType == ActionExpiration{
+		ret = false
 	} else {
 		if r[i].Days >= r[j].Days {
 			ret = true

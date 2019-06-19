@@ -32,8 +32,8 @@ const (
 )
 
 const (
-	RuleStatusEnabled  = "enabled"
-	RuleStatusDisabled = "disabled"
+	RuleStatusEnabled  = "Enabled"
+	RuleStatusDisabled = "Disabled"
 )
 
 type Database struct {
