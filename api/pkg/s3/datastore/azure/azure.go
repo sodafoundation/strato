@@ -177,6 +177,23 @@ func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context
 	}
 	return NoError
 }
+
+func (ad *AzureAdapter) RestoreObject(object *pb.RestoreObjectInput, ctx context.Context) S3Error {
+	newObjectKey := object.Bucket + "/" + object.Key
+	blobURL := ad.containerURL.NewBlockBlobURL(newObjectKey)
+	setTierRsp, err := blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+	log.Logf("blobURL=%v,err=%v\n", blobURL, err)
+	if err != nil {
+		log.Logf("[AzureAdapter] post restore object failed:%v\n", err)
+		return S3Error{Code: 500, Description: "post failed"}
+	}
+	if setTierRsp.StatusCode() != http.StatusOK && setTierRsp.StatusCode() != http.StatusAccepted {
+		log.Logf("[AzureAdapter] restore failed, status code:%d\n", setTierRsp.StatusCode())
+		return S3Error{Code: 500, Description: "restore failed"}
+	}
+	return NoError
+}
+
 func (ad *AzureAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
 	object := pb.Object{}
 	object.BucketName = bucketName

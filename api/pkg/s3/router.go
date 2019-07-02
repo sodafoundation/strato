@@ -41,4 +41,7 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.PUT("/{bucketName}/?lifecycle").To(handler.RouteBucketPut)).Doc("Create lifecycle configuration for the bucket")
 	ws.Route(ws.GET("/{bucketName}/?lifecycle").To(handler.RouteBucketGet)).Doc("Get lifecycle configuration from the bucket")
 	ws.Route(ws.DELETE("/{bucketName}/?lifecycle").To(handler.RouteBucketDelete)).Doc("Delete lifecycle configuration from the bucket")
+
+	//Router for Restore API
+	ws.Route(ws.POST("/{bucketName}/{objectKey:*}").To(handler.ObjectRestore)).Doc("Restore object from glacier")
 }

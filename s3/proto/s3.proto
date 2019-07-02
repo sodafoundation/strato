@@ -197,7 +197,14 @@ message Object {
 	string initFlag = 25;
 	string ETag = 26;
 	int32 tier = 27;
+	objectRestoreStatus restoreStatus = 28;
 }
+
+message objectRestoreStatus {
+	bool restoreMarker = 1;
+	string restoreState = 2;
+}
+
 
 message ListBucketsResponse {
 	repeated Bucket buckets = 1;
@@ -318,4 +325,11 @@ message ListMultipartUploadRequest {
 
 message ListMultipartUploadResponse {
 	repeated MultipartUploadRecord records = 1;
+}
+
+message RestoreObjectInput{
+	string bucket = 1;
+	string key = 2;
+	int32 days = 3;
+	string tier = 4;
 }

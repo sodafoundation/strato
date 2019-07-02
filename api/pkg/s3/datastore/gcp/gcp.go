@@ -141,6 +141,10 @@ func (ad *GcpAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	return NoError
 }
 
+func (ad *GcpAdapter) RestoreObject(object *pb.RestoreObjectInput, ctx context.Context) S3Error {
+	return NoError
+}
+
 func (ad *GcpAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
 
 	bucket := ad.backend.BucketName
