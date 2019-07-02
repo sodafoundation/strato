@@ -679,6 +679,76 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+  '/v1/s3/{bucketName}/?lifecycle':
+    put:
+      parameters:
+        - name: bucketName
+          in: path
+          description: the name of bucket
+          required: true
+          schema:
+            type: string
+      tags:
+        - s3
+      summary: create a bucket lifecycle.
+      operationId: bucketLifecyclePut
+      responses:
+        '200':
+          description: successful create bucket lifecycle
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+      requestBody:
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/LifecycleConfiguration'
+    delete:
+      parameters:
+        - name: bucketName
+          in: path
+          description: the name of bucket
+          required: true
+          schema:
+            type: string
+        - name: ruleID
+          in: query
+          description: the rule id in lifecycle configuration of the bucket, used in delete call
+            and there can be multiple ruleIDs
+          required: false
+          schema:
+            type: string
+      tags:
+        - s3
+      summary: delete bucket lifecycle.
+      operationId: bucketlifecycledelete
+      responses:
+        '200':
+          description: successful delete bucket
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+    get:
+      parameters:
+        - name: bucketName
+          in: path
+          description: the name of bucket
+          required: true
+          schema:
+            type: string
+      tags:
+        - s3
+      summary: get bucket lifecycle
+      operationId: bucketlifecycleget
+      responses:
+        '200':
+          description: successful get bucket lifecycle
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/LifecycleConfiguration'
   '/v1/s3/storageClasses':
     get:
       tags:
@@ -1052,6 +1122,56 @@ components:
             description: 'The storage tier, used in OpenSDS. Each tier is mapped to a specific name.'
             type: integer
             example: 1
+    LifecycleConfiguration:
+      type: array
+      xml:
+        wrapped: true
+      items:
+        xml:
+          name: Rule
+        type: object
+        properties:
+          ID:
+            description: 'rule id for lifecycle rule.'
+            type: string
+          Filter:
+            description: 'rule filter which will contain prefix for objects.'
+            type: object
+            properties:
+              Prefix:
+                description: 'the object prefix which will be used in implementing actions.'
+                type: string
+          Status:
+            description: 'the status of lifecycle rule whether its enabled or disabled.'
+            type: string
+            example: ENABLE
+          Transition:
+            description: 'transition action in lifecycle rule.'
+            type: object
+            properties:
+              Days:
+                description: 'days after creation of object when you wish to transition.'
+                type: integer
+              StorageClass:
+                description: 'storage class where you want to transition.'
+                type: string
+              Backend:
+                description: 'backend where you wish to transition.'
+                type: string
+          Expiration:
+            description: 'expiration action in lifecycle rule.'
+            type: object
+            properties:
+              Days:
+                description: 'days after creation of object when you wish to expire.'
+                type: integer
+          AbortIncompleteMultipartUpload:
+            description: 'aborting incomplete upload.'
+            type: object
+            properties:
+              DaysAfterInitiation:
+                description: 'days after initiation of multipart upload.'
+                type: integer
   requestBodies:
     Backend:
       content:
