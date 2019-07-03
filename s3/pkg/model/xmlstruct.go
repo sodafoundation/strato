@@ -122,3 +122,13 @@ type ListStorageClasses struct {
 	Xmlns       string `xml:"xmlns,attr"`
 	Classes     []StorageClass `xml:"Class"`
 }
+
+type LoadObjectsReq struct {
+	Backend string `xml:"Backend"`  // backend name
+	Prefix  string `xml:"Prefix"`   // load those objects with this prefix
+}
+
+type LoadObjectsResponse struct {
+	Total int64 `xml:"Total"`  // total number of objects
+	Succeed int64 `xml:"Succeed"`   // number of objects loaded successfully
+}

@@ -48,6 +48,23 @@ var SupportedClasses []pb.StorageClass
 
 type s3Service struct{}
 
+func getTierFromName(backendType, className string) (int32, S3Error) {
+	v, ok := Ext2IntTierMap[backendType]
+	if !ok {
+		log.Logf("get tier of storage class[%s] for backend type of [%s] failed.\n", className, backendType)
+		return 0, InternalError
+	}
+
+	v2, ok := (*v)[className]
+	if !ok {
+		log.Logf("get tier of storage class[%s] for backend type of [%s] failed.\n", className, backendType)
+		return 0, InternalError
+	}
+
+	log.Logf("get tier of storage class[%s] for backend type of [%s] successfully.\n", className, backendType)
+	return v2, NoError
+}
+
 func getNameFromTier(tier int32) (string, error) {
 	v, ok := Int2ExtTierMap[OSTYPE_OPENSDS]
 	if !ok {
@@ -584,6 +601,21 @@ func (b *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	}
 	out.Count = countInfo.Count
 	out.Size = countInfo.Size
+
+	return nil
+}
+
+func (b *s3Service) GetTierByStorageClass(ctx context.Context, in *pb.StorageTierAndClass, out *pb.StorageTierAndClass) error {
+	log.Logf("get tier of storage class, class is %s, backend type is %s\n", in.StorageClass, in.BackendType)
+
+	tier, err := getTierFromName(in.BackendType, in.StorageClass)
+	if err.Code != ERR_OK {
+		return err.Error()
+	}
+
+	out.StorageClass = in.StorageClass
+	out.BackendType = in.BackendType
+	out.Tier = tier
 
 	return nil
 }

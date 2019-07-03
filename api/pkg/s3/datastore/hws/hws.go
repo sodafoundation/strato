@@ -263,3 +263,12 @@ func (ad *OBSAdapter) ListParts(listParts *pb.ListParts, context context.Context
 	}
 	return nil, NoError
 }
+
+func (ad *OBSAdapter) ListBackendObjects(context context.Context, prefix string, limit int64, marker string) (*pb.ListObjectResponse, S3Error) {
+	log.Logf("list objects of backend[type=%s] is not provided\n", ad.backend.Type)
+	return nil, InternalError
+}
+
+func (ad *OBSAdapter) GetBackendType() string {
+	return ad.backend.Type
+}

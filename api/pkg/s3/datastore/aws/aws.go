@@ -328,3 +328,39 @@ func (ad *AwsAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 func (ad *AwsAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
 	return nil, NoError
 }
+
+func (ad *AwsAdapter) ListBackendObjects(context context.Context, prefix string, limit int64, marker string) (*pb.ListObjectResponse, S3Error) {
+	log.Logf("list objects of backend[type=%s], prefix=%s, limit=%d, marker=%s\n", ad.backend.Type, prefix, limit, marker)
+
+	input := awss3.ListObjectsInput{
+		Bucket: aws.String(ad.backend.BucketName),
+		MaxKeys: &limit,
+		Prefix : aws.String(prefix),
+	}
+	if len(marker) > 0 {
+		input.Marker = aws.String(marker)
+	}
+
+	svc := awss3.New(ad.session)
+	output, err := svc.ListObjects(&input)
+	if err != nil {
+		log.Logf("list objects of backend[%s] failed, err: %v\n", err)
+		return nil, InternalError
+	}
+	resp := pb.ListObjectResponse{}
+	for _, v := range output.Contents {
+		obj := pb.Object{}
+		obj.ObjectKey = *v.Key
+		obj.Size = *v.Size
+		obj.StorageClass = *v.StorageClass
+		obj.LastModified = v.LastModified.Unix()
+		obj.ETag = *v.ETag
+		resp.ListObjects = append(resp.ListObjects, &obj)
+	}
+
+	return &resp, NoError
+}
+
+func (ad *AwsAdapter) GetBackendType() string {
+	return ad.backend.Type
+}

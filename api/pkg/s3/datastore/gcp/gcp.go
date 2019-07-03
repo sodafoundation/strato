@@ -318,3 +318,12 @@ func (ad *GcpAdapter) ListParts(listParts *pb.ListParts, context context.Context
 		return listPartsOutput, NoError
 	}
 }
+
+func (ad *GcpAdapter) ListBackendObjects(context context.Context, prefix string, limit int64, marker string) (*pb.ListObjectResponse, S3Error) {
+	log.Logf("list objects of backend[type=%s] is not provided\n", ad.backend.Type)
+	return nil, InternalError
+}
+
+func (ad *GcpAdapter) GetBackendType() string {
+	return ad.backend.Type
+}
