@@ -322,8 +322,8 @@ message ListMultipartUploadResponse {
 }
 
 message StorageTierAndClass {
-	string BackendType = 1;
-	string StorageClass = 2;
-	int32  Tier = 3;
+	string backendType = 1;
+	string storageClass = 2;
+	int32  tier = 3;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ func (s *APIService) BucketLoad(request *restful.Request, response *restful.Resp
 
 	marker := ""
 	var limit, total, succeed int64 = 1000, 0, 0
-	//folders := map[string]struct{}{}
 	preLen := len(bucketName + "/")
 	for {
 		objList, s3err := client.ListBackendObjects(ctx, loadObjsReq.Prefix, limit, marker)
@@ -82,7 +81,6 @@ func (s *APIService) BucketLoad(request *restful.Request, response *restful.Resp
 			}
 			obj.Tier = res.Tier
 
-			//createDirectorIfNeed(s, obj, &folders)
 			_, err = s.s3Client.CreateObject(ctx, obj)
 			if err != nil {
 				continue
@@ -99,31 +97,4 @@ func (s *APIService) BucketLoad(request *restful.Request, response *restful.Resp
 	res := model.LoadObjectsResponse{Total: total, Succeed: succeed}
 	response.WriteEntity(res)
 }
-
-/*func createDirectorIfNeed(s *APIService, obj *pb.Object, folders *map[string]struct{}) {
-	// example: if objkey is 'fa/fb/cc', then
-	fold := pb.Object{
-		ObjectKey: obj.ObjectKey,
-		StorageClass: obj.StorageClass,
-		LastModified: obj.LastModified,
-		BucketName: obj.BucketName,
-		Backend: obj.Backend,
-	}
-	key := fold.ObjectKey
-	subKeys := strings.Split(key, "/")
-	nums := len(subKeys)
-	for i := 0; i < nums - 1; i++ {
-		if _, ok := (*folders)[subKeys[i]]; ok {
-			// folder is already created
-			continue
-		}
-
-		fold.ObjectKey = subKeys[i] + "/"
-		_, err := s.s3Client.CreateObject(context.Background(), &fold)
-		if err != nil {
-			continue
-		}
-		(*folders)[subKeys[i]] = struct{}{}
-	}
-}*/
 

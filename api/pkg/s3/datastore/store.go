@@ -83,5 +83,5 @@ type DataStoreAdapter interface {
 
 	ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error)
 	ListBackendObjects(context context.Context, prefix string, limit int64, marker string) (*pb.ListObjectResponse, S3Error)
-	GetBackendType() (string)
+	GetBackendType() string
 }
