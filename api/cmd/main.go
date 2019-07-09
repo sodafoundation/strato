@@ -46,7 +46,6 @@ func main() {
 	ws.Doc("OpenSDS Multi-Cloud API")
 	ws.Consumes(restful.MIME_JSON)
 	ws.Produces(restful.MIME_JSON)
-	ws.Filter(auth.FilterFactory())
 
 	backend.RegisterRouter(ws)
 	dataflow.RegisterRouter(ws)
