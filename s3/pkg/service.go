@@ -138,11 +138,11 @@ func loadGCPDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 func loadCephDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	t2n := make(Int2String)
 	t2n[Tier1] = CEPH_STANDARD
-	(*i2e)[OSTYPE_CEPTH] = &t2n
+	(*i2e)[OSTYPE_CEPH] = &t2n
 
 	n2t := make(String2Int)
 	n2t[CEPH_STANDARD] = Tier1
-	(*e2i)[OSTYPE_OBS] = &n2t
+	(*e2i)[OSTYPE_CEPH] = &n2t
 }
 
 func loadFusionStroageDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
@@ -234,7 +234,7 @@ func initStorageClass() {
 		err1 = loadDefaultStorageClass()
 		err2 = loadDefaultTransition()
 	} else {
-		err1 = loadDefaultTransition()
+		err1 = loadUserDefinedStorageClass()
 		err2 = loadUserDefinedTransition()
 	}
 	// Exit if init failed.

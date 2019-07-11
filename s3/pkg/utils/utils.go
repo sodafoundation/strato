@@ -52,7 +52,7 @@ const (
 	OSTYPE_Azure         = "azure-blob"
 	OSTYPE_OBS           = "hw-obs"
 	OSTYPE_GCS           = "gcp-s3"
-	OSTYPE_CEPTH         = "ceph-s3"
+	OSTYPE_CEPH         = "ceph-s3"
 	OSTYPE_FUSIONSTORAGE = "fusionstorage-object"
 )
 
