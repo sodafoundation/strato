@@ -5,15 +5,15 @@ import (
 	"github.com/micro/go-micro/client"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/stretchr/testify/mock"
+
 )
 import (
 	"context"
 )
 
-type S3ServiceMock struct {
-	mock.Mock
-}
+//type S3ServiceMock struct {
+//	mock.Mock
+//}
 
 func GetStorageClasses(ctx context.Context, in *s3.BaseRequest, opts ...client.CallOption) (*s3.GetStorageClassesResponse, error) {
 	return MockedGetStorageClasses()
