@@ -1463,13 +1463,34 @@ func TestCheckReqObjMeta(t *testing.T) {
 		req   map[string]string
 		valid map[string]struct{}
 	}
+	settings := make(map[string]string)
+
+	settings["tier"]="99"
+	valid := make(map[string]struct{})
+	valid["tier"] = struct{}{}
+	valid["backend"] = struct{}{}
+
+	//validMap := make(map[string]struct{})
+
+	//validMap["tier"]="99"
+
+	ret := make(map[string]interface{})
+
+	//ret["tier"]="99"
+
+	err:=S3Error{}
+	err.Code=500
+
+	argTmp:=args{settings,valid}
 	tests := []struct {
 		name  string
 		args  args
 		want  map[string]interface{}
 		want1 S3Error
 	}{
-		// TODO: Add test cases.
+		// TODO: Add test cases
+		{"checkObjTest",argTmp,ret,err},
+
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1490,6 +1511,12 @@ func Test_s3Service_GetBackendTypeByTier(t *testing.T) {
 		in  *pb.GetBackendTypeByTierRequest
 		out *pb.GetBackendTypeByTierResponse
 	}
+	req:=pb.GetBackendTypeByTierRequest{}
+	req.Tier=99
+	res:=pb.GetBackendTypeByTierResponse{}
+	res.Types=[]string{AWS_STANDARD,AWS_STANDARD_IA, AWS_GLACIER}
+	argTmp:=args{context.Background(),&req,&res}
+	b := &s3Service{}
 	tests := []struct {
 		name    string
 		b       *s3Service
@@ -1497,7 +1524,15 @@ func Test_s3Service_GetBackendTypeByTier(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"getBkndTest1",b,argTmp,false},
 	}
+	t2n := make(Int2String)
+	t2n[Tier1] = AWS_STANDARD
+	t2n[Tier99] = AWS_STANDARD_IA
+	t2n[Tier999] = AWS_GLACIER
+
+	Int2ExtTierMap = make(map[string]*Int2String)
+	(Int2ExtTierMap)[OSTYPE_OPENSDS] = &t2n
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &s3Service{}
@@ -1514,6 +1549,20 @@ func Test_s3Service_AddUploadRecord(t *testing.T) {
 		record *pb.MultipartUploadRecord
 		out    *pb.BaseResponse
 	}
+	record:=pb.MultipartUploadRecord{}
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	err:=S3Error{}
+	err.Code=200
+	dbMock.On("AddMultipartUpload", &record).Return(err).
+		Once()
+
+	type dumb struct {
+	}
+	dmbs := dumb{}
+	s3Resp := pb.BaseResponse{"200", "success", dmbs, nil, 0}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&record,&s3Resp}
 	tests := []struct {
 		name    string
 		b       *s3Service
@@ -1521,6 +1570,7 @@ func Test_s3Service_AddUploadRecord(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"addUploadTest1",b,argTmp,false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1531,13 +1581,26 @@ func Test_s3Service_AddUploadRecord(t *testing.T) {
 		})
 	}
 }
-
-func Test_s3Service_DeleteUploadRecord(t *testing.T) {
+func Test_s3Service_AddUploadRecord2(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		record *pb.MultipartUploadRecord
 		out    *pb.BaseResponse
 	}
+	record:=pb.MultipartUploadRecord{}
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	err:=S3Error{}
+	err.Code=201
+	dbMock.On("AddMultipartUpload", &record).Return(err).
+		Once()
+
+	type dumb struct {
+	}
+	dmbs := dumb{}
+	s3Resp := pb.BaseResponse{"200", "success", dmbs, nil, 0}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&record,&s3Resp}
 	tests := []struct {
 		name    string
 		b       *s3Service
@@ -1545,6 +1608,83 @@ func Test_s3Service_DeleteUploadRecord(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"addUploadTest1",b,argTmp,true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &s3Service{}
+			if err := b.AddUploadRecord(tt.args.ctx, tt.args.record, tt.args.out); (err != nil) != tt.wantErr {
+				t.Errorf("s3Service.AddUploadRecord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+func Test_s3Service_DeleteUploadRecord(t *testing.T) {
+	type args struct {
+		ctx    context.Context
+		record *pb.MultipartUploadRecord
+		out    *pb.BaseResponse
+	}
+	record:=pb.MultipartUploadRecord{}
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	err:=S3Error{}
+	err.Code=200
+	dbMock.On("DeleteMultipartUpload", &record).Return(err).
+		Once()
+
+	type dumb struct {
+	}
+	dmbs := dumb{}
+	s3Resp := pb.BaseResponse{"200", "success", dmbs, nil, 0}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&record,&s3Resp}
+	tests := []struct {
+		name    string
+		b       *s3Service
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"deleteUploadTest1",b,argTmp,false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &s3Service{}
+			if err := b.DeleteUploadRecord(tt.args.ctx, tt.args.record, tt.args.out); (err != nil) != tt.wantErr {
+				t.Errorf("s3Service.DeleteUploadRecord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+func Test_s3Service_DeleteUploadRecord2(t *testing.T) {
+	type args struct {
+		ctx    context.Context
+		record *pb.MultipartUploadRecord
+		out    *pb.BaseResponse
+	}
+	record:=pb.MultipartUploadRecord{}
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	err:=S3Error{}
+	err.Code=201
+	dbMock.On("DeleteMultipartUpload", &record).Return(err).
+		Once()
+
+	type dumb struct {
+	}
+	dmbs := dumb{}
+	s3Resp := pb.BaseResponse{"200", "success", dmbs, nil, 0}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&record,&s3Resp}
+	tests := []struct {
+		name    string
+		b       *s3Service
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"deleteUploadTest1",b,argTmp,true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1562,6 +1702,20 @@ func Test_s3Service_ListUploadRecord(t *testing.T) {
 		in  *pb.ListMultipartUploadRequest
 		out *pb.ListMultipartUploadResponse
 	}
+	in:=pb.ListMultipartUploadRequest{}
+	out:=pb.ListMultipartUploadResponse{}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&in,&out}
+
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	//record:=pb.MultipartUploadRecord{}
+	records := []pb.MultipartUploadRecord{}
+	err:=S3Error{}
+	err.Code=200
+	dbMock.On("ListUploadRecords", &in,&records).Return(err).
+		Once()
+
 	tests := []struct {
 		name    string
 		b       *s3Service
@@ -1569,6 +1723,45 @@ func Test_s3Service_ListUploadRecord(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"listUploadTest",b,argTmp,false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &s3Service{}
+			if err := b.ListUploadRecord(tt.args.ctx, tt.args.in, tt.args.out); (err != nil) != tt.wantErr {
+				t.Errorf("s3Service.ListUploadRecord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+func Test_s3Service_ListUploadRecord2(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		in  *pb.ListMultipartUploadRequest
+		out *pb.ListMultipartUploadResponse
+	}
+	in:=pb.ListMultipartUploadRequest{}
+	out:=pb.ListMultipartUploadResponse{}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&in,&out}
+
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	//record:=pb.MultipartUploadRecord{}
+	records := []pb.MultipartUploadRecord{}
+	err:=S3Error{}
+	err.Code=201
+	dbMock.On("ListUploadRecords", &in,&records).Return(err).
+		Once()
+
+	tests := []struct {
+		name    string
+		b       *s3Service
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"listUploadTest",b,argTmp,true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1586,6 +1779,18 @@ func Test_s3Service_CountObjects(t *testing.T) {
 		in  *pb.ListObjectsRequest
 		out *pb.CountObjectsResponse
 	}
+	in:=pb.ListObjectsRequest{}
+	out:=pb.CountObjectsResponse{}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&in, &out}
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	err:=S3Error{}
+	err.Code=200
+	countInfo := ObjsCountInfo{}
+	dbMock.On("CountObjects", &in,&countInfo).Return(err).
+		Once()
+
 	tests := []struct {
 		name    string
 		b       *s3Service
@@ -1593,6 +1798,43 @@ func Test_s3Service_CountObjects(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"countObjTest1",b,argTmp,false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &s3Service{}
+			if err := b.CountObjects(tt.args.ctx, tt.args.in, tt.args.out); (err != nil) != tt.wantErr {
+				t.Errorf("s3Service.CountObjects() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+func Test_s3Service_CountObjects2(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		in  *pb.ListObjectsRequest
+		out *pb.CountObjectsResponse
+	}
+	in:=pb.ListObjectsRequest{}
+	out:=pb.CountObjectsResponse{}
+	b := &s3Service{}
+	argTmp:=args{context.Background(),&in, &out}
+	dbMock := new(mocks.DBAdapter)
+	db.DbAdapter = dbMock
+	err:=S3Error{}
+	err.Code=201
+	countInfo := ObjsCountInfo{}
+	dbMock.On("CountObjects", &in,&countInfo).Return(err).
+		Once()
+
+	tests := []struct {
+		name    string
+		b       *s3Service
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"countObjTest1",b,argTmp,true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
