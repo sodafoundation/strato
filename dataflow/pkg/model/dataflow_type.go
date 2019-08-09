@@ -141,15 +141,16 @@ type Job struct {
 	TotalCapacity  int64         `json:"totalCapacity" bson:"totalCapacity"`
 	PassedCapacity int64         `json:"passedCapacity" bson:"passedCapacity"`
 	//when the plan related connector type is OPENSDS, then location should be bucket name
-	SourceLocation string    `json:"sourceLocation" bson:"sourceLocation"`
-	DestLocation   string    `json:"destLocation" bson:"destLocation"`
-	CreateTime     time.Time `json:"createTime" bson:"createTime"`
-	StartTime      time.Time `json:"startTime" bson:"startTime"`
-	EndTime        time.Time `json:"endTime" bson:"endTime"`
-	RemainSource   bool      `json:"remainSource" bson:"remainSource"`
-	Status         string    `json:"status" bson:"status"` //queueing,
-	Tenant         string    `json:"tenant" bson:"tenant"`
-	Progress       int64     `json:"progress" bson:"progress"`
+	MigratedCapacity float64   `json:"migratedCapacity" bson:"migratedCapacity"`
+	SourceLocation   string    `json:"sourceLocation" bson:"sourceLocation"`
+	DestLocation     string    `json:"destLocation" bson:"destLocation"`
+	CreateTime       time.Time `json:"createTime" bson:"createTime"`
+	StartTime        time.Time `json:"startTime" bson:"startTime"`
+	EndTime          time.Time `json:"endTime" bson:"endTime"`
+	RemainSource     bool      `json:"remainSource" bson:"remainSource"`
+	Status           string    `json:"status" bson:"status"` //queueing,
+	Tenant           string    `json:"tenant" bson:"tenant"`
+	Progress         int64     `json:"progress" bson:"progress"`
 }
 
 type Backend struct {
