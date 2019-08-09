@@ -561,7 +561,6 @@ func runjob(in *pb.RunJobRequest) error {
 	// get total count and total size of objects need to be migrated
 	totalCount, totalSize, err := countObjs(ctx, in)
 
-	//remove above part
 	j.TotalCount = totalCount
 	j.TotalCapacity = totalSize
 	if err != nil || totalCount == 0 || totalSize == 0 {
