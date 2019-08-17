@@ -51,13 +51,15 @@ type s3Service struct{}
 func getTierFromName(backendType, className string) (int32, S3Error) {
 	v, ok := Ext2IntTierMap[backendType]
 	if !ok {
-		log.Logf("get tier of storage class[%s] for backend type of [%s] failed.\n", className, backendType)
+		log.Logf("get tier of storage class[%s] for backend type[%s] failed, no records for this backend type.\n",
+			className, backendType)
 		return 0, InternalError
 	}
 
 	v2, ok := (*v)[className]
 	if !ok {
-		log.Logf("get tier of storage class[%s] for backend type of [%s] failed.\n", className, backendType)
+		log.Logf("get tier of storage class[%s] for backend type[%s] failed, no records for this storage class.\n",
+			className, backendType)
 		return 0, InternalError
 	}
 

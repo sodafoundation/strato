@@ -26,6 +26,7 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"golang.org/x/net/context"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"fmt"
 )
 
 func (s *APIService) BucketLoad(request *restful.Request, response *restful.Response) {
@@ -55,14 +56,17 @@ func (s *APIService) BucketLoad(request *restful.Request, response *restful.Resp
 		return
 	}
 
+	// Use marker to specifies the key to start with when listing objects in a bucket, objects after the maker will be
+	// returned, here we use "" to return from the first object.
 	marker := ""
 	var limit, total, succeed int64 = 1000, 0, 0
 	preLen := len(bucketName + "/")
 	for {
 		objList, s3err := client.ListBackendObjects(ctx, loadObjsReq.Prefix, limit, marker)
 		if s3err != NoError {
-			log.Logf("list object of backend[name=%s] failed\n", loadObjsReq.Backend)
-			response.WriteError(http.StatusInternalServerError, errors.New("list objects of backend failed"))
+			msg := fmt.Sprintf("list object of backend[name=%s] failed\n", loadObjsReq.Backend)
+			log.Log(msg)
+			response.WriteError(http.StatusInternalServerError, errors.New(msg))
 			return
 		}
 
