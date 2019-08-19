@@ -619,8 +619,6 @@ func runjob(in *pb.RunJobRequest) error {
 				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 					//update database
 					j.PassedCount = (int64(passedCount))
-					j.PassedCapacity = capacity
-					//j.Progress = int64(capacity * 100 / j.TotalCapacity)
 					logger.Printf("capacity:%d,TotalCapacity:%d Progress:%d\n", capacity, j.TotalCapacity, j.Progress)
 					db.DbAdapter.UpdateJob(&j)
 				}
@@ -668,7 +666,6 @@ func progress(job *flowtype.Job, size int64, wt float64) {
 	if wt == WT_DOWLOAD {
 		job.MigratedCapacity = job.MigratedCapacity + wt*float64(size)/100
 		job.Progress = int64(job.MigratedCapacity * 100 / float64(job.TotalCapacity))
-		//job.Progress= job.Progress+float64(WT_DOWLOAD*float64(size/job.TotalCapacity))
 		logger.Printf("[INFO] Progress %d", job.Progress)
 		db.DbAdapter.UpdateJob(job)
 	} else {
