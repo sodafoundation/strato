@@ -114,11 +114,21 @@ type AbortIncompleteMultipartUpload struct {
 }
 
 type StorageClass struct {
-	Name               string `xml:"Name"`
-	Tier               int32 `xml:"Tier"`
+	Name string `xml:"Name"`
+	Tier int32  `xml:"Tier"`
 }
 
 type ListStorageClasses struct {
-	Xmlns       string `xml:"xmlns,attr"`
-	Classes     []StorageClass `xml:"Class"`
+	Xmlns   string         `xml:"xmlns,attr"`
+	Classes []StorageClass `xml:"Class"`
+}
+
+type LoadObjectsReq struct {
+	Backend string `xml:"Backend"` // backend name
+	Prefix  string `xml:"Prefix"`  // load those objects with this prefix
+}
+
+type LoadObjectsResponse struct {
+	Total   int64 `xml:"Total"`   // total number of objects
+	Succeed int64 `xml:"Succeed"` // number of objects loaded successfully
 }

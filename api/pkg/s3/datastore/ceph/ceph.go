@@ -318,3 +318,12 @@ func (ad *CephAdapter) ListParts(listParts *pb.ListParts, context context.Contex
 		return listPartsOutput, NoError
 	}
 }
+
+func (ad *CephAdapter) ListBackendObjects(context context.Context, prefix string, limit int64, marker string) (*pb.ListObjectResponse, S3Error) {
+	log.Logf("list objects of backend[type=%s] is not provided\n", ad.backend.Type)
+	return nil, InternalError
+}
+
+func (ad *CephAdapter) GetBackendType() string {
+	return ad.backend.Type
+}

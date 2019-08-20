@@ -20,6 +20,7 @@ service S3 {
 	rpc AddUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 	rpc DeleteUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 	rpc ListUploadRecord(ListMultipartUploadRequest) returns (ListMultipartUploadResponse) {}
+	rpc GetTierByStorageClass(StorageTierAndClass) returns (StorageTierAndClass) {}
 }
 
 message ServerSideEncryption {
@@ -319,3 +320,10 @@ message ListMultipartUploadRequest {
 message ListMultipartUploadResponse {
 	repeated MultipartUploadRecord records = 1;
 }
+
+message StorageTierAndClass {
+	string backendType = 1;
+	string storageClass = 2;
+	int32  tier = 3;
+}
+

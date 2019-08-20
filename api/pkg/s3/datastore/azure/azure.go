@@ -273,3 +273,12 @@ func (ad *AzureAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload
 func (ad *AzureAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
 	return nil, NoError
 }
+
+func (ad *AzureAdapter) ListBackendObjects(context context.Context, prefix string, limit int64, marker string) (*pb.ListObjectResponse, S3Error) {
+	log.Logf("list objects of backend[type=%s] is not provided\n", ad.backend.Type)
+	return nil, InternalError
+}
+
+func (ad *AzureAdapter) GetBackendType() string {
+	return ad.backend.Type
+}
