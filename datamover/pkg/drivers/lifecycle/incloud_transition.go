@@ -24,7 +24,7 @@ import (
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
-	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	"github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
 	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/proto"
