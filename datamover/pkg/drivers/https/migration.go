@@ -80,7 +80,7 @@ func HandleMsg(msgData []byte) error {
 }
 
 func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
-	destLoca *LocationInfo, remainSource bool) {
+	destLoca *LocationInfo) {
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
 	locMap := make(map[string]*LocationInfo)
@@ -91,7 +91,7 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 			continue
 		}
 		logger.Printf("************Begin to move obj(key:%s)\n", objs[i].ObjectKey)
-		go move(ctx, objs[i], capa, th, srcLoca, destLoca, remainSource, locMap)
+		go move(ctx, objs[i], capa, th, srcLoca, destLoca, locMap)
 		//Create one routine
 		th <- 1
 		logger.Printf("doMigrate: produce 1 routine, len(th):%d.\n", len(th))
@@ -441,7 +441,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 }
 
 func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
-	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo) {
+	destLoca *LocationInfo, locaMap map[string]*LocationInfo) {
 	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
 		obj.ObjectKey, obj.Backend, srcLoca.BakendName, destLoca.BakendName)
 
@@ -489,13 +489,6 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.ObjectKey,
 				obj.BucketName)
 		}
-	}
-
-	//Delete source data if needed
-	logger.Printf("remainSource for object[%s] is:%v.", obj.ObjectKey, remainSource)
-	if succeed && !remainSource {
-		deleteObj(ctx, obj, newSrcLoca)
-		//TODO: what if delete failed
 	}
 
 	if succeed {
@@ -570,8 +563,9 @@ func runjob(in *pb.RunJobRequest) error {
 	// concurrent go routines is limited to be simuRoutines
 	th := make(chan int, simuRoutines)
 	var offset, limit int32 = 0, 1000
+	var objs []*osdss3.Object
 	for {
-		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
+		objs, err = getObjs(ctx, in, srcLoca, offset, limit)
 		if err != nil {
 			//update database
 			j.Status = flowtype.JOB_STATUS_FAILED
@@ -586,7 +580,7 @@ func runjob(in *pb.RunJobRequest) error {
 		}
 
 		//Do migration for each object.
-		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource)
+		go doMove(ctx, objs, capa, th, srcLoca, destLoca)
 		if len(objs) < int(limit) {
 			break
 		}
@@ -612,6 +606,14 @@ func runjob(in *pb.RunJobRequest) error {
 					j.PassedCapacity = capacity
 					j.Progress = int64(capacity * 100 / j.TotalCapacity)
 					logger.Printf("capacity:%d,TotalCapacity:%d Progress:%d\n", capacity, j.TotalCapacity, j.Progress)
+					if capacity == j.TotalCapacity {
+						if !in.RemainSource {
+							for i := 0; i < len(objs); i++ {
+								deleteObj(ctx, objs[i], srcLoca)
+								//TODO: what if delete failed
+							}
+						}
+					}
 					db.DbAdapter.UpdateJob(&j)
 				}
 			}
