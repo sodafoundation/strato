@@ -147,7 +147,10 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 		logger.Printf("download object[%s] failed.", obj.ObjectKey)
 		return err
 	}
-	progress(job, size, WT_DOWLOAD)
+	if job.Type == "migration" {
+		progress(job, size, WT_DOWLOAD)
+	}
+
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
 
 	//upload
@@ -182,7 +185,9 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 	if err != nil {
 		logger.Printf("upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
 	} else {
-		progress(job, size, WT_UPLOAD)
+		if job.Type == "migration" {
+			progress(job, size, WT_UPLOAD)
+		}
 		logger.Printf("upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
 	}
 
@@ -356,7 +361,9 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			logger.Printf("internal error, currPartSize=%d, readSize=%d\n", currPartSize, readSize)
 			return errors.New(DMERR_InternalError)
 		}
-		progress(job, currPartSize, WT_DOWLOAD)
+		if job.Type == "migration" {
+			progress(job, currPartSize, WT_DOWLOAD)
+		}
 
 		//upload
 		if partNumber == 1 {
@@ -378,7 +385,10 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			}
 			return errors.New("multipart upload failed")
 		}
-		progress(job, currPartSize, WT_UPLOAD)
+		if job.Type == "migration" {
+			progress(job, currPartSize, WT_UPLOAD)
+		}
+
 		//completeParts = append(completeParts, completePart)
 	}
 
@@ -510,7 +520,9 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		//If migrate success, update capacity
 		logger.Printf("  migrate object[%s] succeed.", obj.ObjectKey)
 		capa <- obj.Size
-		progress(job, obj.Size, WT_DELETE)
+		if job.Type == "migration" {
+			progress(job, obj.Size, WT_DELETE)
+		}
 	} else {
 		logger.Printf("  migrate object[%s] failed.", obj.ObjectKey)
 		capa <- -1
