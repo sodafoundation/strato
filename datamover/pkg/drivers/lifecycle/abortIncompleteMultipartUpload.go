@@ -8,7 +8,7 @@ import (
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
 	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
-	obsmover "github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	obsmover "github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
 	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
