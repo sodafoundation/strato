@@ -7,10 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
@@ -20,11 +22,19 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
-
 	uploadId := request.QueryParameter("uploadId")
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
-	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
+	log.Logf("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:    actx.UserId,
+		common.CTX_KEY_TENENT_ID:  actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:   strconv.FormatBool(actx.IsAdmin),
+		common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD,
+	})
+
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	lastModified := time.Now().Unix()
@@ -35,12 +45,12 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	object.Size = size
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Logf("No such object err\n")
+		log.Logf("no such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
 	log.Logf("objectMD.Backend is %v\n", objectMD.Backend)
-	client = getBackendByName(s, objectMD.Backend)
+	client = getBackendByName(ctx, s, objectMD.Backend)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return

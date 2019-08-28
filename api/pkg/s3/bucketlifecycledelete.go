@@ -16,26 +16,32 @@ package s3
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
 func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:delete") {
-		return
-	}
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   actx.UserId,
+		common.CTX_KEY_TENENT_ID: actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+	})
+
 	//var foundID int
 	FoundIDArray := []string{}
 	NonFoundIDArray := []string{}
 	bucketName := request.PathParameter("bucketName")
 	ruleID := request.Request.URL.Query()["ruleID"]
 	if ruleID != nil {
-		ctx := context.Background()
 		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 		for _, id := range ruleID {
 			isfound := false

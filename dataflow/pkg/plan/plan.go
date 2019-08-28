@@ -15,20 +15,22 @@
 package plan
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"time"
 
-	"encoding/json"
-
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	//c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/opensds/multi-cloud/datamover/proto"
 )
 
 var tblConnector = "connector"
@@ -87,14 +89,14 @@ func checkConnValidation(conn *Connector) error {
 		}
 	}
 	if flag != BIT_FULL {
-		log.Logf("Invalid connector, flag=%b\n", flag)
-		return errors.New("Invalid connector")
+		log.Logf("invalid connector, flag=%b\n", flag)
+		return errors.New("invalid connector")
 	}
 
 	return nil
 }
 
-func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
+func Create(ctx context.Context, plan *Plan) (*Plan, error) {
 	//Check parameter validity
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
 	if !m {
@@ -126,7 +128,7 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	}
 
 	if plan.PolicyId != "" && plan.PolicyEnabled {
-		if err := trigger.GetTriggerMgr().Add(ctx, plan, NewPlanExecutor(ctx, plan)); err != nil {
+		if err := trigger.GetTriggerMgr().Add(ctx, plan, NewPlanExecutor(plan)); err != nil {
 			log.Logf("Add plan(%s) to trigger failed, %v", plan.Id.Hex(), err)
 			return nil, err
 		}
@@ -135,7 +137,7 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	return plan, nil
 }
 
-func Delete(ctx *c.Context, id string) error {
+func Delete(ctx context.Context, id string) error {
 
 	plan, err := db.DbAdapter.GetPlan(ctx, id)
 	if err == ERR_PLAN_NOT_EXIST {
@@ -160,7 +162,7 @@ func Delete(ctx *c.Context, id string) error {
 }
 
 //1. cannot update type
-func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*Plan, error) {
+func Update(ctx context.Context, planId string, updateMap map[string]interface{}) (*Plan, error) {
 
 	curPlan, err := db.DbAdapter.GetPlan(ctx, planId)
 	if err != nil {
@@ -223,7 +225,7 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 	if needUpdateTrigger {
 		trigger.GetTriggerMgr().Remove(ctx, curPlan)
 		if curPlan.PolicyId != "" && curPlan.PolicyEnabled {
-			if err := trigger.GetTriggerMgr().Add(ctx, curPlan, NewPlanExecutor(ctx, curPlan)); err != nil {
+			if err := trigger.GetTriggerMgr().Add(ctx, curPlan, NewPlanExecutor(curPlan)); err != nil {
 				log.Logf("Add plan(%s) to trigger failed, %v", curPlan.Id.Hex(), err)
 				return nil, err
 			}
@@ -233,11 +235,11 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 	return db.DbAdapter.UpdatePlan(ctx, curPlan)
 }
 
-func Get(ctx *c.Context, id string) (*Plan, error) {
+func Get(ctx context.Context, id string) (*Plan, error) {
 	return db.DbAdapter.GetPlan(ctx, id)
 }
 
-func List(ctx *c.Context, limit int, offset int, filter interface{}) ([]Plan, error) {
+func List(ctx context.Context, limit int, offset int, filter interface{}) ([]Plan, error) {
 	return db.DbAdapter.ListPlan(ctx, limit, offset, filter)
 }
 
@@ -253,9 +255,9 @@ func getLocation(conn *Connector) (string, error) {
 				return cfg[i].Value, nil
 			}
 		}
-		return "", errors.New("No bucket provided for sefldefine connector.")
+		return "", errors.New("no bucket provided for self-defined connector.")
 	default:
-		log.Logf("Unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
+		log.Logf("unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
 		return "", ERR_INNER_ERR
 	}
 }
@@ -280,26 +282,30 @@ func buildConn(reqConn *datamover.Connector, conn *Connector) {
 	}
 }
 
-func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
+func Run(planId, tenantId, userId string) (bson.ObjectId, error) {
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   userId,
+		common.CTX_KEY_TENENT_ID: tenantId,
+	})
 	//Get information from database
-	plan, err := db.DbAdapter.GetPlan(ctx, id)
+	plan, err := db.DbAdapter.GetPlan(ctx, planId)
 	if err != nil {
 		return "", err
 	}
 
 	//scheduling must be mutual excluded among several schedulers
 	//Get Lock
-	ret := db.DbAdapter.LockSched(string(plan.Id.Hex()))
+	ret := db.DbAdapter.LockSched(tenantId, string(plan.Id.Hex()))
 	for i := 0; i < 3; i++ {
 		if ret == LockSuccess {
 			//Make sure unlock before return
-			defer db.DbAdapter.UnlockSched(string(plan.Id.Hex()))
+			defer db.DbAdapter.UnlockSched(tenantId, string(plan.Id.Hex()))
 			break
 		} else if ret == LockBusy {
 			return "", ERR_RUN_PLAN_BUSY
 		} else {
 			//Try to lock again, try three times at most
-			ret = db.DbAdapter.LockSched(string(plan.Id.Hex()))
+			ret = db.DbAdapter.LockSched(tenantId, string(plan.Id.Hex()))
 		}
 	}
 
@@ -320,8 +326,6 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	ct := time.Now()
 	//Create job
 	job := Job{}
-	//obId := bson.NewObjectId()
-	//job.Id = jobId
 	job.Type = plan.Type
 	job.PlanId = string(plan.Id.Hex())
 	job.PlanName = plan.Name
@@ -331,13 +335,18 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	job.Status = JOB_STATUS_PENDING
 	job.RemainSource = plan.RemainSource
 	job.StartTime = time.Time{}
+	job.TenantId = tenantId
+	job.UserId = userId
 	//add job to database
 	_, err = db.DbAdapter.CreateJob(ctx, &job)
 	if err == nil {
 		//TODO: change to send job to datamover by kafka
 		//This way send job is the temporary
 		filt := datamover.Filter{Prefix: plan.Filter.Prefix}
-		req := datamover.RunJobRequest{Id: job.Id.Hex(), RemainSource: plan.RemainSource, Filt: &filt}
+		req := datamover.RunJobRequest{
+			Id: job.Id.Hex(), TenanId: tenantId, UserId:userId,
+			RemainSource: plan.RemainSource, Filt: &filt,
+		}
 		srcConn := datamover.Connector{Type: plan.SourceConn.StorType}
 		buildConn(&srcConn, &plan.SourceConn)
 		req.SourceConn = &srcConn
@@ -357,20 +366,20 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 type TriggerExecutor struct {
 	planId   string
 	tenantId string
-	ctx      *c.Context
+	userId   string
 }
 
-func NewPlanExecutor(ctx *c.Context, plan *Plan) trigger.Executer {
+func NewPlanExecutor(plan *Plan) trigger.Executer {
 	return &TriggerExecutor{
 		planId:   plan.Id.Hex(),
 		tenantId: plan.TenantId,
-		ctx:      ctx,
+		userId:   plan.UserId,
 	}
 }
 
 func (p *TriggerExecutor) Run() {
-	log.Logf("schudler run plan (%s) is called in dataflow service.", p.planId)
-	jobId, err := Run(p.ctx, p.planId)
+	log.Logf("schedudler run plan (%s) is called in dataflow service.", p.planId)
+	jobId, err := Run(p.planId, p.tenantId, p.userId)
 	if err != nil {
 		log.Logf("PlanExcutor run plan(%s) error, jobid:%s, error:%v", p.planId, jobId, err)
 	}

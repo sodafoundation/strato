@@ -40,6 +40,20 @@ const (
 	KStorageTier  = "tier"
 )
 
+const (
+	CTX_KEY_TENENT_ID = "Tenantid"
+	CTX_KEY_USER_ID   = "Userid"
+	CTX_KEY_IS_ADMIN  = "Isadmin"
+	CTX_VAL_TRUE      = "true"
+)
+
+const (
+	REST_KEY_OPERATION       = "operation"
+	REST_VAL_MULTIPARTUPLOAD = "multipartupload"
+	REST_VAL_DOWNLOAD        = "download"
+	REST_VAL_UPLOAD          = "upload"
+)
+
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
 	limit := int32(DefaultPaginationLimit)
 	offset := int32(DefaultPaginationOffset)

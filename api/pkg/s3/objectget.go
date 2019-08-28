@@ -21,13 +21,14 @@ import (
 	"strings"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/micro/go-micro/metadata"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 )
 
 //ObjectGet -
@@ -35,8 +36,9 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	rangestr := request.HeaderParameter("Range")
-	log.Logf("%v\n", rangestr)
-	ctx := context.WithValue(request.Request.Context(), "operation", "download")
+	log.Logf("Received request for object get, bucket: %s, object: %s, range: %s\n",
+		bucketName, objectKey, rangestr)
+
 	start := 0
 	end := 0
 	if rangestr != "" {
@@ -46,7 +48,15 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		start, _ = strconv.Atoi(startstr)
 		end, _ = strconv.Atoi(endstr)
 	}
-	log.Logf("Received request for create bucket: %s", bucketName)
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   actx.UserId,
+		common.CTX_KEY_TENENT_ID: actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+		common.REST_KEY_OPERATION: common.REST_VAL_DOWNLOAD,
+	})
+
 	object := s3.Object{}
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	log.Logf("enter the s3Client download method")
@@ -66,9 +76,9 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	object.BucketName = bucketName
 	var client datastore.DataStoreAdapter
 	if backendname != "" {
-		client = getBackendByName(s, backendname)
+		client = getBackendByName(ctx, s, backendname)
 	} else {
-		client = getBackendClient(s, bucketName)
+		client = getBackendClient(ctx, s, bucketName)
 	}
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())

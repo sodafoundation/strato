@@ -16,23 +16,29 @@ package s3
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	//	"github.com/micro/go-micro/errors"
 )
 
 func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:delete") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
-	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   actx.UserId,
+		common.CTX_KEY_TENENT_ID: actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+	})
+
 	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
 
 	if err != nil {
@@ -48,8 +54,7 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 		log.Log("Delete bucket successfully.")
 		response.WriteEntity(res1)
 	} else {
-		log.Log("The bucket can not be deleted. please delete objects first.\n")
+		log.Log("bucket with objects can not be deleted, need to delete objects first\n")
 		response.WriteError(http.StatusInternalServerError, BucketDeleteError.Error())
 	}
-
 }

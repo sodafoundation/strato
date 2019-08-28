@@ -17,10 +17,14 @@ package s3
 import (
 	"encoding/xml"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
@@ -57,11 +61,16 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	if !policy.Authorize(request, response, "bucket:list") {
 		return
 	}
-	ctx := context.Background()
-	//TODO owner
-	owner := "test"
 	log.Logf("Received request for all buckets")
-	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{Id: owner})
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   actx.UserId,
+		common.CTX_KEY_TENENT_ID: actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+	})
+
+	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

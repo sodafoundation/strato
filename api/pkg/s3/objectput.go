@@ -22,41 +22,44 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
 //ObjectPut -
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:put") {
-		return
-	}
 	url := request.Request.URL
 	log.Logf("URL is %v", request.Request.URL.String())
-	log.Logf("request  is %v\n", request)
+
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("bucketName is %v\n:", bucketName)
 	objectKey := request.PathParameter("objectKey")
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
-	log.Logf("objectKey is %v:\n", objectKey)
+
 	contentLenght := request.HeaderParameter("content-length")
+	size, err := strconv.ParseInt(contentLenght, 10, 64)
+	if err != nil {
+		log.Logf("get content lenght failed, err: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, InvalidContentLength.Error())
+		return
+	}
 	backendName := request.HeaderParameter("x-amz-storage-class")
-	log.Logf("backendName is :%v\n", backendName)
+	log.Logf("object.size is %v, objectKey is %s, backend name is%s\n", size, objectKey, backendName)
 
 	// Currently, only support tier1 as default
 	tier := int32(utils.Tier1)
 
 	object := s3.Object{}
 	object.BucketName = bucketName
-	size, _ := strconv.ParseInt(contentLenght, 10, 64)
-	log.Logf("object.size is %v\n", size)
+	object.ObjectKey = objectKey
 	object.Size = size
 	object.IsDeleteMarker = ""
 	object.InitFlag = ""
@@ -65,20 +68,24 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	// standard as default
 	object.StorageClass = constants.StorageClassOpenSDSStandard
 
-	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:    actx.UserId,
+		common.CTX_KEY_TENENT_ID:  actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:   strconv.FormatBool(actx.IsAdmin),
+		common.REST_KEY_OPERATION: common.REST_VAL_UPLOAD,
+	})
+	object.UserId = actx.UserId
+	object.TenantId = actx.TenantId
 
-	log.Logf("Received request for create bucket: %s", bucketName)
-
-	log.Logf("objectKey is %v:\n", objectKey)
-	object.ObjectKey = objectKey
 	var client datastore.DataStoreAdapter
 	if backendName != "" {
 		object.Backend = backendName
-		client = getBackendByName(s, backendName)
+		client = getBackendByName(ctx, s, backendName)
 	} else {
 		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 		object.Backend = bucket.Backend
-		client = getBackendClient(s, bucketName)
+		client = getBackendClient(ctx, s, bucketName)
 	}
 
 	if client == nil {
@@ -88,7 +95,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	log.Logf("enter the PUT method")
 	s3err := client.PUT(request.Request.Body, &object, ctx)
 	log.Logf("LastModified is %v\n", object.LastModified)
-
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return

@@ -16,13 +16,17 @@ package s3
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -54,14 +58,21 @@ func (s *APIService) tier2class(tier int32) (string, error) {
 
 //Function for GET Bucket Lifecycle API
 func (s *APIService) BucketLifecycleGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:get") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("received request for bucket details in GET lifecycle: %s", bucketName)
 
-	ctx := context.Background()
-	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   actx.UserId,
+		common.CTX_KEY_TENENT_ID: actx.TenantId,
+		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+	})
+
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	if err != nil {
+		log.Logf("get bucket failed, err=%v\n", err)
+		response.WriteError(http.StatusInternalServerError, fmt.Errorf("bucket does not exist"))
+	}
 
 	// convert back to xml struct
 	getLifecycleConf := model.LifecycleConfiguration{}
