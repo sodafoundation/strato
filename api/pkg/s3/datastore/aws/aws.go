@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,20 +17,23 @@ package aws
 import (
 	"bytes"
 	"context"
+	"io"
+	"io/ioutil"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/micro/go-log"
+
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"io"
-	"io/ioutil"
-	"strconv"
-	"time"
 )
 
 type AwsAdapter struct {
@@ -87,6 +90,8 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			Bucket: &bucket,
 			Key:    &newObjectKey,
 			Body:   stream,
+			// Currently, only support STANDARD for PUT.
+			StorageClass: aws.String(constants.StorageClassAWSStandard),
 		})
 
 		if err != nil {
@@ -200,6 +205,8 @@ func (ad *AwsAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 	multiUpInput := &awss3.CreateMultipartUploadInput{
 		Bucket: &bucket,
 		Key:    &newObjectKey,
+		// Currently, only support STANDARD.
+		StorageClass: aws.String(constants.StorageClassAWSStandard),
 	}
 
 	svc := awss3.New(ad.session)

@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
-//    Licensed under the Apache License, Version 2.0 (the "License"); you may
-//    not use this file except in compliance with the License. You may obtain
-//    a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
 //
-//         http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//    Unless required by applicable law or agreed to in writing, software
-//    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-//    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-//    License for the specific language governing permissions and limitations
-//    under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
 
 package signer_test
 
@@ -26,18 +26,19 @@ const authorizationStr = "OPENSDS-HMAC-SHA256 Credential=access_key/20190301/us-
 
 type mockProvider struct {
 	credentials credentials.Value
-	err   error
+	err         error
 }
+
 func (m *mockProvider) Retrieve() (credentials.Value, error) {
 	m.credentials.ProviderName = "mockProvider"
 	return m.credentials, m.err
 }
 
-func buildRequest(serviceName, region string) (*http.Request) {
+func buildRequest(serviceName, region string) *http.Request {
 	endpoint := "https://" + serviceName + "/" + region
 	req, _ := http.NewRequest("GET", endpoint, nil)
-	req.Header.Add("X-Auth-Date","20190301T220855Z")
-	req.Header.Add("Authorization",authorizationStr)
+	req.Header.Add("X-Auth-Date", "20190301T220855Z")
+	req.Header.Add("Authorization", authorizationStr)
 	return req
 }
 
@@ -50,15 +51,15 @@ func buildSigner() signer.Signer {
 	})
 
 	return signer.Signer{
-		Credentials:  c,
+		Credentials: c,
 	}
 }
 
 func TestSignRequestValidation(t *testing.T) {
 	req := buildRequest("s3", "us-east-1")
 	signer := buildSigner()
-        credentialStr := "access_key/20190301/us-east-1/s3/sign_request"
-	calculatedSignature, err := signer.Sign(req, "", "s3", "us-east-1","20190301T220855Z", "20190301", credentialStr)
+	credentialStr := "access_key/20190301/us-east-1/s3/sign_request"
+	calculatedSignature, err := signer.Sign(req, "", "s3", "us-east-1", "20190301T220855Z", "20190301", credentialStr)
 
 	if err != nil {
 		return

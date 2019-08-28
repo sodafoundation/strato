@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -27,7 +28,7 @@ func (ad *adapter) CreateObject(in *pb.Object) S3Error {
 	defer ss.Close()
 	out := pb.Object{}
 	c := ss.DB(DataBaseName).C(in.BucketName)
-	err := c.Find(bson.M{"objectkey": in.ObjectKey}).One(out)
+	err := c.Find(bson.M{DBKEY_OBJECTKEY: in.ObjectKey}).One(out)
 	if err == mgo.ErrNotFound {
 		err := c.Insert(&in)
 		if err != nil {
@@ -45,14 +46,33 @@ func (ad *adapter) UpdateObject(in *pb.Object) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.BucketName)
-	err := c.Update(bson.M{"objectkey": in.ObjectKey}, in)
+	log.Logf("update object:%+v\n", *in)
+	err := c.Update(bson.M{DBKEY_OBJECTKEY: in.ObjectKey}, in)
 	if err == mgo.ErrNotFound {
-		log.Log("Update object to database failed, err:%v\n", err)
+		log.Log("update object to database failed, err:%v\n", err)
 		return NoSuchObject
 	} else if err != nil {
-		log.Log("Update object to database failed, err:%v\n", err)
+		log.Log("update object to database failed, err:%v\n", err)
 		return InternalError
 	}
 
 	return NoError
 }
+
+func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error {
+	ss := ad.s.Copy()
+	defer ss.Close()
+	c := ss.DB(DataBaseName).C(*bucketName)
+	log.Logf("update object metadata: key=%s, bucket=%s, lastmodified=%d\n", *objKey, *bucketName, lastmod)
+
+	selector := bson.M{DBKEY_OBJECTKEY: *objKey, DBKEY_LASTMODIFIED: lastmod}
+	data := bson.M{"$set": setting}
+	err := c.Update(selector, data)
+	if err != nil {
+		log.Logf("update object[key=%s] metadata failed:%v.\n", *objKey, err)
+		return DBError
+	}
+
+	return NoError
+}
+

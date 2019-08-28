@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,14 @@ package s3
 import (
 	"encoding/xml"
 	"net/http"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	//	"github.com/micro/go-micro/errors"
-	"time"
-
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -35,7 +33,6 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		return
 	}
 	bucketName := request.PathParameter("bucketName")
-
 	log.Logf("Received request for create bucket: %s", bucketName)
 	ctx := context.Background()
 	bucket := s3.Bucket{Name: bucketName}
@@ -47,7 +44,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.Deleted = false
 	bucket.OwnerDisplayName = ownerDisplayName
 	bucket.CreationDate = time.Now().Unix()
-	//log.Logf("Create bucket body: %s", string(body))
+
 	if body != nil {
 		createBucketConf := model.CreateBucketConfiguration{}
 		err := xml.Unmarshal(body, &createBucketConf)
@@ -65,8 +62,8 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 					return
 				}
 			} else {
-				log.Logf("backetName is %v\n", backendName)
-				response.WriteError(http.StatusNotFound, NoSuchBackend.Error())
+				log.Log("default backend is not provided.")
+				response.WriteError(http.StatusBadRequest, NoSuchBackend.Error())
 				return
 			}
 		}
@@ -79,5 +76,4 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	}
 	log.Log("Create bucket successfully.")
 	response.WriteEntity(res)
-
 }

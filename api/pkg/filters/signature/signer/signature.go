@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
-//    Licensed under the Apache License, Version 2.0 (the "License"); you may
-//    not use this file except in compliance with the License. You may obtain
-//    a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
 //
-//         http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//    Unless required by applicable law or agreed to in writing, software
-//    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-//    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-//    License for the specific language governing permissions and limitations
-//    under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
 
 // Package signer implements signing and signature validation for opensds multi-cloud signer.
 //
@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	authHeaderPrefix = "OPENSDS-HMAC-SHA256"
+	authHeaderPrefix  = "OPENSDS-HMAC-SHA256"
 	emptyStringSHA256 = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 )
 
@@ -46,25 +46,25 @@ type SignatureBase interface {
 }
 
 type Signature struct {
-	Service		string
-	Region		string
-	Request		*http.Request
-	Body		string
-	Query		url.Values
+	Service string
+	Region  string
+	Request *http.Request
+	Body    string
+	Query   url.Values
 
-	SignedHeaderValues	http.Header
+	SignedHeaderValues http.Header
 
-	credValues		credentials.Value
-	requestDateTime 	string
-	requestDate     	string
-	requestPayload		string
-	signedHeaders    	string
-	canonicalHeaders 	string
-	canonicalString  	string
-	credentialString 	string
-	stringToSign     	string
-	signature        	string
-	authorization    	string
+	credValues       credentials.Value
+	requestDateTime  string
+	requestDate      string
+	requestPayload   string
+	signedHeaders    string
+	canonicalHeaders string
+	canonicalString  string
+	credentialString string
+	stringToSign     string
+	signature        string
+	authorization    string
 }
 
 func NewSignature() SignatureBase {
@@ -82,7 +82,7 @@ func FilterFactory() restful.FilterFunction {
 func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
 
 	//Get the Authorization Header from the request
-	authorization, err := getHeaderParams(req, resp,constants.AuthorizationHeader)
+	authorization, err := getHeaderParams(req, resp, constants.AuthorizationHeader)
 
 	if err != nil {
 		log.Error("When get Authorization value:", err)
@@ -90,7 +90,7 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 	}
 
 	//Get the X-Auth-Date Header from the request
-	requestDateTime, err := getHeaderParams(req, resp,constants.SignDateHeader)
+	requestDateTime, err := getHeaderParams(req, resp, constants.SignDateHeader)
 
 	if err != nil {
 		log.Error("When get Request DateTimeStamp value:", err)
@@ -111,7 +111,7 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 	credentialStr := credsParts[1]
 
 	credentialStrParts := strings.Split(credentialStr, "/")
-	accessKeyID,requestDate,region, service  := credentialStrParts[0], credentialStrParts[1], credentialStrParts[2], credentialStrParts[3]
+	accessKeyID, requestDate, region, service := credentialStrParts[0], credentialStrParts[1], credentialStrParts[2], credentialStrParts[3]
 
 	//TODO Get Request Body
 	body := ""
@@ -153,10 +153,10 @@ func (sign *Signature) validateSignature(req *restful.Request, res *restful.Resp
 //Returns the Header value, else http error
 func getHeaderParams(req *restful.Request, resp *restful.Response, header string) (string, error) {
 	// Strip the spaces around the Header
-	value :=  strings.TrimSpace(req.HeaderParameter(header))
+	value := strings.TrimSpace(req.HeaderParameter(header))
 
 	if value == "" {
-		return "", model.HttpError(resp, http.StatusUnauthorized, header + " not found in header")
+		return "", model.HttpError(resp, http.StatusUnauthorized, header+" not found in header")
 	}
 	return value, nil
 }
@@ -170,7 +170,7 @@ type Signer struct {
 // NewSigner returns a Signer pointer configured with the credentials and optional
 // option values provided.
 func NewSigner(credentials *credentials.Credentials, options ...func(*Signer)) *Signer {
-	signer:= &Signer{
+	signer := &Signer{
 		Credentials: credentials,
 	}
 
@@ -188,13 +188,13 @@ func NewSigner(credentials *credentials.Credentials, options ...func(*Signer)) *
 func (signer Signer) Sign(req *http.Request, body string, service, region string, requestDateTime string, requestDate string, credentialStr string) (string, error) {
 
 	sign := &Signature{
-		Request:            req,
-		requestDateTime:    requestDateTime,
-		requestDate:	    requestDate,
-		Body:               body,
-		Query:              req.URL.Query(),
-		Service:            service,
-		Region:             region,
+		Request:         req,
+		requestDateTime: requestDateTime,
+		requestDate:     requestDate,
+		Body:            body,
+		Query:           req.URL.Query(),
+		Service:         service,
+		Region:          region,
 	}
 
 	for key := range sign.Query {
@@ -203,7 +203,7 @@ func (signer Signer) Sign(req *http.Request, body string, service, region string
 
 	var err error
 	sign.credValues, err = signer.Credentials.Get()
-        sign.credentialString = credentialStr
+	sign.credentialString = credentialStr
 
 	if err != nil {
 		return "", err
@@ -215,6 +215,7 @@ func (signer Signer) Sign(req *http.Request, body string, service, region string
 
 	return sign.signature, nil
 }
+
 // ************* CREATE A SIGNATURE *************
 func (sign *Signature) build() error {
 
@@ -263,8 +264,8 @@ func (sign *Signature) buildCanonicalHeaders(header http.Header) {
 
 	headerValues := make([]string, len(headers))
 	for i, k := range headers {
-		 headerValues[i] = k + ":" +
-                                strings.Join(sign.SignedHeaderValues[k], ",")
+		headerValues[i] = k + ":" +
+			strings.Join(sign.SignedHeaderValues[k], ",")
 	}
 	stripExcessSpaces(headerValues)
 	sign.canonicalHeaders = strings.Join(headerValues, "\n")
@@ -313,12 +314,13 @@ func (sign *Signature) buildStringToSign() {
 		hex.EncodeToString(makeSha256([]byte(sign.canonicalString))),
 	}, "\n") //Step 5: Combine elements to create canonical request
 }
+
 // ************* TASK 3: CALCULATE THE SIGNATURE *************
 func (sign *Signature) buildSignature() {
 	// Step 1:  Create the signing key, use the secret access key to create a series of
 	// hash-based message authentication codes (HMACs).
 	kSecret := sign.credValues.SecretAccessKey
-	kDate := makeHmac([]byte("OPENSDS" + kSecret), []byte(sign.requestDate))
+	kDate := makeHmac([]byte("OPENSDS"+kSecret), []byte(sign.requestDate))
 	kRegion := makeHmac(kDate, []byte(sign.Region))
 	kService := makeHmac(kRegion, []byte(sign.Service))
 	signingKey := makeHmac(kService, []byte("sign_request"))

@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+# Copyright 2019 The OpenSDS Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ servers:
 info:
   description: |
     OpenSDS Multi-cloud API to manage multi-cloud backend storages.
-    You can find out more about Swagger at 
-    [https://www.opensds.io](https://www.opensds.io) 
+    You can find out more about Swagger at
+    [https://www.opensds.io](https://www.opensds.io)
   version: 1.0.0
   title: OpenSDS Multi-Cloud API
   termsOfService: '://www.linuxfoundation.org/terms'
@@ -201,7 +201,7 @@ paths:
       tags:
         - types
       summary: List all supported storage backend type.
-      operationId: listBackend
+      operationId: listBackendTypes
       parameters:
         - name: name
           in: query
@@ -679,6 +679,19 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+  '/v1/s3/storageClasses':
+    get:
+      tags:
+        - s3
+      summary: get supported storage classes
+      operationId: getStorageClasses
+      responses:
+        '200':
+          description: 'Get storage classes succesfully. There is a map between storage class name and stroage tier, as default the storage classes are compatible with aws s3.'
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ListStorageClasses'
 components:
   parameters:
     offset:
@@ -842,7 +855,7 @@ components:
         PolicyId:
           description: >-
             Related policy id, plan will be scheduled automatically according this policy if PolicyEnabled is true.
-          type: string  
+          type: string
         RemainSource:
           description: Remain the source objects or not.
           type: boolean
@@ -1022,6 +1035,23 @@ components:
             Backend:
               description: The backend of object
               type: string
+    ListStorageClasses:
+      type: array
+      xml:
+        wrapped: true
+      items:
+        xml:
+          name: Class
+        type: object
+        properties:
+          Name:
+            description: 'The storage class name, as default, it is compatible with aws s3.'
+            type: string
+            example: STANDARD
+          Tier:
+            description: 'The storage tier, used in OpenSDS. Each tier is mapped to a specific name.'
+            type: integer
+            example: 1
   requestBodies:
     Backend:
       content:

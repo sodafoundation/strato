@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,46 @@
 
 package utils
 
+const (
+	ActionExpiration               = 1
+	ActionIncloudTransition        = 2
+	ActionCrosscloudTransition     = 3
+	AbortIncompleteMultipartUpload = 4
+)
+
+const (
+	ActionNameExpiration = "expiration"
+)
+
+const (
+	KObjKey       = "objkey"
+	KLastModified = "lastmodified"
+	KStorageTier  = "tier"
+)
+
+const (
+	RuleStatusEnabled  = "Enabled"
+	RuleStatusDisabled = "Disabled"
+)
+
 type Database struct {
 	Credential string `conf:"credential,username:password@tcp(ip:port)/dbname"`
 	Driver     string `conf:"driver,mongodb"`
 	Endpoint   string `conf:"endpoint,localhost:27017"`
+}
+
+type InternalLifecycleFilter struct {
+	Prefix string
+	Tags   []string
+}
+
+type InternalLifecycleRule struct {
+	Id           string
+	Bucket       string
+	Filter       InternalLifecycleFilter
+	Days         int32
+	Tier         int32
+	ActionType   int // 0-Expiration, 1-IncloudTransition, 2-CrossCloudTransition, 3-AbortMultipartUpload
+	DeleteMarker string
+	Backend      string
 }

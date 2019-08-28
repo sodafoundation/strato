@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,19 @@
 package scheduler
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
+	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/lifecycle"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
+	"github.com/robfig/cron"
 )
+
 
 func LoadAllPlans() {
 	ctx := context.NewAdminContext()
@@ -55,4 +61,22 @@ func LoadAllPlans() {
 			log.Logf("Load plan(%s) to trigger success", p.Id.Hex())
 		}
 	}
+}
+
+//This scheduler will scan all buckets periodically to get lifecycle rules, and scheduling according to these rules.
+func LoadLifecycleScheduler() error {
+	spec := os.Getenv("LIFECYCLE_CRON_CONFIG")
+	log.Logf("Value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
+
+	//TODO: Check the validation of spec
+	cn := cron.New()
+	//0 */10 * * * ?
+	if err := cn.AddFunc(spec, lifecycle.ScheduleLifecycle); err != nil {
+		log.Logf("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
+		return fmt.Errorf("add lifecyecle scheduler to cron trigger failed: %v", err)
+	}
+	cn.Start()
+
+	log.Log("add lifecycle scheduler to cron trigger successfully.")
+	return nil
 }

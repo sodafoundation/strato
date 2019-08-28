@@ -17,6 +17,7 @@ services:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime
     depends_on:
       - zookeeper
 
@@ -24,6 +25,7 @@ services:
     image: opensdsio/multi-cloud-api
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
+      - /etc/localtime:/etc/localtime
     ports:
       - 8089:8089
     environment:
@@ -41,12 +43,18 @@ services:
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
+    volumes:
+      - /etc/localtime:/etc/localtime
 
   s3:
     image: opensdsio/multi-cloud-s3
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
+      # 0 means use user defined storage class, otherwise use default storage class.
+      - USE_DEFAULT_STORAGE_CLASS=1
+    volumes:
+      - /etc/localtime:/etc/localtime
 
   dataflow:
     image: opensdsio/multi-cloud-dataflow
@@ -54,14 +62,19 @@ services:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - LIFECYCLE_CRON_CONFIG=0 0 0 * * ?
+    volumes:
+      - /etc/localtime:/etc/localtime
     depends_on:
       - zookeeper
       - kafka
+      - s3
 
   datamover:
     image: opensdsio/multi-cloud-datamover
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
+      - /etc/localtime:/etc/localtime
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017

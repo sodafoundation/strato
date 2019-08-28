@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,5 +32,6 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/{tenantId}/backends/{id}").To(handler.DeleteBackend)).
 		Doc("Delete backend")
 	ws.Route(ws.GET("/{tenantId}/types").To(handler.ListType)).
-		Doc("Get backend list")
+		Doc("Get backend types")
 }
+

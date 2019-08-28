@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ func (p ErrorProvider) Retrieve() (Value, error) {
 
 // A Credentials provides concurrency safe retrieval of OpenSDS multi-cloud credentials Value.
 type Credentials struct {
-	credentials        Value
+	credentials Value
 
 	m sync.RWMutex
 
@@ -63,7 +63,7 @@ type Credentials struct {
 // NewCredentials returns a pointer to a new Credentials with the provider set.
 func NewCredentials(provider Provider) *Credentials {
 	return &Credentials{
-		provider:     provider,
+		provider: provider,
 	}
 }
 

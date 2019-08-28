@@ -5,7 +5,7 @@ Gelato: OpenSDS Multi-Cloud Data Control
 [![Releases](https://img.shields.io/github/release/opensds/multi-cloud/all.svg?style=flat-square)](https://github.com/opensds/multi-cloud/releases)
 [![LICENSE](https://img.shields.io/github/license/opensds/multi-cloud.svg?style=flat-square)](https://github.com/opensds/multi-cloud/blob/master/LICENSE)
 
-## Latest Release: v0.4.0 Bali
+## Latest Release: v0.6.0 Capri
 [OpenAPI doc](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/opensds/multi-cloud/master/openapi-spec/swagger.yaml)
 
-[Release notes](https://github.com/opensds/multi-cloud/releases/tag/v0.4.0)
+[Release notes](https://github.com/opensds/multi-cloud/releases/tag/v0.6.0)

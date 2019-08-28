@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Huawei Technologies Co., Ltd. All Rights Reserved.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
+
 	//	_ "github.com/micro/go-plugins/client/grpc"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
@@ -45,15 +46,14 @@ func main() {
 	ws.Doc("OpenSDS Multi-Cloud API")
 	ws.Consumes(restful.MIME_JSON)
 	ws.Produces(restful.MIME_JSON)
-	ws.Filter(auth.FilterFactory())
 
 	backend.RegisterRouter(ws)
-	//s3.RegisterRouter(ws)
 	dataflow.RegisterRouter(ws)
 	// add filter for authentication context
-	wc.Filter(logging.FilterFactory())
-	wc.Filter(context.FilterFactory())
-
+	ws.Filter(logging.FilterFactory())
+	ws.Filter(context.FilterFactory())
+	ws.Filter(auth.FilterFactory())
+	
 	s3ws := new(restful.WebService)
 	s3ws.Path("/v1/s3")
 	s3ws.Doc("OpenSDS Multi-Cloud API")
