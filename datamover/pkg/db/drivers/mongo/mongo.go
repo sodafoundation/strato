@@ -19,7 +19,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	backend "github.com/opensds/multi-cloud/backend/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
@@ -60,7 +60,7 @@ func (ad *adapter) GetJobStatus(jobID string) string {
 
 	err := c.Find(bson.M{"_id": bson.ObjectIdHex(jobID)}).One(&job)
 	if err != nil {
-		log.Logf("Get job[ID#%s] failed:%v.\n", jobID, err)
+		log.Infof("Get job[ID#%s] failed:%v.\n", jobID, err)
 		return ""
 	}
 
@@ -75,7 +75,7 @@ func (ad *adapter) UpdateJob(job *Job) error {
 	j := Job{}
 	err := c.Find(bson.M{"_id": job.Id}).One(&j)
 	if err != nil {
-		log.Logf("Get job[id:%v] failed before update it, err:%v\n", job.Id, err)
+		log.Infof("Get job[id:%v] failed before update it, err:%v\n", job.Id, err)
 
 		return errors.New("Get job failed before update it.")
 	}
@@ -107,16 +107,16 @@ func (ad *adapter) UpdateJob(job *Job) error {
 
 	err = c.Update(bson.M{"_id": j.Id}, &j)
 	if err != nil {
-		log.Logf("Update job in database failed, err:%v\n", err)
+		log.Infof("Update job in database failed, err:%v\n", err)
 		return errors.New("Update job in database failed.")
 	}
 
-	log.Log("Update job in database succeed.")
+	log.Info("Update job in database succeed.")
 	return nil
 }
 
 func (ad *adapter) GetBackendByName(name string) (*backend.Backend, error) {
-	log.Logf("Get backend by name:%s\n", name)
+	log.Infof("Get backend by name:%s\n", name)
 	session := ad.s.Copy()
 	defer session.Close()
 

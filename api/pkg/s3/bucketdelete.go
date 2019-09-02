@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
@@ -32,7 +32,7 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 	}
 	bucketName := request.PathParameter("bucketName")
 	ctx := context.Background()
-	log.Logf("Received request for bucket details: %s", bucketName)
+	log.Infof("Received request for bucket details: %s", bucketName)
 	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
 
 	if err != nil {
@@ -45,10 +45,10 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 			response.WriteError(http.StatusInternalServerError, err1)
 			return
 		}
-		log.Log("Delete bucket successfully.")
+		log.Info("Delete bucket successfully.")
 		response.WriteEntity(res1)
 	} else {
-		log.Log("The bucket can not be deleted. please delete objects first.\n")
+		log.Info("The bucket can not be deleted. please delete objects first.\n")
 		response.WriteError(http.StatusInternalServerError, BucketDeleteError.Error())
 	}
 

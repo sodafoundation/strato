@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
@@ -44,14 +44,14 @@ func (m *Manager) Add(ctx *context.Context, plan *model.Plan, executer Executer)
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Logf("Get specified policy(%s) failed", plan.PolicyId)
+		log.Infof("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 
 	tg := GetTrigger(policy.Schedule.Type)
 	if tg == nil {
 		msg := fmt.Sprintf("specifed trigger type(%s) is not exist", policy.Schedule.Type)
-		log.Log(msg)
+		log.Info(msg)
 		return errors.New(msg)
 	}
 
@@ -64,14 +64,14 @@ func (m *Manager) Update(ctx *context.Context, plan *model.Plan, executer Execut
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Logf("Get specified policy(%s) failed", plan.PolicyId)
+		log.Infof("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 
 	tg := GetTrigger(policy.Schedule.Type)
 	if tg == nil {
 		msg := fmt.Sprintf("specifed trigger type(%s) is not exist", policy.Schedule.Type)
-		log.Log(msg)
+		log.Info(msg)
 		return errors.New(msg)
 	}
 	return tg.Update(plan.Id.Hex(), policy.Schedule.TriggerProperties, executer)
@@ -83,13 +83,13 @@ func (m *Manager) Remove(ctx *context.Context, plan *model.Plan) error {
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Logf("Get specified policy(%s) failed", plan.PolicyId)
+		log.Infof("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 	tg := GetTrigger(policy.Schedule.Type)
 	if tg == nil {
 		msg := fmt.Sprintf("specifed trigger type(%s) is not exist", policy.Schedule.Type)
-		log.Log(msg)
+		log.Info(msg)
 		return errors.New(msg)
 	}
 

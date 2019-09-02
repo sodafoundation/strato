@@ -16,20 +16,20 @@ package cephs3mover
 
 import (
 	"errors"
-	"github.com/go-log/log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	. "github.com/webrtcn/s3client"
 )
 
 func (mover *CephS3Mover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {
-	log.Logf("[cephs3lifecycle]: Failed to change storage class of object[key:%s, backend:%s] to %s, no transition support for ceph s3.\n",
+	log.Infof("[cephs3lifecycle]: Failed to change storage class of object[key:%s, backend:%s] to %s, no transition support for ceph s3.\n",
 		objKey, bkend.BakendName, newClass)
 
 	return errors.New(DMERR_UnSupportOperation)
 }
 
 func (mover *CephS3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId string, loc *LocationInfo) error {
-	log.Logf("[cephs3mover] Delete incomplete multipart upload[objkey=%s,uploadId=%s].\n", objKey, mover.multiUploadInitOut.UploadID)
+	log.Infof("[cephs3mover] Delete incomplete multipart upload[objkey=%s,uploadId=%s].\n", objKey, mover.multiUploadInitOut.UploadID)
 
 	sess := NewClient(loc.EndPoint, loc.Access, loc.Security)
 	bucket := sess.NewBucket()
@@ -37,9 +37,9 @@ func (mover *CephS3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId strin
 	uploader := cephObject.NewUploads(objKey)
 	err := uploader.RemoveUploads(uploadId)
 	if err != nil {
-		log.Logf("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)
+		log.Infof("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)
 	} else {
-		log.Logf("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully, err:%v.\n", objKey, uploadId)
+		log.Infof("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully, err:%v.\n", objKey, uploadId)
 	}
 
 	return err

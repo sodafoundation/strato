@@ -23,7 +23,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
@@ -35,7 +35,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	rangestr := request.HeaderParameter("Range")
-	log.Logf("%v\n", rangestr)
+	log.Infof("%v\n", rangestr)
 	ctx := context.WithValue(request.Request.Context(), "operation", "download")
 	start := 0
 	end := 0
@@ -46,18 +46,18 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		start, _ = strconv.Atoi(startstr)
 		end, _ = strconv.Atoi(endstr)
 	}
-	log.Logf("Received request for create bucket: %s", bucketName)
+	log.Infof("Received request for create bucket: %s", bucketName)
 	object := s3.Object{}
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	log.Logf("enter the s3Client download method")
+	log.Infof("enter the s3Client download method")
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	log.Logf("out the s3Client download method")
+	log.Infof("out the s3Client download method")
 	var backendname string
 	if objectMD != nil {
 		object.Size = objectMD.Size
 		backendname = objectMD.Backend
 	} else {
-		log.Logf("No such object")
+		log.Infof("No such object")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 		return
 	}
@@ -74,9 +74,9 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-	log.Logf("enter the download method")
+	log.Infof("enter the download method")
 	body, s3err := client.GET(&object, ctx, int64(start), int64(end))
-	log.Logf("out  the download method")
+	log.Infof("out  the download method")
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return

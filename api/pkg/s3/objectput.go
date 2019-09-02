@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
@@ -37,18 +37,18 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 	url := request.Request.URL
-	log.Logf("URL is %v", request.Request.URL.String())
-	log.Logf("request  is %v\n", request)
+	log.Infof("URL is %v", request.Request.URL.String())
+	log.Infof("request  is %v\n", request)
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("bucketName is %v\n:", bucketName)
+	log.Infof("bucketName is %v\n:", bucketName)
 	objectKey := request.PathParameter("objectKey")
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
-	log.Logf("objectKey is %v:\n", objectKey)
+	log.Infof("objectKey is %v:\n", objectKey)
 	contentLenght := request.HeaderParameter("content-length")
 	backendName := request.HeaderParameter("x-amz-storage-class")
-	log.Logf("backendName is :%v\n", backendName)
+	log.Infof("backendName is :%v\n", backendName)
 
 	// Currently, only support tier1 as default
 	tier := int32(utils.Tier1)
@@ -56,7 +56,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	object := s3.Object{}
 	object.BucketName = bucketName
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
-	log.Logf("object.size is %v\n", size)
+	log.Infof("object.size is %v\n", size)
 	object.Size = size
 	object.IsDeleteMarker = ""
 	object.InitFlag = ""
@@ -67,9 +67,9 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	ctx := context.WithValue(request.Request.Context(), "operation", "upload")
 
-	log.Logf("Received request for create bucket: %s", bucketName)
+	log.Infof("Received request for create bucket: %s", bucketName)
 
-	log.Logf("objectKey is %v:\n", objectKey)
+	log.Infof("objectKey is %v:\n", objectKey)
 	object.ObjectKey = objectKey
 	var client datastore.DataStoreAdapter
 	if backendName != "" {
@@ -85,9 +85,9 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-	log.Logf("enter the PUT method")
+	log.Infof("enter the PUT method")
 	s3err := client.PUT(request.Request.Body, &object, ctx)
-	log.Logf("LastModified is %v\n", object.LastModified)
+	log.Infof("LastModified is %v\n", object.LastModified)
 
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
@@ -96,11 +96,11 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
-		log.Logf("err is %v\n", err)
+		log.Infof("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Logf("object.size2  = %v \n", object.Size)
-	log.Log("Upload object successfully.")
+	log.Infof("object.size2  = %v \n", object.Size)
+	log.Info("Upload object successfully.")
 	response.WriteEntity(res)
 }

@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	mover "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
@@ -38,12 +38,12 @@ var InProgressObjs map[string]struct{}
 func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *BackendInfo, className *string) error {
 	// move object
 	part_size, err := strconv.ParseInt(os.Getenv("PARTSIZE"), 10, 64)
-	log.Logf("part_size=%d, err=%v.\n", part_size, err)
+	log.Infof("part_size=%d, err=%v.\n", part_size, err)
 	if err == nil {
 		// part_size must be more than 5M and less than 100M
 		if part_size >= 5 && part_size <= 100 {
 			PART_SIZE = part_size * 1024 * 1024
-			log.Logf("Set PART_SIZE to be %d.\n", PART_SIZE)
+			log.Infof("Set PART_SIZE to be %d.\n", PART_SIZE)
 		}
 	}
 
@@ -64,7 +64,7 @@ func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *Ba
 	if _, ok := InProgressObjs[obj.ObjectKey]; !ok {
 		InProgressObjs[obj.ObjectKey] = struct{}{}
 	} else {
-		log.Logf("the transition of object[%s] is in-progress\n", obj.ObjectKey)
+		log.Infof("the transition of object[%s] is in-progress\n", obj.ObjectKey)
 		return errors.New(DMERR_TransitionInprogress)
 	}
 
@@ -83,41 +83,41 @@ func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *Ba
 }
 
 func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
-	log.Logf("cross-cloud transition action: transition %s from %d of %s to %d of %s.\n",
+	log.Infof("cross-cloud transition action: transition %s from %d of %s to %d of %s.\n",
 		acReq.ObjKey, acReq.SourceTier, acReq.SourceBackend, acReq.TargetTier, acReq.TargetBackend)
 
 	src, err := getBackendInfo(&acReq.SourceBackend, false)
 	if err != nil {
-		log.Logf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		return err
 	}
 	target, err := getBackendInfo(&acReq.TargetBackend, false)
 	if err != nil {
-		log.Logf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		return err
 	}
 
 	className, err := getStorageClassName(acReq.TargetTier, target.StorType)
 	if err != nil {
-		log.Logf("cross-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
+		log.Infof("cross-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
 		return err
 	}
 
-	log.Logf("transition object[%s] from [%+v] to [%+v]\n", acReq.ObjKey, src, target)
+	log.Infof("transition object[%s] from [%+v] to [%+v]\n", acReq.ObjKey, src, target)
 	obj := osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName}
 	err = copyObj(context.Background(), &obj, src, target, &className)
 	if err != nil && err.Error() == DMERR_NoPermission {
-		log.Logf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		// In case credentials is changed.
 		src, _ = getBackendInfo(&acReq.SourceBackend, true)
 		target, _ = getBackendInfo(&acReq.TargetBackend, true)
 		err = copyObj(context.Background(), &obj, src, target, &className)
 	}
 	if err != nil && err.Error() == "in-progress" {
-		log.Logf("transition of object[%s] is in-progress\n", acReq.ObjKey)
+		log.Infof("transition of object[%s] is in-progress\n", acReq.ObjKey)
 		return nil
 	} else if err != nil {
-		log.Logf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		return err
 	}
 

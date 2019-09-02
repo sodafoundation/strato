@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
@@ -83,11 +83,11 @@ func checkConnValidation(conn *Connector) error {
 		case "security":
 			flag = flag | BIT_SECURITY
 		default:
-			log.Logf("Uknow key[%s] for connector.\n", cfg[i].Key)
+			log.Infof("Uknow key[%s] for connector.\n", cfg[i].Key)
 		}
 	}
 	if flag != BIT_FULL {
-		log.Logf("Invalid connector, flag=%b\n", flag)
+		log.Infof("Invalid connector, flag=%b\n", flag)
 		return errors.New("Invalid connector")
 	}
 
@@ -98,7 +98,7 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	//Check parameter validity
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", plan.Name)
 	if !m {
-		log.Logf("Invalid plan name[%s], err:%v", plan.Name, err)
+		log.Infof("Invalid plan name[%s], err:%v", plan.Name, err)
 		return nil, ERR_INVALID_PLAN_NAME
 	}
 
@@ -106,28 +106,28 @@ func Create(ctx *c.Context, plan *Plan) (*Plan, error) {
 	plan.LastSchedTime = 0 //set to be 0 as default
 
 	if isEqual(&plan.SourceConn, &plan.DestConn) {
-		log.Log("source connector is the same as destination connector.")
+		log.Info("source connector is the same as destination connector.")
 		return nil, ERR_DEST_SRC_CONN_EQUAL
 	}
 	if checkConnValidation(&plan.SourceConn) != nil {
-		log.Logf("Source connector is invalid, type=%s\n", plan.SourceConn.StorType)
+		log.Infof("Source connector is invalid, type=%s\n", plan.SourceConn.StorType)
 		return nil, ERR_SRC_CONN_NOT_EXIST
 	}
 	if checkConnValidation(&plan.DestConn) != nil {
-		log.Logf("Target connector is invalid, type=%s\n", plan.DestConn.StorType)
+		log.Infof("Target connector is invalid, type=%s\n", plan.DestConn.StorType)
 		return nil, ERR_DEST_CONN_NOT_EXIST
 	}
 
 	//Add to database
 	plan, err = db.DbAdapter.CreatePlan(ctx, plan)
 	if err != nil {
-		log.Logf("create plan in db failed,%v", err)
+		log.Infof("create plan in db failed,%v", err)
 		return nil, err
 	}
 
 	if plan.PolicyId != "" && plan.PolicyEnabled {
 		if err := trigger.GetTriggerMgr().Add(ctx, plan, NewPlanExecutor(ctx, plan)); err != nil {
-			log.Logf("Add plan(%s) to trigger failed, %v", plan.Id.Hex(), err)
+			log.Infof("Add plan(%s) to trigger failed, %v", plan.Id.Hex(), err)
 			return nil, err
 		}
 	}
@@ -139,19 +139,19 @@ func Delete(ctx *c.Context, id string) error {
 
 	plan, err := db.DbAdapter.GetPlan(ctx, id)
 	if err == ERR_PLAN_NOT_EXIST {
-		log.Logf("specified plan(%s) is not exist, ignore it ", id)
+		log.Infof("specified plan(%s) is not exist, ignore it ", id)
 		return nil
 	}
 
 	if err != nil {
-		log.Logf("Delete plan failed, %v", err)
+		log.Infof("Delete plan failed, %v", err)
 		return err
 	}
 
 	if plan.PolicyId != "" {
 		err = trigger.GetTriggerMgr().Remove(ctx, plan)
 		if err != nil && err != ERR_PLAN_NOT_EXIST {
-			log.Logf("Remove plan from triggers failed, %v", err)
+			log.Infof("Remove plan from triggers failed, %v", err)
 			return err
 		}
 	}
@@ -164,7 +164,7 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 
 	curPlan, err := db.DbAdapter.GetPlan(ctx, planId)
 	if err != nil {
-		log.Logf("Update plan failed, err: can not get the plan(%v).\n", err.Error())
+		log.Infof("Update plan failed, err: can not get the plan(%v).\n", err.Error())
 		return nil, err
 	}
 
@@ -172,7 +172,7 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 		name := v.(string)
 		m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
 		if !m {
-			log.Logf("Invalid plan name[%s],err:", name, err) //cannot use all as name
+			log.Infof("Invalid plan name[%s],err:", name, err) //cannot use all as name
 			return nil, ERR_INVALID_PLAN_NAME
 		}
 		curPlan.Name = name
@@ -197,7 +197,7 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 	}
 
 	if isEqual(&curPlan.SourceConn, &curPlan.DestConn) {
-		log.Log("source connector is the same as destination connector.")
+		log.Info("source connector is the same as destination connector.")
 		return nil, ERR_DEST_SRC_CONN_EQUAL
 	}
 
@@ -224,7 +224,7 @@ func Update(ctx *c.Context, planId string, updateMap map[string]interface{}) (*P
 		trigger.GetTriggerMgr().Remove(ctx, curPlan)
 		if curPlan.PolicyId != "" && curPlan.PolicyEnabled {
 			if err := trigger.GetTriggerMgr().Add(ctx, curPlan, NewPlanExecutor(ctx, curPlan)); err != nil {
-				log.Logf("Add plan(%s) to trigger failed, %v", curPlan.Id.Hex(), err)
+				log.Infof("Add plan(%s) to trigger failed, %v", curPlan.Id.Hex(), err)
 				return nil, err
 			}
 		}
@@ -255,7 +255,7 @@ func getLocation(conn *Connector) (string, error) {
 		}
 		return "", errors.New("No bucket provided for sefldefine connector.")
 	default:
-		log.Logf("Unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
+		log.Infof("Unsupport cnnector type:%v, return ERR_INNER_ERR\n", conn.StorType)
 		return "", ERR_INNER_ERR
 	}
 }
@@ -263,7 +263,7 @@ func getLocation(conn *Connector) (string, error) {
 func sendJob(req *datamover.RunJobRequest) error {
 	data, err := json.Marshal(*req)
 	if err != nil {
-		log.Logf("Marshal run job request failed, err:%v\n", data)
+		log.Infof("Marshal run job request failed, err:%v\n", data)
 		return err
 	}
 
@@ -306,14 +306,14 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 	//Get source location by source connector
 	srcLocation, err1 := getLocation(&plan.SourceConn)
 	if err1 != nil {
-		log.Logf("Run plan failed, invalid source connector, type=%s\n", plan.SourceConn.StorType)
+		log.Infof("Run plan failed, invalid source connector, type=%s\n", plan.SourceConn.StorType)
 		return "", err1
 	}
 
 	//Get destination location by destination connector
 	destLocation, err2 := getLocation(&plan.DestConn)
 	if err2 != nil {
-		log.Logf("Run plan failed, invalid target connector, type=%s\n", plan.DestConn.StorType)
+		log.Infof("Run plan failed, invalid target connector, type=%s\n", plan.DestConn.StorType)
 		return "", err2
 	}
 
@@ -347,7 +347,7 @@ func Run(ctx *c.Context, id string) (bson.ObjectId, error) {
 		req.RemainSource = job.RemainSource
 		go sendJob(&req)
 	} else {
-		log.Logf("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
+		log.Infof("Add job[id=%s,plan=%s,source_location=%s,dest_location=%s] to database failed.\n", string(job.Id.Hex()),
 			job.PlanName, job.SourceLocation, job.DestLocation)
 	}
 
@@ -369,9 +369,9 @@ func NewPlanExecutor(ctx *c.Context, plan *Plan) trigger.Executer {
 }
 
 func (p *TriggerExecutor) Run() {
-	log.Logf("schudler run plan (%s) is called in dataflow service.", p.planId)
+	log.Infof("schudler run plan (%s) is called in dataflow service.", p.planId)
 	jobId, err := Run(p.ctx, p.planId)
 	if err != nil {
-		log.Logf("PlanExcutor run plan(%s) error, jobid:%s, error:%v", p.planId, jobId, err)
+		log.Infof("PlanExcutor run plan(%s) error, jobid:%s, error:%v", p.planId, jobId, err)
 	}
 }

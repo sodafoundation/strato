@@ -15,7 +15,7 @@
 package db
 
 import (
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db/drivers/mongo"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
@@ -30,14 +30,14 @@ func Init(db *Database) {
 	switch db.Driver {
 	case "etcd":
 		// C = etcd.Init(db.Driver, db.Crendential)
-		log.Logf("etcd is not implemented right now!")
+		log.Infof("etcd is not implemented right now!")
 		return
 	case "mongodb":
 		//DbAdapter = mongo.Init(strings.Split(db.Endpoint, ","))
 		DbAdapter = mongo.Init(db.Endpoint)
 		return
 	default:
-		log.Logf("Can't find database driver %s!\n", db.Driver)
+		log.Infof("Can't find database driver %s!\n", db.Driver)
 	}
 }
 
@@ -45,13 +45,13 @@ func Exit(db *Database) {
 	switch db.Driver {
 	case "etcd":
 		// C = etcd.Init(db.Driver, db.Crendential)
-		log.Logf("etcd is not implemented right now!")
+		log.Infof("etcd is not implemented right now!")
 		return
 	case "mongodb":
 		mongo.Exit()
 		return
 	default:
-		log.Logf("Can't find database driver %s!\n", db.Driver)
+		log.Infof("Can't find database driver %s!\n", db.Driver)
 	}
 }
 

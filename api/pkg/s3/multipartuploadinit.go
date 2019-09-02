@@ -21,7 +21,7 @@ import (
 	"encoding/xml"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -37,10 +37,10 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	objectKey := request.PathParameter("objectKey")
 	//assign backend
 	backendName := request.HeaderParameter("x-amz-storage-class")
-	log.Logf("backendName is %v\n", backendName)
+	log.Infof("backendName is %v\n", backendName)
 	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
 
-	log.Logf("Received request for create bucket: %s", bucketName)
+	log.Infof("Received request for create bucket: %s", bucketName)
 	size := 0
 	object := s3.Object{}
 	object.ObjectKey = objectKey
@@ -101,7 +101,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, objectMD)
 		if err != nil {
-			log.Logf("err is %v\n", err)
+			log.Infof("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 		}
 	} else {
@@ -112,7 +112,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, &object)
 		if err != nil {
-			log.Logf("err is %v\n", err)
+			log.Infof("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 		}
 	}
@@ -126,13 +126,13 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	xmlstring, err := xml.MarshalIndent(result, "", "  ")
 	if err != nil {
-		log.Logf("Parse ListBuckets error: %v", err)
+		log.Infof("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	xmlstring = []byte(xml.Header + string(xmlstring))
-	log.Logf("resp:\n%s", xmlstring)
+	log.Infof("resp:\n%s", xmlstring)
 	response.Write(xmlstring)
-	log.Log("Uploadpart successfully.")
+	log.Info("Uploadpart successfully.")
 }

@@ -17,7 +17,7 @@ package mongo
 import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
@@ -31,10 +31,10 @@ func (ad *adapter) DeleteObject(in *pb.DeleteObjectInput) S3Error {
 	c := ss.DB(DataBaseName).C(in.Bucket)
 	_, err := c.RemoveAll(bson.M{"objectkey": in.Key})
 	if err == mgo.ErrNotFound {
-		log.Logf("Delete object %s failed, err:the specified object does not exist.", in.Key)
+		log.Infof("Delete object %s failed, err:the specified object does not exist.", in.Key)
 		return NoSuchObject
 	} else if err != nil {
-		log.Log("Delete object %s from database failed,err:%v.\n", in.Key, err)
+		log.Info("Delete object %s from database failed,err:%v.\n", in.Key, err)
 		return InternalError
 	}
 	return NoError

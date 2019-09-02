@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/gophercloud/gophercloud"
 	creds "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
@@ -59,7 +59,7 @@ func NewProviderClient(accessKeyID string, options ...func(*KeystoneProvider)) c
 	}
 	kp.Identity = auth.GetIdentity(k)
 
-	log.V(4).Infof("Service Token Info: %s", kp.Identity.TokenID)
+	log.Infof("Service Token Info: %s", kp.Identity.TokenID)
 
 	return kp
 }
@@ -96,7 +96,7 @@ func (p *KeystoneProvider) getCredentials(accessKeyID string) (*getCredentialsOu
 	allPages, err := creds.List(p.Identity, nil).AllPages()
 
 	credentials, err := creds.ExtractCredentials(allPages)
-	log.V(4).Infof("Credentials: %s", credentials)
+	log.Infof("Credentials: %s", credentials)
 
 	if err != nil {
 		return nil, err

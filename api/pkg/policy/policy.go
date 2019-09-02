@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
@@ -199,9 +199,9 @@ func Authorize(req *restful.Request, res *restful.Response, action string) bool 
 	log.Info("action: %v", action)
 	log.Info("target: %v", target)
 	log.Info("Credentials: %v", credentials)
-	log.V(8).Infof("Action: %v", action)
-	log.V(8).Infof("Target: %v", target)
-	log.V(8).Infof("Credentials: %v", credentials)
+	log.Infof("Action: %v", action)
+	log.Infof("Target: %v", target)
+	log.Infof("Credentials: %v", credentials)
 	ok, err := enforcer.Authorize(action, target, credentials)
 	if err != nil {
 		log.Errorf("Authorize failed, %s", err)

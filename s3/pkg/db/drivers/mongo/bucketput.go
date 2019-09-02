@@ -17,7 +17,7 @@ package mongo
 import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
@@ -31,11 +31,11 @@ func (ad *adapter) CreateBucket(in *pb.Bucket) S3Error {
 	if err == mgo.ErrNotFound {
 		err := c.Insert(&in)
 		if err != nil {
-			log.Log("Add bucket to database failed, err:%v\n", err)
+			log.Info("Add bucket to database failed, err:%v\n", err)
 			return InternalError
 		}
 	} else {
-		log.Log("The bucket already exists")
+		log.Info("The bucket already exists")
 		return BucketAlreadyExists
 	}
 
@@ -50,10 +50,10 @@ func (ad *adapter) UpdateBucket(bucket *pb.Bucket) S3Error {
 	c := ss.DB(DataBaseName).C(BucketMD)
 	err := c.Update(bson.M{"name": bucket.Name}, bucket)
 	if err == mgo.ErrNotFound {
-		log.Log("Update bucket failed: the specified bucket does not exist.")
+		log.Info("Update bucket failed: the specified bucket does not exist.")
 		return NoSuchBucket
 	} else if err != nil {
-		log.Log("Update bucket in database failed, err: %v.\n", err)
+		log.Info("Update bucket in database failed, err: %v.\n", err)
 		return InternalError
 	}
 	return NoError

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
@@ -33,7 +33,7 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 		return
 	}
 	url := request.Request.URL
-	log.Logf("URL is %v", request.Request.URL.String())
+	log.Infof("URL is %v", request.Request.URL.String())
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	if strings.HasSuffix(url.String(), "/") {
@@ -52,14 +52,14 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 		}
 		res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
 		if err != nil {
-			log.Logf("err is %v\n", err)
+			log.Infof("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
-		log.Logf("Delete object %s successfully.", objectKey)
+		log.Infof("Delete object %s successfully.", objectKey)
 		response.WriteEntity(res)
 	} else {
-		log.Logf("No such object")
+		log.Infof("No such object")
 		return
 	}
 

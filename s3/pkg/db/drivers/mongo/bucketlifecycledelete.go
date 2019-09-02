@@ -16,7 +16,7 @@ package mongo
 
 import (
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
@@ -28,13 +28,13 @@ func (ad *adapter) DeleteBucketLifecycle(in *pb.DeleteLifecycleInput) S3Error {
 
 	//Delete it from database
 	c := ss.DB(DataBaseName).C(BucketMD)
-	log.Logf("bucketName is %v:", in.Bucket)
+	log.Infof("bucketName is %v:", in.Bucket)
 	err := c.Update(bson.M{"name": in.Bucket}, bson.M{"$pull": bson.M{"lifecycleconfiguration": bson.M{"id": in.RuleID}}})
 	if err != nil {
-		log.Logf("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n", in.Bucket, in.RuleID, err)
+		log.Infof("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n", in.Bucket, in.RuleID, err)
 		return NoSuchBucket
 	} else {
-		log.Logf("delete bucket lifecycle with rule id %s from database successfully", in.RuleID)
+		log.Infof("delete bucket lifecycle with rule id %s from database successfully", in.RuleID)
 		return NoError
 	}
 }

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
@@ -39,7 +39,7 @@ func LoadAllPlans() {
 	for offset == 0 || planNum > 0 {
 		plans, err := db.DbAdapter.ListPlan(ctx, limit, offset, nil)
 		if err != nil {
-			log.Logf("Get all plan faild, %v", err)
+			log.Infof("Get all plan faild, %v", err)
 			break
 		}
 		planNum = len(plans)
@@ -55,10 +55,10 @@ func LoadAllPlans() {
 			e := plan.NewPlanExecutor(ctx, &p)
 			err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 			if err != nil {
-				log.Logf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
+				log.Infof("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
 				continue
 			}
-			log.Logf("Load plan(%s) to trigger success", p.Id.Hex())
+			log.Infof("Load plan(%s) to trigger success", p.Id.Hex())
 		}
 	}
 }
@@ -66,17 +66,17 @@ func LoadAllPlans() {
 //This scheduler will scan all buckets periodically to get lifecycle rules, and scheduling according to these rules.
 func LoadLifecycleScheduler() error {
 	spec := os.Getenv("LIFECYCLE_CRON_CONFIG")
-	log.Logf("Value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
+	log.Infof("Value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
 
 	//TODO: Check the validation of spec
 	cn := cron.New()
 	//0 */10 * * * ?
 	if err := cn.AddFunc(spec, lifecycle.ScheduleLifecycle); err != nil {
-		log.Logf("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
+		log.Infof("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
 		return fmt.Errorf("add lifecyecle scheduler to cron trigger failed: %v", err)
 	}
 	cn.Start()
 
-	log.Log("add lifecycle scheduler to cron trigger successfully.")
+	log.Info("add lifecycle scheduler to cron trigger successfully.")
 	return nil
 }

@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/go-log/log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
@@ -36,20 +36,20 @@ func (mover *BlobMover) setTier(objKey *string, newClass *string) error {
 	case string(azblob.AccessTierArchive):
 		res, err = blobURL.SetTier(ctx, azblob.AccessTierArchive, azblob.LeaseAccessConditions{})
 	default:
-		log.Logf("[blobmover]set tier of object[%s] to %s failed, err: invalid storage class.\n", objKey, newClass)
+		log.Infof("[blobmover]set tier of object[%s] to %s failed, err: invalid storage class.\n", objKey, newClass)
 		return errors.New("Invalid storage class")
 	}
 	if err != nil {
-		log.Logf("[blobmover]set tier of object[%s] to %s failed, err:%v\n", objKey, newClass, err)
+		log.Infof("[blobmover]set tier of object[%s] to %s failed, err:%v\n", objKey, newClass, err)
 	} else {
-		log.Logf("[blobmover]set tier of object[%s] to %s succeed, res:%v\n", objKey, newClass, res.Response())
+		log.Infof("[blobmover]set tier of object[%s] to %s succeed, res:%v\n", objKey, newClass, res.Response())
 	}
 
 	return err
 }
 
 func (mover *BlobMover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {
-	log.Logf("")
+	log.Infof("")
 	err := mover.Init(&bkend.EndPoint, &bkend.Access, &bkend.Security)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (mover *BlobMover) ChangeStorageClass(objKey *string, newClass *string, bke
 }
 
 func (mover *BlobMover) DeleteIncompleteMultipartUpload(objKey, uploadId string, destLoca *LocationInfo) error {
-	log.Log("Azure blob does not support to delete incomplete multipart upload.")
+	log.Info("Azure blob does not support to delete incomplete multipart upload.")
 
 	return errors.New(DMERR_InternalError)
 }

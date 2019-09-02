@@ -19,7 +19,7 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
@@ -34,7 +34,7 @@ func (s *APIService) GetStorageClasses(request *restful.Request, response *restf
 	ctx := context.Background()
 	//TODO owner
 	owner := "test"
-	log.Log("Received request for storage classes.")
+	log.Info("Received request for storage classes.")
 	res, err := s.s3Client.GetStorageClasses(ctx, &s3.BaseRequest{Id: owner})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
@@ -50,11 +50,11 @@ func (s *APIService) GetStorageClasses(request *restful.Request, response *restf
 
 	xmlstring, err := xml.MarshalIndent(tmp, "", "  ")
 	if err != nil {
-		log.Logf("parse ListStorageClasses error: %v\n", err)
+		log.Infof("parse ListStorageClasses error: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
 		xmlstring = []byte(xml.Header + string(xmlstring))
 		response.Write(xmlstring)
-		log.Logf("Get List of storage classes successfully:%v\n", string(xmlstring))
+		log.Infof("Get List of storage classes successfully:%v\n", string(xmlstring))
 	}
 }

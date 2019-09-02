@@ -19,12 +19,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
 func (mover *S3Mover) ChangeStorageClass(objKey *string, newClass *string, loca *BackendInfo) error {
-	log.Logf("[s3lifecycle] Change storage class of object[%s] to %s.", objKey, newClass)
+	log.Infof("[s3lifecycle] Change storage class of object[%s] to %s.", objKey, newClass)
 	s3c := s3Cred{ak: loca.Access, sk: loca.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -33,7 +33,7 @@ func (mover *S3Mover) ChangeStorageClass(objKey *string, newClass *string, loca 
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("[s3lifecycle] new session failed, err:%v\n", err)
+		log.Infof("[s3lifecycle] new session failed, err:%v\n", err)
 		return handleAWSS3Errors(err)
 	}
 
@@ -46,7 +46,7 @@ func (mover *S3Mover) ChangeStorageClass(objKey *string, newClass *string, loca 
 	input.StorageClass = aws.String(*newClass)
 	_, err = svc.CopyObject(input)
 	if err != nil {
-		log.Logf("[s3lifecycle] Change storage class of object[%s] to %s failed: %v.\n", objKey, newClass, err)
+		log.Infof("[s3lifecycle] Change storage class of object[%s] to %s failed: %v.\n", objKey, newClass, err)
 		e := handleAWSS3Errors(err)
 		return e
 	}
@@ -57,7 +57,7 @@ func (mover *S3Mover) ChangeStorageClass(objKey *string, newClass *string, loca 
 }
 
 func (mover *S3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId string, loc *LocationInfo) error {
-	log.Logf("[s3lifecycle] Abort multipart upload[objkey:%s] for uploadId#%s.\n", objKey, uploadId)
+	log.Infof("[s3lifecycle] Abort multipart upload[objkey:%s] for uploadId#%s.\n", objKey, uploadId)
 	s3c := s3Cred{ak: loc.Access, sk: loc.Security}
 	creds := credentials.NewCredentials(&s3c)
 	sess, err := session.NewSession(&aws.Config{
@@ -66,7 +66,7 @@ func (mover *S3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId string, l
 		Credentials: creds,
 	})
 	if err != nil {
-		log.Logf("[s3lifecycle] new session failed, err:%v\n", err)
+		log.Infof("[s3lifecycle] new session failed, err:%v\n", err)
 		return handleAWSS3Errors(err)
 	}
 
@@ -80,10 +80,10 @@ func (mover *S3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId string, l
 	_, err = svc.AbortMultipartUpload(abortInput)
 	e := handleAWSS3Errors(err)
 	if e == nil || e.Error() == DMERR_NoSuchUpload {
-		log.Logf("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully.\n", objKey, uploadId)
+		log.Infof("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully.\n", objKey, uploadId)
 		return nil
 	} else {
-		log.Logf("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)
+		log.Infof("[s3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)
 	}
 
 	return e

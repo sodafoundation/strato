@@ -27,7 +27,7 @@ import (
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -41,10 +41,10 @@ var mutext sync.Mutex
 
 func (s *APIService) loadStorageClassDefinition() error {
 	ctx := context.Background()
-	log.Log("Load storage classes.")
+	log.Info("Load storage classes.")
 	res, err := s.s3Client.GetStorageClasses(ctx, &s3.BaseRequest{})
 	if err != nil {
-		log.Logf("get storage classes from s3 service failed: %v\n", err)
+		log.Infof("get storage classes from s3 service failed: %v\n", err)
 		return err
 	}
 	ClassAndTier = make(map[string]int32)
@@ -61,24 +61,24 @@ func (s *APIService) class2tier(name string) (int32, error) {
 		if len(ClassAndTier) == 0 {
 			err := s.loadStorageClassDefinition()
 			if err != nil {
-				log.Logf("load storage classes failed: %v.\n", err)
+				log.Infof("load storage classes failed: %v.\n", err)
 				return 0, err
 			}
 		}
 	}
 	tier, ok := ClassAndTier[name]
 	if !ok {
-		log.Logf("translate storage class name[%s] to tier failed: %s.\n", name)
+		log.Infof("translate storage class name[%s] to tier failed: %s.\n", name)
 		return 0, fmt.Errorf("invalid storage class:%s", name)
 	}
-	log.Logf("class[%s] to tier[%d]\n", name, tier)
+	log.Infof("class[%s] to tier[%d]\n", name, tier)
 	return tier, nil
 }
 
 func checkValidationOfActions(actions []*s3.Action) error {
 	var pre *s3.Action = nil
 	for _, action := range actions {
-		log.Logf("action: %+v\n", *action)
+		log.Infof("action: %+v\n", *action)
 		if pre == nil {
 			if action.Name == ActionNameExpiration && action.Days < ExpirationMinDays {
 				// If only an expiration action for a rule, the days for that action should be more than ExpirationMinDays
@@ -121,11 +121,11 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 		return
 	}
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("received request for create bucket lifecycle: %s", bucketName)
+	log.Infof("received request for create bucket lifecycle: %s", bucketName)
 	ctx := context.Background()
 	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	body := ReadBody(request)
-	log.Logf("MD5 sum for body is %x", md5.Sum(body))
+	log.Infof("MD5 sum for body is %x", md5.Sum(body))
 
 	if body != nil {
 		createLifecycleConf := model.LifecycleConfiguration{}
@@ -141,7 +141,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 				//check if the ruleID has any duplicate values
 				if _, ok := dupIdCheck[rule.ID]; ok {
-					log.Logf("duplicate ruleID found for rule : %s\n", rule.ID)
+					log.Infof("duplicate ruleID found for rule : %s\n", rule.ID)
 					ErrStr := strings.Replace(DuplicateRuleIDError, "$1", rule.ID, 1)
 					response.WriteError(http.StatusBadRequest, fmt.Errorf(ErrStr))
 					return
@@ -151,7 +151,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 				s3Rule.Id = rule.ID
 
 				//Assigning the status value to s3 status
-				log.Logf("status in rule file is %v\n", rule.Status)
+				log.Infof("status in rule file is %v\n", rule.Status)
 				s3Rule.Status = rule.Status
 
 				//Assigning the filter, using convert function to convert xml struct to s3 struct
@@ -193,7 +193,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 				//validate actions
 				err := checkValidationOfActions(s3ActionArr)
 				if err != nil {
-					log.Logf("validation of actions failed: %v\n", err)
+					log.Infof("validation of actions failed: %v\n", err)
 					response.WriteError(http.StatusBadRequest, err)
 					return
 				}
@@ -210,7 +210,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 			bucket.LifecycleConfiguration = s3RulePtrArr
 		}
 	} else {
-		log.Log("no request body provided for creating lifecycle configuration")
+		log.Info("no request body provided for creating lifecycle configuration")
 		response.WriteError(http.StatusBadRequest, fmt.Errorf(NoRequestBodyLifecycle))
 		return
 	}
@@ -222,7 +222,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("create bucket lifecycle successful.")
+	log.Info("create bucket lifecycle successful.")
 	response.WriteEntity(res)
 
 }

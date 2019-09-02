@@ -22,7 +22,7 @@ import (
 	"reflect"
 
 	"github.com/emicklei/go-restful"
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 func NewAdminContext() *Context {
@@ -43,7 +43,7 @@ func NewContextFromJson(s string) *Context {
 	ctx := &Context{}
 	err := json.Unmarshal([]byte(s), ctx)
 	if err != nil {
-		glog.Errorf("Unmarshal json to context failed, reason: %v", err)
+		log.Errorf("Unmarshal json to context failed, reason: %v", err)
 	}
 	return ctx
 }
@@ -60,7 +60,7 @@ func UpdateContext(req *restful.Request, param map[string]interface{}) (*Context
 
 	ctx := GetContext(req)
 	if param == nil || len(param) == 0 {
-		glog.Warning("Context parameter is empty, nothing to be updated")
+		log.Warning("Context parameter is empty, nothing to be updated")
 		return ctx, nil
 	}
 	ctxV := reflect.ValueOf(ctx).Elem()
@@ -70,7 +70,7 @@ func UpdateContext(req *restful.Request, param map[string]interface{}) (*Context
 		if field.Kind() == pv.Kind() && field.CanSet() {
 			field.Set(pv)
 		} else {
-			glog.Errorf("Invalid parameter %s : %v", key, val)
+			log.Errorf("Invalid parameter %s : %v", key, val)
 		}
 	}
 
@@ -140,7 +140,7 @@ func (ctx *Context) ToPolicyValue() map[string]interface{} {
 func (ctx *Context) ToJson() string {
 	b, err := json.Marshal(ctx)
 	if err != nil {
-		glog.Errorf("Context convert to json failed, reason: %v", err)
+		log.Errorf("Context convert to json failed, reason: %v", err)
 	}
 	return string(b)
 }

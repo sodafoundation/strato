@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 
 	//	"github.com/micro/go-micro/errors"
@@ -28,7 +28,7 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Logf("No such object err\n")
+		log.Infof("No such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
@@ -53,6 +53,6 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Logf("Delete object %s successfully.", objectKey)
+	log.Infof("Delete object %s successfully.", objectKey)
 	response.WriteEntity(res)
 }

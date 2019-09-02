@@ -19,7 +19,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 )
 
@@ -30,26 +30,26 @@ func (ad *adapter) DeleteBucket(bucketName string) S3Error {
 
 	//Delete it from database
 	c := ss.DB(DataBaseName).C(BucketMD)
-	log.Logf("bucketName is %v:", bucketName)
+	log.Infof("bucketName is %v:", bucketName)
 	err := c.Remove(bson.M{"name": bucketName})
-	log.Logf("err is %v:", err)
+	log.Infof("err is %v:", err)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			log.Logf("Delete bucket from database failed,err:%v.\n", err.Error())
+			log.Infof("Delete bucket from database failed,err:%v.\n", err.Error())
 			return NoSuchBucket
 		} else {
-			log.Logf("Delete bucket from database failed,err:%v.\n", err.Error())
+			log.Infof("Delete bucket from database failed,err:%v.\n", err.Error())
 			return DBError
 		}
 
 	} else {
-		log.Logf("Delete bucket from database successfully")
+		log.Infof("Delete bucket from database successfully")
 		return NoError
 	}
 	cc := ss.DB(DataBaseName).C(bucketName)
 	deleteErr := cc.DropCollection()
 	if deleteErr != nil && deleteErr != mgo.ErrNotFound {
-		log.Logf("Delete bucket collection from database failed,err:%v.\n", deleteErr)
+		log.Infof("Delete bucket collection from database failed,err:%v.\n", deleteErr)
 		return InternalError
 	}
 
