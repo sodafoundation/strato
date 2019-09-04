@@ -20,15 +20,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/micro/go-micro/metadata"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 //ObjectGet -
@@ -49,14 +46,8 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		end, _ = strconv.Atoi(endstr)
 	}
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-		common.REST_KEY_OPERATION: common.REST_VAL_DOWNLOAD,
-	})
-
+	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_DOWNLOAD}
+	ctx := common.InitCtxWithVal(request, md)
 	object := s3.Object{}
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	log.Logf("enter the s3Client download method")

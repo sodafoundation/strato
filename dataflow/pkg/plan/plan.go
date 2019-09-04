@@ -285,7 +285,7 @@ func buildConn(reqConn *datamover.Connector, conn *Connector) {
 func Run(planId, tenantId, userId string) (bson.ObjectId, error) {
 	ctx := metadata.NewContext(context.Background(), map[string]string{
 		common.CTX_KEY_USER_ID:   userId,
-		common.CTX_KEY_TENENT_ID: tenantId,
+		common.CTX_KEY_TENANT_ID: tenantId,
 	})
 	//Get information from database
 	plan, err := db.DbAdapter.GetPlan(ctx, planId)

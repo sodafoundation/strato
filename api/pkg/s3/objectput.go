@@ -22,7 +22,6 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
@@ -30,7 +29,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 )
 
 //ObjectPut -
@@ -47,7 +45,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	contentLenght := request.HeaderParameter("content-length")
 	size, err := strconv.ParseInt(contentLenght, 10, 64)
 	if err != nil {
-		log.Logf("get content lenght failed, err: %v\n", err)
+		log.Logf("get content length failed, err: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, InvalidContentLength.Error())
 		return
 	}
@@ -68,13 +66,9 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	// standard as default
 	object.StorageClass = constants.StorageClassOpenSDSStandard
 
+	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_UPLOAD}
+	ctx := common.InitCtxWithVal(request, md)
 	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:    actx.UserId,
-		common.CTX_KEY_TENENT_ID:  actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:   strconv.FormatBool(actx.IsAdmin),
-		common.REST_KEY_OPERATION: common.REST_VAL_UPLOAD,
-	})
 	object.UserId = actx.UserId
 	object.TenantId = actx.TenantId
 

@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"context"
 	"encoding/xml"
 	"net/http"
 	"strconv"
@@ -9,12 +8,10 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
@@ -27,14 +24,8 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
 	log.Logf("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:    actx.UserId,
-		common.CTX_KEY_TENENT_ID:  actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:   strconv.FormatBool(actx.IsAdmin),
-		common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD,
-	})
-
+	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
+	ctx := common.InitCtxWithVal(request, md)
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	lastModified := time.Now().Unix()

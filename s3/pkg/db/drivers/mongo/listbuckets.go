@@ -28,7 +28,7 @@ func (ad *adapter) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *[]p
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(BucketMD)
 
-	log.Log("lind buckets from database...... \n")
+	log.Log("list buckets from database...... \n")
 
 	m := bson.M{}
 	err := UpdateContextFilter(ctx, m)
@@ -39,7 +39,7 @@ func (ad *adapter) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *[]p
 	err = c.Find(m).All(out)
 	if err != nil {
 		log.Log("find buckets from database failed, err:%v\n", err)
-		return InternalError
+		return DBError
 	}
 
 	return NoError

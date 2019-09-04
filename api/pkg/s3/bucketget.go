@@ -15,7 +15,6 @@
 package s3
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,9 +24,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/s3/proto"
 )
 
@@ -129,13 +126,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		Limit:  limit,
 	}
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-	})
-
+	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.s3Client.ListObjects(ctx, &req)
 	log.Logf("list objects result: %v\n", res)
 	if err != nil {

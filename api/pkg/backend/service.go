@@ -23,16 +23,14 @@ import (
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/s3/proto"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
-	//"google.golang.org/grpc/metadata"
-	"github.com/micro/go-micro/metadata"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 )
 
 const (
@@ -62,12 +60,7 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 	log.Logf("Received request for backend details: %s\n", request.PathParameter("id"))
 	id := request.PathParameter("id")
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID: actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(actx.IsAdmin),
-	})
+	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
 	if err != nil {
 		log.Logf("failed to get backend details: %v\n", err)
@@ -169,13 +162,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 	}
 	log.Log("Received request for backend list.")
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID: actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(actx.IsAdmin),
-	})
-
+	ctx := common.InitCtxWithAuthInfo(request)
 	para := request.QueryParameter("tier")
 	if para != "" { //List those backends which support the specific tier.
 		tier, err := strconv.Atoi(para)
@@ -203,12 +190,8 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 		return
 	}
 
+	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID: actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(actx.IsAdmin),
-	})
 	backendDetail.TenantId = actx.TenantId
 	backendDetail.UserId = actx.UserId
 	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
@@ -235,12 +218,7 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 		return
 	}
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID: actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(actx.IsAdmin),
-	})
+	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.UpdateBackend(ctx, &updateBackendRequest)
 	if err != nil {
 		log.Logf("failed to update backend: %v\n", err)
@@ -259,12 +237,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	id := request.PathParameter("id")
 	log.Logf("Received request for deleting backend: %s\n", id)
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID: actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(actx.IsAdmin),
-	})
+	ctx := common.InitCtxWithAuthInfo(request)
 	// TODO: refactor this part
 	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	count := 0

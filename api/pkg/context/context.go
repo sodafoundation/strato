@@ -40,7 +40,7 @@ func NewAdminContext() *Context {
 	return &Context{
 		TenantId: NoAuthAdminTenantId,
 		IsAdmin:  true,
-		UserId:   "unkown",
+		UserId:   "unknown",
 	}
 }
 
@@ -56,7 +56,7 @@ func NewContextFromJson(s string) *Context {
 	ctx := &Context{}
 	err := json.Unmarshal([]byte(s), ctx)
 	if err != nil {
-		log.Logf("Unmarshal json to context failed, reason: %v", err)
+		log.Logf("unmarshal json to context failed, reason: %v", err)
 	}
 	return ctx
 }

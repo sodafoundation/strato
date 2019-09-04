@@ -16,29 +16,18 @@ package s3
 
 import (
 	"net/http"
-	"strconv"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 )
 
 func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("Received request for bucket details: %s", bucketName)
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-	})
-
+	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
 
 	if err != nil {

@@ -531,7 +531,7 @@ func runjob(in *pb.RunJobRequest) error {
 	// set context tiemout
 	ctx := metadata.NewContext(context.Background(), map[string]string{
 		common.CTX_KEY_USER_ID:    in.UserId,
-		common.CTX_KEY_TENENT_ID:  in.TenanId,
+		common.CTX_KEY_TENANT_ID:  in.TenanId,
 	})
 	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()

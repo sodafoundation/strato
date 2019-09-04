@@ -19,15 +19,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
@@ -119,12 +116,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("received request for create bucket lifecycle: %s", bucketName)
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-	})
+	ctx := common.InitCtxWithAuthInfo(request)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		log.Logf("get bucket failed, err=%v\n", err)

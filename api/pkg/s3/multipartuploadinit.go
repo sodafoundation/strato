@@ -17,12 +17,10 @@ package s3
 import (
 	"encoding/xml"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
@@ -30,7 +28,7 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -40,14 +38,9 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	objectKey := request.PathParameter("objectKey")
 	log.Logf("Received request for multi-part upload init, bucket: %s, object: %s\n", bucketName, objectKey)
 
+	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
+	ctx := common.InitCtxWithVal(request, md)
 	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:    actx.UserId,
-		common.CTX_KEY_TENENT_ID:  actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:   strconv.FormatBool(actx.IsAdmin),
-		common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD,
-	})
-
 	//assign backend
 	backendName := request.HeaderParameter("x-amz-storage-class")
 	log.Logf("backendName is %v\n", backendName)

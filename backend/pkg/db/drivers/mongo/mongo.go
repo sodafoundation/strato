@@ -72,7 +72,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 
 	isAdmin, _ := md[common.CTX_KEY_IS_ADMIN]
 	if isAdmin != common.CTX_VAL_TRUE {
-		tenantId, ok := md[common.CTX_KEY_TENENT_ID]
+		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
 		if !ok {
 			log.Log("get tenantid failed")
 			return errors.New("get tenantid failed")

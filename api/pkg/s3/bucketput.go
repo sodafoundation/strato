@@ -17,31 +17,23 @@ package s3
 import (
 	"encoding/xml"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 )
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("Received request for create bucket: %s", bucketName)
 
+	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-	})
-
 	bucket := s3.Bucket{Name: bucketName}
 	body := ReadBody(request)
 	bucket.TenantId = actx.TenantId

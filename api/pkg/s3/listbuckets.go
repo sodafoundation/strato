@@ -17,18 +17,14 @@ package s3
 import (
 	"encoding/xml"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) []byte {
@@ -63,13 +59,7 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	}
 	log.Logf("Received request for all buckets")
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-	})
-
+	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
@@ -78,6 +68,6 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 
 	realRes := parseListBuckets(res)
 
-	log.Logf("Get List of buckets successfully:%v\n", string(realRes))
+	log.Logf("List buckets successfully:%v\n", string(realRes))
 	response.Write(realRes)
 }

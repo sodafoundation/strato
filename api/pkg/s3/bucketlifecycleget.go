@@ -17,17 +17,12 @@ package s3
 import (
 	"fmt"
 	"net/http"
-	"strconv"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
 )
 
 //Convert function from storage tier to storage class for XML format output
@@ -61,17 +56,12 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("received request for bucket details in GET lifecycle: %s", bucketName)
 
-	actx := request.Attribute(c.KContext).(*c.Context)
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   actx.UserId,
-		common.CTX_KEY_TENENT_ID: actx.TenantId,
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
-	})
-
+	ctx := common.InitCtxWithAuthInfo(request)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		log.Logf("get bucket failed, err=%v\n", err)
-		response.WriteError(http.StatusInternalServerError, fmt.Errorf("bucket does not exist"))
+		response.WriteError(http.StatusInternalServerError,
+			fmt.Errorf("either the bucket does not exist or there is error when getting bucket details"))
 	}
 
 	// convert back to xml struct
