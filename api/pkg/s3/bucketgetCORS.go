@@ -48,7 +48,7 @@ func (s *APIService) BucketgetCORS(request *restful.Request, response *restful.R
 	// convert back to xml struct
 	getCorsConf := model.Cors{}
 
-	// convert lifecycle rule to xml Rule
+	// convert CORS rule to xml Rule
 	if bucket.CorsConfiguration != nil {
 		for _, lcRule := range bucket.CorsConfiguration {
 			xmlRule := model.CorsRule{}

@@ -70,8 +70,8 @@ func (s *APIService) BucketDeleteCORS(request *restful.Request, response *restfu
 		}
 
 	} else {
-		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForLifecycleDelete)
+		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForCORSDelete)
 		return
 	}
-	log.Log("delete bucket lifecycle successful.")
+	log.Log("delete bucket CORS configuration successful.")
 }
