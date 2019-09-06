@@ -517,3 +517,31 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 	//For debug -- end
 	return err
 }
+
+func (b *dataflowService) AbortJob(ctx context.Context, in *pb.AbortJobRequest, out *pb.AbortJobResponse) error {
+	log.Log("Abort job is called in dataflow service.")
+	actx := c.NewContextFromJson(in.GetContext())
+
+	if in.Id == "" {
+		errmsg := fmt.Sprint("No id specified.")
+		out.Err = errmsg
+		return errors.New(errmsg)
+	}
+
+	err := job.AbortJob(actx, in.Id)
+	if err != nil {
+		log.Logf("Get job err:%d.", err)
+		out.Err = err.Error()
+		return err
+	}
+
+	//For debug -- begin
+	jsons, errs := json.Marshal(out)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("jsons1: %s.\n", jsons)
+	}
+	//For debug -- end
+	return err
+}

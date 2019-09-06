@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"os"
 	"strconv"
 	"sync"
@@ -67,11 +68,15 @@ func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *Ba
 		log.Logf("the transition of object[%s] is in-progress\n", obj.ObjectKey)
 		return errors.New(DMERR_TransitionInprogress)
 	}
-
+	var jobFSM *mover.JobFSM
+	var job *model.Job
+	jobFSM.FSM.SetState("create")
+	jobFSM.FSM.SetState("validate")
+	jobFSM.FSM.SetState("start")
 	if obj.Size <= PART_SIZE {
-		err = mover.MoveObj(obj, srcLoc, targetLoc)
+		err = mover.MoveObj(obj, srcLoc, targetLoc, job, jobFSM)
 	} else {
-		err = mover.MultipartMoveObj(obj, srcLoc, targetLoc)
+		err = mover.MultipartMoveObj(obj, srcLoc, targetLoc, job, jobFSM)
 	}
 
 	// TODO: Need to confirm the integrity by comparing Etags.

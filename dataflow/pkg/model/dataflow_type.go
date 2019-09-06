@@ -39,6 +39,7 @@ var (
 	JOB_STATUS_RUNNING = "running"
 	JOB_STATUS_SUCCEED = "succeed"
 	JOB_STATUS_FAILED  = "failed"
+	JOB_STATUS_ABORTED = "aborted"
 )
 
 var (

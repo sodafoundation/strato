@@ -15,11 +15,16 @@
 package job
 
 import (
+	"encoding/json"
 	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	datamover "github.com/opensds/multi-cloud/datamover/proto"
 )
+
+var abortMigration = "abort"
 
 func Create(ctx *context.Context, job *Job) (*Job, error) {
 	return db.DbAdapter.CreateJob(ctx, job)
@@ -32,4 +37,26 @@ func Get(ctx *context.Context, id string) (*Job, error) {
 
 func List(ctx *context.Context, limit int, offset int, filter interface{}) ([]Job, error) {
 	return db.DbAdapter.ListJob(ctx, limit, offset, filter)
+}
+
+func AbortJob(ctx *context.Context, id string) error {
+
+	req := datamover.AbortJobRequest{Id: id}
+	//data, err := json.Marshal(req)
+	//if err != nil {
+	//	log.Logf("Marshal run job request failed, err:%v\n", data)
+	//	return err
+	//}
+	go sendabortJob(&req)
+	return nil
+	//return kafka.ProduceMsg(abortMigration, data)
+}
+func sendabortJob(req *datamover.AbortJobRequest) error {
+	data, err := json.Marshal(*req)
+	if err != nil {
+		log.Logf("Marshal run job request failed, err:%v\n", data)
+		return err
+	}
+
+	return kafka.ProduceMsg(abortMigration, data)
 }

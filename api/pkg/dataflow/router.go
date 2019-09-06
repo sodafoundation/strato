@@ -44,9 +44,10 @@ func RegisterRouter(ws *restful.WebService) {
 		Doc("Delete plan")
 	ws.Route(ws.POST("/{tenantId}/plans/{id}/run").To(handler.RunPlan)).
 		Doc("Create connector")
-
 	ws.Route(ws.GET("/{tenantId}/jobs").To(handler.ListJob)).
 		Doc("List jobs details")
 	ws.Route(ws.GET("/{tenantId}/jobs/{id}").To(handler.GetJob)).
 		Doc("Get job details")
+	ws.Route(ws.GET("/{tenantId}/jobs/{id}/abort").To(handler.AbortJob)).
+		Doc("Abort migration job")
 }

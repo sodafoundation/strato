@@ -475,3 +475,31 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	log.Log("List jobs successfully.")
 	response.WriteEntity(res)
 }
+
+func (s *APIService) AbortJob(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "job:post") {
+		return
+	}
+	actx := request.Attribute(c.KContext).(*c.Context)
+	id := request.PathParameter("id") // Get jobid
+	log.Logf("Received request jobs [id=%s] details.\n", id)
+	ctx := context.Background()
+	res, err := s.dataflowClient.AbortJob(ctx, &dataflow.AbortJobRequest{Context: actx.ToJson(), Id: id})
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	//For debug -- begin
+	log.Logf("Get jobs reponse:%v\n", res)
+	jsons, errs := json.Marshal(res)
+	if errs != nil {
+		log.Logf(errs.Error())
+	} else {
+		log.Logf("res: %s.\n", jsons)
+	}
+	//For debug -- end
+
+	log.Log("Get job details successfully.")
+	response.WriteEntity(res)
+}

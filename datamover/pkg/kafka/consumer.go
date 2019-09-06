@@ -87,6 +87,9 @@ func LoopConsume() {
 					// Do lifecycle actions.
 					logger.Printf("got an lifecycle action request:%s\n", msg.Value)
 					err = lifecycle.HandleMsg(msg.Value)
+				case "abort":
+					logger.Printf("got an abort migration job request:%s\n", msg.Value)
+					err = migration.AbortMigration(msg.Value)
 				default:
 					logger.Printf("not supported topic:%s\n", msg.Topic)
 				}

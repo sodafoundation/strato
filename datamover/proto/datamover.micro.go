@@ -12,7 +12,9 @@ It has these top-level messages:
 	Filter
 	Connector
 	RunJobRequest
+	AbortJobRequest
 	RunJobResponse
+	AbortJobResponse
 	LifecycleActionRequest
 	LifecycleActionResonse
 */
@@ -23,9 +25,9 @@ import fmt "fmt"
 import math "math"
 
 import (
+	context "context"
 	client "github.com/micro/go-micro/client"
 	server "github.com/micro/go-micro/server"
-	context "context"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -48,6 +50,7 @@ var _ server.Option
 
 type DatamoverService interface {
 	Runjob(ctx context.Context, in *RunJobRequest, opts ...client.CallOption) (*RunJobResponse, error)
+	AbortJob(ctx context.Context, in *AbortJobRequest, opts ...client.CallOption) (*AbortJobResponse, error)
 	DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, opts ...client.CallOption) (*LifecycleActionResonse, error)
 }
 
@@ -79,6 +82,16 @@ func (c *datamoverService) Runjob(ctx context.Context, in *RunJobRequest, opts .
 	return out, nil
 }
 
+func (c *datamoverService) AbortJob(ctx context.Context, in *AbortJobRequest, opts ...client.CallOption) (*AbortJobResponse, error) {
+	req := c.c.NewRequest(c.name, "Datamover.AbortJob", in)
+	out := new(AbortJobResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *datamoverService) DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, opts ...client.CallOption) (*LifecycleActionResonse, error) {
 	req := c.c.NewRequest(c.name, "Datamover.DoLifecycleAction", in)
 	out := new(LifecycleActionResonse)
@@ -93,12 +106,14 @@ func (c *datamoverService) DoLifecycleAction(ctx context.Context, in *LifecycleA
 
 type DatamoverHandler interface {
 	Runjob(context.Context, *RunJobRequest, *RunJobResponse) error
+	AbortJob(context.Context, *AbortJobRequest, *AbortJobResponse) error
 	DoLifecycleAction(context.Context, *LifecycleActionRequest, *LifecycleActionResonse) error
 }
 
 func RegisterDatamoverHandler(s server.Server, hdlr DatamoverHandler, opts ...server.HandlerOption) error {
 	type datamover interface {
 		Runjob(ctx context.Context, in *RunJobRequest, out *RunJobResponse) error
+		AbortJob(ctx context.Context, in *AbortJobRequest, out *AbortJobResponse) error
 		DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, out *LifecycleActionResonse) error
 	}
 	type Datamover struct {
@@ -114,6 +129,10 @@ type datamoverHandler struct {
 
 func (h *datamoverHandler) Runjob(ctx context.Context, in *RunJobRequest, out *RunJobResponse) error {
 	return h.DatamoverHandler.Runjob(ctx, in, out)
+}
+
+func (h *datamoverHandler) AbortJob(ctx context.Context, in *AbortJobRequest, out *AbortJobResponse) error {
+	return h.DatamoverHandler.AbortJob(ctx, in, out)
 }
 
 func (h *datamoverHandler) DoLifecycleAction(ctx context.Context, in *LifecycleActionRequest, out *LifecycleActionResonse) error {

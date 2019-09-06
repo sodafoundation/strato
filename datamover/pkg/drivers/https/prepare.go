@@ -140,17 +140,41 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 	return nil, errors.New("unsupport type")
 }
 
+//func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *LocationInfo, offset, limit int32) ([]*osdss3.Object, error) {
+//	switch in.SourceConn.Type {
+//	case flowtype.STOR_TYPE_OPENSDS:
+//		return getOsdsS3Objs(ctx, in, offset, limit)
+//	default:
+//		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
+//	}
+//
+//	return nil, errors.New(DMERR_InternalError)
+//}
+
 func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *LocationInfo, offset, limit int32) ([]*osdss3.Object, error) {
+
 	switch in.SourceConn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		return getOsdsS3Objs(ctx, in, offset, limit)
+	case flowtype.STOR_TYPE_AWS_S3:
+		return getAwsS3Objs(ctx, in.SourceConn, in.Filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_AZURE_BLOB:
+		return getAzureBlobs(ctx, in.SourceConn, in.Filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONCLOUD, flowtype.STOR_TYPE_HW_FUSIONSTORAGE:
+		return getHwObjs(ctx, in.SourceConn, in.Filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_GCP_S3:
+		return getGcpS3Objs(ctx, in.SourceConn, in.Filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_IBM_COS:
+		return getIBMCosObjs(ctx, in.SourceConn, in.Filt, defaultSrcLoca)
+	case flowtype.STOR_TYPE_CEPH_S3:
+		return getCephS3Objs(ctx, in.SourceConn, in.Filt, defaultSrcLoca)
+
 	default:
 		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
 	}
 
 	return nil, errors.New(DMERR_InternalError)
 }
-
 func countOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, err error) {
 	logger.Printf("count objects of bucket[%s]\n", in.SourceConn.BucketName)
 	filt := make(map[string]string)

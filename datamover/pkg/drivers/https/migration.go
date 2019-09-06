@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/looplab/fsm"
 	"log"
 	"os"
 	"strconv"
@@ -45,12 +47,28 @@ var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved d
 var JOB_RUN_TIME_MAX = 86400           //seconds, equals 1 day
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
+var jobstate = make(map[string]string)
+var (
+	PENDING    = "pending"
+	CREATED    = "creating"
+	VALIDATING = "validating"
+	RUNNING    = "running"
+	FAILED     = "failed"
+	ABORTED    = "aborted"
+	COMPLETED  = "completed"
+	CANCELLED  = "cancelled"
+)
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
 type Migration interface {
 	Init()
 	HandleMsg(msg string)
+	AbortMigration(msg string)
+}
+type JobFSM struct {
+	To  string
+	FSM *fsm.FSM
 }
 
 func Init() {
@@ -66,6 +84,9 @@ func HandleMsg(msgData []byte) error {
 		logger.Printf("unmarshal failed, err:%v\n", err)
 		return err
 	}
+	jobFSM := NewJobFSM(job.Id)
+	jobstate[job.Id] = jobFSM.FSM.Current()
+	//by default job status is Pending so no need to define job state
 
 	//Check the status of job, and run it if needed
 	status := db.DbAdapter.GetJobStatus(job.Id)
@@ -75,12 +96,12 @@ func HandleMsg(msgData []byte) error {
 	}
 
 	logger.Printf("HandleMsg:job=%+v\n", job)
-	go runjob(&job)
+	go runjob(&job, jobFSM)
 	return nil
 }
 
 func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
-	destLoca *LocationInfo, remainSource bool) {
+	destLoca *LocationInfo, remainSource bool, job *flowtype.Job, jobFSM *JobFSM) {
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
 	locMap := make(map[string]*LocationInfo)
@@ -91,18 +112,28 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 			continue
 		}
 		logger.Printf("************Begin to move obj(key:%s)\n", objs[i].ObjectKey)
-		go move(ctx, objs[i], capa, th, srcLoca, destLoca, remainSource, locMap)
+		go move(ctx, objs[i], capa, th, srcLoca, destLoca, remainSource, locMap, job, jobFSM)
 		//Create one routine
 		th <- 1
 		logger.Printf("doMigrate: produce 1 routine, len(th):%d.\n", len(th))
 	}
 }
 
-func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
+func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, job *flowtype.Job, jobFSM *JobFSM) error {
 	logger.Printf("*****Move object[%s] from #%s# to #%s#, size is %d.\n", obj.ObjectKey, srcLoca.BakendName,
 		destLoca.BakendName, obj.Size)
 	if obj.Size <= 0 {
 		return nil
+	}
+	jobid := fmt.Sprintf("%x", string(job.Id))
+	if jobstate[jobid] == "aborted" {
+		if !jobFSM.FSM.Is("aborted") {
+			err := jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		return errors.New("job aborted")
 	}
 	buf := make([]byte, obj.Size)
 	var size int64 = 0
@@ -136,12 +167,26 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 		{
 			logger.Printf("not support source backend type:%v\n", srcLoca.StorType)
 			err = errors.New("not support source backend type")
+			jobFSM.FSM.SetState("failed")
 		}
 	}
 
 	if err != nil {
 		logger.Printf("download object[%s] failed.", obj.ObjectKey)
+		if jobFSM.FSM.Is("failed") {
+			jobFSM.FSM.Event("fail")
+		}
 		return err
+	}
+
+	if jobstate[jobid] == "aborted" {
+		if !jobFSM.FSM.Is("aborted") {
+			err = jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		return errors.New("job aborted")
 	}
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
 
@@ -178,6 +223,15 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) 
 		logger.Printf("upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
 	} else {
 		logger.Printf("upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
+	}
+	if jobstate[jobid] == "aborted" {
+		if !jobFSM.FSM.Is("aborted") {
+			err = jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		return errors.New("job aborted")
 	}
 
 	return err
@@ -300,7 +354,7 @@ func deleteMultipartUpload(objKey, virtBucket, backendName, uploadId string) {
 	s3client.DeleteUploadRecord(context.Background(), &record)
 }
 
-func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo) error {
+func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, job *flowtype.Job, jobFSM *JobFSM) error {
 	partCount := int64(obj.Size / PART_SIZE)
 	if obj.Size%PART_SIZE != 0 {
 		partCount++
@@ -322,8 +376,29 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	var err error
 	var uploadMover, downloadMover MoveWorker
 	var uploadId string
+	var abort = false
 	currPartSize := PART_SIZE
+	jobid := fmt.Sprintf("%x", string(job.Id))
+	if jobstate[jobid] == "aborted" {
+		if !jobFSM.FSM.Is("aborted") {
+			err = jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		return errors.New("job aborted")
+	}
 	for i = 0; i < partCount; i++ {
+		if jobstate[jobid] == ABORTED {
+			if !jobFSM.FSM.Is(ABORTED) {
+				err = jobFSM.FSM.Event("abort")
+				if err != nil {
+					logger.Print(err)
+				}
+			}
+			break
+			//return nil
+		}
 		partNumber := i + 1
 		offset := int64(i) * PART_SIZE
 		if i+1 == partCount {
@@ -352,6 +427,15 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		}
 
 		//upload
+		if jobstate[jobid] == "aborted" {
+			if !jobFSM.FSM.Is("aborted") {
+				err = jobFSM.FSM.Event("abort")
+				if err != nil {
+					logger.Print(err)
+				}
+			}
+			break
+		}
 		if partNumber == 1 {
 			//init multipart upload
 			uploadMover, uploadId, err = multiPartUploadInit(uploadObjKey, destLoca)
@@ -372,8 +456,33 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			return errors.New("multipart upload failed")
 		}
 		//completeParts = append(completeParts, completePart)
-	}
 
+	}
+	if jobstate[jobid] == ABORTED {
+		if !jobFSM.FSM.Is(ABORTED) {
+			err = jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		logger.Printf("job cleaned %v", abort)
+		if !abort {
+			abort = true
+			logger.Printf("job cleaned  started %v", abort)
+			//if uploadId != "" {
+			logger.Printf("job aborting started")
+			err := abortMultipartUpload(obj.ObjectKey, destLoca, uploadMover)
+			if err != nil {
+				logger.Printf("abort s3 multipart upload failed, err:%v\n", err)
+			} else {
+				deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
+			}
+			//}
+		}
+		////break
+		logger.Printf("job cleaned")
+		return errors.New("job aborted")
+	}
 	err = completeMultipartUpload(uploadObjKey, destLoca, uploadMover)
 	if err != nil {
 		logger.Println(err.Error())
@@ -441,7 +550,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 }
 
 func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
-	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo) {
+	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo, job *flowtype.Job, jobFSM *JobFSM) {
 	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
 		obj.ObjectKey, obj.Backend, srcLoca.BakendName, destLoca.BakendName)
 
@@ -465,9 +574,9 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 			}
 		}
 		if obj.Size <= PART_SIZE {
-			err = MoveObj(obj, newSrcLoca, destLoca)
+			err = MoveObj(obj, newSrcLoca, destLoca, job, jobFSM)
 		} else {
-			err = MultipartMoveObj(obj, newSrcLoca, destLoca)
+			err = MultipartMoveObj(obj, newSrcLoca, destLoca, job, jobFSM)
 		}
 
 		if err != nil {
@@ -522,10 +631,14 @@ func updateJob(j *flowtype.Job) {
 	}
 }
 
-func runjob(in *pb.RunJobRequest) error {
+func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	logger.Println("Runjob is called in datamover service.")
 	logger.Printf("Request: %+v\n", in)
-
+	err := jobFSM.FSM.Event("create")
+	if err != nil {
+		fmt.Println(err) // TODO logs for error
+	}
+	jobstate[in.Id] = jobFSM.FSM.Current()
 	// set context tiemout
 	ctx := context.Background()
 	dur := getCtxTimeout()
@@ -539,7 +652,12 @@ func runjob(in *pb.RunJobRequest) error {
 	j.StartTime = time.Now()
 	j.Status = flowtype.JOB_STATUS_RUNNING
 	updateJob(&j)
-
+	// Start Validating
+	err = jobFSM.FSM.Event("validate")
+	jobstate[in.Id] = jobFSM.FSM.Current()
+	if err != nil {
+		fmt.Println(err) // TODO logs for error
+	}
 	// get location information
 	srcLoca, destLoca, err := getLocationInfo(ctx, &j, in)
 	if err != nil {
@@ -550,10 +668,39 @@ func runjob(in *pb.RunJobRequest) error {
 	}
 
 	// get total count and total size of objects need to be migrated
-	totalCount, totalSize, err := countObjs(ctx, in)
-	j.TotalCount = totalCount
-	j.TotalCapacity = totalSize
-	if err != nil || totalCount == 0 || totalSize == 0 {
+	//totalCount, totalSize, err := countObjs(ctx, in) TODO Enable this
+	//j.TotalCount = totalCount TODO
+	//j.TotalCapacity = totalSize TODO
+
+	//TODO Delete Following part after testing
+	//Start count obj- TODO PRIVATE
+	var offset, limit int32 = 0, 1000
+	objs, err := getObjs(ctx, in, srcLoca, offset, limit)
+	if err != nil {
+		logger.Printf("[ERROR] Incorrect Credentials")
+		//update database
+		//j.Msg = "Incorrect Credentials"
+		j.Status = flowtype.JOB_STATUS_FAILED
+		j.EndTime = time.Now()
+		//j.TimeRequired = int64(0)
+		db.DbAdapter.UpdateJob(&j)
+		return err
+	}
+
+	totalObj := len(objs)
+	if totalObj == 0 {
+		logger.Printf("[WARN] Bucket is empty.")
+		//j.Msg = "Bucket is empty"
+		//j.TimeRequired = int64(0)
+	}
+	for i := 0; i < totalObj; i++ {
+		j.TotalCount++
+		j.TotalCapacity += objs[i].Size
+	}
+	//js:= &jobstatus{}
+	// End TODO Delete above part RW
+
+	if err != nil || j.TotalCount == 0 || j.TotalCapacity == 0 { //TODO Change here RW
 		if err != nil {
 			j.Status = flowtype.JOB_STATUS_FAILED
 		} else {
@@ -563,13 +710,18 @@ func runjob(in *pb.RunJobRequest) error {
 		updateJob(&j)
 		return err
 	}
-
+	err = jobFSM.FSM.Event("start")
+	if err != nil {
+		fmt.Println(err) // TODO logs for error
+	}
+	jobstate[in.Id] = jobFSM.FSM.Current()
 	updateJob(&j)
 	// used to transfer capacity(size) of objects
 	capa := make(chan int64)
 	// concurrent go routines is limited to be simuRoutines
 	th := make(chan int, simuRoutines)
-	var offset, limit int32 = 0, 1000
+	//var offset, limit int32 = 0, 1000 TODO Enable this RW
+
 	for {
 		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
 		if err != nil {
@@ -586,7 +738,7 @@ func runjob(in *pb.RunJobRequest) error {
 		}
 
 		//Do migration for each object.
-		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource)
+		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, &j, jobFSM)
 		if len(objs) < int(limit) {
 			break
 		}
@@ -633,9 +785,14 @@ func runjob(in *pb.RunJobRequest) error {
 	j.PassedCount = int64(passedCount)
 	if passedCount < totalObjs {
 		errmsg := strconv.FormatInt(totalObjs, 10) + " objects, passed " + strconv.FormatInt(passedCount, 10)
-		logger.Printf("run job failed: %s\n", errmsg)
-		ret = errors.New("failed")
-		j.Status = flowtype.JOB_STATUS_FAILED
+		if jobFSM.FSM.Is(ABORTED) {
+			logger.Printf("job aborted: %s\n", errmsg)
+			j.Status = flowtype.JOB_STATUS_ABORTED
+		} else {
+			logger.Printf("run job failed: %s\n", errmsg)
+			j.Status = flowtype.JOB_STATUS_FAILED
+		}
+
 	} else {
 		j.Status = flowtype.JOB_STATUS_SUCCEED
 	}
@@ -653,3 +810,64 @@ func runjob(in *pb.RunJobRequest) error {
 
 	return ret
 }
+
+func AbortMigration(msgData []byte) error {
+
+	var job pb.AbortJobRequest
+	err := json.Unmarshal(msgData, &job)
+	if err != nil {
+		logger.Printf("unmarshal failed, err:%v\n", err)
+		return err
+	}
+
+	if jobstate[job.Id] != PENDING {
+		jobstate[job.Id] = ABORTED
+	} else {
+		jobstate[job.Id] = CANCELLED
+	}
+
+	logger.Printf("job aborted %v", job.Id)
+	return nil
+}
+
+// Create FSM
+
+func NewJobFSM(to string) *JobFSM {
+	d := &JobFSM{
+		To: to,
+	}
+
+	d.FSM = fsm.NewFSM(
+		"pending",
+		fsm.Events{
+			{Name: "create", Src: []string{PENDING}, Dst: CREATED},
+			{Name: "validate", Src: []string{CREATED}, Dst: VALIDATING},
+			{Name: "start", Src: []string{VALIDATING}, Dst: RUNNING},
+			{Name: "complete", Src: []string{RUNNING}, Dst: COMPLETED},
+			{Name: "fail", Src: []string{CREATED, VALIDATING, RUNNING}, Dst: FAILED},
+			{Name: "abort", Src: []string{CREATED, VALIDATING, RUNNING}, Dst: ABORTED},
+			{Name: "cancel", Src: []string{PENDING}, Dst: CANCELLED},
+		},
+		fsm.Callbacks{
+			"enter_state": func(e *fsm.Event) { d.enterState(e) },
+		},
+	)
+
+	return d
+}
+
+func (d *JobFSM) enterState(e *fsm.Event) {
+	logger.Printf("The job %s is %s\n", d.To, e.Dst)
+}
+
+//func changestate (jobFSM *JobFSM, state string){
+//	if jobFSM.FSM.Is(state)== false {
+//
+//		//do nothing
+//	} else {
+//
+//
+//		}
+//	//}
+//}
+//func newJobFSM

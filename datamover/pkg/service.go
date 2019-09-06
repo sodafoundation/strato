@@ -41,7 +41,7 @@ func InitDatamoverService() error {
 			addrs = append(addrs, addr[1])
 		}
 	}
-	topics := []string{"migration", "lifecycle"}
+	topics := []string{"migration", "lifecycle", "abort"}
 	err := kafka.Init(addrs, dataMoverGroup, topics)
 	if err != nil {
 		log.Log("init kafka consumer failed.")

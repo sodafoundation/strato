@@ -14,6 +14,7 @@ service DataFlow {
 	rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
 	rpc ListJob(ListJobRequest) returns (ListJobResponse) {}
 	rpc RunPlan(RunPlanRequest) returns (RunPlanResponse) {}
+	rpc AbortJob(AbortJobRequest) returns (AbortJobResponse) {}
 }
 
 message Schedule {
@@ -122,6 +123,8 @@ message CreatePlanResponse {
 	Plan plan = 2;
 }
 
+
+
 message GetPlanRequest {
 	string context = 1;
 	string id = 2;
@@ -201,6 +204,14 @@ message GetJobRequest {
 	string id = 2;
 }
 
+message AbortJobRequest {
+	string context = 1;
+	string id = 2;
+}
+
+message AbortJobResponse {
+	string err = 1;
+}
 message GetJobResponse {
 	string err = 1;
 	Job job = 2;
