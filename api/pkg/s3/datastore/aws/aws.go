@@ -95,7 +95,7 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		})
 
 		if err != nil {
-			log.Infof("Upload to aws failed:%v", err)
+			log.Errorf("Upload to aws failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to aws failed"}
 		} else {
 			object.LastModified = time.Now().Unix()
@@ -130,7 +130,7 @@ func (ad *AwsAdapter) GET(object *pb.Object, context context.Context, start int6
 		numBytes, err := downloader.DownloadWithContext(context, writer, &getObjectInput)
 		//numBytes,err:=downloader.Download(writer,&getObjectInput)
 		if err != nil {
-			log.Infof("Download failed:%v", err)
+			log.Errorf("Download failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		} else {
 			log.Infof("Download succeed, bytes:%d\n", numBytes)
@@ -156,7 +156,7 @@ func (ad *AwsAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	svc := awss3.New(ad.session)
 	_, err := svc.DeleteObject(&deleteInput)
 	if err != nil {
-		log.Infof("Delete object failed, err:%v\n", err)
+		log.Errorf("Delete object failed, err:%v\n", err)
 		return InternalError
 	}
 
@@ -247,10 +247,10 @@ func (ad *AwsAdapter) UploadPart(stream io.Reader,
 		upRes, err := svc.UploadPart(upPartInput)
 		if err != nil {
 			if tries == 3 {
-				log.Infof("[ERROR]Upload part to aws failed. err:%v\n", err)
+				log.Errorf("[ERROR]Upload part to aws failed. err:%v\n", err)
 				return nil, S3Error{Code: 500, Description: "Upload failed"}
 			}
-			log.Infof("Retrying to upload part#%d ,err:%s\n", partNumber, err)
+			log.Errorf("Retrying to upload part#%d ,err:%s\n", partNumber, err)
 			tries++
 		} else {
 			log.Infof("Uploaded part #%d, ETag:%s\n", partNumber, *upRes.ETag)
@@ -290,7 +290,7 @@ func (ad *AwsAdapter) CompleteMultipartUpload(
 	svc := awss3.New(ad.session)
 	resp, err := svc.CompleteMultipartUpload(completeInput)
 	if err != nil {
-		log.Infof("completeMultipartUploadS3 failed, err:%v\n", err)
+		log.Errorf("completeMultipartUploadS3 failed, err:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	}
 	result := &model.CompleteMultipartUploadResult{
@@ -317,7 +317,7 @@ func (ad *AwsAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 	svc := awss3.New(ad.session)
 	rsp, err := svc.AbortMultipartUpload(abortInput)
 	if err != nil {
-		log.Infof("abortMultipartUploadS3 failed, err:%v\n", err)
+		log.Errorf("abortMultipartUploadS3 failed, err:%v\n", err)
 		return S3Error{Code: 500, Description: err.Error()}
 	} else {
 		log.Infof("abortMultipartUploadS3 successfully, rsp:%v\n", rsp)

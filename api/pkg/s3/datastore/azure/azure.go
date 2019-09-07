@@ -48,7 +48,7 @@ func Init(backend *backendpb.BackendDetail) *AzureAdapter {
 	ad := AzureAdapter{}
 	containerURL, err := ad.createContainerURL(endpoint, AccessKeyID, AccessKeySecret)
 	if err != nil {
-		log.Infof("AzureAdapter Init container URL faild:%v\n", err)
+		log.Errorf("AzureAdapter Init container URL faild:%v\n", err)
 		return nil
 	}
 	adap := &AzureAdapter{backend: backend, containerURL: containerURL}
@@ -61,7 +61,7 @@ func (ad *AzureAdapter) createContainerURL(endpoint string, acountName string, a
 	credential, err := azblob.NewSharedKeyCredential(acountName, accountKey)
 
 	if err != nil {
-		log.Infof("Create credential failed, err:%v\n", err)
+		log.Errorf("Create credential failed, err:%v\n", err)
 		return azblob.ContainerURL{}, err
 	}
 
@@ -89,7 +89,7 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 		azblob.BlobAccessConditions{})
 	log.Infof("out the azure upload method")
 	if err != nil {
-		log.Infof("[AzureAdapter] Upload faild,err = %v\n", err)
+		log.Errorf("[AzureAdapter] Upload faild,err = %v\n", err)
 		return S3Error{Code: 500, Description: "Upload to azure failed"}
 	} else {
 		object.LastModified = time.Now().Unix()
@@ -104,7 +104,7 @@ func (ad *AzureAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Con
 	// Currently, only support Hot
 	_, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
 	if err != nil {
-		log.Infof("set azure blob tier failed:%v\n", err)
+		log.Errorf("set azure blob tier failed:%v\n", err)
 		return S3Error{Code: 500, Description: "set azure blob tier failed"}
 	}
 
@@ -125,7 +125,7 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context, start in
 		buf = make([]byte, count)
 		err := azblob.DownloadBlobToBuffer(context, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
 		if err != nil {
-			log.Infof("[AzureAdapter] Download failed:%v\n", err)
+			log.Errorf("[AzureAdapter] Download failed:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		}
 		body := bytes.NewReader(buf)
@@ -138,10 +138,10 @@ func (ad *AzureAdapter) GET(object *pb.Object, context context.Context, start in
 			false)
 		_, readErr := downloadResp.Response().Body.Read(buf)
 		if readErr != nil {
-			log.Infof("[blobmover] readErr[objkey:%s]=%v\n", newObjectKey, readErr)
+			log.Errorf("[blobmover] readErr[objkey:%s]=%v\n", newObjectKey, readErr)
 		}
 		if err != nil {
-			log.Infof("[AzureAdapter] Download failed:%v\n", err)
+			log.Errorf("[AzureAdapter] Download failed:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		}
 		body := bytes.NewReader(buf)
@@ -161,18 +161,18 @@ func (ad *AzureAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context
 	log.Infof("blobURL=%v,err=%v\n", blobURL, err)
 	if err != nil {
 		if serr, ok := err.(azblob.StorageError); ok { // This error is a Service-specific
-			log.Infof("service code:%s\n", serr.ServiceCode())
+			log.Errorf("service code:%s\n", serr.ServiceCode())
 			if string(serr.ServiceCode()) == string(azblob.StorageErrorCodeBlobNotFound) {
 				return NoError
 			}
 		}
 
-		log.Infof("[AzureAdapter] Delete failed:%v\n", err)
+		log.Errorf("[AzureAdapter] Delete failed:%v\n", err)
 		return S3Error{Code: 500, Description: "Delete failed"}
 	}
 
 	if delRsp.StatusCode() != http.StatusOK && delRsp.StatusCode() != http.StatusAccepted {
-		log.Infof("[AzureAdapter] Delete failed, status code:%d\n", delRsp.StatusCode())
+		log.Errorf("[AzureAdapter] Delete failed, status code:%d\n", delRsp.StatusCode())
 		return S3Error{Code: 500, Description: "Delete failed"}
 	}
 	return NoError
@@ -219,7 +219,7 @@ func (ad *AzureAdapter) UploadPart(stream io.Reader, multipartUpload *pb.Multipa
 	_, err := blobURL.StageBlock(context, base64ID, bytes.NewReader(bytess), azblob.LeaseAccessConditions{}, nil)
 	log.Infof("err is %v\n", err)
 	if err != nil {
-		log.Infof("[AzureAdapter] Stage block[#%d,base64ID:%s] failed:%v\n", partNumber, base64ID, err)
+		log.Errorf("[AzureAdapter] Stage block[#%d,base64ID:%s] failed:%v\n", partNumber, base64ID, err)
 		return nil, S3Error{Code: 500, Description: "Delete failed"}
 	}
 	log.Infof("[AzureAdapter] Stage block[#%d,base64ID:%s] succeed.\n", partNumber, base64ID)
@@ -249,14 +249,14 @@ func (ad *AzureAdapter) CompleteMultipartUpload(
 	_, err := blobURL.CommitBlockList(context, completeParts, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{})
 	log.Infof("err is %v\n", err)
 	if err != nil {
-		log.Infof("[AzureAdapter] Commit blocks faild:%v\n", err)
+		log.Errorf("[AzureAdapter] Commit blocks faild:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
 		log.Infof("[AzureAdapter] Commit blocks succeed.\n")
 		// Currently, only support Hot
 		_, err = blobURL.SetTier(context, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
 		if err != nil {
-			log.Infof("set azure blob tier failed:%v\n", err)
+			log.Errorf("set azure blob tier failed:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "set azure blob tier failed"}
 		}
 	}

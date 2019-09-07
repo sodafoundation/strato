@@ -50,7 +50,7 @@ func (s *APIService) GetStorageClasses(request *restful.Request, response *restf
 
 	xmlstring, err := xml.MarshalIndent(tmp, "", "  ")
 	if err != nil {
-		log.Infof("parse ListStorageClasses error: %v\n", err)
+		log.Errorf("parse ListStorageClasses error: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
 		xmlstring = []byte(xml.Header + string(xmlstring))

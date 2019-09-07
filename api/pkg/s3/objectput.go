@@ -96,7 +96,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
-		log.Infof("err is %v\n", err)
+		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

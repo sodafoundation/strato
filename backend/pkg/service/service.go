@@ -47,7 +47,7 @@ func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackend
 	}
 	res, err := db.Repo.CreateBackend(backend)
 	if err != nil {
-		log.Infof("Failed to create backend: %v", err)
+		log.Errorf("Failed to create backend: %v", err)
 		return err
 	}
 	out.Backend = &pb.BackendDetail{
@@ -71,7 +71,7 @@ func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendReques
 	log.Info("Received GetBackend request.")
 	res, err := db.Repo.GetBackend(in.Id)
 	if err != nil {
-		log.Infof("failed to get backend: %v\n", err)
+		log.Errorf("failed to get backend: %v\n", err)
 		return err
 	}
 	out.Backend = &pb.BackendDetail{
@@ -102,7 +102,7 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 
 	res, err := db.Repo.ListBackend(int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Infof("failed to list backend: %v\n", err)
+		log.Errorf("failed to list backend: %v\n", err)
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 	log.Info("Received UpdateBackend request.")
 	backend, err := db.Repo.GetBackend(in.Id)
 	if err != nil {
-		log.Infof("failed to get backend: %v\n", err)
+		log.Errorf("failed to get backend: %v\n", err)
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 	backend.Security = in.Security
 	res, err := db.Repo.UpdateBackend(backend)
 	if err != nil {
-		log.Infof("failed to update backend: %v\n", err)
+		log.Errorf("failed to update backend: %v\n", err)
 		return err
 	}
 
@@ -165,7 +165,7 @@ func (b *backendService) DeleteBackend(ctx context.Context, in *pb.DeleteBackend
 	log.Info("Received DeleteBackend request.")
 	err := db.Repo.DeleteBackend(in.Id)
 	if err != nil {
-		log.Infof("failed to delete backend: %v\n", err)
+		log.Errorf("failed to delete backend: %v\n", err)
 		return err
 	}
 	log.Info("Delete backend successfully.")

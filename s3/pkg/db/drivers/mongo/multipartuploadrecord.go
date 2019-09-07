@@ -21,7 +21,7 @@ func (ad *adapter) AddMultipartUpload(record *pb.MultipartUploadRecord) S3Error 
 	collection := session.DB(DataBaseName).C(CollMultipartUploadRecord)
 	err := collection.Insert(record)
 	if err != nil {
-		log.Infof("add multipart upload record[uploadid=%s] to database failed: %v\n", record.UploadId, err)
+		log.Errorf("add multipart upload record[uploadid=%s] to database failed: %v\n", record.UploadId, err)
 		return DBError
 	}
 
@@ -38,7 +38,7 @@ func (ad *adapter) DeleteMultipartUpload(record *pb.MultipartUploadRecord) S3Err
 	// objectkey is unique in OpenSDS, uploadid is unique for a specific physical bucket
 	err := collection.Remove(bson.M{DBKEY_OBJECTKEY: record.ObjectKey, DBKEY_UPLOADID: record.UploadId})
 	if err != nil && err != mgo.ErrNotFound {
-		log.Infof("delete multipart upload record[uploadid=%s] from database failed: %v\n", record.UploadId, err)
+		log.Errorf("delete multipart upload record[uploadid=%s] from database failed: %v\n", record.UploadId, err)
 		return DBError
 	}
 
@@ -58,7 +58,7 @@ func (ad *adapter) ListUploadRecords(in *pb.ListMultipartUploadRequest, out *[]p
 	filter := bson.M{"bucket": in.Bucket, "inittime": bson.M{"$lte": secs}, "objectkey": bson.M{"$regex": "^" + in.Prefix}}
 	err := c.Find(filter).Skip(int(in.Offset)).Limit(int(in.Limit)).All(out)
 	if err != nil && err != mgo.ErrNotFound {
-		log.Infof("list upload records failed:%v\n", err)
+		log.Errorf("list upload records failed:%v\n", err)
 		return DBError
 	}
 

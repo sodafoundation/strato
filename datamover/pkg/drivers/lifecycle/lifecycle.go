@@ -58,7 +58,7 @@ func HandleMsg(msgData []byte) error {
 	var acReq datamover.LifecycleActionRequest
 	err := json.Unmarshal(msgData, &acReq)
 	if err != nil {
-		log.Infof("unmarshal lifecycle action request failed, err:%v\n", err)
+		log.Errorf("unmarshal lifecycle action request failed, err:%v\n", err)
 		return err
 	}
 
@@ -99,7 +99,7 @@ func getBackendInfo(backendName *string, force bool) (*BackendInfo, error) {
 
 	bk, err := db.DbAdapter.GetBackendByName(*backendName)
 	if err != nil {
-		log.Infof("get backend[%s] information failed, err:%v\n", backendName, err)
+		log.Errorf("get backend[%s] information failed, err:%v\n", backendName, err)
 		return nil, err
 	} else {
 		loca := &BackendInfo{bk.Type, bk.Region, bk.Endpoint, bk.BucketName,
@@ -139,7 +139,7 @@ func deleteObjFromBackend(objKey string, loca *LocationInfo) error {
 	}
 
 	if err != nil {
-		log.Infof("delete object[%s] from backend[type:%s,bucket:%s] failed.\n", objKey, loca.StorType, loca.BucketName)
+		log.Errorf("delete object[%s] from backend[type:%s,bucket:%s] failed.\n", objKey, loca.StorType, loca.BucketName)
 	} else {
 		log.Infof("delete object[%s] from backend[type:%s,bucket:%s] successfully.\n", objKey, loca.StorType, loca.BucketName)
 	}

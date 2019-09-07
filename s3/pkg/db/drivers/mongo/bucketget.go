@@ -32,7 +32,7 @@ func (ad *adapter) GetBucketByName(bucketName string, out *pb.Bucket) S3Error {
 		log.Info("Bucket does not exist.")
 		return NoSuchBucket
 	} else if err != nil {
-		log.Infof("Get bucket from database failed,err:%v.\n", err)
+		log.Errorf("Get bucket from database failed,err:%v.\n", err)
 		return InternalError
 	}
 

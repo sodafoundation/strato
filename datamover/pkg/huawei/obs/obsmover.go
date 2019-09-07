@@ -67,7 +67,7 @@ func (mover *ObsMover) DownloadObj(objKey string, srcLoca *LocationInfo, buf []b
 	for tries := 1; tries <= 3; tries++ {
 		output, err := obsClient.GetObject(input)
 		if err != nil {
-			log.Infof("[obsmover] download object[%s] failed %d times, err:%v", objKey, tries, err)
+			log.Errorf("[obsmover] download object[%s] failed %d times, err:%v", objKey, tries, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission || e.Error() == DMERR_NoSuchKey { //If no permission, then no need to retry.
 				return 0, e
@@ -88,7 +88,7 @@ func (mover *ObsMover) DownloadObj(objKey string, srcLoca *LocationInfo, buf []b
 					size += int64(readCount)
 				}
 				if readErr != nil {
-					log.Infof("[obsmover] readErr for object[%s] is:%v\n", objKey, readErr)
+					log.Errorf("[obsmover] readErr for object[%s] is:%v\n", objKey, readErr)
 					break
 				}
 			}
@@ -108,7 +108,7 @@ func (mover *ObsMover) UploadObj(objKey string, destLoca *LocationInfo, buf []by
 	log.Infof("[obsmover] try to upload object[%s], buf.len=%d.", objKey, len(buf))
 	obsClient, err := obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
-		log.Infof("[obsmover] init obs failed for upload object[%s], err:%v.\n", objKey, err)
+		log.Errorf("[obsmover] init obs failed for upload object[%s], err:%v.\n", objKey, err)
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (mover *ObsMover) UploadObj(objKey string, destLoca *LocationInfo, buf []by
 	for tries := 1; tries <= 3; tries++ {
 		output, err := obsClient.PutObject(input)
 		if err != nil {
-			log.Infof("[obsmover] put object[%s] failed %d times, err: %v\n", objKey, tries, err)
+			log.Errorf("[obsmover] put object[%s] failed %d times, err: %v\n", objKey, tries, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
 				return e
@@ -151,7 +151,7 @@ func (mover *ObsMover) UploadObj(objKey string, destLoca *LocationInfo, buf []by
 func (mover *ObsMover) DeleteObj(objKey string, loca *LocationInfo) error {
 	obsClient, err := obs.New(loca.Access, loca.Security, loca.EndPoint)
 	if err != nil {
-		log.Infof("[obsmover] new client failed when delete obj[objKey:%s] in storage backend[type:hws], err:%v\n",
+		log.Errorf("[obsmover] new client failed when delete obj[objKey:%s] in storage backend[type:hws], err:%v\n",
 			objKey, err)
 		return err
 	}
@@ -163,7 +163,7 @@ func (mover *ObsMover) DeleteObj(objKey string, loca *LocationInfo) error {
 	for tries := 1; tries <= 3; tries++ {
 		output, err := obsClient.DeleteObject(input)
 		if err != nil {
-			log.Infof("[obsmover] delete object[objKey:%s] in storage backend failed %d times, err:%v\n",
+			log.Errorf("[obsmover] delete object[objKey:%s] in storage backend failed %d times, err:%v\n",
 				objKey, tries, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -183,7 +183,7 @@ func (mover *ObsMover) MultiPartDownloadInit(srcLoca *LocationInfo) error {
 	var err error
 	mover.obsClient, err = obs.New(srcLoca.Access, srcLoca.Security, srcLoca.EndPoint)
 	if err != nil {
-		log.Infof("[obsmover] multiPart download init failed:%v\n", err)
+		log.Errorf("[obsmover] multiPart download init failed:%v\n", err)
 	}
 	return err
 }
@@ -198,7 +198,7 @@ func (mover *ObsMover) DownloadRange(objKey string, srcLoca *LocationInfo, buf [
 	for tries := 1; tries <= 3; tries++ {
 		output, err := mover.obsClient.GetObject(input)
 		if err != nil {
-			log.Infof("[obsmover] download object[%s] range[%d - %d] failed %d times.\n",
+			log.Errorf("[obsmover] download object[%s] range[%d - %d] failed %d times.\n",
 				objKey, start, end, tries)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -219,7 +219,7 @@ func (mover *ObsMover) DownloadRange(objKey string, srcLoca *LocationInfo, buf [
 				}
 			}
 			if readErr != nil && readErr != io.EOF {
-				log.Infof("[obsmover] body.read for object[%s] failed, err:%v\n", objKey, err)
+				log.Errorf("[obsmover] body.read for object[%s] failed, err:%v\n", objKey, err)
 				return 0, readErr
 			}
 			log.Infof("[obsmover] download object[%s] range[%d - %d] successfully, readCount=%d.\n", objKey, start, end, readCount)
@@ -251,14 +251,14 @@ func (mover *ObsMover) MultiPartUploadInit(objKey string, destLoca *LocationInfo
 	var err error = nil
 	mover.obsClient, err = obs.New(destLoca.Access, destLoca.Security, destLoca.EndPoint)
 	if err != nil {
-		log.Infof("[obsmover] create obsclient failed in MultiPartUploadInit[obj:%s], err:%v\n", objKey, err)
+		log.Errorf("[obsmover] create obsclient failed in MultiPartUploadInit[obj:%s], err:%v\n", objKey, err)
 		return "", err
 	}
 	log.Infof("[obsmover] try to InitiateMultipartUpload [objkey:%s].\n", objKey)
 	for tries := 1; tries <= 3; tries++ {
 		mover.multiUploadInitOut, err = mover.obsClient.InitiateMultipartUpload(input)
 		if err != nil {
-			log.Infof("[obsmover] init multipart upload [objkey:%s] failed %d times. err:%v\n", objKey, tries, err)
+			log.Errorf("[obsmover] init multipart upload [objkey:%s] failed %d times. err:%v\n", objKey, tries, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
 				return "", e
@@ -288,7 +288,7 @@ func (mover *ObsMover) UploadPart(objKey string, destLoca *LocationInfo, upBytes
 		uploadPartInput.Body = bytes.NewReader(buf)
 		uploadPartInputOutput, err := mover.obsClient.UploadPart(uploadPartInput)
 		if err != nil {
-			log.Infof("[obsmover] upload object[%s] range[partnumber#%d,offset#%d] failed %d times. err:%v\n",
+			log.Errorf("[obsmover] upload object[%s] range[partnumber#%d,offset#%d] failed %d times. err:%v\n",
 				objKey, partNumber, offset, tries, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -319,7 +319,7 @@ func (mover *ObsMover) AbortMultipartUpload(objKey string, destLoca *LocationInf
 	for tries := 1; tries <= 3; tries++ {
 		_, err = mover.obsClient.AbortMultipartUpload(input)
 		if err != nil {
-			log.Infof("[obsmover] abort multipartupload failed %d times, objkey:%s, uploadId:%s, err:%v\n",
+			log.Errorf("[obsmover] abort multipartupload failed %d times, objkey:%s, uploadId:%s, err:%v\n",
 				tries, objKey, mover.multiUploadInitOut.UploadId, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -346,7 +346,7 @@ func (mover *ObsMover) CompleteMultipartUpload(objKey string, destLoca *Location
 	for tries := 1; tries <= 3; tries++ {
 		_, err = mover.obsClient.CompleteMultipartUpload(completeMultipartUploadInput)
 		if err != nil {
-			log.Infof("[obsmover] complete multipart upload for object[%s] failed %d times, err:%v\n", objKey, tries, err)
+			log.Errorf("[obsmover] complete multipart upload for object[%s] failed %d times, err:%v\n", objKey, tries, err)
 			e := handleHWObsErrors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
 				return e
@@ -373,7 +373,7 @@ func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]obs.Content, error) {
 	}
 	output, err := obsClient.ListObjects(input)
 	if err != nil {
-		log.Infof("[obsmover] list objects failed, err:%v\n", err)
+		log.Errorf("[obsmover] list objects failed, err:%v\n", err)
 		return nil, handleHWObsErrors(err)
 	}
 	objs := output.Contents
@@ -381,7 +381,7 @@ func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]obs.Content, error) {
 		input.Marker = output.NextMarker
 		output, err = obsClient.ListObjects(input)
 		if err != nil {
-			log.Infof("[obsmover] list objects failed, err:%v\n", err)
+			log.Errorf("[obsmover] list objects failed, err:%v\n", err)
 			return nil, handleHWObsErrors(err)
 		}
 		objs = append(objs, output.Contents...)

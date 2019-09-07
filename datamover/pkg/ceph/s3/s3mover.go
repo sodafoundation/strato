@@ -74,7 +74,7 @@ func (mover *CephS3Mover) UploadObj(objKey string, destLoca *LocationInfo, buf [
 	for tries := 1; tries <= 3; tries++ {
 		err := cephObject.Create(objKey, contentMD5, "", length, body, models.Private)
 		if err != nil {
-			log.Infof("[cephs3mover] upload object[bucket:%s,key:%s] failed %d times, err:%v\n",
+			log.Errorf("[cephs3mover] upload object[bucket:%s,key:%s] failed %d times, err:%v\n",
 				destLoca.BucketName, objKey, tries, err)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
@@ -100,7 +100,7 @@ func (mover *CephS3Mover) DownloadObj(objKey string, srcLoca *LocationInfo, buf 
 	for tries := 1; tries <= 3; tries++ {
 		getObject, err := cephObject.Get(objKey, nil)
 		if err != nil {
-			log.Infof("[cephs3mover]download object[bucket:%s,key:%s] failed: %v.\n", srcLoca.BucketName, objKey, err)
+			log.Errorf("[cephs3mover]download object[bucket:%s,key:%s] failed: %v.\n", srcLoca.BucketName, objKey, err)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission { //If no permission, then no need to retry.
 				return 0, e
@@ -114,7 +114,7 @@ func (mover *CephS3Mover) DownloadObj(objKey string, srcLoca *LocationInfo, buf 
 		size = int64(len(data))
 		copy(buf, data)
 		if err != nil {
-			log.Infof("[cephs3mover]download object[bucket:%s,key:%s] failed %d times, err:%v\n",
+			log.Errorf("[cephs3mover]download object[bucket:%s,key:%s] failed %d times, err:%v\n",
 				srcLoca.BucketName, objKey, tries, err)
 		} else {
 			numBytes = getObject.ContentLength
@@ -152,7 +152,7 @@ func (mover *CephS3Mover) DownloadRange(objKey string, srcLoca *LocationInfo, bu
 	for tries := 1; tries <= 3; tries++ {
 		resp, err := cephObject.Get(objKey, &getObjectOption)
 		if err != nil {
-			log.Infof("[cephs3mover] download object[bucket:%s,key:%s] failed: %v.\n",
+			log.Errorf("[cephs3mover] download object[bucket:%s,key:%s] failed: %v.\n",
 				srcLoca.BucketName, objKey, err)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -167,7 +167,7 @@ func (mover *CephS3Mover) DownloadRange(objKey string, srcLoca *LocationInfo, bu
 		size = int64(len(data))
 		copy(buf, data)
 		if err != nil {
-			log.Infof("[cephs3mover] download object[%s] range[%d - %d] faild %d times, err:%v\n",
+			log.Errorf("[cephs3mover] download object[%s] range[%d - %d] faild %d times, err:%v\n",
 				objKey, start, end, tries, err)
 		} else {
 			log.Infof("[cephs3mover] download object[%s] range[%d - %d] succeed, bytes:%d\n", objKey, start, end, size)
@@ -188,7 +188,7 @@ func (mover *CephS3Mover) MultiPartUploadInit(objKey string, destLoca *LocationI
 	for tries := 1; tries <= 3; tries++ {
 		resp, err := mover.svc.Initiate(nil)
 		if err != nil {
-			log.Infof("[cephs3mover] init multipart upload[objkey:%s] failed %d times, err:%v.\n", objKey, tries, err)
+			log.Errorf("[cephs3mover] init multipart upload[objkey:%s] failed %d times, err:%v.\n", objKey, tries, err)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
 				return "", e
@@ -216,7 +216,7 @@ func (mover *CephS3Mover) UploadPart(objKey string, destLoca *LocationInfo, upBy
 	for tries := 1; tries <= 3; tries++ {
 		upRes, err := mover.svc.UploadPart(int(partNumber), mover.multiUploadInitOut.UploadID, contentMD5, "", length, body)
 		if err != nil {
-			log.Infof("[cephs3mover] upload range[objkey:%s, partnumber#%d, offset#%d] failed %d times, err:%v\n",
+			log.Errorf("[cephs3mover] upload range[objkey:%s, partnumber#%d, offset#%d] failed %d times, err:%v\n",
 				objKey, partNumber, offset, tries, err)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -240,7 +240,7 @@ func (mover *CephS3Mover) AbortMultipartUpload(objKey string, destLoca *Location
 	for tries := 1; tries <= 3; tries++ {
 		err := uploader.RemoveUploads(mover.multiUploadInitOut.UploadID)
 		if err != nil {
-			log.Infof("[cephs3mover] abort multipart upload[objkey:%s] for uploadId#%s failed %d times.\n",
+			log.Errorf("[cephs3mover] abort multipart upload[objkey:%s] for uploadId#%s failed %d times.\n",
 				objKey, mover.multiUploadInitOut.UploadID, tries)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
@@ -270,7 +270,7 @@ func (mover *CephS3Mover) CompleteMultipartUpload(objKey string, destLoca *Locat
 	for tries := 1; tries <= 3; tries++ {
 		rsp, err := mover.svc.Complete(mover.multiUploadInitOut.UploadID, completeParts)
 		if err != nil {
-			log.Infof("[cephs3mover] completeMultipartUpload [objkey:%s] failed %d times, err:%v\n", objKey, tries, err)
+			log.Errorf("[cephs3mover] completeMultipartUpload [objkey:%s] failed %d times, err:%v\n", objKey, tries, err)
 			e := handleCephS3Errors(err)
 			if tries >= 3 || e.Error() == DMERR_NoPermission {
 				return e
@@ -291,7 +291,7 @@ func (mover *CephS3Mover) DeleteObj(objKey string, loca *LocationInfo) error {
 
 	err := cephObject.Remove(objKey)
 	if err != nil {
-		log.Infof("[cephs3mover] error occurred while waiting for object[%s] to be deleted.\n", objKey)
+		log.Errorf("[cephs3mover] error occurred while waiting for object[%s] to be deleted.\n", objKey)
 		e := handleCephS3Errors(err)
 		return e
 	}
@@ -311,7 +311,7 @@ func ListObjs(loca *LocationInfo, filt *pb.Filter) ([]models.GetBucketResponseCo
 		output, err = bucket.Get(string(loca.BucketName), "", "", "", 1000)
 	}
 	if err != nil {
-		log.Infof("[cephs3mover] list bucket failed, err:%v\n", err)
+		log.Errorf("[cephs3mover] list bucket failed, err:%v\n", err)
 		e := handleCephS3Errors(err)
 		return nil, e
 	}

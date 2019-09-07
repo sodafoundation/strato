@@ -69,7 +69,7 @@ func (s *APIService) ListPolicy(request *restful.Request, response *restful.Resp
 	log.Infof("Get policy reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("res: %s.\n", jsons)
 	}
@@ -97,7 +97,7 @@ func (s *APIService) GetPolicy(request *restful.Request, response *restful.Respo
 	log.Infof("Get policy reponse:%v", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("res: %s.\n", jsons)
 	}
@@ -118,14 +118,14 @@ func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Re
 	err := request.ReadEntity(&pol)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
-		log.Infof("read request body failed, err:%v.\n", err)
+		log.Errorf("read request body failed, err:%v.\n", err)
 		return
 	}
 
 	//For debug --begin
 	jsons, errs := json.Marshal(pol)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("Req body: %s.\n", jsons)
 	}
@@ -150,7 +150,7 @@ func (s *APIService) UpdatePolicy(request *restful.Request, response *restful.Re
 	body, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
-		log.Infof("read request body failed, err:%v.\n", err)
+		log.Errorf("read request body failed, err:%v.\n", err)
 		return
 	}
 	log.Infof("Received request for update policy.body:%s\n", body)
@@ -168,7 +168,7 @@ func (s *APIService) UpdatePolicy(request *restful.Request, response *restful.Re
 	//For debug --begin
 	jsons1, errs1 := json.Marshal(res)
 	if errs1 != nil {
-		log.Infof(errs1.Error())
+		log.Errorf(errs1.Error())
 	} else {
 		log.Infof("Rsp body: %s.\n", jsons1)
 	}
@@ -203,7 +203,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	listPlanReq := &dataflow.ListPlanRequest{}
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Infof("get pagination parameters failed: %v\n", err)
+		log.Errorf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -212,7 +212,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 
 	sortKeys, sortDirs, err := common.GetSortParam(request)
 	if err != nil {
-		log.Infof("get sort parameters failed: %v\n", err)
+		log.Errorf("get sort parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -222,7 +222,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	filterOpts := []string{"name", "type", "bucketname"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Infof("get filter failed: %v\n", err)
+		log.Errorf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	} else {
@@ -244,7 +244,7 @@ func (s *APIService) ListPlan(request *restful.Request, response *restful.Respon
 	log.Infof("List plans reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("res: %s.\n", jsons)
 	}
@@ -272,7 +272,7 @@ func (s *APIService) GetPlan(request *restful.Request, response *restful.Respons
 	log.Infof("Get plan reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("res: %s.\n", jsons)
 	}
@@ -301,7 +301,7 @@ func (s *APIService) CreatePlan(request *restful.Request, response *restful.Resp
 	//For debug --begin
 	jsons, errs := json.Marshal(plan)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("Req body: %s.\n", jsons)
 	}
@@ -347,7 +347,7 @@ func (s *APIService) UpdatePlan(request *restful.Request, response *restful.Resp
 	//For debug --begin
 	jsons1, errs1 := json.Marshal(resp)
 	if errs1 != nil {
-		log.Infof(errs1.Error())
+		log.Errorf(errs1.Error())
 	} else {
 		log.Infof("Rsp body: %s.\n", jsons1)
 	}
@@ -406,7 +406,7 @@ func (s *APIService) GetJob(request *restful.Request, response *restful.Response
 	log.Infof("Get jobs reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("res: %s.\n", jsons)
 	}
@@ -425,7 +425,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	listJobReq := &dataflow.ListJobRequest{}
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Infof("get pagination parameters failed: %v\n", err)
+		log.Errorf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -434,7 +434,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 
 	sortKeys, sortDirs, err := common.GetSortParam(request)
 	if err != nil {
-		log.Infof("get sort parameters failed: %v\n", err)
+		log.Errorf("get sort parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -444,7 +444,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	filterOpts := []string{"planName", "type"}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Infof("get filter failed: %v\n", err)
+		log.Errorf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	} else {
@@ -466,7 +466,7 @@ func (s *APIService) ListJob(request *restful.Request, response *restful.Respons
 	log.Infof("List jobs reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
-		log.Infof(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
 		log.Infof("res: %s.\n", jsons)
 	}

@@ -30,7 +30,7 @@ func Init(addrs []string) error {
 		}
 	}
 	if err != nil {
-		log.Infof("Create producer failed, err:%v", err)
+		log.Errorf("Create producer failed, err:%v", err)
 	}
 
 	return err
@@ -44,7 +44,7 @@ func ProduceMsg(topic string, msg []byte) error {
 	log.Infof("send message:%s\n", kafkaMsg)
 	partition, offset, err := Producer.SendMessage(kafkaMsg)
 	if err != nil {
-		log.Infof("Producer send message failed, err:%v\n", err)
+		log.Errorf("Producer send message failed, err:%v\n", err)
 	} else {
 		log.Infof("message is stored in topic(%s)/partition(%d)/offset(%d)\n", topic, partition, offset)
 	}

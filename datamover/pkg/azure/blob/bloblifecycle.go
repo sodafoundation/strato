@@ -40,7 +40,7 @@ func (mover *BlobMover) setTier(objKey *string, newClass *string) error {
 		return errors.New("Invalid storage class")
 	}
 	if err != nil {
-		log.Infof("[blobmover]set tier of object[%s] to %s failed, err:%v\n", objKey, newClass, err)
+		log.Errorf("[blobmover]set tier of object[%s] to %s failed, err:%v\n", objKey, newClass, err)
 	} else {
 		log.Infof("[blobmover]set tier of object[%s] to %s succeed, res:%v\n", objKey, newClass, res.Response())
 	}

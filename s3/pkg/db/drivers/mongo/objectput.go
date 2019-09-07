@@ -69,7 +69,7 @@ func (ad *adapter) UpdateObjMeta(objKey *string, bucketName *string, lastmod int
 	data := bson.M{"$set": setting}
 	err := c.Update(selector, data)
 	if err != nil {
-		log.Infof("update object[key=%s] metadata failed:%v.\n", *objKey, err)
+		log.Errorf("update object[key=%s] metadata failed:%v.\n", *objKey, err)
 		return DBError
 	}
 

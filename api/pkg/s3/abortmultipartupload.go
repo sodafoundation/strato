@@ -28,7 +28,7 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Infof("No such object err\n")
+		log.Errorf("No such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}

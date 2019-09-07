@@ -46,7 +46,7 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 
 	xmlstring, err := xml.MarshalIndent(temp, "", "  ")
 	if err != nil {
-		log.Infof("Parse ListBuckets error: %v", err)
+		log.Errorf("Parse ListBuckets error: %v", err)
 		return nil
 	}
 	xmlstring = []byte(xml.Header + string(xmlstring))

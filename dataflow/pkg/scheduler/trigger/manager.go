@@ -44,7 +44,7 @@ func (m *Manager) Add(ctx *context.Context, plan *model.Plan, executer Executer)
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Infof("Get specified policy(%s) failed", plan.PolicyId)
+		log.Errorf("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (m *Manager) Update(ctx *context.Context, plan *model.Plan, executer Execut
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Infof("Get specified policy(%s) failed", plan.PolicyId)
+		log.Errorf("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (m *Manager) Remove(ctx *context.Context, plan *model.Plan) error {
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Infof("Get specified policy(%s) failed", plan.PolicyId)
+		log.Errorf("Get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 	tg := GetTrigger(policy.Schedule.Type)

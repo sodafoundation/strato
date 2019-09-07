@@ -37,7 +37,7 @@ func (mover *CephS3Mover) DeleteIncompleteMultipartUpload(objKey, uploadId strin
 	uploader := cephObject.NewUploads(objKey)
 	err := uploader.RemoveUploads(uploadId)
 	if err != nil {
-		log.Infof("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)
+		log.Errorf("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] failed, err:%v.\n", objKey, uploadId, err)
 	} else {
 		log.Infof("[cephs3lifecycle] abort multipart upload[objkey:%s, uploadid:%s] successfully, err:%v.\n", objKey, uploadId)
 	}

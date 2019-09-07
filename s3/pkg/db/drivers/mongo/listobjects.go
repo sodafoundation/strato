@@ -44,7 +44,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 			var tmFilter map[string]string
 			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
 			if err != nil {
-				log.Infof("unmarshal lastmodified value failed:%s\n", err)
+				log.Errorf("unmarshal lastmodified value failed:%s\n", err)
 				return InvalidQueryParameter
 			}
 			for k, v := range tmFilter {
@@ -70,7 +70,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 		if in.Filter[common.KStorageTier] != "" {
 			tier, err := strconv.Atoi(in.Filter[common.KStorageTier])
 			if err != nil {
-				log.Infof("invalid storage class:%s\n", in.Filter[common.KStorageTier])
+				log.Errorf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
 				return InvalidQueryParameter
 			}
 			filter = append(filter, bson.M{"tier": bson.M{"$lte": tier}})
@@ -95,7 +95,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	}
 
 	if err != nil {
-		log.Infof("find objects from database failed, err:%v\n", err)
+		log.Errorf("find objects from database failed, err:%v\n", err)
 		return InternalError
 	}
 
@@ -141,7 +141,7 @@ func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountI
 		out.Size = 0
 		log.Infof("count objects of bucket[%s] successfully, count=0, size=0\n", in.Bucket)
 	} else {
-		log.Infof("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
+		log.Errorf("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
 		return InternalError
 	}
 

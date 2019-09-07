@@ -38,7 +38,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	xml.Unmarshal(body, completeUpload)
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Infof("No such object err\n")
+		log.Errorf("No such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
@@ -65,13 +65,13 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	//insert metadata
 	_, err := s.s3Client.CreateObject(ctx, objectMD)
 	if err != nil {
-		log.Infof("err is %v\n", err)
+		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	xmlstring, err := xml.MarshalIndent(resp, "", "  ")
 	if err != nil {
-		log.Infof("Parse ListBuckets error: %v", err)
+		log.Errorf("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

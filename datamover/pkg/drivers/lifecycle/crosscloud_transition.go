@@ -88,18 +88,18 @@ func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 
 	src, err := getBackendInfo(&acReq.SourceBackend, false)
 	if err != nil {
-		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		return err
 	}
 	target, err := getBackendInfo(&acReq.TargetBackend, false)
 	if err != nil {
-		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		return err
 	}
 
 	className, err := getStorageClassName(acReq.TargetTier, target.StorType)
 	if err != nil {
-		log.Infof("cross-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
+		log.Errorf("cross-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
 		return err
 	}
 
@@ -107,17 +107,17 @@ func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	obj := osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName}
 	err = copyObj(context.Background(), &obj, src, target, &className)
 	if err != nil && err.Error() == DMERR_NoPermission {
-		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		// In case credentials is changed.
 		src, _ = getBackendInfo(&acReq.SourceBackend, true)
 		target, _ = getBackendInfo(&acReq.TargetBackend, true)
 		err = copyObj(context.Background(), &obj, src, target, &className)
 	}
 	if err != nil && err.Error() == "in-progress" {
-		log.Infof("transition of object[%s] is in-progress\n", acReq.ObjKey)
+		log.Errorf("transition of object[%s] is in-progress\n", acReq.ObjKey)
 		return nil
 	} else if err != nil {
-		log.Infof("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 		return err
 	}
 

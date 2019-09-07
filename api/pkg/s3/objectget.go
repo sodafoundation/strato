@@ -57,7 +57,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		object.Size = objectMD.Size
 		backendname = objectMD.Backend
 	} else {
-		log.Infof("No such object")
+		log.Errorf("No such object")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 		return
 	}

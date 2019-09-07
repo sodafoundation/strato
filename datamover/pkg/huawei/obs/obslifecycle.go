@@ -25,7 +25,7 @@ import (
 func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {
 	obsClient, err := obs.New(bkend.Access, bkend.Security, bkend.EndPoint)
 	if err != nil {
-		log.Infof("[obslifecycle] new client failed when change storage class of obj[%s] to %s failed, err:%v\n",
+		log.Errorf("[obslifecycle] new client failed when change storage class of obj[%s] to %s failed, err:%v\n",
 			objKey, newClass, err)
 		return err
 	}
@@ -47,7 +47,7 @@ func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bken
 	}
 	_, err = obsClient.CopyObject(input)
 	if err != nil {
-		log.Infof("[obslifecycle] change storage class of object[%s] to %s failed: %v\n", objKey, newClass, err)
+		log.Errorf("[obslifecycle] change storage class of object[%s] to %s failed: %v\n", objKey, newClass, err)
 		e := handleHWObsErrors(err)
 		return e
 	}
@@ -60,7 +60,7 @@ func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bken
 func (mover *ObsMover) DeleteIncompleteMultipartUpload(objKey, uploadId string, loc *LocationInfo) error {
 	obsClient, err := obs.New(loc.Access, loc.Security, loc.EndPoint)
 	if err != nil {
-		log.Infof("[obslifecycle] new client failed when delete incomplete multipart upload[objkey=%s,uploadid=%s] failed, err:%v\n",
+		log.Errorf("[obslifecycle] new client failed when delete incomplete multipart upload[objkey=%s,uploadid=%s] failed, err:%v\n",
 			objKey, uploadId, err)
 		return err
 	}

@@ -145,13 +145,13 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 
 	loca, err := getBackendInfo(&acReq.SourceBackend, false)
 	if err != nil {
-		log.Infof("in-cloud transition of %s failed because get location failed.\n", acReq.ObjKey)
+		log.Errorf("in-cloud transition of %s failed because get location failed.\n", acReq.ObjKey)
 		return err
 	}
 
 	className, err := getStorageClassName(acReq.TargetTier, loca.StorType)
 	if err != nil {
-		log.Infof("in-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
+		log.Errorf("in-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
 		return err
 	}
 	err = changeStorageClass(&acReq.ObjKey, &className, &acReq.BucketName, loca)
@@ -164,7 +164,7 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	}
 
 	if err != nil {
-		log.Infof("in-cloud transition of %s failed: %v.\n", acReq.ObjKey, err)
+		log.Errorf("in-cloud transition of %s failed: %v.\n", acReq.ObjKey, err)
 		return err
 	}
 
@@ -175,7 +175,7 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	_, err = s3client.UpdateObjMeta(context.Background(), &req)
 	if err != nil {
 		// If update failed, it will be redo again in the next round of scheduling
-		log.Infof("update tier of object[%s] to %d failed:%v.\n", acReq.ObjKey, acReq.TargetTier, err)
+		log.Errorf("update tier of object[%s] to %d failed:%v.\n", acReq.ObjKey, acReq.TargetTier, err)
 	}
 
 	return err

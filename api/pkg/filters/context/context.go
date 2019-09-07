@@ -57,7 +57,7 @@ func NewContextFromJson(s string) *Context {
 	ctx := &Context{}
 	err := json.Unmarshal([]byte(s), ctx)
 	if err != nil {
-		log.Infof("Unmarshal json to context failed, reason: %v", err)
+		log.Errorf("Unmarshal json to context failed, reason: %v", err)
 	}
 	return ctx
 }
@@ -65,7 +65,7 @@ func NewContextFromJson(s string) *Context {
 func (ctx *Context) ToJson() string {
 	b, err := json.Marshal(ctx)
 	if err != nil {
-		log.Infof("Context convert to json failed, reason: %v", err)
+		log.Errorf("Context convert to json failed, reason: %v", err)
 	}
 	return string(b)
 }

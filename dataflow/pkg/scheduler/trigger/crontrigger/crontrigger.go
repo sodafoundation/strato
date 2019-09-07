@@ -38,7 +38,7 @@ func (c *CronTrigger) Add(planId, properties string, executer trigger.Executer) 
 	cn := cron.New()
 	c.plans[planId] = cn
 	if err := cn.AddFunc(properties, executer.Run); err != nil {
-		log.Infof("Add plan(%s) to  corn trigger failed: %v", planId, err)
+		log.Errorf("Add plan(%s) to  corn trigger failed: %v", planId, err)
 		return fmt.Errorf("Add plan(%s) to corn trigger failed: %v", planId, err)
 	}
 	cn.Start()
@@ -65,7 +65,7 @@ func (c *CronTrigger) Update(planId, properties string, executer trigger.Execute
 func (c *CronTrigger) Remove(planId string) error {
 	cn, ok := c.plans[planId]
 	if !ok {
-		log.Infof("Specified plan(%s) is not found", planId)
+		log.Errorf("Specified plan(%s) is not found", planId)
 		return nil
 	}
 	cn.Stop()

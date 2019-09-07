@@ -52,14 +52,14 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 		}
 		res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
 		if err != nil {
-			log.Infof("err is %v\n", err)
+			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
 		log.Infof("Delete object %s successfully.", objectKey)
 		response.WriteEntity(res)
 	} else {
-		log.Infof("No such object")
+		log.Errorf("No such object")
 		return
 	}
 

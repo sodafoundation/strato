@@ -39,7 +39,7 @@ func LoadAllPlans() {
 	for offset == 0 || planNum > 0 {
 		plans, err := db.DbAdapter.ListPlan(ctx, limit, offset, nil)
 		if err != nil {
-			log.Infof("Get all plan faild, %v", err)
+			log.Errorf("Get all plan faild, %v", err)
 			break
 		}
 		planNum = len(plans)
@@ -55,7 +55,7 @@ func LoadAllPlans() {
 			e := plan.NewPlanExecutor(ctx, &p)
 			err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 			if err != nil {
-				log.Infof("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
+				log.Errorf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
 				continue
 			}
 			log.Infof("Load plan(%s) to trigger success", p.Id.Hex())
@@ -72,7 +72,7 @@ func LoadLifecycleScheduler() error {
 	cn := cron.New()
 	//0 */10 * * * ?
 	if err := cn.AddFunc(spec, lifecycle.ScheduleLifecycle); err != nil {
-		log.Infof("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
+		log.Errorf("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
 		return fmt.Errorf("add lifecyecle scheduler to cron trigger failed: %v", err)
 	}
 	cn.Start()

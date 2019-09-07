@@ -44,7 +44,7 @@ func deleteObj(objKey string, lastmodifed int64, virtBucket string, bkend *Backe
 	_, err = s3client.DeleteObject(ctx, &delMetaReq)
 	if err != nil {
 		// if it is deleted failed, it will be delete again in the next schedule round
-		log.Infof("delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n",
+		log.Errorf("delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n",
 			virtBucket, objKey, err)
 		return err
 	} else {
@@ -60,7 +60,7 @@ func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
 
 	loc, err := getBackendInfo(&acReq.SourceBackend, false)
 	if err != nil {
-		log.Infof("expiration of %s failed because get location failed\n", acReq.ObjKey)
+		log.Errorf("expiration of %s failed because get location failed\n", acReq.ObjKey)
 		return err
 	}
 

@@ -35,7 +35,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	object.Size = size
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Infof("No such object err\n")
+		log.Errorf("No such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
@@ -75,14 +75,14 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	result, _ := s.s3Client.GetObject(ctx, &objectInput)
 	log.Infof("result.size = %v", result.Size)
 	if err != nil {
-		log.Infof("err is %v\n", err)
+		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	//return xml format
 	xmlstring, err := xml.MarshalIndent(res, "", "  ")
 	if err != nil {
-		log.Infof("Parse ListBuckets error: %v", err)
+		log.Errorf("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

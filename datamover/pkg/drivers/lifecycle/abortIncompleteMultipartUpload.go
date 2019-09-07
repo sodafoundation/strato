@@ -39,7 +39,7 @@ func clearFromBackend(objKey, uploadId string, loca *LocationInfo) error {
 	}
 
 	if err != nil {
-		log.Infof("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] failed.\n",
+		log.Errorf("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] failed.\n",
 			uploadId, loca.StorType, loca.BucketName)
 	} else {
 		log.Infof("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] successfully.\n",
@@ -55,7 +55,7 @@ func doAbortUpload(acReq *datamover.LifecycleActionRequest) error {
 	// delete incomplete multipart upload data in each backend
 	bkend, err := getBackendInfo(&acReq.TargetBackend, false)
 	if err != nil {
-		log.Infof("abort incomplete upload[key=%s, uploadid=%s] failed because get location failed.\n", acReq.ObjKey, acReq.UploadId)
+		log.Errorf("abort incomplete upload[key=%s, uploadid=%s] failed because get location failed.\n", acReq.ObjKey, acReq.UploadId)
 		return err
 	}
 

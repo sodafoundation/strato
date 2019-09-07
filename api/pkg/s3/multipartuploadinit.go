@@ -101,7 +101,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, objectMD)
 		if err != nil {
-			log.Infof("err is %v\n", err)
+			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 		}
 	} else {
@@ -112,7 +112,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, &object)
 		if err != nil {
-			log.Infof("err is %v\n", err)
+			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 		}
 	}
@@ -126,7 +126,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	xmlstring, err := xml.MarshalIndent(result, "", "  ")
 	if err != nil {
-		log.Infof("Parse ListBuckets error: %v", err)
+		log.Errorf("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

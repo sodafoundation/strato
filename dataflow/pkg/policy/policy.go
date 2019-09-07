@@ -30,7 +30,7 @@ import (
 func Create(ctx *context.Context, pol *Policy) (*Policy, error) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", pol.Name)
 	if !m || pol.Name == "all" {
-		log.Infof("Invalid policy name[%s], err:%v\n", pol.Name, err)
+		log.Errorf("Invalid policy name[%s], err:%v\n", pol.Name, err)
 		return nil, ERR_INVALID_POLICY_NAME
 	}
 
@@ -46,7 +46,7 @@ func Update(ctx *context.Context, policyId string, updateMap map[string]interfac
 
 	curPol, err := db.DbAdapter.GetPolicy(ctx, policyId)
 	if err != nil {
-		log.Infof("Update policy failed, err: connot get the policy(%v).\n", err.Error())
+		log.Errorf("Update policy failed, err: connot get the policy(%v).\n", err.Error())
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ func Update(ctx *context.Context, policyId string, updateMap map[string]interfac
 		name := v.(string)
 		m, err := regexp.MatchString("[[:alnum:]-_.]+", name)
 		if !m {
-			log.Infof("Invalid policy name[%s],err:", name, err) //cannot use all as name
+			log.Errorf("Invalid policy name[%s],err:", name, err) //cannot use all as name
 			return nil, ERR_INVALID_PLAN_NAME
 		}
 		curPol.Name = name
@@ -96,7 +96,7 @@ func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
 	for offset == 0 || planNum > 0 {
 		plans, err := db.DbAdapter.GetPlanByPolicy(ctx, policy.Id.Hex(), limit, offset)
 		if err != nil {
-			log.Infof("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)
+			log.Errorf("Get plan by policy id(%s) failed, err", policy.Id.Hex(), err)
 			return err
 		}
 		planNum = len(plans)
@@ -122,7 +122,7 @@ func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
 func Get(ctx *context.Context, id string) (*Policy, error) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]*", id)
 	if !m {
-		log.Infof("Invalid policy id[%s],err:%v\n", id, err)
+		log.Errorf("Invalid policy id[%s],err:%v\n", id, err)
 		return nil, ERR_INVALID_POLICY_NAME
 	}
 

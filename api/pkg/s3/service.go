@@ -91,7 +91,7 @@ func getBackendClient(s *APIService, bucketName string) datastore.DataStoreAdapt
 		Filter: map[string]string{"name": bucket.Backend}})
 	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Infof("Get backend %s failed.", bucket.Backend)
+		log.Errorf("Get backend %s failed.", bucket.Backend)
 		return nil
 	}
 	log.Infof("backendRep is %v:", backendRep)
@@ -108,7 +108,7 @@ func getBackendByName(s *APIService, backendName string) datastore.DataStoreAdap
 		Filter: map[string]string{"name": backendName}})
 	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Infof("Get backend %s failed.", backendName)
+		log.Errorf("Get backend %s failed.", backendName)
 		return nil
 	}
 	log.Infof("backendRep is %v:", backendRep)
@@ -125,7 +125,7 @@ func getBucketNameByBackend(s *APIService, backendName string) string {
 		Filter: map[string]string{"name": backendName}})
 	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Infof("Get backend %s failed.", backendName)
+		log.Errorf("Get backend %s failed.", backendName)
 		return ""
 	}
 	log.Infof("backendRep is %v:", backendRep)

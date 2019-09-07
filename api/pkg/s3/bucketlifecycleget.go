@@ -34,7 +34,7 @@ func (s *APIService) tier2class(tier int32) (string, error) {
 		if len(ClassAndTier) == 0 {
 			err := s.loadStorageClassDefinition()
 			if err != nil {
-				log.Infof("load storage classes failed: %v.\n", err)
+				log.Errorf("load storage classes failed: %v.\n", err)
 				return "", err
 			}
 		}

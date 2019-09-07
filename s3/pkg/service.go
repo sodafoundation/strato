@@ -51,13 +51,13 @@ type s3Service struct{}
 func getNameFromTier(tier int32) (string, error) {
 	v, ok := Int2ExtTierMap[OSTYPE_OPENSDS]
 	if !ok {
-		log.Infof("get opensds storage class of tier[%d] failed.\n", tier)
+		log.Errorf("get opensds storage class of tier[%d] failed.\n", tier)
 		return "", errors.New("internal error")
 	}
 
 	v2, ok := (*v)[tier]
 	if !ok {
-		log.Infof("get opensds storage class of tier[%d] failed.\n", tier)
+		log.Errorf("get opensds storage class of tier[%d] failed.\n", tier)
 		return "", errors.New("internal error")
 	}
 
@@ -224,7 +224,7 @@ func initStorageClass() {
 	val, err := strconv.ParseInt(set, 10, 64)
 	log.Infof("USE_DEFAULT_STORAGE_CLASS:set=%s, val=%d, err=%v.\n", set, val, err)
 	if err != nil {
-		log.Infof("invalid USE_DEFAULT_STORAGE_CLASS:%s\n", set)
+		log.Errorf("invalid USE_DEFAULT_STORAGE_CLASS:%s\n", set)
 		panic("init s3service failed")
 	}
 
@@ -349,7 +349,7 @@ func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 	object := pb.Object{}
 	err := db.DbAdapter.GetObject(&getObjectInput, &object)
 	if err.Code != ERR_OK && err.Code != http.StatusNotFound {
-		log.Infof("create object err:%v\n", err)
+		log.Errorf("create object err:%v\n", err)
 		return err.Error()
 	}
 	if err.Code == http.StatusNotFound {
@@ -500,13 +500,13 @@ func CheckReqObjMeta(req map[string]string, valid map[string]struct{}) (map[stri
 	ret := make(map[string]interface{})
 	for k, v := range req {
 		if _, ok := valid[k]; !ok {
-			log.Infof("s3 service check object metadata failed, invalid key: %s.\n", k)
+			log.Errorf("s3 service check object metadata failed, invalid key: %s.\n", k)
 			return nil, BadRequest
 		}
 		if k == "tier" {
 			v1, err := strconv.Atoi(v)
 			if err != nil {
-				log.Infof("s3 service check object metadata failed, invalid tier: %s.\n", v)
+				log.Errorf("s3 service check object metadata failed, invalid tier: %s.\n", v)
 				return nil, BadRequest
 			}
 			ret[k] = v1

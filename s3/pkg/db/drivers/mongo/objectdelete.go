@@ -31,7 +31,7 @@ func (ad *adapter) DeleteObject(in *pb.DeleteObjectInput) S3Error {
 	c := ss.DB(DataBaseName).C(in.Bucket)
 	_, err := c.RemoveAll(bson.M{"objectkey": in.Key})
 	if err == mgo.ErrNotFound {
-		log.Infof("Delete object %s failed, err:the specified object does not exist.", in.Key)
+		log.Errorf("Delete object %s failed, err:the specified object does not exist.", in.Key)
 		return NoSuchObject
 	} else if err != nil {
 		log.Info("Delete object %s from database failed,err:%v.\n", in.Key, err)

@@ -50,7 +50,7 @@ func loadStorageClassDefinition() error {
 		return fmt.Errorf("get tier definition failed")
 	} else {
 		log.Infof("res.Transition:%v", res.Transition)
-		log.Infof("res.Tier2Name:%+v", res.Tier2Name)
+		log.Errorf("res.Tier2Name:%+v", res.Tier2Name)
 	}
 
 	TransitionMap = make(map[string]struct{})
@@ -71,7 +71,7 @@ func ScheduleLifecycle() {
 		if len(TransitionMap) == 0 {
 			err := loadStorageClassDefinition()
 			if err != nil {
-				log.Infof("[ScheduleLifecycle]load storage classes failed: %v.\n", err)
+				log.Errorf("[ScheduleLifecycle]load storage classes failed: %v.\n", err)
 				return
 			}
 		}
@@ -81,7 +81,7 @@ func ScheduleLifecycle() {
 	listReq := s3.BaseRequest{Id: "test"}
 	listRsp, err := s3client.ListBuckets(context.Background(), &listReq)
 	if err != nil {
-		log.Infof("[ScheduleLifecycle]list buckets failed: %v.\n", err)
+		log.Errorf("[ScheduleLifecycle]list buckets failed: %v.\n", err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func ScheduleLifecycle() {
 
 		err := handleBucketLifecyle(v.Name, v.LifecycleConfiguration)
 		if err != nil {
-			log.Infof("[ScheduleLifecycle]handle bucket lifecycle for bucket[%s] failed, err:%v.\n", v.Name, err)
+			log.Errorf("[ScheduleLifecycle]handle bucket lifecycle for bucket[%s] failed, err:%v.\n", v.Name, err)
 			continue
 		}
 	}
@@ -122,7 +122,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 		}
 	}
 	if ret != LockSuccess {
-		log.Infof("lock scheduling failed.\n")
+		log.Errorf("lock scheduling failed.\n")
 		return fmt.Errorf("internal error: lock failed")
 	}
 	// Make sure unlock before return
@@ -217,7 +217,7 @@ func getObjects(r *InternalLifecycleRule, offset, limit int32) ([]*osdss3.Object
 	log.Infof("ListObjectsRequest:%+v\n", s3req)
 	s3rsp, err := s3client.ListObjects(ctx, &s3req)
 	if err != nil {
-		log.Infof("list objects failed, req: %v.\n", s3req)
+		log.Errorf("list objects failed, req: %v.\n", s3req)
 		return nil, err
 	}
 
@@ -233,7 +233,7 @@ func schedSortedAbortRules(inRules *InterRules) {
 			req := osdss3.ListMultipartUploadRequest{Bucket: r.Bucket, Prefix: r.Filter.Prefix, Days: r.Days, Limit: limit, Offset: offset}
 			s3rsp, err := s3client.ListUploadRecord(context.Background(), &req)
 			if err != nil {
-				log.Infof("schedule for rule[id=%s,bucket=%s] failed, err:%v\n", r.Id, r.Bucket, err)
+				log.Errorf("schedule for rule[id=%s,bucket=%s] failed, err:%v\n", r.Id, r.Bucket, err)
 				break
 			}
 			records := s3rsp.Records
@@ -353,7 +353,7 @@ func sendActionRequest(req *datamover.LifecycleActionRequest) error {
 	log.Infof("Send lifecycle request to datamover: %v\n", req)
 	data, err := json.Marshal(*req)
 	if err != nil {
-		log.Infof("marshal run job request failed, err:%v\n", data)
+		log.Errorf("marshal run job request failed, err:%v\n", data)
 		return err
 	}
 

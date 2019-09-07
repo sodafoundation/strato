@@ -35,10 +35,10 @@ func (ad *adapter) DeleteBucket(bucketName string) S3Error {
 	log.Infof("err is %v:", err)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			log.Infof("Delete bucket from database failed,err:%v.\n", err.Error())
+			log.Errorf("Delete bucket from database failed,err:%v.\n", err.Error())
 			return NoSuchBucket
 		} else {
-			log.Infof("Delete bucket from database failed,err:%v.\n", err.Error())
+			log.Errorf("Delete bucket from database failed,err:%v.\n", err.Error())
 			return DBError
 		}
 
@@ -49,7 +49,7 @@ func (ad *adapter) DeleteBucket(bucketName string) S3Error {
 	cc := ss.DB(DataBaseName).C(bucketName)
 	deleteErr := cc.DropCollection()
 	if deleteErr != nil && deleteErr != mgo.ErrNotFound {
-		log.Infof("Delete bucket collection from database failed,err:%v.\n", deleteErr)
+		log.Errorf("Delete bucket collection from database failed,err:%v.\n", deleteErr)
 		return InternalError
 	}
 
