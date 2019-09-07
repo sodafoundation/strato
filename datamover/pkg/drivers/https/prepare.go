@@ -15,7 +15,7 @@ import (
 	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	"github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
 	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
