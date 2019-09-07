@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,8 +16,12 @@ import (
 	"github.com/lestrrat-go/file-rotatelogs"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
-	"github.com/t-tomalak/logrus-easy-formatter"
 )
+
+type LogFormatter struct {
+	TimestampFormat string
+	LogFormat       string
+}
 
 const (
 	debugLevel             = "debug"
@@ -30,8 +36,9 @@ const (
 	unknownHost            = "unknownhost"
 	unknownUser            = "unknownuser"
 	configFileName         = "log.conf"
-	defaultLogFormat       = "[%lvl%]: %time% - %msg%"
-	defaultTimestampFormat = "2006-01-02 15:04:05"
+	defaultLogFormat       = "[%time%] [%level%] [%filename%] [%funcName%():%lineNo%] [PID:%process%] %message%"
+	defaultTimestampFormat = time.RFC3339
+	callStackDeep          = 7
 )
 
 func InitLogs() {
@@ -40,11 +47,11 @@ func InitLogs() {
 }
 
 func configureLogModule(path, level, format string) {
-	configurePathAndFormat(path, format)
+	configureWriter(path, format)
 	configureLevel(level)
 }
 
-func configurePathAndFormat(path, format string) error {
+func configureWriter(path, format string) error {
 	debugWriter, debugWriterErr := createWriter(path, debugLevel)
 	infoWriter, infoWriterErr := createWriter(path, infoLevel)
 	warnWriter, warnWriterErr := createWriter(path, warnLevel)
@@ -56,7 +63,7 @@ func configurePathAndFormat(path, format string) error {
 		logrus.DebugLevel: debugWriter,
 		logrus.InfoLevel:  infoWriter,
 		logrus.WarnLevel:  warnWriter,
-		logrus.ErrorLevel: errorWriter}, &easy.Formatter{
+		logrus.ErrorLevel: errorWriter}, &LogFormatter{
 		TimestampFormat: defaultTimestampFormat,
 		LogFormat:       format + "\n",
 	})
@@ -153,4 +160,32 @@ func readConfigurationFile() (cfgPath, cfgLevel, cfgFormat string) {
 	}
 
 	return cfgPath, cfgLevel, cfgFormat
+}
+
+func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	output := f.LogFormat
+	if output == "" {
+		output = defaultLogFormat
+	}
+
+	timestampFormat := f.TimestampFormat
+	if timestampFormat == "" {
+		timestampFormat = defaultTimestampFormat
+	}
+
+	output = strings.Replace(output, "%time%", entry.Time.Format(timestampFormat), 1)
+
+	output = strings.Replace(output, "%message%", entry.Message, 1)
+
+	level := strings.ToUpper(entry.Level.String())
+	output = strings.Replace(output, "%level%", level, 1)
+
+	output = strings.Replace(output, "%process%", strconv.Itoa(os.Getpid()), 1)
+
+	pc, filename, line, _ := runtime.Caller(callStackDeep)
+	output = strings.Replace(output, "%filename%", filename, 1)
+	output = strings.Replace(output, "%lineNo%", strconv.Itoa(line), 1)
+	output = strings.Replace(output, "%funcName%", runtime.FuncForPC(pc).Name(), 1)
+
+	return []byte(output), nil
 }
