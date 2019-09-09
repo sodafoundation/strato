@@ -139,8 +139,8 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 
 	return nil, errors.New("unsupport type")
 }
-func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *LocationInfo, offset, limit int32) ([]*osdss3.Object, error) {
 
+func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *LocationInfo, offset, limit int32) ([]*osdss3.Object, error) {
 	switch in.SourceConn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		return getOsdsS3Objs(ctx, in, offset, limit)
