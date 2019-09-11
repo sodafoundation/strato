@@ -20,6 +20,7 @@ service S3 {
 	rpc AddUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 	rpc DeleteUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 	rpc ListUploadRecord(ListMultipartUploadRequest) returns (ListMultipartUploadResponse) {}
+	rpc DeleteBucketCORS(DeleteCORSInput) returns (BaseResponse) {}
 }
 
 message ServerSideEncryption {
@@ -64,13 +65,13 @@ message WebsiteConfiguration {
 	repeated RoutingRules routingRules = 4;
 }
 
-message CORSConfiguration {
+message CORSRule {
 	string id = 1;
-	string allowedMethods = 2;
-	string allowedOrigins = 3;
-	string allowedHeaders = 4;
-	string maxAgeSeconds = 5;
-	string exposedHeaders = 6;
+	repeated string allowedMethods = 2;
+	repeated string allowedOrigins = 3;
+	repeated string allowedHeaders = 4;
+	int32 maxAgeSeconds = 5;
+	repeated string exposedHeaders = 6;
 }
 
 message Destination {
@@ -147,7 +148,7 @@ message Bucket {
 	VersioningConfiguration versioningConfiguration = 9;
 	string backend = 10;
 	WebsiteConfiguration websiteConfiguration = 11;
-	CORSConfiguration cors = 12;
+	repeated CORSRule corsConfiguration = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
 	repeated LifecycleRule lifecycleConfiguration = 14;
 	string bucketPolicy = 15;
@@ -320,4 +321,9 @@ message ListMultipartUploadRequest {
 
 message ListMultipartUploadResponse {
 	repeated MultipartUploadRecord records = 1;
+}
+
+message DeleteCORSInput {
+	string bucket = 1;
+	string corsID = 2;
 }

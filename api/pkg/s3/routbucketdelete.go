@@ -30,7 +30,7 @@ func (s *APIService) RouteBucketDelete(request *restful.Request, response *restf
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {
-		//TODO
+		s.BucketDeleteCORS(request, response)
 
 	} else if IsQuery(request, "replication") {
 		//TODO

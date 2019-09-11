@@ -14,6 +14,8 @@
 
 package model
 
+import "encoding/xml"
+
 var Xmlns = "http://s3.amazonaws.com/doc/2006-03-01"
 
 type CreateBucketConfiguration struct {
@@ -121,4 +123,18 @@ type StorageClass struct {
 type ListStorageClasses struct {
 	Xmlns       string `xml:"xmlns,attr"`
 	Classes     []StorageClass `xml:"Class"`
+}
+
+type Cors struct {
+	XMLName   xml.Name   `xml:"CORSConfiguration" json:"-"`
+	CorsRules []CorsRule `xml:"CORSRule"`
+}
+
+type CorsRule struct {
+	Id             string   `xml:"ID"`
+	AllowedMethods []string `xml:"AllowedMethod"`
+	AllowedOrigins []string `xml:"AllowedOrigin"`
+	AllowedHeaders []string `xml:"AllowedHeader"`
+	MaxAgeSeconds  int32     `xml:"MaxAgeSeconds"`
+	ExposedHeaders []string `xml:"ExposeHeader"`
 }

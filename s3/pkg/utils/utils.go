@@ -68,6 +68,7 @@ const (
 	DBKEY_INITTIME       = "inittime"
 	DBKEY_NAME           = "name"
 	DBKEY_LIFECYCLE      = "lifecycleconfiguration"
+	DBKEY_CORS           = "corsconfiguration"
 	DBKEY_ID             = "id"
 )
 
