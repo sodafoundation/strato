@@ -21,10 +21,10 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) []byte {
@@ -57,11 +57,10 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	if !policy.Authorize(request, response, "bucket:list") {
 		return
 	}
-	ctx := context.Background()
-	//TODO owner
-	owner := "test"
 	log.Logf("Received request for all buckets")
-	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{Id: owner})
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
@@ -69,6 +68,6 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 
 	realRes := parseListBuckets(res)
 
-	log.Logf("Get List of buckets successfully:%v\n", string(realRes))
+	log.Logf("List buckets successfully:%v\n", string(realRes))
 	response.Write(realRes)
 }

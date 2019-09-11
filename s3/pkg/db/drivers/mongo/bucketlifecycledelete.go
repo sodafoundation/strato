@@ -15,23 +15,34 @@
 package mongo
 
 import (
+	"context"
+
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
-func (ad *adapter) DeleteBucketLifecycle(in *pb.DeleteLifecycleInput) S3Error {
+func (ad *adapter) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput) S3Error {
 	//Check if the connector exist or not
 	ss := ad.s.Copy()
 	defer ss.Close()
 
-	//Delete it from database
-	c := ss.DB(DataBaseName).C(BucketMD)
-	log.Logf("bucketName is %v:", in.Bucket)
-	err := c.Update(bson.M{"name": in.Bucket}, bson.M{"$pull": bson.M{"lifecycleconfiguration": bson.M{"id": in.RuleID}}})
+	log.Logf("delete bucket lifecycle, bucketName is %v, lifecycle id is %s\n", in.Bucket, in.RuleID)
+
+	m := bson.M{DBKEY_NAME: in.Bucket}
+	err := UpdateContextFilter(ctx, m)
 	if err != nil {
-		log.Logf("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n", in.Bucket, in.RuleID, err)
+		return InternalError
+	}
+
+	//Delete it from database
+	err = ss.DB(DataBaseName).C(BucketMD).Update(m, bson.M{"$pull": bson.M{DBKEY_LIFECYCLE:
+		bson.M{DBKEY_ID: in.RuleID}}})
+	if err != nil {
+		log.Logf("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n",
+			in.Bucket, in.RuleID, err)
 		return NoSuchBucket
 	} else {
 		log.Logf("delete bucket lifecycle with rule id %s from database successfully", in.RuleID)

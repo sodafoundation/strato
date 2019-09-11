@@ -20,7 +20,7 @@ import (
 )
 
 func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "routobject:put") {
+	if !policy.Authorize(request, response, "object:put") {
 		return
 	}
 

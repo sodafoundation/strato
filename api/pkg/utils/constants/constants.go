@@ -15,25 +15,13 @@
 package constants
 
 const (
-	// It's RFC 8601 format that decodes and encodes with
-	// exactly precision to seconds.
-	TimeFormat = `2006-01-02T15:04:05`
-
-	DefaultOpensdsEndpoint = "http://localhost:50040"
-
-	// This is set for None Auth
-	DefaultTenantId = "e93b4c0934da416eb9c8d120c5d04d96"
-
-	// Token parameter name
-	AuthTokenHeader    = "X-Auth-Token"
-	SubjectTokenHeader = "X-Subject-Token"
-
-	// OpenSDS current api version
-	APIVersion = "v1beta"
-
 	//Signature parameter name
 	AuthorizationHeader = "Authorization"
 	SignDateHeader      = "X-Auth-Date"
+
+	// Token parameter name
+	AuthTokenHeader   = "X-Auth-Token"
+	DefaultPolicyPath = "/etc/multicloud/policy.json"
 )
 
 const (

@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	log "github.com/golang/glog"
+	log "github.com/micro/go-log"
 	"github.com/gophercloud/gophercloud"
 	creds "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
@@ -59,7 +59,7 @@ func NewProviderClient(accessKeyID string, options ...func(*KeystoneProvider)) c
 	}
 	kp.Identity = auth.GetIdentity(k)
 
-	log.V(4).Infof("Service Token Info: %s", kp.Identity.TokenID)
+	log.Logf("Service Token Info: %s", kp.Identity.TokenID)
 
 	return kp
 }
@@ -80,42 +80,41 @@ func (p *KeystoneProvider) Retrieve() (credentials.Value, error) {
 	return credentials.Value{
 		AccessKeyID:     resp.AccessKeyID,
 		SecretAccessKey: resp.SecretAccessKey,
+		TenantID:        resp.TenantID,
+		UserID:          resp.UserID,
 		ProviderName:    ProviderName,
 	}, nil
 }
 
-type getCredentialsOutput struct {
+type GetCredentialOutput struct {
 	AccessKeyID     string
 	SecretAccessKey string
+	TenantID        string
+	UserID          string
 }
 
 // Returns AccessKey and SecretKey Values, Retrieves Credentials
 // from Keystone And error will be returned if the retrieval fails.
-func (p *KeystoneProvider) getCredentials(accessKeyID string) (*getCredentialsOutput, error) {
+func (p *KeystoneProvider) getCredentials(accessKeyID string) (*GetCredentialOutput, error) {
 
 	allPages, err := creds.List(p.Identity, nil).AllPages()
 
 	credentials, err := creds.ExtractCredentials(allPages)
-	log.V(4).Infof("Credentials: %s", credentials)
-
 	if err != nil {
+		log.Logf("getCredentials failed, err: %+v", err)
 		return nil, err
 	}
+	log.Logf("provider-Credentials: %+v", credentials)
 
-	blob, err := getBlob(credentials, accessKeyID)
+	cred, err := getCredential(credentials, accessKeyID)
+	log.Logf("cred: %+v", cred)
 
-	if blob != nil {
-		return &getCredentialsOutput{
-			AccessKeyID:     blob.Access,
-			SecretAccessKey: blob.Secret,
-		}, nil
-	}
-	return nil, err
+	return cred, err
 }
 
 // Returns a credential Blob for getting access and secret
 // And error will be returned if it fails.
-func getBlob(credentials []creds.Credential, accessKeyID string) (*Blob, error) {
+func getCredential(credentials []creds.Credential, accessKeyID string) (*GetCredentialOutput, error) {
 	blob := &Blob{}
 	for _, credential := range credentials {
 		var blobStr = credential.Blob
@@ -126,7 +125,15 @@ func getBlob(credentials []creds.Credential, accessKeyID string) (*Blob, error) 
 			return nil, err
 		}
 		if blob.Access == accessKeyID {
-			return blob, nil
+			out := &GetCredentialOutput{
+				AccessKeyID:     blob.Access,
+				SecretAccessKey: blob.Secret,
+				TenantID:        credential.ProjectID,
+				UserID:          credential.UserID,
+			}
+
+			log.Logf("Get credential for %s successfully.", blob.Access)
+			return out, nil
 		}
 	}
 	return nil, model.NewNotFoundError("credential is missing")
