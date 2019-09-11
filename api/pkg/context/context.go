@@ -23,19 +23,32 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
+	"github.com/micro/go-log"
+)
+
+const (
+	KContext = "context"
+)
+
+const (
+	DefaultTenantId     = "tenantId"
+	DefaultUserId       = "userId"
+	NoAuthAdminTenantId = "adminTenantId"
 )
 
 func NewAdminContext() *Context {
 	return &Context{
-		IsAdmin: true,
+		TenantId: NoAuthAdminTenantId,
+		IsAdmin:  true,
+		UserId:   "unknown",
 	}
 }
 
-func NewInternalTenantContext(tenantId, userId string) *Context {
+func NewContext() *Context {
 	return &Context{
-		TenantId: tenantId,
-		UserId:   userId,
-		IsAdmin:  true,
+		TenantId: DefaultTenantId,
+		IsAdmin:  false,
+		UserId:   DefaultUserId,
 	}
 }
 
@@ -43,9 +56,17 @@ func NewContextFromJson(s string) *Context {
 	ctx := &Context{}
 	err := json.Unmarshal([]byte(s), ctx)
 	if err != nil {
-		glog.Errorf("Unmarshal json to context failed, reason: %v", err)
+		log.Logf("unmarshal json to context failed, reason: %v", err)
 	}
 	return ctx
+}
+
+func NewInternalTenantContext(tenantId, userId string, isAdmin bool) *Context {
+	return &Context{
+		TenantId: tenantId,
+		UserId:   userId,
+		IsAdmin:  isAdmin,
+	}
 }
 
 func GetContext(req *restful.Request) *Context {
@@ -56,60 +77,21 @@ func GetContext(req *restful.Request) *Context {
 	return ctx
 }
 
-func UpdateContext(req *restful.Request, param map[string]interface{}) (*Context, error) {
-
-	ctx := GetContext(req)
-	if param == nil || len(param) == 0 {
-		glog.Warning("Context parameter is empty, nothing to be updated")
-		return ctx, nil
-	}
-	ctxV := reflect.ValueOf(ctx).Elem()
-	for key, val := range param {
-		field := ctxV.FieldByName(key)
-		pv := reflect.ValueOf(val)
-		if field.Kind() == pv.Kind() && field.CanSet() {
-			field.Set(pv)
-		} else {
-			glog.Errorf("Invalid parameter %s : %v", key, val)
-		}
-	}
-
-	req.SetAttribute("context", ctx)
-	return ctx, nil
-}
-
 type Context struct {
-	AuthToken                string   `policy:"true" json:"auth_token"`
-	UserId                   string   `policy:"true" json:"user_id"`
-	TenantId                 string   `policy:"true" json:"tenant_id"`
-	DomainId                 string   `policy:"true" json:"domain_id"`
-	UserDomainId             string   `policy:"true" json:"user_domain_id"`
-	ProjectDomainId          string   `policy:"true" json:"project_domain_id"`
-	IsAdmin                  bool     `policy:"true" json:"is_admin"`
-	ReadOnly                 string   `policy:"true" json:"read_only"`
-	ShowDeleted              string   `policy:"true" json:"show_deleted"`
-	RequestId                string   `policy:"true" json:"request_id"`
-	ResourceUuid             string   `policy:"true" json:"resource_uuid"`
-	Overwrite                string   `policy:"true" json:"overwrite"`
-	Roles                    []string `policy:"true" json:"roles"`
-	UserName                 string   `policy:"true" json:"user_name"`
-	ProjectName              string   `policy:"true" json:"project_name"`
-	DomainName               string   `policy:"true" json:"domain_name"`
-	UserDomainName           string   `policy:"true" json:"user_domain_name"`
-	ProjectDomainName        string   `policy:"true" json:"project_domain_name"`
-	IsAdminProject           bool     `policy:"true" json:"is_admin_project"`
-	ServiceToken             string   `policy:"true" json:"service_token"`
-	ServiceUserId            string   `policy:"true" json:"service_user_id"`
-	ServiceUserName          string   `policy:"true" json:"service_user_name"`
-	ServiceUserDomainId      string   `policy:"true" json:"service_user_domain_id"`
-	ServiceUserDomainName    string   `policy:"true" json:"service_user_domain_name"`
-	ServiceProjectId         string   `policy:"true" json:"service_project_id"`
-	ServiceProjectName       string   `policy:"true" json:"service_project_name"`
-	ServiceProjectDomainId   string   `policy:"true" json:"service_project_domain_id"`
-	ServiceProjectDomainName string   `policy:"true" json:"service_project_domain_name"`
-	ServiceRoles             string   `policy:"true" json:"service_roles"`
-	Token                    string   `policy:"false" json:"token"`
-	Uri                      string   `policy:"false" json:"uri"`
+	IsAdmin           bool     `policy:"true" json:"is_admin"`
+	AuthToken         string   `policy:"true" json:"auth_token"`
+	UserId            string   `policy:"true" json:"user_id"`
+	TenantId          string   `policy:"true" json:"tenant_id"`
+	DomainId          string   `policy:"true" json:"domain_id"`
+	UserDomainId      string   `policy:"true" json:"user_domain_id"`
+	ProjectDomainId   string   `policy:"true" json:"project_domain_id"`
+	Roles             []string `policy:"true" json:"roles"`
+	UserName          string   `policy:"true" json:"user_name"`
+	ProjectName       string   `policy:"true" json:"project_name"`
+	DomainName        string   `policy:"true" json:"domain_name"`
+	UserDomainName    string   `policy:"true" json:"user_domain_name"`
+	ProjectDomainName string   `policy:"true" json:"project_domain_name"`
+	IsAdminTenant     bool     `policy:"true" json:"is_admin_tenant"`
 }
 
 func (ctx *Context) ToPolicyValue() map[string]interface{} {

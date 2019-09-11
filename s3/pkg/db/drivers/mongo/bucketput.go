@@ -15,45 +15,62 @@
 package mongo
 
 import (
+	"context"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
-func (ad *adapter) CreateBucket(in *pb.Bucket) S3Error {
+func (ad *adapter) CreateBucket(ctx context.Context, in *pb.Bucket) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
+
+	m := bson.M{DBKEY_NAME: in.Name}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
 	out := pb.Bucket{}
-	c := ss.DB(DataBaseName).C(BucketMD)
-	err := c.Find(bson.M{"name": in.Name}).One(out)
+	err = ss.DB(DataBaseName).C(BucketMD).Find(m).One(out)
 	if err == mgo.ErrNotFound {
-		err := c.Insert(&in)
+		err := ss.DB(DataBaseName).C(BucketMD).Insert(&in)
 		if err != nil {
-			log.Log("Add bucket to database failed, err:%v\n", err)
+			log.Log("add bucket to database failed, err:%v\n", err)
 			return InternalError
 		}
 	} else {
-		log.Log("The bucket already exists")
+		log.Log("the bucket already exists")
 		return BucketAlreadyExists
 	}
 
 	return NoError
 }
 
-func (ad *adapter) UpdateBucket(bucket *pb.Bucket) S3Error {
+func (ad *adapter) UpdateBucket(ctx context.Context, bucket *pb.Bucket) S3Error {
 	//Check if the policy exist or not
 	ss := ad.s.Copy()
 	defer ss.Close()
+
+	log.Logf("update bucket, bucket name is %s\n", bucket.Name)
+
+	m := bson.M{DBKEY_NAME: bucket.Name}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
 	//Update database
-	c := ss.DB(DataBaseName).C(BucketMD)
-	err := c.Update(bson.M{"name": bucket.Name}, bucket)
+	err = ss.DB(DataBaseName).C(BucketMD).Update(m, bucket)
 	if err == mgo.ErrNotFound {
-		log.Log("Update bucket failed: the specified bucket does not exist.")
+		log.Log("update bucket failed: the specified bucket does not exist.")
 		return NoSuchBucket
 	} else if err != nil {
-		log.Log("Update bucket in database failed, err: %v.\n", err)
+		log.Log("update bucket in database failed, err: %v.\n", err)
 		return InternalError
 	}
 	return NoError

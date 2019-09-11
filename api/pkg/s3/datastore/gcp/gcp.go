@@ -20,12 +20,13 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"fmt"
-
 	"io"
 	"io/ioutil"
 	"time"
 
 	"github.com/micro/go-log"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -59,10 +60,10 @@ func md5Content(data []byte) string {
 
 func (ad *GcpAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
 	bucketName := ad.backend.BucketName
-
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
 
-	if ctx.Value("operation") == "upload" {
+	md, _ := metadata.FromContext(ctx)
+	if md[common.REST_KEY_OPERATION] == common.REST_VAL_UPLOAD {
 		bucket := ad.session.NewBucket()
 
 		GcpObject := bucket.NewObject(bucketName)

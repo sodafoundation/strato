@@ -137,8 +137,8 @@ message ReplicationInfo {
 
 message Bucket {
 	string name = 1;
-	string owner = 2;
-	string ownerDisplayName = 3;
+	string tenantId = 2;
+	string userId = 3;
 	string acl = 4;
     int64 creationDate = 5;
 	bool transient = 6;
@@ -172,8 +172,8 @@ message Version {
 message Object {
 	string objectKey = 1;
 	string bucketName = 2;
-	string owner = 3;
-	string ownerDisplayName = 4;
+	string tenantId = 3;
+	string userId = 4;
 	string cacheControl = 5;
 	string contentDisposition = 6;
 	string contentEncoding = 7;
@@ -306,6 +306,8 @@ message MultipartUploadRecord {
 	string Backend	= 3;
 	string UploadId	= 4;
 	int64 InitTime	= 5;
+	string tenantId = 6;
+	string userId = 7;
 }
 
 message ListMultipartUploadRequest {

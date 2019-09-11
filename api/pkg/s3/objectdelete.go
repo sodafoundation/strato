@@ -21,30 +21,26 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
-
-	//	"github.com/micro/go-micro/errors"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:delete") {
-		return
-	}
 	url := request.Request.URL
 	log.Logf("URL is %v", request.Request.URL.String())
+
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
 	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
-	ctx := context.Background()
+
+	ctx := common.InitCtxWithAuthInfo(request)
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	if objectMD != nil {
-		client := getBackendByName(s, objectMD.Backend)
+		client := getBackendByName(ctx, s, objectMD.Backend)
 		s3err := client.DELETE(&deleteInput, ctx)
 		if s3err.Code != ERR_OK {
 			response.WriteError(http.StatusInternalServerError, s3err.Error())

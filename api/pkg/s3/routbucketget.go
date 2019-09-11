@@ -20,7 +20,7 @@ import (
 )
 
 func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "routbucket:get") {
+	if !policy.Authorize(request, response, "bucket:get") {
 		return
 	}
 	if IsQuery(request, "acl") {
