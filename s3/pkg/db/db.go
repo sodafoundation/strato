@@ -74,4 +74,5 @@ type DBAdapter interface {
 	AddMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error
 	DeleteMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error
 	ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest, out *[]pb.MultipartUploadRecord) S3Error
+	DeleteBucketCORS(ctx context.Context, in *pb.DeleteCORSInput) S3Error
 }

@@ -30,7 +30,7 @@ func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {
-		//TODO
+		s.BucketgetCORS(request, response)
 
 	} else if IsQuery(request, "replication") {
 		//TODO

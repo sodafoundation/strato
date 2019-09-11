@@ -15,12 +15,15 @@
 package s3
 
 const (
+	DuplicateCORSRuleID                = "error: PUT bucket CORS failed because the ruleId $1 is duplicate."
 	DuplicateRuleIDError               = "error: PUT bucket lifecycle failed because the ruleId $1 is duplicate."
+	NoRequestBodyCORS                  = "error: No request body specified for creating CORS configuration"
 	NoRequestBodyLifecycle             = "error: No request body specified for creating lifecycle configuration"
 	MoreThanOneExpirationAction        = "error: More than one expiration action is not permitted in one rule"
 	DaysInStorageClassBeforeExpiration = "error: minimum days for an object in the current storage class should be less than Expiration Days"
 	DaysInStorageClassBeforeTransition = "error: minimum days for an object in the current storage class is less before transition action"
 	NoRuleIDForLifecycleDelete         = "error: No rule ID specified to delete from lifecycle configuration"
+	NoRuleIDForCORSDelete              = "error: No rule ID specified to delete from CORS configuration"
 	WrongRuleIDForLifecycleDelete      = "error: The rule ID which is specified for delete does not exist"
 	InvalidTier                        = "error: Invalid tier"
 )
