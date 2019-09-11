@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/micro/go-log"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -49,9 +51,10 @@ func Init(backend *backendpb.BackendDetail) *OBSAdapter {
 }
 
 func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
-
 	bucket := ad.backend.BucketName
-	if ctx.Value("operation") == "upload" {
+
+	md, _ := metadata.FromContext(ctx)
+	if md[common.REST_KEY_OPERATION] == common.REST_VAL_UPLOAD {
 		input := &obs.PutObjectInput{}
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey

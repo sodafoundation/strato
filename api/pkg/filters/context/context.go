@@ -15,64 +15,13 @@
 package context
 
 import (
-	"encoding/json"
-
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 )
-
-const (
-	DefaultTenantId     = "tenantId"
-	DefaultUserId       = "userId"
-	NoAuthAdminTenantId = "adminTenantId"
-)
-
-const (
-	KContext = "context"
-)
-
-type Context struct {
-	TenantId string `json:"tenantId"`
-	IsAdmin  bool   `json:"isAdmin"`
-	UserId   string `json:"userId"`
-}
-
-func NewAdminContext() *Context {
-	return &Context{
-		TenantId: NoAuthAdminTenantId,
-		IsAdmin:  true,
-		UserId:   "unkown",
-	}
-}
-
-func NewContext() *Context {
-	return &Context{
-		TenantId: DefaultTenantId,
-		IsAdmin:  true,
-		UserId:   DefaultUserId,
-	}
-}
-
-func NewContextFromJson(s string) *Context {
-	ctx := &Context{}
-	err := json.Unmarshal([]byte(s), ctx)
-	if err != nil {
-		log.Logf("Unmarshal json to context failed, reason: %v", err)
-	}
-	return ctx
-}
-
-func (ctx *Context) ToJson() string {
-	b, err := json.Marshal(ctx)
-	if err != nil {
-		log.Logf("Context convert to json failed, reason: %v", err)
-	}
-	return string(b)
-}
 
 func FilterFactory() restful.FilterFunction {
 	return func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-		req.SetAttribute(KContext, NewContext())
+		req.SetAttribute(c.KContext, c.NewContext())
 		chain.ProcessFilter(req, resp)
 	}
 }
