@@ -564,6 +564,7 @@ func runjob(in *pb.RunJobRequest) error {
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 	j.Status = flowtype.JOB_STATUS_RUNNING
+	j.Type="migration"
 	updateJob(&j)
 
 	// get location information
@@ -636,6 +637,7 @@ func runjob(in *pb.RunJobRequest) error {
 				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 					//update database
 					j.PassedCount = (int64(passedCount))
+					j.PassedCapacity=capacity
 					logger.Printf("ObjectMigrated:%d,TotalCapacity:%d Progress:%d\n", j.PassedCount, j.TotalCapacity, j.Progress)
 					db.DbAdapter.UpdateJob(&j)
 				}
