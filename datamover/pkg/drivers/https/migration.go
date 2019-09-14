@@ -32,12 +32,14 @@ import (
 	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	Gcps3mover "github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
-	obsmover "github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	obsmover "github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
 	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/micro/go-micro/metadata"
 )
 
 var simuRoutines = 10
@@ -527,7 +529,10 @@ func runjob(in *pb.RunJobRequest) error {
 	logger.Printf("Request: %+v\n", in)
 
 	// set context tiemout
-	ctx := context.Background()
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:    in.UserId,
+		common.CTX_KEY_TENANT_ID:  in.TenanId,
+	})
 	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()
 	if !ok {

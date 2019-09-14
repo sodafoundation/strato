@@ -24,7 +24,7 @@ import (
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/azure"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/hws"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/huawei"
 	ibmcos "github.com/opensds/multi-cloud/api/pkg/s3/datastore/ibm"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
