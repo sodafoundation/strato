@@ -121,7 +121,7 @@ func (ad *adapter) UpdateStatus(jobId string, jobStatus string) error {
 
 	c := ss.DB(DataBaseName).C(CollJob)
 	j := Job{}
-	err := c.Find(bson.M{"_id": jobId}).One(&j)
+	err := c.Find(bson.M{"_id": bson.ObjectIdHex(jobId)}).One(&j)
 	if err != nil {
 		log.Logf("Get job[id:%v] failed before update it, err:%v\n", jobId, err)
 
