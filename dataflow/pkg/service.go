@@ -522,13 +522,37 @@ func (b *dataflowService) AbortJob(ctx context.Context, in *pb.AbortJobRequest, 
 	log.Log("Abort job is called in dataflow service.")
 	actx := c.NewContextFromJson(in.GetContext())
 
-	if in.Id == "" {
-		errmsg := fmt.Sprint("No id specified.")
-		out.Err = errmsg
-		return errors.New(errmsg)
+	//dbcontext := &c.Context{}
+	j, err := db.DbAdapter.GetJob(actx, in.Id)
+	if err != nil {
+		return err
+	}
+	if j.Status == model.JOB_STATUS_ABORTED {
+		out.Err = "job already aborted"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+	if j.Status == model.JOB_STATUS_CANCELLED {
+		out.Err = "job already cancelled"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+	if j.Status == model.JOB_STATUS_SUCCEED {
+		out.Err = "job already completed"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+	if j.Status == model.JOB_STATUS_FAILED {
+		out.Err = "job current status is failed"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
 	}
 
-	err := job.AbortJob(actx, in.Id)
+	err = job.AbortJob(actx, in.Id)
 	if err != nil {
 		log.Logf("Get job err:%d.", err)
 		out.Err = err.Error()

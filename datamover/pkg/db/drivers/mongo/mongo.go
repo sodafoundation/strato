@@ -115,6 +115,33 @@ func (ad *adapter) UpdateJob(job *Job) error {
 	return nil
 }
 
+func (ad *adapter) UpdateStatus(jobId string, jobStatus string) error {
+	ss := ad.s.Copy()
+	defer ss.Close()
+
+	c := ss.DB(DataBaseName).C(CollJob)
+	j := Job{}
+	err := c.Find(bson.M{"_id": jobId}).One(&j)
+	if err != nil {
+		log.Logf("Get job[id:%v] failed before update it, err:%v\n", jobId, err)
+
+		return errors.New("Get job failed before update it.")
+	}
+
+	if jobStatus != "" {
+		j.Status = jobStatus
+	}
+	err = c.Update(bson.M{"_id": j.Id}, &j)
+	if err != nil {
+		log.Logf("Update job in database failed, err:%v\n", err)
+		return errors.New("Update job in database failed.")
+	}
+
+	log.Log("Update status in database succeed.")
+
+	return nil
+}
+
 func (ad *adapter) GetBackendByName(name string) (*backend.Backend, error) {
 	log.Logf("Get backend by name:%s\n", name)
 	session := ad.s.Copy()

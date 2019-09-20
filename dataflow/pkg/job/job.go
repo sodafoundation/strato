@@ -24,7 +24,7 @@ import (
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 )
 
-var abortMigration = "abort"
+var topicAbortMigration = "abort"
 
 func Create(ctx *context.Context, job *Job) (*Job, error) {
 	return db.DbAdapter.CreateJob(ctx, job)
@@ -40,23 +40,16 @@ func List(ctx *context.Context, limit int, offset int, filter interface{}) ([]Jo
 }
 
 func AbortJob(ctx *context.Context, id string) error {
-
 	req := datamover.AbortJobRequest{Id: id}
-	//data, err := json.Marshal(req)
-	//if err != nil {
-	//	log.Logf("Marshal run job request failed, err:%v\n", data)
-	//	return err
-	//}
-	go sendabortJob(&req)
+	go sendAbortJob(&req)
 	return nil
-	//return kafka.ProduceMsg(abortMigration, data)
 }
-func sendabortJob(req *datamover.AbortJobRequest) error {
+func sendAbortJob(req *datamover.AbortJobRequest) error {
+
 	data, err := json.Marshal(*req)
 	if err != nil {
 		log.Logf("Marshal run job request failed, err:%v\n", data)
 		return err
 	}
-
-	return kafka.ProduceMsg(abortMigration, data)
+	return kafka.ProduceMsg(topicAbortMigration, data)
 }

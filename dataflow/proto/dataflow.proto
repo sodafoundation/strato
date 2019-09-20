@@ -211,6 +211,8 @@ message AbortJobRequest {
 
 message AbortJobResponse {
 	string err = 1;
+	string id = 2;
+	string status = 3;
 }
 message GetJobResponse {
 	string err = 1;

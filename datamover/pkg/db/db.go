@@ -59,4 +59,5 @@ type DBAdapter interface {
 	GetJobStatus(jobID string) string
 	UpdateJob(job *model.Job) error
 	GetBackendByName(name string) (*backend.Backend, error)
+	UpdateStatus(jobID string, jobStatus string) error
 }

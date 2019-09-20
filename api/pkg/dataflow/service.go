@@ -500,6 +500,5 @@ func (s *APIService) AbortJob(request *restful.Request, response *restful.Respon
 	}
 	//For debug -- end
 
-	log.Log("Get job details successfully.")
 	response.WriteEntity(res)
 }

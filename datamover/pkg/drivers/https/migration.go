@@ -50,7 +50,7 @@ var bkendclient backend.BackendService
 var jobstate = make(map[string]string)
 var (
 	PENDING    = "pending"
-	CREATED    = "creating"
+	STARTED    = "started"
 	VALIDATING = "validating"
 	RUNNING    = "running"
 	FAILED     = "failed"
@@ -86,7 +86,7 @@ func HandleMsg(msgData []byte) error {
 	}
 	jobFSM := NewJobFSM(job.Id)
 	jobstate[job.Id] = jobFSM.FSM.Current()
-	//by default job status is Pending so no need to define job state
+	// by default job status is Pending so no need to define job state
 
 	//Check the status of job, and run it if needed
 	status := db.DbAdapter.GetJobStatus(job.Id)
@@ -104,6 +104,11 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 	destLoca *LocationInfo, remainSource bool, job *flowtype.Job, jobFSM *JobFSM) {
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return
+	}
+
 	locMap := make(map[string]*LocationInfo)
 	for i := 0; i < len(objs); i++ {
 		if objs[i].Tier == s3utils.Tier999 {
@@ -125,16 +130,11 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 	if obj.Size <= 0 {
 		return nil
 	}
-	jobid := fmt.Sprintf("%x", string(job.Id))
-	if jobstate[jobid] == "aborted" {
-		if !jobFSM.FSM.Is("aborted") {
-			err := jobFSM.FSM.Event("abort")
-			if err != nil {
-				logger.Print(err)
-			}
-		}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
 		return errors.New("job aborted")
 	}
+
 	buf := make([]byte, obj.Size)
 	var size int64 = 0
 	var err error = nil
@@ -179,13 +179,8 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 		return err
 	}
 
-	if jobstate[jobid] == "aborted" {
-		if !jobFSM.FSM.Is("aborted") {
-			err = jobFSM.FSM.Event("abort")
-			if err != nil {
-				logger.Print(err)
-			}
-		}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
 		return errors.New("job aborted")
 	}
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
@@ -224,13 +219,8 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 	} else {
 		logger.Printf("upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
 	}
-	if jobstate[jobid] == "aborted" {
-		if !jobFSM.FSM.Is("aborted") {
-			err = jobFSM.FSM.Event("abort")
-			if err != nil {
-				logger.Print(err)
-			}
-		}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
 		return errors.New("job aborted")
 	}
 
@@ -378,26 +368,14 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	var uploadId string
 	var abort = false
 	currPartSize := PART_SIZE
-	jobid := fmt.Sprintf("%x", string(job.Id))
-	if jobstate[jobid] == "aborted" {
-		if !jobFSM.FSM.Is("aborted") {
-			err = jobFSM.FSM.Event("abort")
-			if err != nil {
-				logger.Print(err)
-			}
-		}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
 		return errors.New("job aborted")
 	}
 	for i = 0; i < partCount; i++ {
-		if jobstate[jobid] == ABORTED {
-			if !jobFSM.FSM.Is(ABORTED) {
-				err = jobFSM.FSM.Event("abort")
-				if err != nil {
-					logger.Print(err)
-				}
-			}
+		checkFSM(job.Id, jobFSM)
+		if jobFSM.FSM.Is(ABORTED) {
 			break
-			//return nil
 		}
 		partNumber := i + 1
 		offset := int64(i) * PART_SIZE
@@ -427,13 +405,8 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		}
 
 		//upload
-		if jobstate[jobid] == "aborted" {
-			if !jobFSM.FSM.Is("aborted") {
-				err = jobFSM.FSM.Event("abort")
-				if err != nil {
-					logger.Print(err)
-				}
-			}
+		checkFSM(job.Id, jobFSM)
+		if jobFSM.FSM.Is(ABORTED) {
 			break
 		}
 		if partNumber == 1 {
@@ -458,13 +431,9 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		//completeParts = append(completeParts, completePart)
 
 	}
-	if jobstate[jobid] == ABORTED {
-		if !jobFSM.FSM.Is(ABORTED) {
-			err = jobFSM.FSM.Event("abort")
-			if err != nil {
-				logger.Print(err)
-			}
-		}
+
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
 		logger.Printf("job cleaned %v", abort)
 		if !abort {
 			abort = true
@@ -495,7 +464,6 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	} else {
 		deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 	}
-
 	return err
 }
 
@@ -560,6 +528,11 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	if err != nil {
 		needMove = false
 		succeed = false
+	}
+
+	err1 := checkFSM(job.Id, jobFSM)
+	if err1 != nil {
+		return
 	}
 
 	if needMove {
@@ -634,12 +607,26 @@ func updateJob(j *flowtype.Job) {
 func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	logger.Println("Runjob is called in datamover service.")
 	logger.Printf("Request: %+v\n", in)
-	err := jobFSM.FSM.Event("create")
+	if jobstate[in.Id] == "cancelled" {
+		err := jobFSM.FSM.Event("cancel")
+		if err != nil {
+			logger.Print(err)
+			return err
+		}
+		err = db.DbAdapter.UpdateStatus(in.Id, flowtype.JOB_STATUS_CANCELLED)
+		if err != nil {
+			return err
+		}
+		return errors.New("job cancelled")
+	}
+	err := jobFSM.FSM.Event("start")
 	if err != nil {
 		fmt.Println(err) // TODO logs for error
+		return err
 	}
+	// updating FSM state into jobstate
 	jobstate[in.Id] = jobFSM.FSM.Current()
-	// set context tiemout
+	// set context timeout
 	ctx := context.Background()
 	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()
@@ -663,6 +650,7 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	if err != nil {
 		j.Status = flowtype.JOB_STATUS_FAILED
 		j.EndTime = time.Now()
+		jobFSM.FSM.Event("fail")
 		updateJob(&j)
 		return err
 	}
@@ -703,14 +691,28 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	if err != nil || j.TotalCount == 0 || j.TotalCapacity == 0 { //TODO Change here RW
 		if err != nil {
 			j.Status = flowtype.JOB_STATUS_FAILED
+			jobFSM.FSM.Event("fail")
+
 		} else {
 			j.Status = flowtype.JOB_STATUS_SUCCEED
+			jobFSM.FSM.Event("fail")
 		}
 		j.EndTime = time.Now()
 		updateJob(&j)
 		return err
 	}
-	err = jobFSM.FSM.Event("start")
+
+	if jobstate[in.Id] == "aborted" {
+		if !jobFSM.FSM.Is("aborted") {
+			err := jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		db.DbAdapter.UpdateStatus(in.Id, flowtype.JOB_STATUS_ABORTED)
+		return errors.New("job aborted")
+	}
+	err = jobFSM.FSM.Event("run")
 	if err != nil {
 		fmt.Println(err) // TODO logs for error
 	}
@@ -728,6 +730,10 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 			//update database
 			j.Status = flowtype.JOB_STATUS_FAILED
 			j.EndTime = time.Now()
+			err := jobFSM.FSM.Event("fail")
+			if err != nil {
+				logger.Print(err)
+			}
 			db.DbAdapter.UpdateJob(&j)
 			return err
 		}
@@ -819,7 +825,17 @@ func AbortMigration(msgData []byte) error {
 		logger.Printf("unmarshal failed, err:%v\n", err)
 		return err
 	}
-
+	jobId := fmt.Sprintf("%x", string(job.Id))
+	status := db.DbAdapter.GetJobStatus(jobId)
+	if status == flowtype.JOB_STATUS_ABORTED {
+		return errors.New("job already aborted")
+	}
+	if status == flowtype.JOB_STATUS_CANCELLED {
+		return errors.New("job already cancelled")
+	}
+	if status == flowtype.JOB_STATUS_SUCCEED {
+		return errors.New("job already completed")
+	}
 	if jobstate[job.Id] != PENDING {
 		jobstate[job.Id] = ABORTED
 	} else {
@@ -840,12 +856,12 @@ func NewJobFSM(to string) *JobFSM {
 	d.FSM = fsm.NewFSM(
 		"pending",
 		fsm.Events{
-			{Name: "create", Src: []string{PENDING}, Dst: CREATED},
-			{Name: "validate", Src: []string{CREATED}, Dst: VALIDATING},
-			{Name: "start", Src: []string{VALIDATING}, Dst: RUNNING},
+			{Name: "start", Src: []string{PENDING}, Dst: STARTED},
+			{Name: "validate", Src: []string{STARTED}, Dst: VALIDATING},
+			{Name: "run", Src: []string{VALIDATING}, Dst: RUNNING},
 			{Name: "complete", Src: []string{RUNNING}, Dst: COMPLETED},
-			{Name: "fail", Src: []string{CREATED, VALIDATING, RUNNING}, Dst: FAILED},
-			{Name: "abort", Src: []string{CREATED, VALIDATING, RUNNING}, Dst: ABORTED},
+			{Name: "fail", Src: []string{STARTED, VALIDATING, RUNNING}, Dst: FAILED},
+			{Name: "abort", Src: []string{STARTED, VALIDATING, RUNNING}, Dst: ABORTED},
 			{Name: "cancel", Src: []string{PENDING}, Dst: CANCELLED},
 		},
 		fsm.Callbacks{
@@ -860,14 +876,17 @@ func (d *JobFSM) enterState(e *fsm.Event) {
 	logger.Printf("The job %s is %s\n", d.To, e.Dst)
 }
 
-//func changestate (jobFSM *JobFSM, state string){
-//	if jobFSM.FSM.Is(state)== false {
-//
-//		//do nothing
-//	} else {
-//
-//
-//		}
-//	//}
-//}
-//func newJobFSM
+func checkFSM(jobId bson.ObjectId, jobFSM *JobFSM) error {
+	Id := fmt.Sprintf("%x", string(jobId))
+	if jobstate[Id] == ABORTED {
+		if !jobFSM.FSM.Is(ABORTED) {
+			err := jobFSM.FSM.Event("abort")
+			if err != nil {
+				logger.Print(err)
+			}
+		}
+		db.DbAdapter.UpdateStatus(Id, flowtype.JOB_STATUS_ABORTED)
+
+	}
+	return nil
+}
