@@ -558,6 +558,9 @@ func (b *dataflowService) AbortJob(ctx context.Context, in *pb.AbortJobRequest, 
 		out.Err = err.Error()
 		return err
 	}
+	j, err = db.DbAdapter.GetJob(actx, in.Id)
+	out.Id = in.Id
+	out.Status = model.JOB_STATUS_ABORTED
 
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
