@@ -415,6 +415,7 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			if err != nil {
 				return err
 			} else {
+				abort = true
 				addMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 			}
 		}
@@ -435,9 +436,8 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	checkFSM(job.Id, jobFSM)
 	if jobFSM.FSM.Is(ABORTED) {
 		logger.Printf("job cleaned %v", abort)
-		if !abort {
-			abort = true
-			logger.Printf("job cleaned  started %v", abort)
+
+		if abort == true {
 			//if uploadId != "" {
 			logger.Printf("job aborting started")
 			err := abortMultipartUpload(obj.ObjectKey, destLoca, uploadMover)
@@ -446,8 +446,8 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			} else {
 				deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 			}
-			//}
 		}
+
 		////break
 		logger.Printf("job cleaned")
 		return errors.New("job aborted")
@@ -825,17 +825,6 @@ func AbortMigration(msgData []byte) error {
 		logger.Printf("unmarshal failed, err:%v\n", err)
 		return err
 	}
-	jobId := fmt.Sprintf("%x", string(job.Id))
-	status := db.DbAdapter.GetJobStatus(jobId)
-	if status == flowtype.JOB_STATUS_ABORTED {
-		return errors.New("job already aborted")
-	}
-	if status == flowtype.JOB_STATUS_CANCELLED {
-		return errors.New("job already cancelled")
-	}
-	if status == flowtype.JOB_STATUS_SUCCEED {
-		return errors.New("job already completed")
-	}
 	if jobstate[job.Id] != PENDING {
 		jobstate[job.Id] = ABORTED
 	} else {
@@ -880,13 +869,12 @@ func checkFSM(jobId bson.ObjectId, jobFSM *JobFSM) error {
 	Id := fmt.Sprintf("%x", string(jobId))
 	if jobstate[Id] == ABORTED {
 		if !jobFSM.FSM.Is(ABORTED) {
+			db.DbAdapter.UpdateStatus(Id, flowtype.JOB_STATUS_ABORTED)
 			err := jobFSM.FSM.Event("abort")
 			if err != nil {
 				logger.Print(err)
 			}
 		}
-		db.DbAdapter.UpdateStatus(Id, flowtype.JOB_STATUS_ABORTED)
-
 	}
 	return nil
 }
