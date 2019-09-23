@@ -62,7 +62,7 @@ func setIndex(session *mgo.Session, colName string, keys []string, unique bool, 
 			}
 		}
 		if exist == true {
-			log.Log("index already exist")
+			log.Info("index already exist")
 			return
 		}
 	}
@@ -109,7 +109,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	// if context is admin, no need filter by tenantId.
 	md, ok := metadata.FromContext(ctx)
 	if !ok {
-		log.Log("get context failed")
+		log.Error("get context failed")
 		return errors.New("get context failed")
 	}
 
@@ -117,7 +117,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	if isAdmin != common.CTX_VAL_TRUE {
 		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
 		if !ok {
-			log.Log("get tenantid failed")
+			log.Error("get tenantid failed")
 			return errors.New("get tenantid failed")
 		}
 		m["tenantId"] = tenantId
@@ -255,7 +255,7 @@ func (ad *adapter) CreatePolicy(ctx context.Context, pol *Policy) (*Policy, erro
 	ss := ad.s.Copy()
 	defer ss.Close()
 
-	log.Logf("mongo.Createpolicy:%+v\n", pol)
+	log.Infof("mongo.Createpolicy:%+v\n", pol)
 	pol.Id = bson.NewObjectId()
 	err := ss.DB(DataBaseName).C(CollPolicy).Insert(&pol)
 	if err != nil {
@@ -446,7 +446,7 @@ func (ad *adapter) CreatePlan(ctx context.Context, plan *Plan) (*Plan, error) {
 		if bson.IsObjectIdHex(plan.PolicyId) {
 			plan.PolicyRef = mgo.DBRef{CollPolicy, bson.ObjectIdHex(plan.PolicyId), DataBaseName}
 		} else {
-			log.Errorfs("invalid policy:%s\n", plan.PolicyId)
+			log.Errorf("invalid policy:%s\n", plan.PolicyId)
 			return nil, ERR_POLICY_NOT_EXIST
 		}
 	}

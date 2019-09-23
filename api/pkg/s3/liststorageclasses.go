@@ -15,7 +15,6 @@
 package s3
 
 import (
-	"context"
 	"encoding/xml"
 	"net/http"
 	"github.com/emicklei/go-restful"

@@ -15,7 +15,6 @@
 package s3
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -46,7 +45,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	contentLenght := request.HeaderParameter("content-length")
 	size, err := strconv.ParseInt(contentLenght, 10, 64)
 	if err != nil {
-		log.Logf("get content length failed, err: %v\n", err)
+		log.Errorf("get content length failed, err: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, InvalidContentLength.Error())
 		return
 	}

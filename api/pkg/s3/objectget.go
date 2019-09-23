@@ -16,7 +16,6 @@ package s3
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"strconv"
 	"strings"

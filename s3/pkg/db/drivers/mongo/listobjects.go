@@ -88,7 +88,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 	}
 	filter = append(filter, m)
 
-	log.Infofs("filter:%+v\n", filter)
+	log.Infof("filter:%+v\n", filter)
 	offset := int(in.Offset)
 	limit := int(in.Limit)
 	if limit == 0 {

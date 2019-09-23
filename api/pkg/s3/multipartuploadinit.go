@@ -36,7 +36,7 @@ import (
 func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-	log.Logf("Received request for multi-part upload init, bucket: %s, object: %s\n", bucketName, objectKey)
+	log.Infof("Received request for multi-part upload init, bucket: %s, object: %s\n", bucketName, objectKey)
 
 	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
 	ctx := common.InitCtxWithVal(request, md)

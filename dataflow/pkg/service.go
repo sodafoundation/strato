@@ -72,7 +72,7 @@ func policyModel2Resp(policy *model.Policy) *pb.Policy {
 }
 
 func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest, out *pb.GetPolicyResponse) error {
-	log.Infos("Get policy is called in dataflow service.")
+	log.Info("Get policy is called in dataflow service.")
 
 	id := in.GetId()
 	if id == "" {
@@ -141,7 +141,7 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 
 	pol.TenantId = in.Policy.TenantId
 	pol.UserId = in.Policy.UserId
-	log.Logf("dataflowservice CreatePolicy:%+v\n", pol)
+	log.Infof("dataflowservice CreatePolicy:%+v\n", pol)
 	p, err := policy.Create(ctx, &pol)
 	if err != nil {
 		log.Infof("create policy err:%s.", out.Err)
@@ -429,12 +429,12 @@ func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, ou
 
 	tenantId, err := utils.GetTenantId(ctx)
 	if err != nil {
-		log.Logf("run plan failed, err=%v\n", err)
+		log.Errorf("run plan failed, err=%v\n", err)
 		return err
 	}
 	userId, err := utils.GetUserId(ctx)
 	if err != nil {
-		log.Logf("run plan failed, err=%v\n", err)
+		log.Errorf("run plan failed, err=%v\n", err)
 		return err
 	}
 	jid, err := plan.Run(in.Id, tenantId, userId)

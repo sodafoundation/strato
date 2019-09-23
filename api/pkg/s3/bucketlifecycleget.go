@@ -59,7 +59,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	ctx := common.InitCtxWithAuthInfo(request)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
-		log.Logf("get bucket failed, err=%v\n", err)
+		log.Errorf("get bucket failed, err=%v\n", err)
 		response.WriteError(http.StatusInternalServerError,
 			fmt.Errorf("either the bucket does not exist or there is error when getting bucket details"))
 	}

@@ -22,7 +22,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	uploadId := request.QueryParameter("uploadId")
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
-	log.Logf("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
+	log.Infof("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
 
 	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
 	ctx := common.InitCtxWithVal(request, md)

@@ -15,7 +15,6 @@
 package dataflow
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -132,7 +131,7 @@ func (s *APIService) CreatePolicy(request *restful.Request, response *restful.Re
 	actx := request.Attribute(c.KContext).(*c.Context)
 	pol.TenantId = actx.TenantId
 	pol.UserId = actx.UserId
-	log.Logf("create policy:%+v\n", pol)
+	log.Infof("create policy:%+v\n", pol)
 	res, err := s.dataflowClient.CreatePolicy(ctx, &dataflow.CreatePolicyRequest{Policy: &pol})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
@@ -326,7 +325,7 @@ func (s *APIService) UpdatePlan(request *restful.Request, response *restful.Resp
 	}
 
 	planId := request.PathParameter("id")
-	log.Logf("Received request for update plan(%s).\n", planId)
+	log.Infof("Received request for update plan(%s).\n", planId)
 	body, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)

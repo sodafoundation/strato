@@ -46,7 +46,7 @@ func LoadAllPlans() {
 			log.Errorf("Get all plan faild, %v", err)
 			break
 		}
-		log.Logf("scheduler: planNum=%d\n", planNum)
+		log.Infof("scheduler: planNum=%d\n", planNum)
 		planNum = len(plans)
 		if planNum == 0 {
 			break

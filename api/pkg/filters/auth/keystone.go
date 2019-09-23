@@ -57,16 +57,16 @@ func (k *Keystone) SetUp() error {
 		Password:         os.Getenv("OS_PASSWORD"),
 		TenantName:       os.Getenv("OS_PROJECT_NAME"),
 	}
-	log.Logf("opts:%v", opts)
+	log.Infof("opts:%v", opts)
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
-		log.Logf("When get auth client:", err)
+		log.Errorf("When get auth client:", err)
 		return err
 	}
 	// Only support keystone v3
 	k.identity, err = openstack.NewIdentityV3(provider, gophercloud.EndpointOpts{})
 	if err != nil {
-		log.Logf("When get identity session:", err)
+		log.Errorf("When get identity session:", err)
 		return err
 	}
 	log.Infof("Service Token Info: %s", provider.TokenID)
@@ -97,10 +97,10 @@ func (k *Keystone) validateToken(req *restful.Request, res *restful.Response, to
 				return lastErr
 			}
 		}
-		log.Logf("k.identity:", k.identity)
+		log.Infof("k.identity:", k.identity)
 		r = tokens.Get(k.identity, token)
-		log.Logf("r:", r)
-		log.Logf("r.err:", r.Err)
+		log.Infof("r:", r)
+		log.Infof("r.err:", r.Err)
 		return r.Err
 	})
 	if err != nil {
