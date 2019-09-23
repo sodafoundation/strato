@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/metadata"
@@ -57,7 +57,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	// if context is admin, no need filter by tenantId.
 	md, ok := metadata.FromContext(ctx)
 	if !ok {
-		log.Log("get context failed")
+		log.Error("get context failed")
 		return errors.New("get context failed")
 	}
 
@@ -65,7 +65,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	if isAdmin != common.CTX_VAL_TRUE {
 		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
 		if !ok {
-			log.Log("get tenantid failed")
+			log.Error("get tenantid failed")
 			return errors.New("get tenantid failed")
 		}
 		m["tenantid"] = tenantId

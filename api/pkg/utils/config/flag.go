@@ -18,7 +18,7 @@ import (
 	gflag "flag"
 	"reflect"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 type Flag struct {

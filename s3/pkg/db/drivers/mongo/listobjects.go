@@ -22,7 +22,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -34,7 +34,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.Bucket)
 
-	log.Log("Find objects from database...... \n")
+	log.Info("Find objects from database...... \n")
 
 	filter := []bson.M{}
 	if in.Filter != nil {
@@ -45,7 +45,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 			var tmFilter map[string]string
 			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
 			if err != nil {
-				log.Logf("unmarshal lastmodified value failed:%s\n", err)
+				log.Errorf("unmarshal lastmodified value failed:%s\n", err)
 				return InvalidQueryParameter
 			}
 			for k, v := range tmFilter {
@@ -62,7 +62,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 				case "gte":
 					op = "$lte"
 				default:
-					log.Logf("unsupport filter action:%s\n", k)
+					log.Infof("unsupport filter action:%s\n", k)
 					return InvalidQueryParameter
 				}
 				filter = append(filter, bson.M{"lastmodified": bson.M{op: secs}})
@@ -71,7 +71,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 		if in.Filter[common.KStorageTier] != "" {
 			tier, err := strconv.Atoi(in.Filter[common.KStorageTier])
 			if err != nil {
-				log.Logf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
+				log.Errorf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
 				return InvalidQueryParameter
 			}
 			filter = append(filter, bson.M{"tier": bson.M{"$lte": tier}})
@@ -88,7 +88,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 	}
 	filter = append(filter, m)
 
-	log.Logf("filter:%+v\n", filter)
+	log.Infof("filter:%+v\n", filter)
 	offset := int(in.Offset)
 	limit := int(in.Limit)
 	if limit == 0 {
@@ -102,7 +102,7 @@ func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, o
 	}
 
 	if err != nil {
-		log.Logf("find objects from database failed, err:%v\n", err)
+		log.Errorf("find objects from database failed, err:%v\n", err)
 		return InternalError
 	}
 
@@ -148,13 +148,13 @@ func (ad *adapter) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	if err == nil {
 		out.Count = ret.Count
 		out.Size = ret.Size
-		log.Logf("count objects of bucket[%s] successfully, count=%d, size=%d\n", in.Bucket, out.Count, out.Size)
+		log.Infof("count objects of bucket[%s] successfully, count=%d, size=%d\n", in.Bucket, out.Count, out.Size)
 	} else if err == mgo.ErrNotFound {
 		out.Count = 0
 		out.Size = 0
-		log.Logf("count objects of bucket[%s] successfully, count=0, size=0\n", in.Bucket)
+		log.Infof("count objects of bucket[%s] successfully, count=0, size=0\n", in.Bucket)
 	} else {
-		log.Logf("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
+		log.Errorf("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
 		return InternalError
 	}
 

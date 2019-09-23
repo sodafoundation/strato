@@ -17,9 +17,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro"
 	datamover "github.com/opensds/multi-cloud/datamover/pkg"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 )
 
 func main() {
@@ -27,7 +28,8 @@ func main() {
 		micro.Name("datamover"),
 	)
 
-	log.Log("Init datamover serivice")
+	obs.InitLogs()
+	log.Info("Init datamover serivice")
 	service.Init()
 
 	datamover.InitDatamoverService()

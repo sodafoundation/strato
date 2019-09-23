@@ -8,6 +8,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type ObsClient struct {
@@ -32,18 +34,17 @@ func New(ak, sk, endpoint string, configurers ...configurer) (*ObsClient, error)
 		return nil, err
 	}
 
-	if isWarnLogEnabled() {
-		info := make([]string, 3)
-		info[0] = fmt.Sprintf("[OBS SDK Version=%s", obs_sdk_version)
-		info[1] = fmt.Sprintf("Endpoint=%s", conf.endpoint)
-		accessMode := "Virtual Hosting"
-		if conf.pathStyle {
-			accessMode = "Path"
-		}
-		info[2] = fmt.Sprintf("Access Mode=%s]", accessMode)
-		doLog(LEVEL_WARN, strings.Join(info, "];["))
+	info := make([]string, 3)
+	info[0] = fmt.Sprintf("[OBS SDK Version=%s", obs_sdk_version)
+	info[1] = fmt.Sprintf("Endpoint=%s", conf.endpoint)
+	accessMode := "Virtual Hosting"
+	if conf.pathStyle {
+		accessMode = "Path"
 	}
-	doLog(LEVEL_DEBUG, "Create obsclient with config:\n%s\n", conf)
+	info[2] = fmt.Sprintf("Access Mode=%s]", accessMode)
+	log.Warn(strings.Join(info, "];["))
+
+	log.Debug("Create obsclient with config:\n%s\n", conf)
 	obsClient := &ObsClient{conf: conf, httpClient: &http.Client{Transport: transport, CheckRedirect: checkRedirectFunc}, transport: transport}
 	return obsClient, nil
 }
@@ -58,7 +59,6 @@ func (obsClient ObsClient) Close() {
 	obsClient.transport = nil
 	obsClient.httpClient = nil
 	obsClient.conf = nil
-	SyncLog()
 }
 
 func (obsClient ObsClient) ListBuckets(input *ListBucketsInput) (output *ListBucketsOutput, err error) {

@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -50,17 +50,17 @@ type s3Service struct{}
 func getNameFromTier(tier int32) (string, error) {
 	v, ok := Int2ExtTierMap[OSTYPE_OPENSDS]
 	if !ok {
-		log.Logf("get opensds storage class of tier[%d] failed.\n", tier)
+		log.Errorf("get opensds storage class of tier[%d] failed.\n", tier)
 		return "", errors.New("internal error")
 	}
 
 	v2, ok := (*v)[tier]
 	if !ok {
-		log.Logf("get opensds storage class of tier[%d] failed.\n", tier)
+		log.Errorf("get opensds storage class of tier[%d] failed.\n", tier)
 		return "", errors.New("internal error")
 	}
 
-	log.Logf("opensds storage class of tier[%d] is %s.\n", tier, v2)
+	log.Infof("opensds storage class of tier[%d] is %s.\n", tier, v2)
 	return v2, nil
 }
 
@@ -177,7 +177,7 @@ func loadDefaultStorageClass() error {
 	SupportedClasses = append(SupportedClasses, pb.StorageClass{Name: string(AWS_STANDARD_IA), Tier: int32(Tier99)})
 	SupportedClasses = append(SupportedClasses, pb.StorageClass{Name: string(AWS_GLACIER), Tier: int32(Tier999)})
 
-	log.Logf("Supported storage classes:%v\n", SupportedClasses)
+	log.Infof("Supported storage classes:%v\n", SupportedClasses)
 
 	Int2ExtTierMap = make(map[string]*Int2String)
 	Ext2IntTierMap = make(map[string]*String2Int)
@@ -189,15 +189,15 @@ func loadDefaultStorageClass() error {
 	loadCephDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 	loadFusionStroageDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 
-	log.Logf("Int2ExtTierMap:%v\n", Int2ExtTierMap)
-	log.Logf("Ext2IntTierMap:%v\n", Ext2IntTierMap)
+	log.Infof("Int2ExtTierMap:%v\n", Int2ExtTierMap)
+	log.Infof("Ext2IntTierMap:%v\n", Ext2IntTierMap)
 
 	return nil
 }
 
 // Currently user defined storage tiers and classes are not supported.
 func loadUserDefinedStorageClass() error {
-	log.Log("user defined storage class is not supported now")
+	log.Info("user defined storage class is not supported now")
 	return fmt.Errorf("user defined storage class is not supported now")
 }
 
@@ -208,12 +208,12 @@ func loadDefaultTransition() error {
 	TransitionMap[Tier99] = []int32{Tier1, Tier99}
 	TransitionMap[Tier999] = []int32{Tier1, Tier99, Tier999}
 
-	log.Logf("loadDefaultTransition:%+v\n", TransitionMap)
+	log.Infof("loadDefaultTransition:%+v\n", TransitionMap)
 	return nil
 }
 
 func loadUserDefinedTransition() error {
-	log.Log("user defined storage class is not supported now")
+	log.Info("user defined storage class is not supported now")
 	return fmt.Errorf("user defined storage class is not supported now")
 }
 
@@ -221,9 +221,9 @@ func initStorageClass() {
 	// Check if use the default storage class.
 	set := os.Getenv("USE_DEFAULT_STORAGE_CLASS")
 	val, err := strconv.ParseInt(set, 10, 64)
-	log.Logf("USE_DEFAULT_STORAGE_CLASS:set=%s, val=%d, err=%v.\n", set, val, err)
+	log.Infof("USE_DEFAULT_STORAGE_CLASS:set=%s, val=%d, err=%v.\n", set, val, err)
 	if err != nil {
-		log.Logf("invalid USE_DEFAULT_STORAGE_CLASS:%s\n", set)
+		log.Errorf("invalid USE_DEFAULT_STORAGE_CLASS:%s\n", set)
 		panic("init s3service failed")
 	}
 
@@ -254,7 +254,7 @@ func (b *s3Service) GetStorageClasses(ctx context.Context, in *pb.BaseRequest, o
 }
 
 func (b *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb.ListBucketsResponse) error {
-	log.Log("ListBuckets is called in s3 service.")
+	log.Info("ListBuckets is called in s3 service.")
 	buckets := []pb.Bucket{}
 	err := db.DbAdapter.ListBuckets(ctx, in, &buckets)
 	if err.Code != ERR_OK {
@@ -270,7 +270,7 @@ func (b *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 }
 
 func (b *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
-	log.Log("CreateBucket is called in s3 service.")
+	log.Info("CreateBucket is called in s3 service.")
 	bucket := pb.Bucket{}
 	err := db.DbAdapter.GetBucketByName(ctx, in.Name, &bucket)
 
@@ -279,13 +279,13 @@ func (b *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 
 	if err.Code == http.StatusNotFound {
-		log.Log(".CreateBucket is called in s3 service.")
+		log.Info(".CreateBucket is called in s3 service.")
 		err1 := db.DbAdapter.CreateBucket(ctx, in)
 		if err1.Code != ERR_OK {
 			return err.Error()
 		}
 	} else {
-		log.Log(".UpdateBucket is called in s3 service.")
+		log.Info(".UpdateBucket is called in s3 service.")
 		in.Deleted = false
 		err1 := db.DbAdapter.UpdateBucket(ctx, in)
 		if err1.Code != ERR_OK {
@@ -298,7 +298,7 @@ func (b *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 }
 
 func (b *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.Bucket) error {
-	log.Logf("GetBucket %s is called in s3 service.", in.Name)
+	log.Infof("GetBucket %s is called in s3 service.", in.Name)
 
 	err := db.DbAdapter.GetBucketByName(ctx, in.Name, out)
 
@@ -310,14 +310,14 @@ func (b *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.Bucket
 }
 
 func (b *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
-	log.Log("DeleteBucket is called in s3 service.")
+	log.Info("DeleteBucket is called in s3 service.")
 	bucket := pb.Bucket{}
 	err := db.DbAdapter.GetBucketByName(ctx, in.Name, &bucket)
 	if err.Code != ERR_OK {
 		return err.Error()
 	}
 	bucket.Deleted = true
-	log.Log("UpdateBucket is called in s3 service.")
+	log.Info("UpdateBucket is called in s3 service.")
 	err1 := db.DbAdapter.UpdateBucket(ctx, &bucket)
 	if err1.Code != ERR_OK {
 		return err.Error()
@@ -328,7 +328,7 @@ func (b *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 }
 
 func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectResponse) error {
-	log.Log("ListObject is called in s3 service.")
+	log.Info("ListObject is called in s3 service.")
 	objects := []pb.Object{}
 	err := db.DbAdapter.ListObjects(ctx, in, &objects)
 
@@ -343,22 +343,22 @@ func (b *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 }
 
 func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
-	log.Log("CreateObject is called in s3 service.")
+	log.Info("CreateObject is called in s3 service.")
 	getObjectInput := pb.GetObjectInput{Bucket: in.BucketName, Key: in.ObjectKey}
 	object := pb.Object{}
 	err := db.DbAdapter.GetObject(ctx, &getObjectInput, &object)
 	if err.Code != ERR_OK && err.Code != http.StatusNotFound {
-		log.Logf("create object err:%v\n", err)
+		log.Errorf("create object err:%v\n", err)
 		return err.Error()
 	}
 	if err.Code == http.StatusNotFound {
-		log.Log("create object")
+		log.Info("create object")
 		err1 := db.DbAdapter.CreateObject(ctx, in)
 		if err1.Code != ERR_OK {
 			return err.Error()
 		}
 	} else {
-		log.Log("update object")
+		log.Info("update object")
 		err1 := db.DbAdapter.UpdateObject(ctx, in)
 		if err1.Code != ERR_OK {
 			return err.Error()
@@ -370,7 +370,7 @@ func (b *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 }
 
 func (b *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
-	log.Log("PutObject is called in s3 service.")
+	log.Info("PutObject is called in s3 service.")
 	err := db.DbAdapter.UpdateObject(ctx, in)
 	if err.Code != ERR_OK {
 		return err.Error()
@@ -381,7 +381,7 @@ func (b *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 }
 
 func (b *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) error {
-	log.Log("GetObject is called in s3 service.")
+	log.Info("GetObject is called in s3 service.")
 	err := db.DbAdapter.GetObject(ctx, in, out)
 	if err.Code != ERR_OK {
 		return err.Error()
@@ -390,7 +390,7 @@ func (b *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *p
 }
 
 func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.BaseResponse) error {
-	log.Log("DeleteObject is called in s3 service.")
+	log.Info("DeleteObject is called in s3 service.")
 	getObjectInput := pb.GetObjectInput{Bucket: in.Bucket, Key: in.Key}
 	object := pb.Object{}
 	err := db.DbAdapter.GetObject(ctx, &getObjectInput, &object)
@@ -398,7 +398,7 @@ func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		return err.Error()
 	}
 	object.IsDeleteMarker = "1"
-	log.Log("DeleteObject is called in s3 service.")
+	log.Info("DeleteObject is called in s3 service.")
 	err1 := db.DbAdapter.UpdateObject(ctx, &object)
 	if err1.Code != ERR_OK {
 		return err.Error()
@@ -408,9 +408,9 @@ func (b *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 }
 
 func (b *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput, out *pb.BaseResponse) error {
-	log.Log("DeleteBucketlifecycle is called in s3 service.")
+	log.Info("DeleteBucketlifecycle is called in s3 service.")
 	getlifecycleinput := pb.DeleteLifecycleInput{Bucket: in.Bucket, RuleID: in.RuleID}
-	log.Logf("Delete bucket lifecycle input in s3 service %s", getlifecycleinput)
+	log.Infof("Delete bucket lifecycle input in s3 service %s", getlifecycleinput)
 	err := db.DbAdapter.DeleteBucketLifecycle(ctx, &getlifecycleinput)
 	if err.Code != ERR_OK {
 		msg := "Delete bucket failed for $1"
@@ -423,7 +423,7 @@ func (b *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLife
 }
 
 func (b *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
-	log.Log("UpdateBucket is called in s3 service.")
+	log.Info("UpdateBucket is called in s3 service.")
 
 	in.Deleted = false
 	err := db.DbAdapter.UpdateBucket(ctx, in)
@@ -447,7 +447,7 @@ func NewS3Service() pb.S3Handler {
 }
 
 func (b *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.GetTierMapResponse) error {
-	log.Log("GetTierMap ...")
+	log.Info("GetTierMap ...")
 
 	// Get map from internal tier to external class name.
 	out.Tier2Name = make(map[string]*pb.Tier2ClassName)
@@ -468,12 +468,12 @@ func (b *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 		}
 	}
 
-	log.Logf("out.Transition:%v\n", out.Transition)
+	log.Infof("out.Transition:%v\n", out.Transition)
 	return nil
 }
 
 func (b *s3Service) UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaRequest, out *pb.BaseResponse) error {
-	log.Logf("Update meatadata, objkey:%s, lastmodified:%d, setting:%v\n", in.ObjKey, in.LastModified, in.Setting)
+	log.Infof("Update meatadata, objkey:%s, lastmodified:%d, setting:%v\n", in.ObjKey, in.LastModified, in.Setting)
 	valid := make(map[string]struct{})
 	valid["tier"] = struct{}{}
 	valid["backend"] = struct{}{}
@@ -499,13 +499,13 @@ func CheckReqObjMeta(req map[string]string, valid map[string]struct{}) (map[stri
 	ret := make(map[string]interface{})
 	for k, v := range req {
 		if _, ok := valid[k]; !ok {
-			log.Logf("s3 service check object metadata failed, invalid key: %s.\n", k)
+			log.Errorf("s3 service check object metadata failed, invalid key: %s.\n", k)
 			return nil, BadRequest
 		}
 		if k == "tier" {
 			v1, err := strconv.Atoi(v)
 			if err != nil {
-				log.Logf("s3 service check object metadata failed, invalid tier: %s.\n", v)
+				log.Errorf("s3 service check object metadata failed, invalid tier: %s.\n", v)
 				return nil, BadRequest
 			}
 			ret[k] = v1
@@ -535,12 +535,12 @@ func (b *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendT
 		}
 	}
 
-	log.Logf("GetBackendTypesByTier, types:%v\n", out.Types)
+	log.Infof("GetBackendTypesByTier, types:%v\n", out.Types)
 
 	return nil
 }
 func (b *s3Service) AddUploadRecord(ctx context.Context, record *pb.MultipartUploadRecord, out *pb.BaseResponse) error {
-	log.Logf("add multipart upload record")
+	log.Infof("add multipart upload record")
 	err := db.DbAdapter.AddMultipartUpload(ctx, record)
 	if err.Code != ERR_OK {
 		return err.Error()
@@ -550,7 +550,7 @@ func (b *s3Service) AddUploadRecord(ctx context.Context, record *pb.MultipartUpl
 }
 
 func (b *s3Service) DeleteUploadRecord(ctx context.Context, record *pb.MultipartUploadRecord, out *pb.BaseResponse) error {
-	log.Logf("delete multipart upload record")
+	log.Infof("delete multipart upload record")
 	err := db.DbAdapter.DeleteMultipartUpload(ctx, record)
 	if err.Code != ERR_OK {
 		return err.Error()
@@ -560,7 +560,7 @@ func (b *s3Service) DeleteUploadRecord(ctx context.Context, record *pb.Multipart
 }
 
 func (b *s3Service) ListUploadRecord(ctx context.Context, in *pb.ListMultipartUploadRequest, out *pb.ListMultipartUploadResponse) error {
-	log.Logf("list multipart upload records")
+	log.Infof("list multipart upload records")
 	records := []pb.MultipartUploadRecord{}
 	err := db.DbAdapter.ListUploadRecords(ctx, in, &records)
 	if err.Code != ERR_OK {
@@ -574,7 +574,7 @@ func (b *s3Service) ListUploadRecord(ctx context.Context, in *pb.ListMultipartUp
 }
 
 func (b *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.CountObjectsResponse) error {
-	log.Log("Count objects is called in s3 service.")
+	log.Info("Count objects is called in s3 service.")
 
 	countInfo := ObjsCountInfo{}
 	err := db.DbAdapter.CountObjects(ctx, in, &countInfo)

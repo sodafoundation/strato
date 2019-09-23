@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
@@ -77,11 +77,11 @@ func (ad *GcpAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		err = GcpObject.Create(newObjectKey, contentMD5, "", length, body, models.Private)
 
 		if err != nil {
-			log.Logf("Upload to Gcp failed:%v", err)
+			log.Errorf("Upload to Gcp failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to Gcp failed"}
 		} else {
 			object.LastModified = time.Now().Unix()
-			log.Logf("LastModified is:%v\n", object.LastModified)
+			log.Infof("LastModified is:%v\n", object.LastModified)
 		}
 	}
 
@@ -110,10 +110,10 @@ func (ad *GcpAdapter) GET(object *pb.Object, context context.Context, start int6
 		getObject, err := GcpObject.Get(newObjectKey, &getObjectOption)
 		if err != nil {
 			fmt.Println(err)
-			log.Logf("Download failed:%v", err)
+			log.Errorf("Download failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "Download failed"}
 		} else {
-			log.Logf("Download succeed, bytes:%d\n", getObject.ContentLength)
+			log.Infof("Download succeed, bytes:%d\n", getObject.ContentLength)
 
 			return getObject.Body, NoError
 		}
@@ -133,11 +133,11 @@ func (ad *GcpAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	err := GcpObject.Remove(newObjectKey)
 
 	if err != nil {
-		log.Logf("Delete object failed, err:%v\n", err)
+		log.Errorf("Delete object failed, err:%v\n", err)
 		return InternalError
 	}
 
-	log.Logf("Delete object %s from Gcp successfully.\n", newObjectKey)
+	log.Infof("Delete object %s from Gcp successfully.\n", newObjectKey)
 
 	return NoError
 }
@@ -151,7 +151,7 @@ func (ad *GcpAdapter) GetObjectInfo(bucketName string, key string, context conte
 	bucketResp, err := bucketO.Get(bucket, newKey, "", "", 1000)
 
 	if err != nil {
-		log.Logf("Error occured during get Object Info, err:%v\n", err)
+		log.Errorf("Error occured during get Object Info, err:%v\n", err)
 		//log.Fatalf("Error occured during get Object Info, err:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	}
@@ -170,14 +170,14 @@ func (ad *GcpAdapter) GetObjectInfo(bucketName string, key string, context conte
 		return obj, NoError
 	}
 
-	log.Logf("Can not find specified object(%s).\n", key)
+	log.Infof("Can not find specified object(%s).\n", key)
 	return nil, NoSuchObject
 }
 
 func (ad *GcpAdapter) InitMultipartUpload(object *pb.Object, context context.Context) (*pb.MultipartUpload, S3Error) {
 	bucket := ad.session.NewBucket()
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
-	log.Logf("bucket = %v,newObjectKey = %v\n", bucket, newObjectKey)
+	log.Infof("bucket = %v,newObjectKey = %v\n", bucket, newObjectKey)
 	GcpObject := bucket.NewObject(ad.backend.BucketName)
 	uploader := GcpObject.NewUploads(newObjectKey)
 	multipartUpload := &pb.MultipartUpload{}
@@ -188,7 +188,7 @@ func (ad *GcpAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
-		log.Logf("Init s3 multipart upload succeed, UploadId:%s\n", res.UploadID)
+		log.Infof("Init s3 multipart upload succeed, UploadId:%s\n", res.UploadID)
 		multipartUpload.Bucket = object.BucketName
 		multipartUpload.Key = object.ObjectKey
 		multipartUpload.UploadId = res.UploadID
@@ -216,13 +216,13 @@ func (ad *GcpAdapter) UploadPart(stream io.Reader,
 
 		if err != nil {
 			if tries == 3 {
-				log.Logf("[ERROR]Upload part to Gcp failed. err:%v\n", err)
+				log.Errorf("[ERROR]Upload part to Gcp failed. err:%v\n", err)
 				return nil, S3Error{Code: 500, Description: "Upload failed"}
 			}
-			log.Logf("Retrying to upload part#%d ,err:%s\n", partNumber, err)
+			log.Errorf("Retrying to upload part#%d ,err:%s\n", partNumber, err)
 			tries++
 		} else {
-			log.Logf("Uploaded part #%d, ETag:%s\n", partNumber, part.Etag)
+			log.Infof("Uploaded part #%d, ETag:%s\n", partNumber, part.Etag)
 			result := &model.UploadPartResult{
 				Xmlns:      model.Xmlns,
 				ETag:       part.Etag,
@@ -251,7 +251,7 @@ func (ad *GcpAdapter) CompleteMultipartUpload(multipartUpload *pb.MultipartUploa
 	}
 	resp, err := uploader.Complete(multipartUpload.UploadId, completeParts)
 	if err != nil {
-		log.Logf("completeMultipartUploadS3 failed, err:%v\n", err)
+		log.Errorf("completeMultipartUploadS3 failed, err:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	}
 	result := &model.CompleteMultipartUploadResult{
@@ -262,7 +262,7 @@ func (ad *GcpAdapter) CompleteMultipartUpload(multipartUpload *pb.MultipartUploa
 		ETag:     resp.Etag,
 	}
 
-	log.Logf("completeMultipartUploadS3 successful, resp:%v\n", resp)
+	log.Infof("completeMultipartUploadS3 successful, resp:%v\n", resp)
 	return result, NoError
 }
 
@@ -274,10 +274,10 @@ func (ad *GcpAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 	err := uploader.RemoveUploads(multipartUpload.UploadId)
 
 	if err != nil {
-		log.Logf("abortMultipartUploadS3 failed, err:%v\n", err)
+		log.Errorf("abortMultipartUploadS3 failed, err:%v\n", err)
 		return S3Error{Code: 500, Description: err.Error()}
 	} else {
-		log.Logf("abortMultipartUploadS3 successful\n")
+		log.Infof("abortMultipartUploadS3 successful\n")
 	}
 	return NoError
 }
@@ -290,10 +290,10 @@ func (ad *GcpAdapter) ListParts(listParts *pb.ListParts, context context.Context
 
 	listPartsResult, err := uploader.ListPart(listParts.UploadId)
 	if err != nil {
-		log.Logf("List parts failed, err:%v\n", err)
+		log.Errorf("List parts failed, err:%v\n", err)
 		return nil, S3Error{Code: 500, Description: err.Error()}
 	} else {
-		log.Logf("List parts successful\n")
+		log.Infof("List parts successful\n")
 		var parts []model.Part
 		for _, p := range listPartsResult.Parts {
 			part := model.Part{
