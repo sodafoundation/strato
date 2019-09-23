@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
@@ -34,7 +34,7 @@ import (
 //ObjectPut -
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
 	url := request.Request.URL
-	log.Logf("URL is %v", request.Request.URL.String())
+	log.Infof("URL is %v", request.Request.URL.String())
 
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
@@ -45,12 +45,12 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	contentLenght := request.HeaderParameter("content-length")
 	size, err := strconv.ParseInt(contentLenght, 10, 64)
 	if err != nil {
-		log.Logf("get content length failed, err: %v\n", err)
+		log.Errorf("get content length failed, err: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, InvalidContentLength.Error())
 		return
 	}
 	backendName := request.HeaderParameter("x-amz-storage-class")
-	log.Logf("object.size is %v, objectKey is %s, backend name is%s\n", size, objectKey, backendName)
+	log.Infof("object.size is %v, objectKey is %s, backend name is%s\n", size, objectKey, backendName)
 
 	// Currently, only support tier1 as default
 	tier := int32(utils.Tier1)
@@ -86,9 +86,9 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
 	}
-	log.Logf("enter the PUT method")
+	log.Infof("enter the PUT method")
 	s3err := client.PUT(request.Request.Body, &object, ctx)
-	log.Logf("LastModified is %v\n", object.LastModified)
+	log.Infof("LastModified is %v\n", object.LastModified)
 	if s3err != NoError {
 		response.WriteError(http.StatusInternalServerError, s3err.Error())
 		return
@@ -96,11 +96,11 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	res, err := s.s3Client.CreateObject(ctx, &object)
 	if err != nil {
-		log.Logf("err is %v\n", err)
+		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Logf("object.size2  = %v \n", object.Size)
-	log.Log("Upload object successfully.")
+	log.Infof("object.size2  = %v \n", object.Size)
+	log.Info("Upload object successfully.")
 	response.WriteEntity(res)
 }

@@ -20,6 +20,7 @@ import (
 	micro "github.com/micro/go-micro"
 	handler "github.com/opensds/multi-cloud/s3/pkg"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 )
 
 func main() {
@@ -27,6 +28,7 @@ func main() {
 		micro.Name("s3"),
 	)
 
+	obs.InitLogs()
 	micro.NewService()
 
 	service.Init()

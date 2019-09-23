@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -22,7 +22,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	uploadId := request.QueryParameter("uploadId")
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
-	log.Logf("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
+	log.Infof("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
 
 	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
 	ctx := common.InitCtxWithVal(request, md)
@@ -36,11 +36,11 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	object.Size = size
 	var client datastore.DataStoreAdapter
 	if objectMD == nil {
-		log.Logf("no such object err\n")
+		log.Errorf("no such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
-	log.Logf("objectMD.Backend is %v\n", objectMD.Backend)
+	log.Errorf("objectMD.Backend is %v\n", objectMD.Backend)
 	client = getBackendByName(ctx, s, objectMD.Backend)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
@@ -50,7 +50,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
 	multipartUpload.UploadId = uploadId
-	log.Logf("call .UploadPart api")
+	log.Infof("call .UploadPart api")
 	//call API
 	res, s3err := client.UploadPart(request.Request.Body, &multipartUpload, partNumberInt, request.Request.ContentLength, ctx)
 	if s3err != NoError {
@@ -61,35 +61,35 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partion := s3.Partion{}
 
 	partion.PartNumber = partNumber
-	log.Logf("uploadPart size is %v", size)
+	log.Infof("uploadPart size is %v", size)
 	partion.Size = size
 	timestamp := time.Now().Unix()
 	partion.LastModified = timestamp
 	partion.Key = objectKey
-	log.Logf("objectMD.Size1 = %v", objectMD.Size)
+	log.Infof("objectMD.Size1 = %v", objectMD.Size)
 	objectMD.Size = objectMD.Size + size
-	log.Logf("objectMD.Size2 = %v", objectMD.Size)
+	log.Infof("objectMD.Size2 = %v", objectMD.Size)
 	objectMD.LastModified = lastModified
 	objectMD.Partions = append(objectMD.Partions, &partion)
 	//insert metadata
 	_, err := s.s3Client.CreateObject(ctx, objectMD)
 	result, _ := s.s3Client.GetObject(ctx, &objectInput)
-	log.Logf("result.size = %v", result.Size)
+	log.Infof("result.size = %v", result.Size)
 	if err != nil {
-		log.Logf("err is %v\n", err)
+		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	//return xml format
 	xmlstring, err := xml.MarshalIndent(res, "", "  ")
 	if err != nil {
-		log.Logf("Parse ListBuckets error: %v", err)
+		log.Errorf("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 	xmlstring = []byte(xml.Header + string(xmlstring))
-	log.Logf("resp:\n%s", xmlstring)
+	log.Infof("resp:\n%s", xmlstring)
 	response.Write(xmlstring)
 
-	log.Log("Uploadpart successfully.")
+	log.Info("Uploadpart successfully.")
 }
