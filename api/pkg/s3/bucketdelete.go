@@ -16,23 +16,18 @@ package s3
 
 import (
 	"net/http"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
-	//	"github.com/micro/go-micro/errors"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:delete") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
-	ctx := context.Background()
 	log.Logf("Received request for bucket details: %s", bucketName)
+
+	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
 
 	if err != nil {
@@ -48,8 +43,7 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 		log.Log("Delete bucket successfully.")
 		response.WriteEntity(res1)
 	} else {
-		log.Log("The bucket can not be deleted. please delete objects first.\n")
+		log.Log("bucket with objects can not be deleted, need to delete objects first\n")
 		response.WriteError(http.StatusInternalServerError, BucketDeleteError.Error())
 	}
-
 }

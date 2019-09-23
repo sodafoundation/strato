@@ -28,7 +28,8 @@ import (
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/micro/go-log"
-
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -81,10 +82,10 @@ func Init(backend *backendpb.BackendDetail) *AwsAdapter {
 
 func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
 	bucket := ad.backend.BucketName
-
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
 
-	if ctx.Value("operation") == "upload" {
+	md, _ := metadata.FromContext(ctx)
+	if md[common.REST_KEY_OPERATION] == common.REST_VAL_UPLOAD {
 		uploader := s3manager.NewUploader(ad.session)
 		_, err := uploader.Upload(&s3manager.UploadInput{
 			Bucket: &bucket,
@@ -101,7 +102,6 @@ func (ad *AwsAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 			object.LastModified = time.Now().Unix()
 			log.Logf("LastModified is:%v\n", object.LastModified)
 		}
-
 	}
 
 	return NoError

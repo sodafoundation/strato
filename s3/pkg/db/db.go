@@ -15,6 +15,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/opensds/multi-cloud/s3/pkg/db/drivers/mongo"
@@ -57,20 +58,20 @@ func Exit(db *Database) {
 }
 
 type DBAdapter interface {
-	CreateBucket(bucket *pb.Bucket) S3Error
-	DeleteBucket(name string) S3Error
-	UpdateBucket(bucket *pb.Bucket) S3Error
-	GetBucketByName(name string, out *pb.Bucket) S3Error
-	ListBuckets(in *pb.BaseRequest, out *[]pb.Bucket) S3Error
-	CreateObject(in *pb.Object) S3Error
-	UpdateObject(in *pb.Object) S3Error
-	DeleteObject(in *pb.DeleteObjectInput) S3Error
-	GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error
-	ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
-	CountObjects(in *pb.ListObjectsRequest, out *ObjsCountInfo) S3Error
-	DeleteBucketLifecycle(in *pb.DeleteLifecycleInput) S3Error
-	UpdateObjMeta(objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error
-	AddMultipartUpload(record *pb.MultipartUploadRecord) S3Error
-	DeleteMultipartUpload(record *pb.MultipartUploadRecord) S3Error
-	ListUploadRecords(in *pb.ListMultipartUploadRequest, out *[]pb.MultipartUploadRecord) S3Error
+	CreateBucket(ctx context.Context, bucket *pb.Bucket) S3Error
+	DeleteBucket(ctx context.Context, name string) S3Error
+	UpdateBucket(ctx context.Context, bucket *pb.Bucket) S3Error
+	GetBucketByName(ctx context.Context, name string, out *pb.Bucket) S3Error
+	ListBuckets(ctx context.Context, in *pb.BaseRequest, out *[]pb.Bucket) S3Error
+	CreateObject(ctx context.Context, in *pb.Object) S3Error
+	UpdateObject(ctx context.Context, in *pb.Object) S3Error
+	DeleteObject(ctx context.Context, in *pb.DeleteObjectInput) S3Error
+	GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) S3Error
+	ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
+	CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *ObjsCountInfo) S3Error
+	DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput) S3Error
+	UpdateObjMeta(ctx context.Context, objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error
+	AddMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error
+	DeleteMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error
+	ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest, out *[]pb.MultipartUploadRecord) S3Error
 }

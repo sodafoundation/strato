@@ -6,20 +6,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (s *APIService) CompleteMultipartUpload(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	UploadId := request.QueryParameter("uploadId")
-	ctx := context.WithValue(request.Request.Context(), "operation", "multipartupload")
+
+	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
+	ctx := common.InitCtxWithVal(request, md)
 	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
 	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
 	//to insert object
@@ -42,7 +44,7 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
 
 	}
-	client = getBackendByName(s, objectMD.Backend)
+	client = getBackendByName(ctx, s, objectMD.Backend)
 	if client == nil {
 		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
 		return
