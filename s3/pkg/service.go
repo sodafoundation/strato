@@ -579,8 +579,8 @@ func (b *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	countInfo := ObjsCountInfo{}
 	err := db.DbAdapter.CountObjects(ctx, in, &countInfo)
 	if err.Code != ERR_OK {
+		return err.Error()
 	}
-	return err.Error()
 	out.Count = countInfo.Count
 	out.Size = countInfo.Size
 
