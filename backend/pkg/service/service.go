@@ -45,7 +45,7 @@ func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackend
 		Access:     in.Backend.Access,
 		Security:   in.Backend.Security,
 	}
-	res, err := db.Repo.CreateBackend(backend)
+	res, err := db.Repo.CreateBackend(ctx, backend)
 	if err != nil {
 		log.Errorf("Failed to create backend: %v", err)
 		return err
@@ -69,7 +69,7 @@ func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackend
 
 func (b *backendService) GetBackend(ctx context.Context, in *pb.GetBackendRequest, out *pb.GetBackendResponse) error {
 	log.Info("Received GetBackend request.")
-	res, err := db.Repo.GetBackend(in.Id)
+	res, err := db.Repo.GetBackend(ctx, in.Id)
 	if err != nil {
 		log.Errorf("failed to get backend: %v\n", err)
 		return err
@@ -100,7 +100,7 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 		return errors.New(msg)
 	}
 
-	res, err := db.Repo.ListBackend(int(in.Limit), int(in.Offset), in.Filter)
+	res, err := db.Repo.ListBackend(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Errorf("failed to list backend: %v\n", err)
 		return err
@@ -124,13 +124,13 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 	out.Backends = backends
 	out.Next = in.Offset + int32(len(res))
 
-	log.Info("Get backend successfully.")
+	log.Info("Get backend successfully, #num=%d\n", len(backends))
 	return nil
 }
 
 func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackendRequest, out *pb.UpdateBackendResponse) error {
 	log.Info("Received UpdateBackend request.")
-	backend, err := db.Repo.GetBackend(in.Id)
+	backend, err := db.Repo.GetBackend(ctx, in.Id)
 	if err != nil {
 		log.Errorf("failed to get backend: %v\n", err)
 		return err
@@ -139,7 +139,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 	// TODO: check if access and security is valid.
 	backend.Access = in.Access
 	backend.Security = in.Security
-	res, err := db.Repo.UpdateBackend(backend)
+	res, err := db.Repo.UpdateBackend(ctx, backend)
 	if err != nil {
 		log.Errorf("failed to update backend: %v\n", err)
 		return err
@@ -163,7 +163,7 @@ func (b *backendService) UpdateBackend(ctx context.Context, in *pb.UpdateBackend
 
 func (b *backendService) DeleteBackend(ctx context.Context, in *pb.DeleteBackendRequest, out *pb.DeleteBackendResponse) error {
 	log.Info("Received DeleteBackend request.")
-	err := db.Repo.DeleteBackend(in.Id)
+	err := db.Repo.DeleteBackend(ctx, in.Id)
 	if err != nil {
 		log.Errorf("failed to delete backend: %v\n", err)
 		return err

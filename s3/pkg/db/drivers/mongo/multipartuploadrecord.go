@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"context"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -13,13 +14,12 @@ import (
 
 var CollMultipartUploadRecord = "multipartUploadRecords"
 
-func (ad *adapter) AddMultipartUpload(record *pb.MultipartUploadRecord) S3Error {
+func (ad *adapter) AddMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error {
 	log.Infof("Add multipart upload: %+v\n", *record)
 	session := ad.s.Copy()
 	defer session.Close()
 
-	collection := session.DB(DataBaseName).C(CollMultipartUploadRecord)
-	err := collection.Insert(record)
+	err := session.DB(DataBaseName).C(CollMultipartUploadRecord).Insert(record)
 	if err != nil {
 		log.Errorf("add multipart upload record[uploadid=%s] to database failed: %v\n", record.UploadId, err)
 		return DBError
@@ -29,14 +29,19 @@ func (ad *adapter) AddMultipartUpload(record *pb.MultipartUploadRecord) S3Error 
 	return NoError
 }
 
-func (ad *adapter) DeleteMultipartUpload(record *pb.MultipartUploadRecord) S3Error {
+func (ad *adapter) DeleteMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error {
 	log.Infof("Delete multipart upload: %+v\n", *record)
 	session := ad.s.Copy()
 	defer session.Close()
 
-	collection := session.DB(DataBaseName).C(CollMultipartUploadRecord)
+	m := bson.M{DBKEY_OBJECTKEY: record.ObjectKey, DBKEY_UPLOADID: record.UploadId}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
 	// objectkey is unique in OpenSDS, uploadid is unique for a specific physical bucket
-	err := collection.Remove(bson.M{DBKEY_OBJECTKEY: record.ObjectKey, DBKEY_UPLOADID: record.UploadId})
+	err = session.DB(DataBaseName).C(CollMultipartUploadRecord).Remove(m)
 	if err != nil && err != mgo.ErrNotFound {
 		log.Errorf("delete multipart upload record[uploadid=%s] from database failed: %v\n", record.UploadId, err)
 		return DBError
@@ -46,7 +51,8 @@ func (ad *adapter) DeleteMultipartUpload(record *pb.MultipartUploadRecord) S3Err
 	return NoError
 }
 
-func (ad *adapter) ListUploadRecords(in *pb.ListMultipartUploadRequest, out *[]pb.MultipartUploadRecord) S3Error {
+func (ad *adapter) ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest,
+	out *[]pb.MultipartUploadRecord) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 
@@ -54,9 +60,14 @@ func (ad *adapter) ListUploadRecords(in *pb.ListMultipartUploadRequest, out *[]p
 	log.Infof("list upload records here: bucket=%s, prefix=%s, daysAfterInitiation=%d, limit=%d, offset=%d, secs=%d\n",
 		in.Bucket, in.Prefix, in.Days, in.Limit, in.Offset, secs)
 
-	c := ss.DB(DataBaseName).C(CollMultipartUploadRecord)
-	filter := bson.M{"bucket": in.Bucket, "inittime": bson.M{"$lte": secs}, "objectkey": bson.M{"$regex": "^" + in.Prefix}}
-	err := c.Find(filter).Skip(int(in.Offset)).Limit(int(in.Limit)).All(out)
+	m := bson.M{DBKEY_BUCKET: in.Bucket, DBKEY_INITTIME: bson.M{"$lte": secs}, DBKEY_OBJECTKEY: bson.M{"$regex": "^" +
+		in.Prefix}}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
+	err = ss.DB(DataBaseName).C(CollMultipartUploadRecord).Find(m).Skip(int(in.Offset)).Limit(int(in.Limit)).All(out)
 	if err != nil && err != mgo.ErrNotFound {
 		log.Errorf("list upload records failed:%v\n", err)
 		return DBError

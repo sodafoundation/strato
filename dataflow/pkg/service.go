@@ -18,19 +18,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
-
 	"fmt"
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/job"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/policy"
+	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
 )
@@ -63,7 +62,8 @@ func policyModel2Resp(policy *model.Policy) *pb.Policy {
 		Id:          policy.Id.Hex(),
 		Name:        policy.Name,
 		Description: policy.Description,
-		Tenant:      policy.Tenant,
+		Tenant:      policy.TenantId,
+		UserId:      policy.UserId,
 		Schedule: &pb.Schedule{
 			Type:             policy.Schedule.Type,
 			TiggerProperties: policy.Schedule.TriggerProperties,
@@ -72,14 +72,14 @@ func policyModel2Resp(policy *model.Policy) *pb.Policy {
 }
 
 func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest, out *pb.GetPolicyResponse) error {
-	log.Info("Get policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Infos("Get policy is called in dataflow service.")
+
 	id := in.GetId()
 	if id == "" {
 		return errors.New("No id provided.")
 	}
 
-	p, err := policy.Get(actx, id)
+	p, err := policy.Get(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -98,9 +98,8 @@ func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest
 
 func (b *dataflowService) ListPolicy(ctx context.Context, in *pb.ListPolicyRequest, out *pb.ListPolicyResponse) error {
 	log.Info("List policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 
-	pols, err := policy.List(actx)
+	pols, err := policy.List(ctx)
 	if err != nil {
 		log.Infof("List policy err:%s.", err)
 		return nil
@@ -121,9 +120,9 @@ func (b *dataflowService) ListPolicy(ctx context.Context, in *pb.ListPolicyReque
 	return err
 }
 
-func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyRequest, out *pb.CreatePolicyResponse) error {
+func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyRequest,
+	out *pb.CreatePolicyResponse) error {
 	log.Info("Create policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 	pol := model.Policy{}
 	pol.Name = in.Policy.GetName()
 	pol.Description = in.Policy.GetDescription()
@@ -131,18 +130,21 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 		pol.Schedule.Type = in.Policy.Schedule.Type
 		pol.Schedule.TriggerProperties = in.Policy.Schedule.TiggerProperties
 	} else {
-		out.Err = "Get schedule failed."
-		return errors.New("Get schedule failed.")
+		out.Err = "get schedule failed"
+		return errors.New("get schedule failed")
 	}
 
 	if pol.Name == "" {
 		out.Err = "no name provided."
-		return errors.New("Get schedule failed.")
+		return errors.New("et schedule failed")
 	}
 
-	p, err := policy.Create(actx, &pol)
+	pol.TenantId = in.Policy.TenantId
+	pol.UserId = in.Policy.UserId
+	log.Logf("dataflowservice CreatePolicy:%+v\n", pol)
+	p, err := policy.Create(ctx, &pol)
 	if err != nil {
-		log.Infof("Create policy err:%s.", out.Err)
+		log.Infof("create policy err:%s.", out.Err)
 		return nil
 	}
 
@@ -152,14 +154,13 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 
 func (b *dataflowService) DeletePolicy(ctx context.Context, in *pb.DeletePolicyRequest, out *pb.DeletePolicyResponse) error {
 	log.Info("Delete policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 	id := in.GetId()
 	if id == "" {
 		out.Err = "Get id failed."
 		return errors.New("Get id failed.")
 	}
 
-	err := policy.Delete(actx, id)
+	err := policy.Delete(ctx, id)
 	if err == nil {
 		out.Err = ""
 	} else {
@@ -172,10 +173,10 @@ func (b *dataflowService) DeletePolicy(ctx context.Context, in *pb.DeletePolicyR
 
 func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyRequest, out *pb.UpdatePolicyResponse) error {
 	log.Info("Update policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+
 	policyId := in.GetPolicyId()
 	if policyId == "" {
-		return errors.New("No id provided.")
+		return errors.New("no id provided.")
 	}
 
 	log.Infof("body:%s", in.GetBody())
@@ -184,7 +185,7 @@ func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyR
 		return err
 	}
 
-	p, err := policy.Update(actx, policyId, updateMap)
+	p, err := policy.Update(ctx, policyId, updateMap)
 	if err != nil {
 		log.Infof("Update policy finished, err:%s", err)
 		return err
@@ -242,15 +243,14 @@ func planModel2Resp(plan *model.Plan) *pb.Plan {
 func (b *dataflowService) GetPlan(ctx context.Context, in *pb.GetPlanRequest, out *pb.GetPlanResponse) error {
 	log.Info("Get plan is called in dataflow service.")
 
-	actx := c.NewContextFromJson(in.GetContext())
 	id := in.GetId()
 	if id == "" {
-		errmsg := fmt.Sprint("No id specified.")
+		errmsg := fmt.Sprint("no id specified.")
 		out.Err = errmsg
 		return errors.New(errmsg)
 	}
 
-	p, err := plan.Get(actx, id)
+	p, err := plan.Get(ctx, id)
 	if err != nil {
 		log.Infof("Get plan err:%s.", err)
 		return err
@@ -278,8 +278,7 @@ func (b *dataflowService) ListPlan(ctx context.Context, in *pb.ListPlanRequest, 
 		return errors.New(msg)
 	}
 
-	actx := c.NewContextFromJson(in.GetContext())
-	plans, err := plan.List(actx, int(in.Limit), int(in.Offset), in.Filter)
+	plans, err := plan.List(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Infof("List plans err:%s.", err)
 		return err
@@ -320,7 +319,7 @@ func fillReqConnector(out *model.Connector, in *pb.Connector) error {
 
 func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanRequest, out *pb.CreatePlanResponse) error {
 	log.Info("Create plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+
 	pl := model.Plan{}
 	pl.Name = in.Plan.GetName()
 
@@ -341,8 +340,8 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 			return err
 		}
 	} else {
-		out.Err = "Get source connector failed."
-		return errors.New("Invalid source connector.")
+		out.Err = "get source connector failed"
+		return errors.New("invalid source connector")
 	}
 	if in.Plan.GetDestConn() != nil {
 		destConn := model.Connector{StorType: in.Plan.DestConn.StorType}
@@ -354,8 +353,8 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 			return err
 		}
 	} else {
-		out.Err = "Get destination connector failed."
-		return errors.New("Invalid destination connector.")
+		out.Err = "get destination connector failed"
+		return errors.New("invalid destination connector")
 	}
 	if in.Plan.GetFilter() != nil {
 		if in.Plan.Filter.Prefix != "" {
@@ -373,7 +372,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 		return errors.New("Name or type is null.")
 	}
 
-	p, err := plan.Create(actx, &pl)
+	p, err := plan.Create(ctx, &pl)
 	if err != nil {
 		log.Infof("Create plan failed, err:%v", err)
 		return err
@@ -385,7 +384,6 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 
 func (b *dataflowService) DeletePlan(ctx context.Context, in *pb.DeletePlanRequest, out *pb.DeletePlanResponse) error {
 	log.Info("Delete plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 
 	id := in.GetId()
 	if id == "" {
@@ -393,7 +391,7 @@ func (b *dataflowService) DeletePlan(ctx context.Context, in *pb.DeletePlanReque
 		return errors.New("Get id failed.")
 	}
 
-	err := plan.Delete(actx, id)
+	err := plan.Delete(ctx, id)
 	if err == nil {
 		out.Err = ""
 	} else {
@@ -406,7 +404,6 @@ func (b *dataflowService) DeletePlan(ctx context.Context, in *pb.DeletePlanReque
 
 func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanRequest, out *pb.UpdatePlanResponse) error {
 	log.Info("Update plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 
 	if in.GetPlanId() == "" {
 		return errors.New("No id provided.")
@@ -417,7 +414,7 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 		return err
 	}
 
-	p, err := plan.Update(actx, in.GetPlanId(), updateMap)
+	p, err := plan.Update(ctx, in.GetPlanId(), updateMap)
 	if err != nil {
 		log.Infof("Update plan finished, err:%s.", err)
 		return err
@@ -429,10 +426,18 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 
 func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, out *pb.RunPlanResponse) error {
 	log.Info("Run plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 
-	id := in.Id
-	jid, err := plan.Run(actx, id)
+	tenantId, err := utils.GetTenantId(ctx)
+	if err != nil {
+		log.Logf("run plan failed, err=%v\n", err)
+		return err
+	}
+	userId, err := utils.GetUserId(ctx)
+	if err != nil {
+		log.Logf("run plan failed, err=%v\n", err)
+		return err
+	}
+	jid, err := plan.Run(in.Id, tenantId, userId)
 	if err == nil {
 		out.JobId = string(jid.Hex())
 		out.Err = ""
@@ -447,7 +452,6 @@ func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, ou
 
 func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out *pb.GetJobResponse) error {
 	log.Info("Get job is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
 
 	if in.Id == "" {
 		errmsg := fmt.Sprint("No id specified.")
@@ -455,7 +459,7 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 		return errors.New(errmsg)
 	}
 
-	jb, err := job.Get(actx, in.Id)
+	jb, err := job.Get(ctx, in.Id)
 	if err != nil {
 		log.Infof("Get job err:%d.", err)
 		out.Err = err.Error()
@@ -481,13 +485,12 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, out *pb.ListJobResponse) error {
 	log.Info("List job is called in dataflow service.")
 	if in.Limit < 0 || in.Offset < 0 {
-		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		msg := fmt.Sprintf("invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
 		log.Info(msg)
 		return errors.New(msg)
 	}
 
-	actx := c.NewContextFromJson(in.GetContext())
-	jobs, err := job.List(actx, int(in.Limit), int(in.Offset), in.Filter)
+	jobs, err := job.List(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Infof("Get job err:%d.", err)
 		return err

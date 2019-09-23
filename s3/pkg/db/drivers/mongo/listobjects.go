@@ -15,20 +15,21 @@
 package mongo
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"time"
 
+	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/globalsign/mgo"
 )
 
-func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
+func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.Bucket)
@@ -80,8 +81,14 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	filter = append(filter, bson.M{utils.DBKEY_INITFLAG: bson.M{"$ne": "0"}})
 	filter = append(filter, bson.M{utils.DBKEY_DELETEMARKER: bson.M{"$ne": "1"}})
 
-	log.Infof("filter:%+v\n", filter)
-	var err error
+	m := bson.M{}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+	filter = append(filter, m)
+
+	log.Infofs("filter:%+v\n", filter)
 	offset := int(in.Offset)
 	limit := int(in.Limit)
 	if limit == 0 {
@@ -102,7 +109,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	return NoError
 }
 
-func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
+func (ad *adapter) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.Bucket)
@@ -112,18 +119,24 @@ func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountI
 		filt = in.Filter[common.KObjKey]
 	}
 
+	m := bson.M{
+		utils.DBKEY_OBJECTKEY:    bson.M{"$regex": filt},
+		utils.DBKEY_INITFLAG:     bson.M{"$ne": "0"},
+		utils.DBKEY_DELETEMARKER: bson.M{"$ne": "1"},
+	}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
 	q1 := bson.M{
-		"$match": bson.M{
-			"objectkey": bson.M{"$regex": filt},
-			"initflag": bson.M{"$ne": "0"},
-			"isdeletemarker": bson.M{"$ne": "1"},
-		},
+		"$match": m,
 	}
 
 	q2 := bson.M{
 		"$group": bson.M{
-			"_id": nil,
-			"size": bson.M{"$sum": "$size"},
+			"_id":   nil,
+			"size":  bson.M{"$sum": "$size"},
 			"count": bson.M{"$sum": 1},
 		},
 	}
@@ -131,7 +144,7 @@ func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountI
 	operations := []bson.M{q1, q2}
 	pipe := c.Pipe(operations)
 	var ret utils.ObjsCountInfo
-	err := pipe.One(&ret)
+	err = pipe.One(&ret)
 	if err == nil {
 		out.Count = ret.Count
 		out.Size = ret.Size

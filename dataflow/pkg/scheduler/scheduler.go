@@ -15,11 +15,14 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
@@ -28,9 +31,10 @@ import (
 	"github.com/robfig/cron"
 )
 
-
 func LoadAllPlans() {
-	ctx := context.NewAdminContext()
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true),
+	})
 
 	offset := model.DefaultOffset
 	limit := model.DefaultLimit
@@ -42,6 +46,7 @@ func LoadAllPlans() {
 			log.Errorf("Get all plan faild, %v", err)
 			break
 		}
+		log.Logf("scheduler: planNum=%d\n", planNum)
 		planNum = len(plans)
 		if planNum == 0 {
 			break
@@ -52,10 +57,10 @@ func LoadAllPlans() {
 			if p.PolicyId == "" || !p.PolicyEnabled {
 				continue
 			}
-			e := plan.NewPlanExecutor(ctx, &p)
+			e := plan.NewPlanExecutor(&p)
 			err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 			if err != nil {
-				log.Errorf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
+				log.Errorf("Load plan(%s) to trigger failed, %v", p.Id.Hex(), err)
 				continue
 			}
 			log.Infof("Load plan(%s) to trigger success", p.Id.Hex())

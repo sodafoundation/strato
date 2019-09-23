@@ -15,19 +15,18 @@
 package policy
 
 import (
+	"context"
+	"encoding/json"
 	"regexp"
 
-	"encoding/json"
-
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 )
 
-func Create(ctx *context.Context, pol *Policy) (*Policy, error) {
+func Create(ctx context.Context, pol *Policy) (*Policy, error) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]+", pol.Name)
 	if !m || pol.Name == "all" {
 		log.Errorf("Invalid policy name[%s], err:%v\n", pol.Name, err)
@@ -37,12 +36,12 @@ func Create(ctx *context.Context, pol *Policy) (*Policy, error) {
 	return db.DbAdapter.CreatePolicy(ctx, pol)
 }
 
-func Delete(ctx *context.Context, id string) error {
+func Delete(ctx context.Context, id string) error {
 	return db.DbAdapter.DeletePolicy(ctx, id)
 }
 
 //When update policy, policy id must be provided
-func Update(ctx *context.Context, policyId string, updateMap map[string]interface{}) (*Policy, error) {
+func Update(ctx context.Context, policyId string, updateMap map[string]interface{}) (*Policy, error) {
 
 	curPol, err := db.DbAdapter.GetPolicy(ctx, policyId)
 	if err != nil {
@@ -87,7 +86,7 @@ func Update(ctx *context.Context, policyId string, updateMap map[string]interfac
 	return resp, nil
 }
 
-func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
+func updatePolicyInTrigger(ctx context.Context, policy *Policy) error {
 	offset := DefaultOffset
 	limit := DefaultLimit
 
@@ -109,7 +108,7 @@ func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
 			if !p.PolicyEnabled {
 				continue // Policy is not enabled, ignore it
 			}
-			exe := plan.NewPlanExecutor(ctx, &p)
+			exe := plan.NewPlanExecutor(&p)
 			if err := t.Update(ctx, &p, exe); err != nil {
 				return err
 			}
@@ -119,7 +118,7 @@ func updatePolicyInTrigger(ctx *context.Context, policy *Policy) error {
 	return nil
 }
 
-func Get(ctx *context.Context, id string) (*Policy, error) {
+func Get(ctx context.Context, id string) (*Policy, error) {
 	m, err := regexp.MatchString("[[:alnum:]-_.]*", id)
 	if !m {
 		log.Errorf("Invalid policy id[%s],err:%v\n", id, err)
@@ -129,6 +128,6 @@ func Get(ctx *context.Context, id string) (*Policy, error) {
 	return db.DbAdapter.GetPolicy(ctx, id)
 }
 
-func List(ctx *context.Context) ([]Policy, error) {
+func List(ctx context.Context) ([]Policy, error) {
 	return db.DbAdapter.ListPolicy(ctx)
 }

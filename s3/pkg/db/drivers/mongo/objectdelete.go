@@ -15,26 +15,34 @@
 package mongo
 
 import (
+	"context"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
-func (ad *adapter) DeleteObject(in *pb.DeleteObjectInput) S3Error {
+func (ad *adapter) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput) S3Error {
 	//Check if the connctor exist or not
 	ss := ad.s.Copy()
 	defer ss.Close()
 
+	m := bson.M{DBKEY_OBJECTKEY: in.Key}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
 	//Delete it from database
-	c := ss.DB(DataBaseName).C(in.Bucket)
-	_, err := c.RemoveAll(bson.M{"objectkey": in.Key})
+	_, err = ss.DB(DataBaseName).C(in.Bucket).RemoveAll(m)
 	if err == mgo.ErrNotFound {
-		log.Errorf("Delete object %s failed, err:the specified object does not exist.", in.Key)
+		log.Errorf("delete object %s failed, err: the specified object does not exist", in.Key)
 		return NoSuchObject
 	} else if err != nil {
-		log.Info("Delete object %s from database failed,err:%v.\n", in.Key, err)
+		log.Errorf("delete object %s from database failed,err:%v.\n", in.Key, err)
 		return InternalError
 	}
 	return NoError

@@ -18,9 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"context"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
@@ -37,14 +37,14 @@ func GetTriggerMgr() *Manager {
 
 type Manager struct{}
 
-func (m *Manager) Add(ctx *context.Context, plan *model.Plan, executer Executer) error {
+func (m *Manager) Add(ctx context.Context, plan *model.Plan, executer Executer) error {
 
 	if plan.PolicyId == "" {
 		return fmt.Errorf("specifed plan(%s) does not have policy", plan.Id.Hex())
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Errorf("Get specified policy(%s) failed", plan.PolicyId)
+		log.Errorf("get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 
@@ -58,13 +58,13 @@ func (m *Manager) Add(ctx *context.Context, plan *model.Plan, executer Executer)
 	return tg.Add(plan.Id.Hex(), policy.Schedule.TriggerProperties, executer)
 }
 
-func (m *Manager) Update(ctx *context.Context, plan *model.Plan, executer Executer) error {
+func (m *Manager) Update(ctx context.Context, plan *model.Plan, executer Executer) error {
 	if plan.PolicyId == "" {
 		return fmt.Errorf("specifed plan(%s) does not have policy", plan.Id.Hex())
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Errorf("Get specified policy(%s) failed", plan.PolicyId)
+		log.Errorf("get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 
@@ -77,13 +77,13 @@ func (m *Manager) Update(ctx *context.Context, plan *model.Plan, executer Execut
 	return tg.Update(plan.Id.Hex(), policy.Schedule.TriggerProperties, executer)
 }
 
-func (m *Manager) Remove(ctx *context.Context, plan *model.Plan) error {
+func (m *Manager) Remove(ctx context.Context, plan *model.Plan) error {
 	if plan.PolicyId == "" {
 		return fmt.Errorf("specifed plan(%s) does not have policy", plan.Id.Hex())
 	}
 	policy, err := db.DbAdapter.GetPolicy(ctx, plan.PolicyId)
 	if err != nil {
-		log.Errorf("Get specified policy(%s) failed", plan.PolicyId)
+		log.Errorf("get specified policy(%s) failed", plan.PolicyId)
 		return err
 	}
 	tg := GetTrigger(policy.Schedule.Type)

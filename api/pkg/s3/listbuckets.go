@@ -15,16 +15,17 @@
 package s3
 
 import (
+	"context"
 	"encoding/xml"
 	"net/http"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) []byte {
@@ -57,11 +58,10 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	if !policy.Authorize(request, response, "bucket:list") {
 		return
 	}
-	ctx := context.Background()
-	//TODO owner
-	owner := "test"
 	log.Infof("Received request for all buckets")
-	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{Id: owner})
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return

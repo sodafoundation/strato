@@ -19,7 +19,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 )
 
 type AuthBase interface {

@@ -15,21 +15,21 @@
 package job
 
 import (
+	"context"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
 
-func Create(ctx *context.Context, job *Job) (*Job, error) {
+func Create(ctx context.Context, job *Job) (*Job, error) {
 	return db.DbAdapter.CreateJob(ctx, job)
 }
 
-func Get(ctx *context.Context, id string) (*Job, error) {
+func Get(ctx context.Context, id string) (*Job, error) {
 	log.Infof("get job %s", id)
 	return db.DbAdapter.GetJob(ctx, id)
 }
 
-func List(ctx *context.Context, limit int, offset int, filter interface{}) ([]Job, error) {
+func List(ctx context.Context, limit int, offset int, filter interface{}) ([]Job, error) {
 	return db.DbAdapter.ListJob(ctx, limit, offset, filter)
 }

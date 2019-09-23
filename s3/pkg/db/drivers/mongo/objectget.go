@@ -15,26 +15,33 @@
 package mongo
 
 import (
+	"context"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
-func (ad *adapter) GetObject(in *pb.GetObjectInput, out *pb.Object) S3Error {
+func (ad *adapter) GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
-	c := ss.DB(DataBaseName).C(in.Bucket)
-
 	log.Info("Find object from database...... \n")
 
-	err := c.Find(bson.M{"objectkey": in.Key}).One(&out)
+	m := bson.M{DBKEY_OBJECTKEY: in.Key}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
+	err = ss.DB(DataBaseName).C(in.Bucket).Find(m).One(&out)
 	if err == mgo.ErrNotFound {
-		log.Info("Object does not exist.")
+		log.Error("object does not exist.")
 		return NoSuchObject
 	} else if err != nil {
-		log.Info("Find object from database failed, err:%v\n", err)
+		log.Errorf("find object from database failed, err:%v\n", err)
 		return InternalError
 	}
 

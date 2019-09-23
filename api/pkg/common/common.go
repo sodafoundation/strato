@@ -18,9 +18,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"context"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/micro/go-micro/metadata"
 )
 
 const (
@@ -38,6 +41,20 @@ const (
 	KLastModified = "lastmodified"
 	KObjKey       = "objkey"
 	KStorageTier  = "tier"
+)
+
+const (
+	CTX_KEY_TENANT_ID = "Tenantid"
+	CTX_KEY_USER_ID   = "Userid"
+	CTX_KEY_IS_ADMIN  = "Isadmin"
+	CTX_VAL_TRUE      = "true"
+)
+
+const (
+	REST_KEY_OPERATION       = "operation"
+	REST_VAL_MULTIPARTUPLOAD = "multipartupload"
+	REST_VAL_DOWNLOAD        = "download"
+	REST_VAL_UPLOAD          = "upload"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
@@ -100,4 +117,24 @@ func GetFilter(request *restful.Request, filterOpts []string) (map[string]string
 		filter[opt] = v
 	}
 	return filter, nil
+}
+
+func InitCtxWithAuthInfo(request *restful.Request) context.Context {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		CTX_KEY_USER_ID:   actx.UserId,
+		CTX_KEY_TENANT_ID: actx.TenantId,
+		CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+	})
+
+	return ctx
+}
+
+func InitCtxWithVal(request *restful.Request, md map[string]string) context.Context {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	md[CTX_KEY_USER_ID] = actx.UserId
+	md[CTX_KEY_TENANT_ID] = actx.TenantId
+	md[CTX_KEY_IS_ADMIN] = strconv.FormatBool(actx.IsAdmin)
+
+	return metadata.NewContext(context.Background(), md)
 }

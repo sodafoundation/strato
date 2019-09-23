@@ -15,8 +15,8 @@
 package db
 
 import (
+	"context"
 	log "github.com/sirupsen/logrus"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db/drivers/mongo"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
@@ -62,24 +62,24 @@ func TestClear() error {
 
 type DBAdapter interface {
 	//Policy
-	CreatePolicy(ctx *c.Context, pol *model.Policy) (*model.Policy, error)
-	DeletePolicy(ctx *c.Context, id string) error
-	UpdatePolicy(ctx *c.Context, pol *model.Policy) (*model.Policy, error)
-	ListPolicy(ctx *c.Context) ([]model.Policy, error)
-	GetPolicy(ctx *c.Context, id string) (*model.Policy, error)
+	CreatePolicy(ctx context.Context, pol *model.Policy) (*model.Policy, error)
+	DeletePolicy(ctx context.Context, id string) error
+	UpdatePolicy(ctx context.Context, pol *model.Policy) (*model.Policy, error)
+	ListPolicy(ctx context.Context) ([]model.Policy, error)
+	GetPolicy(ctx context.Context, id string) (*model.Policy, error)
 	//Plan
-	CreatePlan(ctx *c.Context, conn *model.Plan) (*model.Plan, error)
-	DeletePlan(ctx *c.Context, name string) error
-	UpdatePlan(ctx *c.Context, conn *model.Plan) (*model.Plan, error)
-	ListPlan(ctx *c.Context, limit int, offset int, filter interface{}) ([]model.Plan, error)
-	GetPlan(ctx *c.Context, id string) (*model.Plan, error)
-	GetPlanByPolicy(ctx *c.Context, policyId string, limit int, offset int) ([]model.Plan, error)
-	LockSched(planId string) int
-	UnlockSched(planId string) int
+	CreatePlan(ctx context.Context, conn *model.Plan) (*model.Plan, error)
+	DeletePlan(ctx context.Context, name string) error
+	UpdatePlan(ctx context.Context, conn *model.Plan) (*model.Plan, error)
+	ListPlan(ctx context.Context, limit int, offset int, filter interface{}) ([]model.Plan, error)
+	GetPlan(ctx context.Context, id string) (*model.Plan, error)
+	GetPlanByPolicy(ctx context.Context, policyId string, limit int, offset int) ([]model.Plan, error)
+	LockSched(tenantId, planId string) int
+	UnlockSched(tenantId, planId string) int
 	LockBucketLifecycleSched(bucketName string) int
 	UnlockBucketLifecycleSched(bucketName string) int
 	//Job
-	CreateJob(ctx *c.Context, job *model.Job) (*model.Job, error)
-	GetJob(ctx *c.Context, id string) (*model.Job, error)
-	ListJob(ctx *c.Context, limit int, offset int, filter interface{}) ([]model.Job, error)
+	CreateJob(ctx context.Context, job *model.Job) (*model.Job, error)
+	GetJob(ctx context.Context, id string) (*model.Job, error)
+	ListJob(ctx context.Context, limit int, offset int, filter interface{}) ([]model.Job, error)
 }
