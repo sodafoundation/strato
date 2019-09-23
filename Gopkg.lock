@@ -658,14 +658,6 @@
   version = "v1.1"
 
 [[projects]]
-<<<<<<< HEAD
-  digest = "1:f4aaa07a6c33f2b354726d0571acbc8ca118837c75709f6353203ae1a3f8eeab"
-  name = "github.com/sirupsen/logrus"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
-  version = "v1.4.2"
-=======
   digest = "1:09d61699d553a4e6ec998ad29816177b1f3d3ed0c18fe923d2c174ec065c99c8"
   name = "github.com/ryanuber/go-glob"
   packages = ["."]
@@ -715,7 +707,6 @@
   pruneopts = "NUT"
   revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
   version = "v1.4.0"
->>>>>>> Support yig backend, datastorage engine is added, but metadata engine is left.
 
 [[projects]]
   digest = "1:42e8c2456d7ec0f31e182c20022e74324c4da2cb3bd9069ff9b131fe33466308"
@@ -891,15 +882,12 @@
     "github.com/gophercloud/gophercloud/openstack",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
-<<<<<<< HEAD
-    "github.com/lestrrat-go/file-rotatelogs",
-=======
     "github.com/gorilla/mux",
     "github.com/hashicorp/vault/api",
     "github.com/journeymidnight/radoshttpd/rados",
     "github.com/journeymidnight/yig/error",
     "github.com/journeymidnight/yig/helper",
->>>>>>> Support yig backend, datastorage engine is added, but metadata engine is left.
+    "github.com/lestrrat-go/file-rotatelogs",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
     "github.com/micro/go-micro/client",
@@ -908,11 +896,8 @@
     "github.com/micro/go-web",
     "github.com/rifflock/lfshook",
     "github.com/robfig/cron",
-<<<<<<< HEAD
     "github.com/sirupsen/logrus",
-=======
     "github.com/spf13/viper",
->>>>>>> Support yig backend, datastorage engine is added, but metadata engine is left.
     "github.com/stretchr/testify/assert",
     "github.com/ugorji/go/codec",
     "github.com/webrtcn/s3client",
