@@ -26,6 +26,12 @@ type Value struct {
 	// OpenSDS multi-cloud Secret Access Key
 	SecretAccessKey string
 
+	// TenantID
+	TenantID string
+
+	// UserID
+	UserID string
+
 	// Provider used to get credentials
 	ProviderName string
 }

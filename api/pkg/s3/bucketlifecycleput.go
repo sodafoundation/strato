@@ -19,19 +19,15 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
-
-	//"sort"
 	"strings"
 	"sync"
 
-	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-log"
-
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -117,13 +113,16 @@ func checkValidationOfActions(actions []*s3.Action) error {
 }
 
 func (s *APIService) BucketLifecyclePut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:put") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
 	log.Logf("received request for create bucket lifecycle: %s", bucketName)
-	ctx := context.Background()
-	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	if err != nil {
+		log.Logf("get bucket failed, err=%v\n", err)
+		response.WriteError(http.StatusInternalServerError, fmt.Errorf("bucket does not exist"))
+	}
+
 	body := ReadBody(request)
 	log.Logf("MD5 sum for body is %x", md5.Sum(body))
 

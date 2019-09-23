@@ -23,11 +23,11 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/golang/glog"
+	log "github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
-	"github.com/opensds/multi-cloud/api/pkg/utils/config"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 )
 
 var enforcer *Enforcer
@@ -85,7 +85,11 @@ func (e *Enforcer) Authorize(rule string, target map[string]string, cred map[str
 }
 
 func (e *Enforcer) LoadRules(forcedReload bool) error {
-	path := config.CONF.OsdsLet.PolicyPath
+	path := os.Getenv("POLICY_PATH")
+	if path == "" {
+		path = constants.DefaultPolicyPath
+	}
+
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -128,8 +132,8 @@ func (e *Enforcer) LoadPolicyFile(path string, forcedReload bool, overWrite bool
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		msg := fmt.Sprintf("Read policy file (%s) failed, reason:(%v)", path, err)
-		log.Error(msg)
+		msg := fmt.Sprintf("read policy file (%s) failed, reason:(%v)", path, err)
+		log.Logf(msg)
 		return fmt.Errorf(msg)
 	}
 	r, err := NewRules(data, e.DefaultRules)
@@ -158,13 +162,13 @@ func (r *Rules) Load(data []byte, defaultRules []DefaultRule) error {
 	rulesMap := map[string]string{}
 	err := json.Unmarshal(data, &rulesMap)
 	if err != nil {
-		log.Error(err.Error())
+		log.Logf(err.Error())
 		return err
 	}
 	// add default value
 	for _, r := range defaultRules {
 		if v, ok := rulesMap[r.Name]; ok {
-			log.Warningf("Policy rule (%s:%s) has conflict with default rule(%s:%s),abandon default value\n",
+			log.Logf("policy rule (%s:%s) has conflict with default rule(%s:%s),abandon default value\n",
 				r.Name, v, r.Name, r.CheckStr)
 		} else {
 			rulesMap[r.Name] = r.CheckStr
@@ -186,7 +190,7 @@ func (r *Rules) String() string {
 }
 
 func Authorize(req *restful.Request, res *restful.Response, action string) bool {
-	if os.Getenv("AUTH_AuthStrategy") != "keystone" {
+	if os.Getenv("OS_AUTH_AUTHSTRATEGY") != "keystone" {
 		return true
 	}
 	ctx := context.GetContext(req)
@@ -196,15 +200,12 @@ func Authorize(req *restful.Request, res *restful.Response, action string) bool 
 	target := map[string]string{
 		"tenant_id": TenantId,
 	}
-	log.Info("action: %v", action)
-	log.Info("target: %v", target)
-	log.Info("Credentials: %v", credentials)
-	log.V(8).Infof("Action: %v", action)
-	log.V(8).Infof("Target: %v", target)
-	log.V(8).Infof("Credentials: %v", credentials)
+	log.Logf("Action: %v", action)
+	log.Logf("Target: %v", target)
+	log.Logf("policy-Credentials: %v", credentials)
 	ok, err := enforcer.Authorize(action, target, credentials)
 	if err != nil {
-		log.Errorf("Authorize failed, %s", err)
+		log.Logf("authorize failed, %s", err)
 	}
 	if !ok {
 		model.HttpError(res, http.StatusForbidden, "Operation is not permitted")
