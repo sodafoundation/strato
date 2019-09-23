@@ -48,6 +48,13 @@ services:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
 
+  redis:
+    image: redis
+    container_name: redis
+    command: redis-server --requirepass hehehehe
+    ports:
+      - "6379:6379"
+
   s3:
     image: opensdsio/multi-cloud-s3
     environment:
@@ -57,7 +64,11 @@ services:
       - USE_DEFAULT_STORAGE_CLASS=1
     volumes:
       - /etc/localtime:/etc/localtime
-      - /var/log/multi-cloud:/var/log/multi-cloud
+      - .:/etc/yig
+      - .:/var/log/yig
+      - .:/etc/ceph
+    depends_on:
+      - redis
 
   dataflow:
     image: opensdsio/multi-cloud-dataflow

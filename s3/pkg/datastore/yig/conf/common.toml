@@ -1,0 +1,7 @@
+[log]
+log_path="/var/log/yig"
+log_level=20
+
+[cache]
+redis_mode=0
+redis_address="127.0.0.1:6379"
