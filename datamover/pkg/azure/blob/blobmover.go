@@ -53,7 +53,7 @@ func handleAzureBlobErrors(err error) error {
 				log.Info("azure error: permission denied.")
 				return errors.New(DMERR_NoPermission)
 			case string(azblob.StorageErrorCodeContainerNotFound):
-				log.Log("azure error: container not found.")
+				log.Info("azure error: container not found.")
 				return errors.New(DMERR_BucketNotFound)
 			default:
 				return err
