@@ -820,7 +820,6 @@ func AbortMigration(msgData []byte) error {
 }
 
 // Create FSM
-
 func NewJobFSM(to string) *JobFSM {
 	d := &JobFSM{
 		To: to,
