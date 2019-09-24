@@ -23,11 +23,11 @@ import (
 	"strconv"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	mover "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 //The max object size that can be moved directly, default is 16M.

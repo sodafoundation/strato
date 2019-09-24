@@ -134,15 +134,16 @@ const (
 )
 
 type Job struct {
-	Id             bson.ObjectId `json:"-" bson:"_id"` //make index on id, it cnanot be duplicate
-	TriggerType    string        `json:"triggerType" bson:"triggerType"`
-	Type           string        `json:"type" bson:"type"` //migration
-	PlanName       string        `json:"planName" bson:"planName"`
-	PlanId         string        `json:"planId" bson:"planId"`
-	TotalCount     int64         `json:"totalCount" bson:"totalCount"`
-	PassedCount    int64         `json:"passedCount" bson:"passedCount"`
-	TotalCapacity  int64         `json:"totalCapacity" bson:"totalCapacity"`
-	PassedCapacity int64         `json:"passedCapacity" bson:"passedCapacity"`
+	Id               bson.ObjectId `json:"-" bson:"_id"` //make index on id, it cnanot be duplicate
+	TriggerType      string        `json:"triggerType" bson:"triggerType"`
+	Type             string        `json:"type" bson:"type"` //migration
+	PlanName         string        `json:"planName" bson:"planName"`
+	PlanId           string        `json:"planId" bson:"planId"`
+	TotalCount       int64         `json:"totalCount" bson:"totalCount"`
+	PassedCount      int64         `json:"passedCount" bson:"passedCount"`
+	TotalCapacity    int64         `json:"totalCapacity" bson:"totalCapacity"`
+	PassedCapacity   int64         `json:"passedCapacity" bson:"passedCapacity"`
+	MigratedCapacity float64       `json:"migratedCapacity" bson:"migratedCapacity"`
 	//when the plan related connector type is OPENSDS, then location should be bucket name
 	SourceLocation string    `json:"sourceLocation" bson:"sourceLocation"`
 	DestLocation   string    `json:"destLocation" bson:"destLocation"`

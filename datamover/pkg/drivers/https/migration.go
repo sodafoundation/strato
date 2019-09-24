@@ -18,9 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/looplab/fsm"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -63,6 +62,10 @@ var (
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
+const WT_DOWLOAD = 48
+const WT_UPLOAD = 48
+const WT_DELETE = 4
+
 type Migration interface {
 	Init()
 	HandleMsg(msg string)
@@ -103,14 +106,10 @@ func HandleMsg(msgData []byte) error {
 }
 
 func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
-	destLoca *LocationInfo, remainSource bool, job *flowtype.Job, jobFSM *JobFSM) {
+	destLoca *LocationInfo, remainSource bool, jobFSM *JobFSMjob *flowtype.Job) {
+	destLo
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
-	checkFSM(job.Id, jobFSM)
-	if jobFSM.FSM.Is(ABORTED) {
-		return
-	}
-
 	locMap := make(map[string]*LocationInfo)
 	for i := 0; i < len(objs); i++ {
 		if objs[i].Tier == s3utils.Tier999 {
@@ -185,6 +184,10 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 	if jobFSM.FSM.Is(ABORTED) {
 		return errors.New("job aborted")
 	}
+	if job.Type == "migration" {
+		progress(job, size, WT_DOWLOAD)
+	}
+
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
 
 	//upload
@@ -219,6 +222,9 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 	if err != nil {
 		logger.Printf("upload object[bucket:%s,key:%s] failed, err:%v.\n", destLoca.BucketName, uploadObjKey, err)
 	} else {
+		if job.Type == "migration" {
+			progress(job, size, WT_UPLOAD)
+		}
 		logger.Printf("upload object[bucket:%s,key:%s] successfully.\n", destLoca.BucketName, uploadObjKey)
 	}
 	checkFSM(job.Id, jobFSM)
@@ -405,6 +411,9 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			logger.Printf("internal error, currPartSize=%d, readSize=%d\n", currPartSize, readSize)
 			return errors.New(DMERR_InternalError)
 		}
+		if job.Type == "migration" {
+			progress(job, currPartSize, WT_DOWLOAD)
+		}
 
 		//upload
 		checkFSM(job.Id, jobFSM)
@@ -431,6 +440,10 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			}
 			return errors.New("multipart upload failed")
 		}
+		if job.Type == "migration" {
+			progress(job, currPartSize, WT_UPLOAD)
+		}
+
 		//completeParts = append(completeParts, completePart)
 	}
 	checkFSM(job.Id, jobFSM)
@@ -548,6 +561,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		}
 		if obj.Size <= PART_SIZE {
 			err = MoveObj(obj, newSrcLoca, destLoca, job, jobFSM)
+
 		} else {
 			err = MultipartMoveObj(obj, newSrcLoca, destLoca, job, jobFSM)
 		}
@@ -584,6 +598,9 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		//If migrate success, update capacity
 		logger.Printf("  migrate object[%s] succeed.", obj.ObjectKey)
 		capa <- obj.Size
+		if job.Type == "migration" {
+			progress(job, obj.Size, WT_DELETE)
+		}
 	} else {
 		logger.Printf("  migrate object[%s] failed.", obj.ObjectKey)
 		capa <- -1
@@ -610,8 +627,8 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 
 	// set context timeout
 	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:   in.UserId,
-		common.CTX_KEY_TENANT_ID: in.TenanId,
+		common.CTX_KEY_USER_ID:    in.UserId,
+		common.CTX_KEY_TENANT_ID:  in.TenanId,
 	})
 	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()
@@ -642,6 +659,7 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 	j.Status = flowtype.JOB_STATUS_RUNNING
+	j.Type="migration"
 	updateJob(&j)
 	// Start Validating
 	err = jobFSM.FSM.Event("validate")
@@ -690,7 +708,6 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	// concurrent go routines is limited to be simuRoutines
 	th := make(chan int, simuRoutines)
 	var offset, limit int32 = 0, 1000
-
 	for {
 		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
 		if err != nil {
@@ -734,9 +751,8 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 					//update database
 					j.PassedCount = (int64(passedCount))
-					j.PassedCapacity = capacity
-					j.Progress = int64(capacity * 100 / j.TotalCapacity)
-					logger.Printf("capacity:%d,TotalCapacity:%d Progress:%d\n", capacity, j.TotalCapacity, j.Progress)
+					j.PassedCapacity=capacity
+					logger.Printf("ObjectMigrated:%d,TotalCapacity:%d Progress:%d\n", j.PassedCount, j.TotalCapacity, j.Progress)
 					db.DbAdapter.UpdateJob(&j)
 				}
 			}
@@ -844,4 +860,15 @@ func checkFSM(jobId bson.ObjectId, jobFSM *JobFSM) error {
 		}
 	}
 	return nil
+}
+
+// To calculate Progress of migration process
+func progress(job *flowtype.Job, size int64, wt float64) {
+	// Migrated Capacity = Old_migrated capacity + WT(Process)*Size of Object/100
+	MigratedCapacity := job.MigratedCapacity + float64(size)*(wt/100)
+	job.MigratedCapacity = math.Round(MigratedCapacity*100) / 100
+	// Progress = Migrated Capacity*100/ Total Capacity
+	job.Progress = int64(job.MigratedCapacity * 100 / float64(job.TotalCapacity))
+	logger.Printf("[INFO] Progress %d", job.Progress)
+	db.DbAdapter.UpdateJob(job)
 }
