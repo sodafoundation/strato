@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/looplab/fsm"
 	"log"
 	"math"
 	"os"
@@ -106,8 +108,7 @@ func HandleMsg(msgData []byte) error {
 }
 
 func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
-	destLoca *LocationInfo, remainSource bool, jobFSM *JobFSMjob *flowtype.Job) {
-	destLo
+	destLoca *LocationInfo, remainSource bool, jobFSM *JobFSM, job *flowtype.Job) {
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
 	locMap := make(map[string]*LocationInfo)
@@ -627,8 +628,8 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 
 	// set context timeout
 	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:    in.UserId,
-		common.CTX_KEY_TENANT_ID:  in.TenanId,
+		common.CTX_KEY_USER_ID:   in.UserId,
+		common.CTX_KEY_TENANT_ID: in.TenanId,
 	})
 	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()
@@ -659,7 +660,7 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 	j.Status = flowtype.JOB_STATUS_RUNNING
-	j.Type="migration"
+	j.Type = "migration"
 	updateJob(&j)
 	// Start Validating
 	err = jobFSM.FSM.Event("validate")
@@ -728,7 +729,7 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 		}
 
 		//Do migration for each object.
-		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, &j, jobFSM)
+		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, jobFSM, &j)
 		if len(objs) < int(limit) {
 			break
 		}
@@ -751,7 +752,7 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 					//update database
 					j.PassedCount = (int64(passedCount))
-					j.PassedCapacity=capacity
+					j.PassedCapacity = capacity
 					logger.Printf("ObjectMigrated:%d,TotalCapacity:%d Progress:%d\n", j.PassedCount, j.TotalCapacity, j.Progress)
 					db.DbAdapter.UpdateJob(&j)
 				}
