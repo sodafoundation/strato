@@ -1,7 +1,6 @@
 package meta
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/log"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/db"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
 )
@@ -12,7 +11,6 @@ const (
 
 type Meta struct {
 	Db db.DBAdapter
-	Logger *log.Logger
 	Cache  MetaCache
 }
 
@@ -22,9 +20,8 @@ func (m *Meta) Stop() {
 	}
 }
 
-func New(logger *log.Logger, myCacheType CacheType) *Meta {
+func New( myCacheType CacheType) *Meta {
 	meta := Meta{
-		Logger: logger,
 		Cache:  newMetaCache(myCacheType),
 	}
 	meta.Db = tidbclient.NewTidbClient()

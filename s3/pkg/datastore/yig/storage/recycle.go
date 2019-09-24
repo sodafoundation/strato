@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"time"
+	log "github.com/sirupsen/logrus"
 )
 
 // Remove
@@ -42,7 +42,7 @@ func removeFailed(yig *YigStorage) {
 			if err != nil {
 				object.triedTimes += 1
 				if object.triedTimes > MAX_TRY_TIMES {
-					helper.Logger.Println(5, "Failed to remove object in Ceph:",
+					log.Error("Failed to remove object in Ceph:",
 						object.location, object.pool, object.objectId,
 						"with error", err)
 					continue
@@ -52,7 +52,7 @@ func removeFailed(yig *YigStorage) {
 			}
 		default:
 			if yig.Stopping {
-				helper.Logger.Print(5, ".")
+				log.Infof(".")
 				if len(RecycleQueue) == 0 {
 					return
 				}

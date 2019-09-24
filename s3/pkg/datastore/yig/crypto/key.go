@@ -19,9 +19,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
+	log "github.com/sirupsen/logrus"
 	"io"
-
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
 )
 
 // ObjectKey is a 256 bit secret key used to encrypt the object.
@@ -37,7 +36,7 @@ func GenerateKey(extKey [32]byte, random io.Reader) (key ObjectKey) {
 	}
 	var nonce [32]byte
 	if _, err := io.ReadFull(random, nonce[:]); err != nil {
-		helper.Logger.Println(5, errOutOfEntropy)
+		log.Info(errOutOfEntropy)
 		return key
 	}
 	sha := sha256.New()

@@ -3,9 +3,9 @@ package meta
 import (
 	"database/sql"
 	"errors"
-
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
+	log "github.com/sirupsen/logrus"
 )
 
 type CacheType int
@@ -45,8 +45,7 @@ type entry struct {
 }
 
 func newMetaCache(myType CacheType) (m MetaCache) {
-
-	helper.Logger.Printf(10, "Setting Up Metadata Cache: %s\n", cacheNames[int(myType)])
+	log.Infof("Setting Up Metadata Cache: %s\n", cacheNames[int(myType)])
 	if myType == SimpleCache {
 		m := new(enabledSimpleMetaCache)
 		m.Hit = 0
@@ -102,11 +101,11 @@ func (m *enabledSimpleMetaCache) Get(
 	onDeserialize func(map[string]string) (interface{}, error),
 	willNeed bool) (value interface{}, err error) {
 
-	helper.Logger.Println(10, "enabledSimpleMetaCache Get. table:", table, "key:", key)
+	log.Info("enabledSimpleMetaCache Get. table:", table, "key:", key)
 
 	fields, err := redis.HGetAll(table, prefix, key)
 	if err != nil {
-		helper.Logger.Println(5, "enabledSimpleMetaCache Get err:", err, "table:", table, "key:", key)
+		log.Info("enabledSimpleMetaCache Get err:", err, "table:", table, "key:", key)
 	}
 	if err == nil && fields != nil && len(fields) > 0 {
 		value, err = onDeserialize(fields)
@@ -119,7 +118,7 @@ func (m *enabledSimpleMetaCache) Get(
 		obj, err := onCacheMiss()
 		if err != nil {
 			if err != sql.ErrNoRows {
-				helper.ErrorIf(err, "exec onCacheMiss() err.")
+				log.Errorf("exec onCacheMiss() err: %v.\n", err)
 			}
 			return nil, err
 		}
@@ -127,12 +126,12 @@ func (m *enabledSimpleMetaCache) Get(
 		if willNeed == true {
 			values, err := obj.Serialize()
 			if err != nil {
-				helper.Logger.Println(2, "failed to serialize from %v", obj, " with err: ", err)
+				log.Warn("failed to serialize from %v", obj, " with err: ", err)
 				return nil, err
 			}
 			_, err = redis.HMSet(table, prefix, key, values)
 			if err != nil {
-				helper.Logger.Println(5, "failed to set key: ", key, " with err: ", err)
+				log.Info("failed to set key: ", key, " with err: ", err)
 				//do nothing, even if redis is down.
 			}
 		}

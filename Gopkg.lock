@@ -93,43 +93,12 @@
   version = "v2.1.15"
 
 [[projects]]
-  digest = "1:a6a83699eb7003920aba9130910efb2f6723e3d24c109e0d9408de0572a54ea0"
-  name = "github.com/cep21/circuit"
-  packages = [
-    ".",
-    "closers/hystrix",
-    "v3",
-    "v3/closers/hystrix",
-    "v3/faststats",
-    "v3/internal/evar",
-  ]
-  pruneopts = "NUT"
-  revision = "768780274348ba1e986a23a5feef9c829ab37426"
-  version = "v3.1.0"
-
-[[projects]]
-  digest = "1:db237b97b487867cebbe290d5bff81690355eef400aa81ac269bd01f7c3f7b57"
-  name = "github.com/confluentinc/confluent-kafka-go"
-  packages = ["kafka"]
-  pruneopts = "NUT"
-  revision = "48acc03b9ddd85b5c8c268b480d5a9a3d523b9ad"
-  version = "v1.1.0"
-
-[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "NUT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
-
-[[projects]]
-  digest = "1:b7ffca49e9cfd3dfb04a8e0a59347708c6f78f68476a32c5e0a0edca5d1b258c"
-  name = "github.com/dustin/go-humanize"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
-  version = "v1.0.0"
 
 [[projects]]
   digest = "1:08143362be979b087c2c1bae5dde986e988d3d5d4dc661727cbe436411b3f33a"
@@ -232,14 +201,6 @@
   version = "v1.4.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e2b86e41f3d669fc36b50d31d32d22c8ac656c75aa5ea89717ce7177e134ff2a"
-  name = "github.com/golang/glog"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
-
-[[projects]]
   digest = "1:318f1c959a8a740366fce4b1e1eb2fd914036b4af58fbd0a003349b305f118ad"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
@@ -279,14 +240,6 @@
   ]
   pruneopts = "NUT"
   revision = "ff9851476e985a4f27ed846d6babd7b24b763da5"
-
-[[projects]]
-  digest = "1:3c8c26bb118e3f02230d4f5f30b972dbfe0c6b371acea8f190aa99ceaaae7028"
-  name = "github.com/gorilla/mux"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
-  version = "v1.7.3"
 
 [[projects]]
   digest = "1:18946bd9b414130ef9badcb577a50ac093168363778a06e0bbb2697a6e54757a"
@@ -404,18 +357,6 @@
   revision = "609666b5113648e4b856d3bab8759a701e9d02ba"
 
 [[projects]]
-  digest = "1:dda6a73ea25e9552bbd55b14f67f8a52e7593c0db4fe9c9646de68a722dbd69c"
-  name = "github.com/journeymidnight/yig"
-  packages = [
-    "error",
-    "helper",
-    "log",
-  ]
-  pruneopts = "NUT"
-  revision = "8991bef481bfc4e21e193289c395b638b10400b9"
-  version = "v2.0.0"
-
-[[projects]]
   digest = "1:8e36686e8b139f8fe240c1d5cf3a145bc675c22ff8e707857cdd3ae17b00d728"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -430,6 +371,22 @@
   pruneopts = "NUT"
   revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
   version = "v1.0.2"
+
+[[projects]]
+  digest = "1:7b21c7fc5551b46d1308b4ffa9e9e49b66c7a8b0ba88c0130474b0e7a20d859f"
+  name = "github.com/kr/pretty"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "73f6ac0b30a98e433b289500d779f50c1a6f0712"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:c3a7836b5904db0f8b609595b619916a6831cb35b8b714aec39f96d00c6155d8"
+  name = "github.com/kr/text"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:bfd3efe80b851037c1d1e58c7b8f18b7a3a250352bdd137a43df825d0ace4707"
@@ -449,6 +406,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "5c849dd2c51dd10faf5f1b86abec2db1ac3b9101"
+
+[[projects]]
+  digest = "1:802689c84994b7f2e41ffe7e39d29a8d8227f2121938dc025db44dfaa9633b15"
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "de8848e004dd33dc07a2947b3d76f618a7fc7ef1"
+  version = "v1.8.1"
 
 [[projects]]
   branch = "master"
@@ -666,6 +631,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:f4aaa07a6c33f2b354726d0571acbc8ca118837c75709f6353203ae1a3f8eeab"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
+
+[[projects]]
   digest = "1:6792bb72ea0e7112157d02e4e175cd421b43d004a853f56316a19beca6e0c074"
   name = "github.com/spf13/afero"
   packages = [
@@ -864,29 +837,20 @@
     "github.com/aws/aws-sdk-go/service/s3",
     "github.com/aws/aws-sdk-go/service/s3/s3manager",
     "github.com/bsm/sarama-cluster",
-    "github.com/cep21/circuit",
-    "github.com/cep21/circuit/closers/hystrix",
-    "github.com/confluentinc/confluent-kafka-go/kafka",
-    "github.com/dustin/go-humanize",
     "github.com/emicklei/go-restful",
     "github.com/fsnotify/fsnotify",
     "github.com/globalsign/mgo",
     "github.com/globalsign/mgo/bson",
     "github.com/go-ini/ini",
-    "github.com/go-log/log",
     "github.com/go-redis/redis",
     "github.com/go-sql-driver/mysql",
-    "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/gophercloud/gophercloud",
     "github.com/gophercloud/gophercloud/openstack",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
-    "github.com/gorilla/mux",
     "github.com/hashicorp/vault/api",
     "github.com/journeymidnight/radoshttpd/rados",
-    "github.com/journeymidnight/yig/error",
-    "github.com/journeymidnight/yig/helper",
     "github.com/lestrrat-go/file-rotatelogs",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",

@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	log "github.com/sirupsen/logrus"
 )
 
 func NewKMS() KMS {
@@ -20,7 +21,7 @@ func NewKMS() KMS {
 	//extention case here
 
 	default:
-		helper.Logger.Println(5, "not support kms type", helper.CONFIG.KMS.Type)
+		log.Warnf("not support kms type", helper.CONFIG.KMS.Type)
 		return nil
 	}
 }

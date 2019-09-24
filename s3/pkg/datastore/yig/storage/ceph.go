@@ -9,8 +9,7 @@ import (
 
 	"fmt"
 	"github.com/journeymidnight/radoshttpd/rados"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/log"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -33,16 +32,14 @@ type CephStorage struct {
 	Name       string
 	Conn       *rados.Conn
 	InstanceId uint64
-	Logger     *log.Logger
 	CountMutex *sync.Mutex
 	Counter    uint64
 	BufPool    *sync.Pool
 	BigBufPool *sync.Pool
 }
 
-func NewCephStorage(configFile string, logger *log.Logger) *CephStorage {
-
-	logger.Printf(5, "Loading Ceph file %s\n", configFile)
+func NewCephStorage(configFile string) *CephStorage {
+	log.Infof("Loading Ceph file %s\n", configFile)
 
 	Rados, err := rados.NewConn("admin")
 	Rados.SetConfigOption("rados_mon_op_timeout", MON_TIMEOUT)
@@ -50,19 +47,19 @@ func NewCephStorage(configFile string, logger *log.Logger) *CephStorage {
 
 	err = Rados.ReadConfigFile(configFile)
 	if err != nil {
-		helper.Logger.Printf(0, "Failed to open ceph.conf: %s\n", configFile)
+		log.Errorf("Failed to open ceph.conf: %s\n", configFile)
 		return nil
 	}
 
 	err = Rados.Connect()
 	if err != nil {
-		helper.Logger.Printf(0, "Failed to connect to remote cluster: %s\n", configFile)
+		log.Errorf("Failed to connect to remote cluster: %s\n", configFile)
 		return nil
 	}
 
 	name, err := Rados.GetFSID()
 	if err != nil {
-		helper.Logger.Printf(0, "Failed to get FSID: %s\n", configFile)
+		log.Errorf("Failed to get FSID: %s\n", configFile)
 		Rados.Shutdown()
 		return nil
 	}
@@ -73,7 +70,6 @@ func NewCephStorage(configFile string, logger *log.Logger) *CephStorage {
 		Conn:       Rados,
 		Name:       name,
 		InstanceId: id,
-		Logger:     logger,
 		CountMutex: new(sync.Mutex),
 		BufPool: &sync.Pool{
 			New: func() interface{} {
@@ -87,7 +83,7 @@ func NewCephStorage(configFile string, logger *log.Logger) *CephStorage {
 		},
 	}
 
-	logger.Printf(5, "Ceph Cluster %s is ready, InstanceId is %d\n", name, id)
+	log.Infof("Ceph Cluster %s is ready, InstanceId is %d\n", name, id)
 	return &cluster
 }
 
@@ -160,7 +156,7 @@ func (cluster *CephStorage) doSmallPut(poolname string, oid string, data io.Read
 	tpool := time.Now()
 	dur := tpool.Sub(tstart).Nanoseconds() / 1000000
 	if dur >= 10 {
-		helper.Logger.Printf(5, "slow log: doSmallPut OpenPool(%s, %s) spent %d", poolname, oid, dur)
+		log.Warnf("slow log: doSmallPut OpenPool(%s, %s) spent %d", poolname, oid, dur)
 	}
 
 	buffer := cluster.BufPool.Get().(*bytes.Buffer)
@@ -168,7 +164,7 @@ func (cluster *CephStorage) doSmallPut(poolname string, oid string, data io.Read
 	defer cluster.BufPool.Put(buffer)
 	written, err := buffer.ReadFrom(data)
 	if err != nil {
-		helper.Logger.Printf(2, "failed to read data for pool %s, oid %s, err: %v", poolname, oid, err)
+		log.Errorf("failed to read data for pool %s, oid %s, err: %v", poolname, oid, err)
 		return 0, err
 	}
 
@@ -177,7 +173,7 @@ func (cluster *CephStorage) doSmallPut(poolname string, oid string, data io.Read
 	tread := time.Now()
 	dur = tread.Sub(tpool).Nanoseconds() / 1000000
 	if dur >= 10 {
-		helper.Logger.Printf(5, "slow log: doSmallPut read body(%s, %s) spent %d", poolname, oid, dur)
+		log.Warnf("slow log: doSmallPut read body(%s, %s) spent %d", poolname, oid, dur)
 	}
 
 	err = pool.WriteSmallObject(oid, buffer.Bytes())
@@ -187,12 +183,12 @@ func (cluster *CephStorage) doSmallPut(poolname string, oid string, data io.Read
 	twrite := time.Now()
 	dur = twrite.Sub(tread).Nanoseconds() / 1000000
 	if dur >= 50 {
-		helper.Logger.Printf(5, "slow log: doSmallPut ceph write(%s, %s) spent %d", poolname, oid, dur)
+		log.Warnf("slow log: doSmallPut ceph write(%s, %s) spent %d", poolname, oid, dur)
 	}
 
 	dur = twrite.Sub(tstart).Nanoseconds() / 1000000
 	if dur >= 100 {
-		helper.Logger.Printf(5, "slow log: doSmallPut fin(%s, %s) spent %d", poolname, oid, dur)
+		log.Warnf("slow log: doSmallPut fin(%s, %s) spent %d", poolname, oid, dur)
 	}
 
 	return size, nil
@@ -544,22 +540,6 @@ func (cluster *CephStorage) getAlignedReader(poolName string, oid string, startO
 	length += startOffset - alignedOffset
 	return cluster.getReader(poolName, oid, alignedOffset, length)
 }
-
-/*
-func (cluster *CephStorage) get(poolName string, oid string, startOffset int64,
-	length int64, writer io.Writer) error {
-
-	reader, err := cluster.getReader(poolName, oid, startOffset, length)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	buf := make([]byte, MAX_CHUNK_SIZE)
-	_, err = io.CopyBuffer(writer, reader, buf)
-	return err
-}
-*/
 
 func (cluster *CephStorage) doSmallRemove(poolname string, oid string) error {
 	pool, err := cluster.Conn.OpenPool(poolname)
