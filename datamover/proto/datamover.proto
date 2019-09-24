@@ -2,7 +2,6 @@ syntax = "proto3";
 
 service datamover {
 	rpc Runjob(RunJobRequest) returns (RunJobResponse) {}
-	rpc AbortJob(AbortJobRequest) returns (AbortJobResponse){}
 	rpc DoLifecycleAction(LifecycleActionRequest) returns (LifecycleActionResonse) {}
 }
 
@@ -38,9 +37,6 @@ message RunJobResponse {
 	string err = 1;
 }
 
-message AbortJobResponse {
-	string err = 1;
-}
 message LifecycleActionRequest {
 	string objKey = 1;      // for transition and expiration
 	string bucketName = 2;

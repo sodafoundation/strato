@@ -491,7 +491,7 @@ func (s *APIService) AbortJob(request *restful.Request, response *restful.Respon
 	}
 
 	//For debug -- begin
-	log.Logf("Get jobs reponse:%v\n", res)
+	log.Logf("Abort job reponse:%v\n", res)
 	jsons, errs := json.Marshal(res)
 	if errs != nil {
 		log.Logf(errs.Error())

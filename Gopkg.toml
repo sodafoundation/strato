@@ -47,6 +47,10 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/looplab/fsm"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/globalsign/mgo"
 
 [[constraint]]
