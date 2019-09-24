@@ -16,14 +16,13 @@ package s3
 
 import (
 	"fmt"
-
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
+	"net/http"
 )
 
 //Convert function from storage tier to storage class for XML format output
@@ -34,7 +33,7 @@ func (s *APIService) tier2class(tier int32) (string, error) {
 		if len(ClassAndTier) == 0 {
 			err := s.loadStorageClassDefinition()
 			if err != nil {
-				log.Logf("load storage classes failed: %v.\n", err)
+				log.Errorf("load storage classes failed: %v.\n", err)
 				return "", err
 			}
 		}
@@ -46,7 +45,7 @@ func (s *APIService) tier2class(tier int32) (string, error) {
 		}
 	}
 	if className == "" {
-		log.Logf("invalid tier: %d\n", tier)
+		log.Infof("invalid tier: %d\n", tier)
 		return "", fmt.Errorf(InvalidTier)
 	}
 	return className, nil
@@ -54,14 +53,16 @@ func (s *APIService) tier2class(tier int32) (string, error) {
 
 //Function for GET Bucket Lifecycle API
 func (s *APIService) BucketLifecycleGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:get") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("received request for bucket details in GET lifecycle: %s", bucketName)
+	log.Infof("received request for bucket details in GET lifecycle: %s", bucketName)
 
-	ctx := context.Background()
-	bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	ctx := common.InitCtxWithAuthInfo(request)
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	if err != nil {
+		log.Errorf("get bucket failed, err=%v\n", err)
+		response.WriteError(http.StatusInternalServerError,
+			fmt.Errorf("either the bucket does not exist or there is error when getting bucket details"))
+	}
 
 	// convert back to xml struct
 	getLifecycleConf := model.LifecycleConfiguration{}
@@ -79,7 +80,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 
 			//Arranging the transition and expiration actions in XML
 			for _, action := range lcRule.Actions {
-				log.Logf("action is : %v\n", action)
+				log.Infof("action is : %v\n", action)
 
 				if action.Name == ActionNameTransition {
 					xmlTransition := model.Transition{}
@@ -104,7 +105,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 
 	// marshall the array back to xml format
 	response.WriteAsXml(getLifecycleConf)
-	log.Log("GET lifecycle successful.")
+	log.Info("GET lifecycle successful.")
 }
 
 func converts3FilterToRuleFilter(filter *s3.LifecycleFilter) model.Filter {

@@ -17,15 +17,15 @@ package obsmover
 import (
 	"errors"
 
-	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {
 	obsClient, err := obs.New(bkend.Access, bkend.Security, bkend.EndPoint)
 	if err != nil {
-		log.Logf("[obslifecycle] new client failed when change storage class of obj[%s] to %s failed, err:%v\n",
+		log.Errorf("[obslifecycle] new client failed when change storage class of obj[%s] to %s failed, err:%v\n",
 			objKey, newClass, err)
 		return err
 	}
@@ -42,12 +42,12 @@ func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bken
 	case "GLACIER":
 		input.StorageClass = obs.StorageClassCold
 	default:
-		log.Logf("[obslifecycle] unspport storage class:%s", newClass)
+		log.Infof("[obslifecycle] unspport storage class:%s", newClass)
 		return errors.New(DMERR_UnSupportStorageClass)
 	}
 	_, err = obsClient.CopyObject(input)
 	if err != nil {
-		log.Logf("[obslifecycle] change storage class of object[%s] to %s failed: %v\n", objKey, newClass, err)
+		log.Errorf("[obslifecycle] change storage class of object[%s] to %s failed: %v\n", objKey, newClass, err)
 		e := handleHWObsErrors(err)
 		return e
 	}
@@ -60,7 +60,7 @@ func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bken
 func (mover *ObsMover) DeleteIncompleteMultipartUpload(objKey, uploadId string, loc *LocationInfo) error {
 	obsClient, err := obs.New(loc.Access, loc.Security, loc.EndPoint)
 	if err != nil {
-		log.Logf("[obslifecycle] new client failed when delete incomplete multipart upload[objkey=%s,uploadid=%s] failed, err:%v\n",
+		log.Errorf("[obslifecycle] new client failed when delete incomplete multipart upload[objkey=%s,uploadid=%s] failed, err:%v\n",
 			objKey, uploadId, err)
 		return err
 	}
@@ -69,10 +69,10 @@ func (mover *ObsMover) DeleteIncompleteMultipartUpload(objKey, uploadId string, 
 	_, err = obsClient.AbortMultipartUpload(input)
 	e := handleHWObsErrors(err)
 	if e == nil || e.Error() == DMERR_NoSuchUpload {
-		log.Logf("delete incomplete multipart upload[objkey=%s,uploadid=%s] successfully.\n", objKey, uploadId)
+		log.Infof("delete incomplete multipart upload[objkey=%s,uploadid=%s] successfully.\n", objKey, uploadId)
 		return nil
 	} else {
-		log.Logf("delete incomplete multipart upload[objkey=%s,uploadid=%s] failed, err:%v.\n", objKey, uploadId, err)
+		log.Infof("delete incomplete multipart upload[objkey=%s,uploadid=%s] failed, err:%v.\n", objKey, uploadId, err)
 	}
 
 	return e

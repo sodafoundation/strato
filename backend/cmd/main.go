@@ -19,6 +19,7 @@ import (
 	"os"
 
 	micro "github.com/micro/go-micro"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	"github.com/opensds/multi-cloud/backend/pkg/db"
 	handler "github.com/opensds/multi-cloud/backend/pkg/service"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/config"
@@ -32,6 +33,7 @@ func main() {
 		Endpoint: dbHost})
 	defer db.Exit()
 
+	obs.InitLogs()
 	service := micro.NewService(
 		micro.Name("backend"),
 	)

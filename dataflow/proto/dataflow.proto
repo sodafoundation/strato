@@ -24,15 +24,16 @@ message Schedule {
 
 message Policy {
 	string id = 1;
-	string name = 2;
-	string tenant = 3;
-	string description = 4;
-	Schedule schedule = 5;
+	string tenantId = 2;
+	string userId = 3;
+	string name = 4;
+	string tenant = 5;
+	string description = 6;
+	Schedule schedule = 7;
 }
 
 message GetPolicyRequest {
-	string context = 1;
-	string id = 2;
+	string id = 1;
 }
 
 message GetPolicyResponse {
@@ -41,7 +42,6 @@ message GetPolicyResponse {
 }
 
 message ListPolicyRequest {
-    string context = 1;
 }
 
 message ListPolicyResponse {
@@ -50,8 +50,7 @@ message ListPolicyResponse {
 }
 
 message CreatePolicyRequest {
-	string context = 1;
-	Policy policy = 2;
+	Policy policy = 1;
 }
 
 message CreatePolicyResponse {
@@ -60,9 +59,8 @@ message CreatePolicyResponse {
 }
 
 message UpdatePolicyRequest {
-	string context = 1;
-	string policyId = 2;
-	string body = 3;
+	string policyId = 1;
+	string body = 2;
 }
 
 message UpdatePolicyResponse {
@@ -71,8 +69,7 @@ message UpdatePolicyResponse {
 }
 
 message DeletePolicyRequest {
-	string context = 1;
-	string id = 2;
+	string id = 1;
 }
 
 message DeletePolicyResponse {
@@ -114,8 +111,7 @@ message Plan {
 }
 
 message CreatePlanRequest {
-	string context = 1;
-	Plan plan = 2;
+	Plan plan = 1;
 }
 
 message CreatePlanResponse {
@@ -126,8 +122,7 @@ message CreatePlanResponse {
 
 
 message GetPlanRequest {
-	string context = 1;
-	string id = 2;
+	string id = 1;
 }
 
 message GetPlanResponse {
@@ -136,12 +131,11 @@ message GetPlanResponse {
 }
 
 message ListPlanRequest {
-	string context = 1;
-	int32 limit = 2;
-	int32 offset = 3;
-	repeated string sortKeys = 4;
-	repeated string sortDirs = 5;
-	map<string, string> Filter = 6;
+	int32 limit = 1;
+	int32 offset = 2;
+	repeated string sortKeys = 3;
+	repeated string sortDirs = 4;
+	map<string, string> Filter = 5;
 }
 
 message ListPlanResponse {
@@ -150,9 +144,8 @@ message ListPlanResponse {
 }
 
 message UpdatePlanRequest {
-	string context = 1;
-    string planId = 2;
-	string body = 3;
+    string planId = 1;
+	string body = 2;
 }
 
 message UpdatePlanResponse {
@@ -161,8 +154,7 @@ message UpdatePlanResponse {
 }
 
 message DeletePlanRequest {
-	string context = 1;
-	string id = 2;
+	string id = 1;
 }
 
 message DeletePlanResponse {
@@ -170,8 +162,7 @@ message DeletePlanResponse {
 }
 
 message RunPlanRequest {
-	string context = 1;
-	string id = 2;
+	string id = 1;
 }
 
 message RunPlanResponse {
@@ -181,27 +172,28 @@ message RunPlanResponse {
 
 message Job {
 	string id = 1;
-	string type = 2;
-	string planName = 3;
-	string planId = 4;
-	string description = 5; //describe statistic information, such as total objs, finished objs
-	string sourceLocation = 6;
-	string destLocation = 7;
-	string status = 8;
-	int64  createTime = 9;
-	int64  startTime = 10;
-	int64  endTime = 11;
-	bool remainSource = 12;
-	int64 totalCapacity = 13;
-	int64 passedCapacity = 14;
-	int64 totalCount = 15;
-	int64 passedCount = 16;
-	int64 progress = 17;
+	string tenantId = 2;
+	string userId = 3;
+	string type = 4;
+	string planName = 5;
+	string planId = 6;
+	string description = 7; //describe statistic information, such as total objs, finished objs
+	string sourceLocation = 8;
+	string destLocation = 9;
+	string status = 10;
+	int64  createTime = 11;
+	int64  startTime = 12;
+	int64  endTime = 13;
+	bool remainSource = 14;
+	int64 totalCapacity = 15;
+	int64 passedCapacity = 16;
+	int64 totalCount = 17;
+	int64 passedCount = 18;
+	int64 progress = 19;
 }
 
 message GetJobRequest {
-	string context = 1;
-	string id = 2;
+	string id = 1;
 }
 
 message AbortJobRequest {
@@ -220,12 +212,11 @@ message GetJobResponse {
 }
 
 message ListJobRequest {
-    string context = 1;
-	int32 limit = 2;
-	int32 offset = 3;
-	repeated string sortKeys = 4;
-	repeated string sortDirs = 5;
-	map<string, string> Filter = 6;
+	int32 limit = 1;
+	int32 offset = 2;
+	repeated string sortKeys = 3;
+	repeated string sortDirs = 4;
+	map<string, string> Filter = 5;
 }
 
 message ListJobResponse {

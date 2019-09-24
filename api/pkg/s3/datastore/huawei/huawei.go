@@ -19,12 +19,14 @@ import (
 	"io"
 	"time"
 
-	"github.com/micro/go-log"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 type OBSAdapter struct {
@@ -40,7 +42,7 @@ func Init(backend *backendpb.BackendDetail) *OBSAdapter {
 	client, err := obs.New(AccessKeyID, AccessKeySecret, endpoint)
 
 	if err != nil {
-		log.Logf("Access obs failed:%v", err)
+		log.Errorf("Access obs failed:%v", err)
 		return nil
 	}
 
@@ -49,9 +51,10 @@ func Init(backend *backendpb.BackendDetail) *OBSAdapter {
 }
 
 func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Context) S3Error {
-
 	bucket := ad.backend.BucketName
-	if ctx.Value("operation") == "upload" {
+
+	md, _ := metadata.FromContext(ctx)
+	if md[common.REST_KEY_OPERATION] == common.REST_VAL_UPLOAD {
 		input := &obs.PutObjectInput{}
 		input.Bucket = bucket
 		input.Key = object.BucketName + "/" + object.ObjectKey
@@ -61,14 +64,14 @@ func (ad *OBSAdapter) PUT(stream io.Reader, object *pb.Object, ctx context.Conte
 		out, err := ad.client.PutObject(input)
 
 		if err != nil {
-			log.Logf("Upload to obs failed:%v", err)
+			log.Errorf("Upload to obs failed:%v", err)
 			return S3Error{Code: 500, Description: "Upload to obs failed"}
 
 		} else {
 			object.LastModified = time.Now().Unix()
-			log.Logf("LastModified is:%v\n", object.LastModified)
+			log.Infof("LastModified is:%v\n", object.LastModified)
 		}
-		log.Logf("Upload %s to obs successfully.", out.VersionId)
+		log.Infof("Upload %s to obs successfully.", out.VersionId)
 	}
 
 	return NoError
@@ -88,10 +91,10 @@ func (ad *OBSAdapter) GET(object *pb.Object, context context.Context, start int6
 		out, err := ad.client.GetObject(input)
 
 		if err != nil {
-			log.Logf("download hws obs failed:%v", err)
+			log.Errorf("download hws obs failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "download hws obs failed"}
 		} else {
-			log.Logf("download obs successfully.%v", out.VersionId)
+			log.Infof("download obs successfully.%v", out.VersionId)
 			return out.Body, NoError
 		}
 	}
@@ -105,11 +108,11 @@ func (ad *OBSAdapter) DELETE(object *pb.DeleteObjectInput, ctx context.Context) 
 	deleteObjectInput := obs.DeleteObjectInput{Bucket: ad.backend.BucketName, Key: newObjectKey}
 	_, err := ad.client.DeleteObject(&deleteObjectInput)
 	if err != nil {
-		log.Logf("Delete  object failed:%v", err)
+		log.Errorf("Delete  object failed:%v", err)
 		return InternalError
 	}
 
-	log.Logf("Delete object %s from obs successfully.\n", newObjectKey)
+	log.Infof("Delete object %s from obs successfully.\n", newObjectKey)
 	return NoError
 }
 
@@ -127,14 +130,14 @@ func (ad *OBSAdapter) InitMultipartUpload(object *pb.Object, context context.Con
 		input.StorageClass = obs.StorageClassStandard // Currently, only support standard.
 		out, err := ad.client.InitiateMultipartUpload(input)
 		if err != nil {
-			log.Logf("initmultipartupload failed:%v", err)
+			log.Errorf("initmultipartupload failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "initmultipartupload failed"}
 		} else {
-			log.Log("initmultipartupload  successfully.")
+			log.Info("initmultipartupload  successfully.")
 			multipartUpload.Bucket = out.Bucket
 			multipartUpload.Key = out.Key
 			multipartUpload.UploadId = out.UploadId
-			log.Logf("multipartUpload is %v\n", multipartUpload)
+			log.Infof("multipartUpload is %v\n", multipartUpload)
 			return multipartUpload, NoError
 		}
 	}
@@ -153,15 +156,15 @@ func (ad *OBSAdapter) UploadPart(stream io.Reader, multipartUpload *pb.Multipart
 		input.Body = stream
 		input.PartNumber = int(partNumber)
 		input.PartSize = upBytes
-		log.Logf(" multipartUpload.UploadId is %v", multipartUpload.UploadId)
+		log.Infof(" multipartUpload.UploadId is %v", multipartUpload.UploadId)
 		input.UploadId = multipartUpload.UploadId
 		out, err := ad.client.UploadPart(input)
 
 		if err != nil {
-			log.Logf("uploadpart init failed:%v", err)
+			log.Errorf("uploadpart init failed:%v", err)
 			return nil, S3Error{Code: 500, Description: "uploadpart init failed"}
 		} else {
-			log.Logf("uploadpart %v successfully.", out.PartNumber)
+			log.Infof("uploadpart %v successfully.", out.PartNumber)
 			result := &model.UploadPartResult{ETag: out.ETag, PartNumber: partNumber}
 			return result, NoError
 		}
@@ -173,11 +176,11 @@ func (ad *OBSAdapter) CompleteMultipartUpload(
 	multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload,
 	context context.Context) (*model.CompleteMultipartUploadResult, S3Error) {
-	log.Logf("enter the hws CompleteMultipartUpload method")
+	log.Infof("enter the hws CompleteMultipartUpload method")
 	bucket := ad.backend.BucketName
-	log.Logf("bucket is %v\n", bucket)
+	log.Infof("bucket is %v\n", bucket)
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
-	log.Logf("newObjectKey is %v\n", newObjectKey)
+	log.Infof("newObjectKey is %v\n", newObjectKey)
 	if context.Value("operation") == "multipartupload" {
 		input := &obs.CompleteMultipartUploadInput{}
 		input.Bucket = bucket
@@ -199,11 +202,11 @@ func (ad *OBSAdapter) CompleteMultipartUpload(
 			ETag:     resp.ETag,
 		}
 		if err != nil {
-			log.Logf("CompleteMultipartUploadInput is nil:%v", err)
+			log.Errorf("CompleteMultipartUploadInput is nil:%v", err)
 			return nil, S3Error{Code: 500, Description: "uploadpart init failed"}
 		}
 
-		log.Logf("CompleteMultipartUploadInput successfully.")
+		log.Infof("CompleteMultipartUploadInput successfully.")
 		return result, NoError
 	}
 
@@ -220,10 +223,10 @@ func (ad *OBSAdapter) AbortMultipartUpload(multipartUpload *pb.MultipartUpload, 
 		input.Key = newObjectKey
 		_, err := ad.client.AbortMultipartUpload(input)
 		if err != nil {
-			log.Logf("AbortMultipartUploadInput is nil:%v", err)
+			log.Errorf("AbortMultipartUploadInput is nil:%v", err)
 			return S3Error{Code: 500, Description: "AbortMultipartUploadInput failed"}
 		} else {
-			log.Logf("AbortMultipartUploadInput successfully.")
+			log.Infof("AbortMultipartUploadInput successfully.")
 			return NoError
 		}
 	}
@@ -254,10 +257,10 @@ func (ad *OBSAdapter) ListParts(listParts *pb.ListParts, context context.Context
 		}
 
 		if err != nil {
-			log.Logf("ListPartsListParts is nil:%v\n", err)
+			log.Errorf("ListPartsListParts is nil:%v\n", err)
 			return nil, S3Error{Code: 500, Description: "AbortMultipartUploadInput failed"}
 		} else {
-			log.Logf("ListParts successfully")
+			log.Infof("ListParts successfully")
 			return listParts, NoError
 		}
 	}

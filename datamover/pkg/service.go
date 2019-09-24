@@ -18,10 +18,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-log/log"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
+	log "github.com/sirupsen/logrus"
 )
 
 var dataMoverGroup = "datamover"
@@ -36,7 +36,7 @@ func InitDatamoverService() error {
 	for i := 0; i < len(config); i++ {
 		addr := strings.Split(config[i], "//")
 		if len(addr) != 2 {
-			log.Log("invalid addr:", config[i])
+			log.Info("invalid addr:", config[i])
 		} else {
 			addrs = append(addrs, addr[1])
 		}
@@ -44,12 +44,12 @@ func InitDatamoverService() error {
 	topics := []string{"migration", "lifecycle", "abort"}
 	err := kafka.Init(addrs, dataMoverGroup, topics)
 	if err != nil {
-		log.Log("init kafka consumer failed.")
+		log.Info("init kafka consumer failed.")
 		return nil
 	}
 	go kafka.LoopConsume()
 
 	datamoverID := os.Getenv("HOSTNAME")
-	log.Logf("init datamover[ID#%s] finished.\n", datamoverID)
+	log.Infof("init datamover[ID#%s] finished.\n", datamoverID)
 	return nil
 }

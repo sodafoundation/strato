@@ -17,10 +17,10 @@ package crontrigger
 import (
 	"fmt"
 
-	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 type CronTrigger struct {
@@ -38,11 +38,11 @@ func (c *CronTrigger) Add(planId, properties string, executer trigger.Executer) 
 	cn := cron.New()
 	c.plans[planId] = cn
 	if err := cn.AddFunc(properties, executer.Run); err != nil {
-		log.Logf("Add plan(%s) to  corn trigger failed: %v", planId, err)
+		log.Errorf("Add plan(%s) to  corn trigger failed: %v", planId, err)
 		return fmt.Errorf("Add plan(%s) to corn trigger failed: %v", planId, err)
 	}
 	cn.Start()
-	log.Logf("Add plan(%s) to scheduler, next execute time: %v", planId, cn.Entries()[0].Next)
+	log.Infof("Add plan(%s) to scheduler, next execute time: %v", planId, cn.Entries()[0].Next)
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (c *CronTrigger) Update(planId, properties string, executer trigger.Execute
 func (c *CronTrigger) Remove(planId string) error {
 	cn, ok := c.plans[planId]
 	if !ok {
-		log.Logf("Specified plan(%s) is not found", planId)
+		log.Errorf("Specified plan(%s) is not found", planId)
 		return nil
 	}
 	cn.Stop()

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/micro/go-log"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
 	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
@@ -13,6 +12,7 @@ import (
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func clearFromBackend(objKey, uploadId string, loca *LocationInfo) error {
@@ -39,10 +39,10 @@ func clearFromBackend(objKey, uploadId string, loca *LocationInfo) error {
 	}
 
 	if err != nil {
-		log.Logf("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] failed.\n",
+		log.Errorf("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] failed.\n",
 			uploadId, loca.StorType, loca.BucketName)
 	} else {
-		log.Logf("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] successfully.\n",
+		log.Infof("delete incomplete multipart upload[id=%s] from backend[type:%s,bucket:%s] successfully.\n",
 			uploadId, loca.StorType, loca.BucketName)
 	}
 
@@ -50,12 +50,12 @@ func clearFromBackend(objKey, uploadId string, loca *LocationInfo) error {
 }
 
 func doAbortUpload(acReq *datamover.LifecycleActionRequest) error {
-	log.Logf("abort incomplete upload: key=%s, uploadid=%s.\n", acReq.ObjKey, acReq.UploadId)
+	log.Infof("abort incomplete upload: key=%s, uploadid=%s.\n", acReq.ObjKey, acReq.UploadId)
 
 	// delete incomplete multipart upload data in each backend
 	bkend, err := getBackendInfo(&acReq.TargetBackend, false)
 	if err != nil {
-		log.Logf("abort incomplete upload[key=%s, uploadid=%s] failed because get location failed.\n", acReq.ObjKey, acReq.UploadId)
+		log.Errorf("abort incomplete upload[key=%s, uploadid=%s] failed because get location failed.\n", acReq.ObjKey, acReq.UploadId)
 		return err
 	}
 

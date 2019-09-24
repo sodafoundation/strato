@@ -27,6 +27,8 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
@@ -427,7 +429,7 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 			} else {
 				deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 			}
-			return nil
+			return errors.New("multipart upload failed")
 		}
 		//completeParts = append(completeParts, completePart)
 	}
@@ -461,6 +463,7 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 	} else {
 		deleteMultipartUpload(obj.ObjectKey, destLoca.VirBucket, destLoca.BakendName, uploadId)
 	}
+
 	return err
 }
 
@@ -604,7 +607,19 @@ func updateJob(j *flowtype.Job) {
 func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	logger.Println("Runjob is called in datamover service.")
 	logger.Printf("Request: %+v\n", in)
-	if jobstate[in.Id] == "cancelled" {
+
+	// set context timeout
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_USER_ID:   in.UserId,
+		common.CTX_KEY_TENANT_ID: in.TenanId,
+	})
+	dur := getCtxTimeout()
+	_, ok := ctx.Deadline()
+	if !ok {
+		ctx, _ = context.WithTimeout(ctx, dur)
+	}
+
+	if jobstate[in.Id] == CANCELLED {
 		err := jobFSM.FSM.Event("cancel")
 		if err != nil {
 			logger.Print(err)
@@ -623,14 +638,6 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	}
 	// updating FSM state into jobstate
 	jobstate[in.Id] = jobFSM.FSM.Current()
-	// set context timeout
-	ctx := context.Background()
-	dur := getCtxTimeout()
-	_, ok := ctx.Deadline()
-	if !ok {
-		ctx, _ = context.WithTimeout(ctx, dur)
-	}
-
 	// init job
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
@@ -648,6 +655,7 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 		j.Status = flowtype.JOB_STATUS_FAILED
 		j.EndTime = time.Now()
 		jobFSM.FSM.Event("fail")
+		jobstate[in.Id] = jobFSM.FSM.Current()
 		updateJob(&j)
 		return err
 	}
@@ -656,11 +664,11 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	totalCount, totalSize, err := countObjs(ctx, in)
 	j.TotalCount = totalCount
 	j.TotalCapacity = totalSize
-
 	if err != nil || totalCount == 0 || totalSize == 0 {
 		if err != nil {
 			j.Status = flowtype.JOB_STATUS_FAILED
 			jobFSM.FSM.Event("fail")
+			jobstate[in.Id] = jobFSM.FSM.Current()
 		}
 		j.EndTime = time.Now()
 		updateJob(&j)

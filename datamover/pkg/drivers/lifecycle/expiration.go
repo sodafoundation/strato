@@ -18,16 +18,16 @@ import (
 	"context"
 	"errors"
 
-	"github.com/micro/go-log"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func deleteObj(objKey string, lastmodifed int64, virtBucket string, bkend *BackendInfo) error {
-	log.Logf("object expiration: objKey=%s, virtBucket=%s, bkend:%+v\n", objKey, virtBucket, *bkend)
+	log.Infof("object expiration: objKey=%s, virtBucket=%s, bkend:%+v\n", objKey, virtBucket, *bkend)
 	if virtBucket == "" {
-		log.Logf("expiration of object[%s] is failed: virtual bucket is null.\n", objKey)
+		log.Infof("expiration of object[%s] is failed: virtual bucket is null.\n", objKey)
 		return errors.New(DMERR_InternalError)
 	}
 
@@ -44,11 +44,11 @@ func deleteObj(objKey string, lastmodifed int64, virtBucket string, bkend *Backe
 	_, err = s3client.DeleteObject(ctx, &delMetaReq)
 	if err != nil {
 		// if it is deleted failed, it will be delete again in the next schedule round
-		log.Logf("delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n",
+		log.Errorf("delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n",
 			virtBucket, objKey, err)
 		return err
 	} else {
-		log.Logf("delete object metadata of obj[bucket:%s,objKey:%s] successfully.\n",
+		log.Infof("delete object metadata of obj[bucket:%s,objKey:%s] successfully.\n",
 			virtBucket, objKey)
 	}
 
@@ -56,11 +56,11 @@ func deleteObj(objKey string, lastmodifed int64, virtBucket string, bkend *Backe
 }
 
 func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
-	log.Logf("delete action: delete %s.\n", acReq.ObjKey)
+	log.Infof("delete action: delete %s.\n", acReq.ObjKey)
 
 	loc, err := getBackendInfo(&acReq.SourceBackend, false)
 	if err != nil {
-		log.Logf("expiration of %s failed because get location failed\n", acReq.ObjKey)
+		log.Errorf("expiration of %s failed because get location failed\n", acReq.ObjKey)
 		return err
 	}
 

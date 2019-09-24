@@ -76,10 +76,11 @@ const (
 
 type Policy struct {
 	Id          bson.ObjectId `json:"-" bson:"_id,omitempty"`
+	TenantId    string        `json:"tenantId" bson:"tenantId"`
+	UserId      string        `json:"userId" bson:"userId"`
 	Name        string        `json:"name" bson:"name"`
 	Description string        `json:"description" bson:"description"`
 	Schedule    Schedule      `json:"schedule" bson:"schedule"`
-	Tenant      string        `json:"tenant" bson:"tenant"`
 }
 
 const (
@@ -150,7 +151,8 @@ type Job struct {
 	EndTime        time.Time `json:"endTime" bson:"endTime"`
 	RemainSource   bool      `json:"remainSource" bson:"remainSource"`
 	Status         string    `json:"status" bson:"status"` //queueing,
-	Tenant         string    `json:"tenant" bson:"tenant"`
+	TenantId       string    `json:"tenantId" bson:"tenantId"`
+	UserId         string    `json:"userId" bson:"userId"`
 	Progress       int64     `json:"progress" bson:"progress"`
 }
 

@@ -18,21 +18,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
-
 	"fmt"
+	"os"
 	"strings"
 
-	"github.com/micro/go-log"
-	c "github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/job"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
 	"github.com/opensds/multi-cloud/dataflow/pkg/policy"
+	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 type dataflowService struct{}
@@ -47,7 +46,7 @@ func NewDataFlowService() pb.DataFlowHandler {
 	for i := 0; i < len(config); i++ {
 		addr := strings.Split(config[i], "//")
 		if len(addr) != 2 {
-			log.Log("Invalid addr:", config[i])
+			log.Info("Invalid addr:", config[i])
 		} else {
 			addrs = append(addrs, addr[1])
 		}
@@ -63,7 +62,8 @@ func policyModel2Resp(policy *model.Policy) *pb.Policy {
 		Id:          policy.Id.Hex(),
 		Name:        policy.Name,
 		Description: policy.Description,
-		Tenant:      policy.Tenant,
+		Tenant:      policy.TenantId,
+		UserId:      policy.UserId,
 		Schedule: &pb.Schedule{
 			Type:             policy.Schedule.Type,
 			TiggerProperties: policy.Schedule.TriggerProperties,
@@ -72,14 +72,14 @@ func policyModel2Resp(policy *model.Policy) *pb.Policy {
 }
 
 func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest, out *pb.GetPolicyResponse) error {
-	log.Log("Get policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Get policy is called in dataflow service.")
+
 	id := in.GetId()
 	if id == "" {
 		return errors.New("No id provided.")
 	}
 
-	p, err := policy.Get(actx, id)
+	p, err := policy.Get(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -88,21 +88,20 @@ func (b *dataflowService) GetPolicy(ctx context.Context, in *pb.GetPolicyRequest
 	//For debug -- begin
 	jsons1, errs1 := json.Marshal(out)
 	if errs1 != nil {
-		log.Logf(errs1.Error())
+		log.Infof(errs1.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons1)
+		log.Infof("jsons1: %s.\n", jsons1)
 	}
 	//For debug -- end
 	return err
 }
 
 func (b *dataflowService) ListPolicy(ctx context.Context, in *pb.ListPolicyRequest, out *pb.ListPolicyResponse) error {
-	log.Log("List policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("List policy is called in dataflow service.")
 
-	pols, err := policy.List(actx)
+	pols, err := policy.List(ctx)
 	if err != nil {
-		log.Logf("List policy err:%s.", err)
+		log.Infof("List policy err:%s.", err)
 		return nil
 	}
 
@@ -113,17 +112,17 @@ func (b *dataflowService) ListPolicy(ctx context.Context, in *pb.ListPolicyReque
 	//For debug -- begin
 	jsons1, errs1 := json.Marshal(out)
 	if errs1 != nil {
-		log.Logf(errs1.Error())
+		log.Infof(errs1.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons1)
+		log.Infof("jsons1: %s.\n", jsons1)
 	}
 	//For debug -- end
 	return err
 }
 
-func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyRequest, out *pb.CreatePolicyResponse) error {
-	log.Log("Create policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyRequest,
+	out *pb.CreatePolicyResponse) error {
+	log.Info("Create policy is called in dataflow service.")
 	pol := model.Policy{}
 	pol.Name = in.Policy.GetName()
 	pol.Description = in.Policy.GetDescription()
@@ -131,18 +130,21 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 		pol.Schedule.Type = in.Policy.Schedule.Type
 		pol.Schedule.TriggerProperties = in.Policy.Schedule.TiggerProperties
 	} else {
-		out.Err = "Get schedule failed."
-		return errors.New("Get schedule failed.")
+		out.Err = "get schedule failed"
+		return errors.New("get schedule failed")
 	}
 
 	if pol.Name == "" {
 		out.Err = "no name provided."
-		return errors.New("Get schedule failed.")
+		return errors.New("et schedule failed")
 	}
 
-	p, err := policy.Create(actx, &pol)
+	pol.TenantId = in.Policy.TenantId
+	pol.UserId = in.Policy.UserId
+	log.Infof("dataflowservice CreatePolicy:%+v\n", pol)
+	p, err := policy.Create(ctx, &pol)
 	if err != nil {
-		log.Logf("Create policy err:%s.", out.Err)
+		log.Infof("create policy err:%s.", out.Err)
 		return nil
 	}
 
@@ -151,42 +153,41 @@ func (b *dataflowService) CreatePolicy(ctx context.Context, in *pb.CreatePolicyR
 }
 
 func (b *dataflowService) DeletePolicy(ctx context.Context, in *pb.DeletePolicyRequest, out *pb.DeletePolicyResponse) error {
-	log.Log("Delete policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Delete policy is called in dataflow service.")
 	id := in.GetId()
 	if id == "" {
 		out.Err = "Get id failed."
 		return errors.New("Get id failed.")
 	}
 
-	err := policy.Delete(actx, id)
+	err := policy.Delete(ctx, id)
 	if err == nil {
 		out.Err = ""
 	} else {
 		out.Err = err.Error()
 	}
-	log.Logf("Delete policy err:%s.", out.Err)
+	log.Infof("Delete policy err:%s.", out.Err)
 
 	return err
 }
 
 func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyRequest, out *pb.UpdatePolicyResponse) error {
-	log.Log("Update policy is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Update policy is called in dataflow service.")
+
 	policyId := in.GetPolicyId()
 	if policyId == "" {
-		return errors.New("No id provided.")
+		return errors.New("no id provided.")
 	}
 
-	log.Logf("body:%s", in.GetBody())
+	log.Infof("body:%s", in.GetBody())
 	updateMap := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(in.GetBody()), &updateMap); err != nil {
 		return err
 	}
 
-	p, err := policy.Update(actx, policyId, updateMap)
+	p, err := policy.Update(ctx, policyId, updateMap)
 	if err != nil {
-		log.Logf("Update policy finished, err:%s", err)
+		log.Infof("Update policy finished, err:%s", err)
 		return err
 	}
 	out.Policy = policyModel2Resp(p)
@@ -203,7 +204,7 @@ func fillRspConnector(out *pb.Connector, in *model.Connector) {
 			out.ConnConfig = append(out.ConnConfig, &pb.KV{Key: in.ConnConfig[i].Key, Value: in.ConnConfig[i].Value})
 		}
 	default:
-		log.Logf("Not support connector type:%v\n", in.StorType)
+		log.Infof("Not support connector type:%v\n", in.StorType)
 	}
 }
 
@@ -240,19 +241,18 @@ func planModel2Resp(plan *model.Plan) *pb.Plan {
 }
 
 func (b *dataflowService) GetPlan(ctx context.Context, in *pb.GetPlanRequest, out *pb.GetPlanResponse) error {
-	log.Log("Get plan is called in dataflow service.")
+	log.Info("Get plan is called in dataflow service.")
 
-	actx := c.NewContextFromJson(in.GetContext())
 	id := in.GetId()
 	if id == "" {
-		errmsg := fmt.Sprint("No id specified.")
+		errmsg := fmt.Sprint("no id specified.")
 		out.Err = errmsg
 		return errors.New(errmsg)
 	}
 
-	p, err := plan.Get(actx, id)
+	p, err := plan.Get(ctx, id)
 	if err != nil {
-		log.Logf("Get plan err:%s.", err)
+		log.Infof("Get plan err:%s.", err)
 		return err
 	}
 
@@ -261,27 +261,26 @@ func (b *dataflowService) GetPlan(ctx context.Context, in *pb.GetPlanRequest, ou
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {
-		log.Logf(errs.Error())
+		log.Infof(errs.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons)
+		log.Infof("jsons1: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err
 }
 
 func (b *dataflowService) ListPlan(ctx context.Context, in *pb.ListPlanRequest, out *pb.ListPlanResponse) error {
-	log.Log("List plans is called in dataflow service.")
+	log.Info("List plans is called in dataflow service.")
 
 	if in.Limit < 0 || in.Offset < 0 {
 		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
-		log.Log(msg)
+		log.Info(msg)
 		return errors.New(msg)
 	}
 
-	actx := c.NewContextFromJson(in.GetContext())
-	plans, err := plan.List(actx, int(in.Limit), int(in.Offset), in.Filter)
+	plans, err := plan.List(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("List plans err:%s.", err)
+		log.Infof("List plans err:%s.", err)
 		return err
 	}
 
@@ -292,9 +291,9 @@ func (b *dataflowService) ListPlan(ctx context.Context, in *pb.ListPlanRequest, 
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {
-		log.Logf(errs.Error())
+		log.Infof(errs.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons)
+		log.Infof("jsons1: %s.\n", jsons)
 	}
 	//For debug -- end
 
@@ -313,14 +312,14 @@ func fillReqConnector(out *model.Connector, in *pb.Connector) error {
 		}
 		return nil
 	default:
-		log.Logf("Not support connector type:%v\n", in.StorType)
+		log.Infof("Not support connector type:%v\n", in.StorType)
 		return errors.New("Invalid connector type.")
 	}
 }
 
 func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanRequest, out *pb.CreatePlanResponse) error {
-	log.Log("Create plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Create plan is called in dataflow service.")
+
 	pl := model.Plan{}
 	pl.Name = in.Plan.GetName()
 
@@ -341,8 +340,8 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 			return err
 		}
 	} else {
-		out.Err = "Get source connector failed."
-		return errors.New("Invalid source connector.")
+		out.Err = "get source connector failed"
+		return errors.New("invalid source connector")
 	}
 	if in.Plan.GetDestConn() != nil {
 		destConn := model.Connector{StorType: in.Plan.DestConn.StorType}
@@ -354,8 +353,8 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 			return err
 		}
 	} else {
-		out.Err = "Get destination connector failed."
-		return errors.New("Invalid destination connector.")
+		out.Err = "get destination connector failed"
+		return errors.New("invalid destination connector")
 	}
 	if in.Plan.GetFilter() != nil {
 		if in.Plan.Filter.Prefix != "" {
@@ -373,9 +372,9 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 		return errors.New("Name or type is null.")
 	}
 
-	p, err := plan.Create(actx, &pl)
+	p, err := plan.Create(ctx, &pl)
 	if err != nil {
-		log.Logf("Create plan failed, err:%v", err)
+		log.Infof("Create plan failed, err:%v", err)
 		return err
 	}
 
@@ -384,8 +383,7 @@ func (b *dataflowService) CreatePlan(ctx context.Context, in *pb.CreatePlanReque
 }
 
 func (b *dataflowService) DeletePlan(ctx context.Context, in *pb.DeletePlanRequest, out *pb.DeletePlanResponse) error {
-	log.Log("Delete plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Delete plan is called in dataflow service.")
 
 	id := in.GetId()
 	if id == "" {
@@ -393,20 +391,19 @@ func (b *dataflowService) DeletePlan(ctx context.Context, in *pb.DeletePlanReque
 		return errors.New("Get id failed.")
 	}
 
-	err := plan.Delete(actx, id)
+	err := plan.Delete(ctx, id)
 	if err == nil {
 		out.Err = ""
 	} else {
 		out.Err = err.Error()
 	}
-	log.Logf("Delete plan err:%s.", out.Err)
+	log.Infof("Delete plan err:%s.", out.Err)
 
 	return err
 }
 
 func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanRequest, out *pb.UpdatePlanResponse) error {
-	log.Log("Update plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Update plan is called in dataflow service.")
 
 	if in.GetPlanId() == "" {
 		return errors.New("No id provided.")
@@ -417,9 +414,9 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 		return err
 	}
 
-	p, err := plan.Update(actx, in.GetPlanId(), updateMap)
+	p, err := plan.Update(ctx, in.GetPlanId(), updateMap)
 	if err != nil {
-		log.Logf("Update plan finished, err:%s.", err)
+		log.Infof("Update plan finished, err:%s.", err)
 		return err
 	}
 
@@ -428,26 +425,33 @@ func (b *dataflowService) UpdatePlan(ctx context.Context, in *pb.UpdatePlanReque
 }
 
 func (b *dataflowService) RunPlan(ctx context.Context, in *pb.RunPlanRequest, out *pb.RunPlanResponse) error {
-	log.Log("Run plan is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Run plan is called in dataflow service.")
 
-	id := in.Id
-	jid, err := plan.Run(actx, id)
+	tenantId, err := utils.GetTenantId(ctx)
+	if err != nil {
+		log.Errorf("run plan failed, err=%v\n", err)
+		return err
+	}
+	userId, err := utils.GetUserId(ctx)
+	if err != nil {
+		log.Errorf("run plan failed, err=%v\n", err)
+		return err
+	}
+	jid, err := plan.Run(in.Id, tenantId, userId)
 	if err == nil {
 		out.JobId = string(jid.Hex())
 		out.Err = ""
 	} else {
 		out.JobId = ""
 		out.Err = err.Error()
-		log.Logf("Run plan err:%s.", out.Err)
+		log.Infof("Run plan err:%s.", out.Err)
 	}
 
 	return err
 }
 
 func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out *pb.GetJobResponse) error {
-	log.Log("Get job is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Info("Get job is called in dataflow service.")
 
 	if in.Id == "" {
 		errmsg := fmt.Sprint("No id specified.")
@@ -455,9 +459,9 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 		return errors.New(errmsg)
 	}
 
-	jb, err := job.Get(actx, in.Id)
+	jb, err := job.Get(ctx, in.Id)
 	if err != nil {
-		log.Logf("Get job err:%d.", err)
+		log.Infof("Get job err:%d.", err)
 		out.Err = err.Error()
 		return err
 	} else {
@@ -470,26 +474,25 @@ func (b *dataflowService) GetJob(ctx context.Context, in *pb.GetJobRequest, out 
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {
-		log.Logf(errs.Error())
+		log.Infof(errs.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons)
+		log.Infof("jsons1: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err
 }
 
 func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, out *pb.ListJobResponse) error {
-	log.Log("List job is called in dataflow service.")
+	log.Info("List job is called in dataflow service.")
 	if in.Limit < 0 || in.Offset < 0 {
-		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
-		log.Log(msg)
+		msg := fmt.Sprintf("invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		log.Info(msg)
 		return errors.New(msg)
 	}
 
-	actx := c.NewContextFromJson(in.GetContext())
-	jobs, err := job.List(actx, int(in.Limit), int(in.Offset), in.Filter)
+	jobs, err := job.List(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Logf("Get job err:%d.", err)
+		log.Infof("Get job err:%d.", err)
 		return err
 	}
 
@@ -510,20 +513,19 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {
-		log.Logf(errs.Error())
+		log.Infof(errs.Error())
 	} else {
-		log.Logf("Got jobs: %s.\n", jsons)
+		log.Infof("Got jobs: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err
 }
 
 func (b *dataflowService) AbortJob(ctx context.Context, in *pb.AbortJobRequest, out *pb.AbortJobResponse) error {
-	log.Log("Abort job is called in dataflow service.")
-	actx := c.NewContextFromJson(in.GetContext())
+	log.Infof("Abort job is called in dataflow service.")
 
 	//dbcontext := &c.Context{}
-	j, err := db.DbAdapter.GetJob(actx, in.Id)
+	j, err := db.DbAdapter.GetJob(ctx, in.Id)
 	if err != nil {
 		return err
 	}
@@ -552,22 +554,22 @@ func (b *dataflowService) AbortJob(ctx context.Context, in *pb.AbortJobRequest, 
 		return nil
 	}
 
-	err = job.AbortJob(actx, in.Id)
+	err = job.AbortJob(ctx, in.Id)
 	if err != nil {
-		log.Logf("Get job err:%d.", err)
+		log.Infof("Get job err:%d.", err)
 		out.Err = err.Error()
 		return err
 	}
-	j, err = db.DbAdapter.GetJob(actx, in.Id)
+	j, err = db.DbAdapter.GetJob(ctx, in.Id)
 	out.Id = in.Id
 	out.Status = model.JOB_STATUS_ABORTED
 
 	//For debug -- begin
 	jsons, errs := json.Marshal(out)
 	if errs != nil {
-		log.Logf(errs.Error())
+		log.Errorf(errs.Error())
 	} else {
-		log.Logf("jsons1: %s.\n", jsons)
+		log.Infof("jsons1: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err

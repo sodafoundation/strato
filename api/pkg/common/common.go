@@ -15,12 +15,15 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	"github.com/micro/go-micro/metadata"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -40,6 +43,20 @@ const (
 	KStorageTier  = "tier"
 )
 
+const (
+	CTX_KEY_TENANT_ID = "Tenantid"
+	CTX_KEY_USER_ID   = "Userid"
+	CTX_KEY_IS_ADMIN  = "Isadmin"
+	CTX_VAL_TRUE      = "true"
+)
+
+const (
+	REST_KEY_OPERATION       = "operation"
+	REST_VAL_MULTIPARTUPLOAD = "multipartupload"
+	REST_VAL_DOWNLOAD        = "download"
+	REST_VAL_UPLOAD          = "upload"
+)
+
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
 	limit := int32(DefaultPaginationLimit)
 	offset := int32(DefaultPaginationOffset)
@@ -47,7 +64,7 @@ func GetPaginationParam(request *restful.Request) (int32, int32, error) {
 	if request.QueryParameter(KLimit) != "" {
 		limitVal, err := strconv.Atoi(request.QueryParameter("limit"))
 		if err != nil {
-			log.Logf("limit is invalid: %v", err)
+			log.Errorf("limit is invalid: %v", err)
 			return limit, offset, err
 		}
 		if limit > int32(limitVal) {
@@ -58,7 +75,7 @@ func GetPaginationParam(request *restful.Request) (int32, int32, error) {
 	if request.QueryParameter(KOffset) != "" {
 		offsetVal, err := strconv.Atoi(request.QueryParameter("offset"))
 		if err != nil {
-			log.Logf("offset is invalid: %v", err)
+			log.Errorf("offset is invalid: %v", err)
 			return limit, offset, err
 		}
 		offset = int32(offsetVal)
@@ -100,4 +117,24 @@ func GetFilter(request *restful.Request, filterOpts []string) (map[string]string
 		filter[opt] = v
 	}
 	return filter, nil
+}
+
+func InitCtxWithAuthInfo(request *restful.Request) context.Context {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		CTX_KEY_USER_ID:   actx.UserId,
+		CTX_KEY_TENANT_ID: actx.TenantId,
+		CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
+	})
+
+	return ctx
+}
+
+func InitCtxWithVal(request *restful.Request, md map[string]string) context.Context {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	md[CTX_KEY_USER_ID] = actx.UserId
+	md[CTX_KEY_TENANT_ID] = actx.TenantId
+	md[CTX_KEY_IS_ADMIN] = strconv.FormatBool(actx.IsAdmin)
+
+	return metadata.NewContext(context.Background(), md)
 }

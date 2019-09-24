@@ -20,7 +20,7 @@ import (
 )
 
 func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "routbucket:put") {
+	if !policy.Authorize(request, response, "bucket:put") {
 		return
 	}
 	if IsQuery(request, "acl") {
