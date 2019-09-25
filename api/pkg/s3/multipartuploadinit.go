@@ -109,6 +109,8 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		if err != nil {
 			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
+			client.AbortMultipartUpload(res, ctx)
+			return
 		}
 	} else {
 		object.Size = int64(size)
@@ -120,6 +122,8 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		if err != nil {
 			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
+			client.AbortMultipartUpload(res, ctx)
+			return
 		}
 	}
 
@@ -134,6 +138,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	if err != nil {
 		log.Errorf("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
+		client.AbortMultipartUpload(res, ctx)
 		return
 	}
 

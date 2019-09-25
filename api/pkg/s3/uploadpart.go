@@ -38,7 +38,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	if objectMD == nil {
 		log.Errorf("no such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
-
+		return
 	}
 	log.Errorf("objectMD.Backend is %v\n", objectMD.Backend)
 	client = getBackendByName(ctx, s, objectMD.Backend)
@@ -78,6 +78,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	if err != nil {
 		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
+		return
 	}
 
 	//return xml format
