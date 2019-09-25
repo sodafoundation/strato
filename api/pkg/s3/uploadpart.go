@@ -1,27 +1,25 @@
 package s3
 
 import (
-	"encoding/xml"
-	"net/http"
-	"strconv"
-	"time"
+	//"strconv"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	/*c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+	*/
 )
 
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
-	bucketName := request.PathParameter("bucketName")
+/*	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	contentLenght := request.HeaderParameter("content-length")
 	size, _ := strconv.ParseInt(contentLenght, 10, 64)
 	uploadId := request.QueryParameter("uploadId")
 	partNumber := request.QueryParameter("partNumber")
 	partNumberInt, _ := strconv.ParseInt(partNumber, 10, 64)
+
 	log.Infof("upload part, partNum=#%s, object=%s, bucket=%s \n", partNumber, objectKey, bucketName)
 
 	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
@@ -38,7 +36,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	if objectMD == nil {
 		log.Errorf("no such object err\n")
 		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
-
+		return
 	}
 	log.Errorf("objectMD.Backend is %v\n", objectMD.Backend)
 	client = getBackendByName(ctx, s, objectMD.Backend)
@@ -78,6 +76,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	if err != nil {
 		log.Errorf("err is %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
+		return
 	}
 
 	//return xml format
@@ -90,6 +89,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	xmlstring = []byte(xml.Header + string(xmlstring))
 	log.Infof("resp:\n%s", xmlstring)
 	response.Write(xmlstring)
+*/
 
 	log.Info("Uploadpart successfully.")
 }

@@ -78,7 +78,7 @@ func ScheduleLifecycle() {
 	}
 
 	// Get bucket list.
-	listReq := s3.BaseRequest{Id: "test"}
+	listReq := s3.BaseRequest{}
 	listRsp, err := s3client.ListBuckets(context.Background(), &listReq)
 	if err != nil {
 		log.Errorf("[ScheduleLifecycle]list buckets failed: %v.\n", err)
@@ -94,7 +94,7 @@ func ScheduleLifecycle() {
 
 		log.Infof("[ScheduleLifecycle]bucket[%s] has lifecycle rule.\n", v.Name)
 
-		err := handleBucketLifecyle(v.Name, v.LifecycleConfiguration)
+		err = handleBucketLifecyle(v.Name, v.LifecycleConfiguration)
 		if err != nil {
 			log.Errorf("[ScheduleLifecycle]handle bucket lifecycle for bucket[%s] failed, err:%v.\n", v.Name, err)
 			continue
@@ -180,7 +180,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 		log.Infof("abort rule: %+v\n", *v)
 	}
 	// End: Log for debug
-	schedSortedAbortRules(&abortRules)
+	//schedSortedAbortRules(&abortRules)
 
 	return nil
 }
@@ -223,7 +223,7 @@ func getObjects(r *InternalLifecycleRule, offset, limit int32) ([]*osdss3.Object
 
 	return s3rsp.ListObjects, nil
 }
-
+/*
 func schedSortedAbortRules(inRules *InterRules) {
 	log.Info("schedSortedAbortRules begin ...")
 	dupCheck := map[string]struct{}{}
@@ -266,7 +266,7 @@ func schedSortedAbortRules(inRules *InterRules) {
 	}
 	log.Info("schedSortedAbortRules end ...")
 }
-
+*/
 func schedSortedActionsRules(inRules *InterRules) {
 	log.Info("schedSortedActionsRules begin ...")
 	dupCheck := map[string]struct{}{}
@@ -281,7 +281,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 			offset += num
 			// Check if the object exist in the dupCheck map.
 			for _, obj := range objs {
-				if obj.IsDeleteMarker == "1" {
+				if obj.DeleteMarker == true {
 					log.Infof("deleteMarker of object[%s] is set, no lifecycle action need.\n", obj.ObjectKey)
 					continue
 				}
@@ -292,7 +292,8 @@ func schedSortedActionsRules(inRules *InterRules) {
 				}
 				if _, ok := dupCheck[obj.ObjectKey]; !ok {
 					// Not exist means this object has is not processed in this round of scheduling.
-					if r.ActionType != ActionExpiration && obj.Tier == r.Tier && (obj.Backend == r.Backend || r.Backend == "") {
+					if r.ActionType != ActionExpiration && obj.Tier == r.Tier &&
+						(obj.Location == r.Backend || r.Backend == "") {
 						// For transition, if target backend and storage class is the same as source backend and storage class, then no transition is need.
 						log.Infof("no need transition for object[%s], backend=%s, tier=%d\n", obj.ObjectKey, r.Backend, r.Tier)
 						// in case different actions exist for an object at the same time, for example transition to aws after 30 days
@@ -305,7 +306,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 					var action int32
 					if r.ActionType == ActionExpiration {
 						action = int32(ActionExpiration)
-					} else if r.Backend == "" || obj.Backend == r.Backend {
+					} else if r.Backend == "" || obj.Location == r.Backend {
 						action = int32(ActionIncloudTransition)
 					} else {
 						action = int32(ActionCrosscloudTransition)
@@ -318,15 +319,16 @@ func schedSortedActionsRules(inRules *InterRules) {
 						dupCheck[obj.ObjectKey] = struct{}{}
 						continue
 					}
-					log.Infof("lifecycle action: object=[%s] type=[%d] source-tier=[%d] target-tier=[%d] source-backend=[%s] target-backend=[%s].\n",
-						obj.ObjectKey, r.ActionType, obj.Tier, r.Tier, obj.Backend, r.Backend)
+					log.Infof("lifecycle action: object=[%s] type=[%d] source-tier=[%d] target-tier=[%d] " +
+						"source-backend=[%s] target-backend=[%s].\n", obj.ObjectKey, r.ActionType, obj.Tier, r.Tier,
+						obj.Location, r.Backend)
 					acreq := datamover.LifecycleActionRequest{
 						ObjKey:        obj.ObjectKey,
 						BucketName:    obj.BucketName,
 						Action:        action,
 						SourceTier:    obj.Tier,
 						TargetTier:    r.Tier,
-						SourceBackend: obj.Backend,
+						SourceBackend: obj.Location,
 						TargetBackend: r.Backend,
 						ObjSize:       obj.Size,
 						LastModified:  obj.LastModified,

@@ -20,49 +20,58 @@ import (
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/common"
+	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
+        "github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *restful.Response) {
 	ctx := common.InitCtxWithAuthInfo(request)
+	bucketName := request.PathParameter("bucketName")
+	ruleID := request.Request.URL.Query()["ruleID"]
+	log.Infof("received request for deleting lifecycle rule[id=%s] for bucket[name=%s].\n", ruleID, bucketName)
+
+	if ruleID == nil {
+		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForLifecycleDelete)
+		return
+	}
 
 	//var foundID int
 	FoundIDArray := []string{}
 	NonFoundIDArray := []string{}
-	bucketName := request.PathParameter("bucketName")
-	ruleID := request.Request.URL.Query()["ruleID"]
-	if ruleID != nil {
-		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-		for _, id := range ruleID {
-			isfound := false
-			for _, lcRule := range bucket.LifecycleConfiguration {
-				if lcRule.Id == id {
-					isfound = true
-					FoundIDArray = append(FoundIDArray, id)
-				}
-			}
-			if !isfound {
-				NonFoundIDArray = append(NonFoundIDArray, id)
-			}
-		}
-		for _, id := range NonFoundIDArray {
-			response.WriteErrorString(http.StatusBadRequest, strings.Replace("error: rule ID $1 doesn't exist \n\n", "$1", id, 1))
-		}
 
-		for _, id := range FoundIDArray {
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.BaseRequest{Id: bucketName})
+	if err != nil {
+		log.Infof("get bucket[name=%s] failed, err=%v.\n", bucketName, err)
+		response.WriteError(http.StatusInternalServerError, NoSuchBucket.Error())
+		return
+	}
+
+	for _, id := range ruleID {
+		isfound := false
+		for _, lcRule := range bucket.LifecycleConfiguration {
+			if lcRule.Id == id {
+				isfound = true
+				FoundIDArray = append(FoundIDArray, id)
+			}
+		}
+		if !isfound {
+			NonFoundIDArray = append(NonFoundIDArray, id)
+		}
+	}
+	for _, id := range NonFoundIDArray {
+		response.WriteErrorString(http.StatusBadRequest, strings.Replace("error: rule ID $1 doesn't exist \n\n", "$1", id, 1))
+	}
+
+	for _, id := range FoundIDArray {
 			deleteInput := s3.DeleteLifecycleInput{Bucket: bucketName, RuleID: id}
 			res, err := s.s3Client.DeleteBucketLifecycle(ctx, &deleteInput)
-			if err != nil {
-				response.WriteError(http.StatusBadRequest, err)
-				return
-			}
-			response.WriteEntity(res)
+		if err != nil {
+			log.Infof("delete lifecycle[id=%s] of bucket[name=%s] failed, err=%v.\n", id, bucketName, err)
+			response.WriteError(http.StatusBadRequest, err)
+			return
 		}
-
-	} else {
-		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForLifecycleDelete)
-		return
+		response.WriteEntity(res)
 	}
 	log.Info("delete bucket lifecycle successful.")
 }

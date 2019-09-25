@@ -15,21 +15,14 @@
 package s3
 
 import (
-	"net/http"
-	"strings"
-
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
-	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
-	url := request.Request.URL
-	log.Infof("URL is %v", request.Request.URL.String())
-
-	bucketName := request.PathParameter("bucketName")
+	//url := request.Request.URL
+	log.Infof("DELETE object, URL is %v", request.Request.URL.String())
+	/*bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
@@ -57,6 +50,7 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 	} else {
 		log.Errorf("No such object")
 		return
-	}
+	}*/
+
 
 }

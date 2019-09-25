@@ -63,19 +63,19 @@ func getLocationInfo(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest)
 
 func refreshSrcLocation(ctx context.Context, obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo,
 	locMap map[string]*LocationInfo) (newSrcLoca *LocationInfo, err error) {
-	if obj.Backend != srcLoca.BakendName && obj.Backend != "" {
+	if obj.Location != srcLoca.BakendName && obj.Location != "" {
 		//If oject does not use the default backend
 		logger.Printf("locaMap:%+v\n", locMap)
-		//for selfdefined connector, obj.backend and srcLoca.backendname would be ""
+		//for selfdefined connector, obj.Location and srcLoca.backendname would be ""
 		//TODO: use read/wirte lock
-		newLoc, exists := locMap[obj.Backend]
+		newLoc, exists := locMap[obj.Location]
 		if !exists {
-			newLoc, err = getOsdsLocation(ctx, obj.BucketName, obj.Backend)
+			newLoc, err = getOsdsLocation(ctx, obj.BucketName, obj.Location)
 			if err != nil {
 				return nil, err
 			}
 		}
-		locMap[obj.Backend] = newLoc
+		locMap[obj.Location] = newLoc
 		logger.Printf("newSrcLoca=%+v\n", newLoc)
 		return newLoc, nil
 	}
@@ -105,13 +105,13 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		virtBkname := conn.GetBucketName()
-		reqbk := osdss3.Bucket{Name: virtBkname}
+		reqbk := osdss3.BaseRequest{Id: virtBkname}
 		rspbk, err := s3client.GetBucket(ctx, &reqbk)
 		if err != nil {
 			logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
 			return nil, errors.New("get bucket information failed")
 		}
-		return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
+		return getOsdsLocation(ctx, virtBkname, rspbk.DefaultLocation)
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		cfg := conn.ConnConfig
 		loca := LocationInfo{}
@@ -214,7 +214,7 @@ func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -229,7 +229,7 @@ func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -244,7 +244,7 @@ func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -258,7 +258,8 @@ func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name, Backend: ""}
+		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name,
+		Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -273,7 +274,7 @@ func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -288,7 +289,7 @@ func getGcpS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
