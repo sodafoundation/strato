@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/s3/proto"
 )
@@ -64,5 +64,5 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 		response.WriteErrorString(http.StatusBadRequest, NoRuleIDForLifecycleDelete)
 		return
 	}
-	log.Log("delete bucket lifecycle successful.")
+	log.Info("delete bucket lifecycle successful.")
 }

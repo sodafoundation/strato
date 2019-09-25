@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	backend "github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
@@ -33,9 +33,9 @@ import (
 )
 
 func changeStorageClass(objKey *string, newClass *string, virtBucket *string, bkend *BackendInfo) error {
-	log.Logf("Change storage class of object[%s] to %s.\n", *objKey, *newClass)
+	log.Infof("Change storage class of object[%s] to %s.\n", *objKey, *newClass)
 	if *virtBucket == "" {
-		log.Logf("change storage class of object[%s] is failed: virtual bucket is null\n", objKey)
+		log.Infof("change storage class of object[%s] is failed: virtual bucket is null\n", objKey)
 		return errors.New(DMERR_InternalError)
 	}
 
@@ -59,12 +59,12 @@ func changeStorageClass(objKey *string, newClass *string, virtBucket *string, bk
 		mover := blobmover.BlobMover{}
 		err = mover.ChangeStorageClass(&key, newClass, bkend)
 	default:
-		log.Logf("change storage class of object[objkey:%s] failed: backend type is not support.\n", objKey)
+		log.Infof("change storage class of object[objkey:%s] failed: backend type is not support.\n", objKey)
 		err = errors.New(DMERR_UnSupportBackendType)
 	}
 
 	if err == nil {
-		log.Logf("Change storage class of object[%s] to %s successfully.\n", *objKey, *newClass)
+		log.Infof("Change storage class of object[%s] to %s successfully.\n", *objKey, *newClass)
 	}
 
 	return err
@@ -73,11 +73,11 @@ func changeStorageClass(objKey *string, newClass *string, virtBucket *string, bk
 func loadStorageClassDefinition() error {
 	res, _ := s3client.GetTierMap(context.Background(), &osdss3.BaseRequest{})
 	if len(res.Tier2Name) == 0 {
-		log.Log("get tier definition failed")
+		log.Info("get tier definition failed")
 		return fmt.Errorf("get tier definition failed")
 	}
 
-	log.Logf("Load storage class definition from s3 service successfully, res.Tier2Name:%+v\n", res.Tier2Name)
+	log.Infof("Load storage class definition from s3 service successfully, res.Tier2Name:%+v\n", res.Tier2Name)
 	Int2ExtTierMap = make(map[string]*Int2String)
 	for k, v := range res.Tier2Name {
 		val := make(Int2String)
@@ -91,7 +91,7 @@ func loadStorageClassDefinition() error {
 }
 
 func getStorageClassName(tier int32, storageType string) (string, error) {
-	log.Logf("Get storage class name of tier[%d].\n", tier)
+	log.Infof("Get storage class name of tier[%d].\n", tier)
 	var err error
 	var mutex sync.Mutex
 	mutex.Lock()
@@ -121,12 +121,12 @@ func getStorageClassName(tier int32, storageType string) (string, error) {
 	case flowtype.STOR_TYPE_GCP_S3:
 		key = backend.BackendTypeGcp
 	default:
-		log.Log("map tier to storage class name failed: backend type is not support.")
+		log.Info("map tier to storage class name failed: backend type is not support.")
 		return "", errors.New(DMERR_UnSupportBackendType)
 	}
 
 	className := ""
-	log.Logf("key:%s\n", key)
+	log.Infof("key:%s\n", key)
 	v1, _ := Int2ExtTierMap[key]
 	v2, ok := (*v1)[tier]
 	if !ok {
@@ -135,23 +135,23 @@ func getStorageClassName(tier int32, storageType string) (string, error) {
 		className = v2
 	}
 
-	log.Logf("Storage class name of tier[%d] is %s.\n", tier, className)
+	log.Infof("Storage class name of tier[%d] is %s.\n", tier, className)
 	return className, err
 }
 
 func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
-	log.Logf("in-cloud transition action: transition %s from %d to %d of %s.\n",
+	log.Infof("in-cloud transition action: transition %s from %d to %d of %s.\n",
 		acReq.ObjKey, acReq.SourceTier, acReq.TargetTier, acReq.SourceBackend)
 
 	loca, err := getBackendInfo(&acReq.SourceBackend, false)
 	if err != nil {
-		log.Logf("in-cloud transition of %s failed because get location failed.\n", acReq.ObjKey)
+		log.Errorf("in-cloud transition of %s failed because get location failed.\n", acReq.ObjKey)
 		return err
 	}
 
 	className, err := getStorageClassName(acReq.TargetTier, loca.StorType)
 	if err != nil {
-		log.Logf("in-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
+		log.Errorf("in-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
 		return err
 	}
 	err = changeStorageClass(&acReq.ObjKey, &className, &acReq.BucketName, loca)
@@ -164,7 +164,7 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	}
 
 	if err != nil {
-		log.Logf("in-cloud transition of %s failed: %v.\n", acReq.ObjKey, err)
+		log.Errorf("in-cloud transition of %s failed: %v.\n", acReq.ObjKey, err)
 		return err
 	}
 
@@ -175,7 +175,7 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	_, err = s3client.UpdateObjMeta(context.Background(), &req)
 	if err != nil {
 		// If update failed, it will be redo again in the next round of scheduling
-		log.Logf("update tier of object[%s] to %d failed:%v.\n", acReq.ObjKey, acReq.TargetTier, err)
+		log.Errorf("update tier of object[%s] to %d failed:%v.\n", acReq.ObjKey, acReq.TargetTier, err)
 	}
 
 	return err

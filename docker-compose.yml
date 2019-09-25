@@ -26,6 +26,7 @@ services:
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
     ports:
       - 8089:8089
     environment:
@@ -45,6 +46,7 @@ services:
       - DB_HOST=datastore:27017
     volumes:
       - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
 
   s3:
     image: opensdsio/multi-cloud-s3
@@ -55,6 +57,7 @@ services:
       - USE_DEFAULT_STORAGE_CLASS=1
     volumes:
       - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
 
   dataflow:
     image: opensdsio/multi-cloud-dataflow
@@ -65,6 +68,7 @@ services:
       - LIFECYCLE_CRON_CONFIG=0 0 0 * * ?
     volumes:
       - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
     depends_on:
       - zookeeper
       - kafka
@@ -75,6 +79,7 @@ services:
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -89,5 +94,7 @@ services:
 
   datastore:
     image: mongo
+    volumes:
+      - /var/log/multi-cloud:/var/log/multi-cloud
     ports:
       - 27017:27017

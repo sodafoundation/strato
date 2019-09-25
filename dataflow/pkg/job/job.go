@@ -16,7 +16,7 @@ package job
 
 import (
 	"context"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 )
@@ -26,7 +26,7 @@ func Create(ctx context.Context, job *Job) (*Job, error) {
 }
 
 func Get(ctx context.Context, id string) (*Job, error) {
-	log.Logf("get job %s", id)
+	log.Infof("get job %s", id)
 	return db.DbAdapter.GetJob(ctx, id)
 }
 

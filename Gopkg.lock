@@ -258,6 +258,33 @@
   version = "v1.1.5"
 
 [[projects]]
+  digest = "1:58999a98719fddbac6303cb17e8d85b945f60b72f48e3a2df6b950b97fa926f1"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
+  digest = "1:bfd3efe80b851037c1d1e58c7b8f18b7a3a250352bdd137a43df825d0ace4707"
+  name = "github.com/lestrrat-go/file-rotatelogs"
+  packages = [
+    ".",
+    "internal/option",
+  ]
+  pruneopts = "NUT"
+  revision = "3b4f34a036f374c18d604e1b8006d9fbb9593c06"
+  version = "v2.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:13dd539a69e687ce1552e1cc05e6faf43723811739993e8f246590b72b425275"
+  name = "github.com/lestrrat-go/strftime"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "5c849dd2c51dd10faf5f1b86abec2db1ac3b9101"
+
+[[projects]]
   branch = "master"
   digest = "1:1229f3d313b351d86e893adae2fdcb7bafe97b67ce065a226a66b5690c983083"
   name = "github.com/micro/cli"
@@ -441,12 +468,28 @@
   revision = "3113b8401b8a98917cde58f8bbd42a1b1c03b1fd"
 
 [[projects]]
+  digest = "1:ffe8353de82ab7608fc1fd9a246e71b231af2479727dd165e3720cc2e8918177"
+  name = "github.com/rifflock/lfshook"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "b9218ef580f59a2e72dad1aa33d660150445d05a"
+  version = "v2.4"
+
+[[projects]]
   digest = "1:53c3320ee307f01fd24a88e396a8d2239cd8346d1a085320209319f2d33f59cc"
   name = "github.com/robfig/cron"
   packages = ["."]
   pruneopts = "NUT"
   revision = "b41be1df696709bb6395fe435af20370037c0b4c"
   version = "v1.1"
+
+[[projects]]
+  digest = "1:f4aaa07a6c33f2b354726d0571acbc8ca118837c75709f6353203ae1a3f8eeab"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
 
 [[projects]]
   digest = "1:42e8c2456d7ec0f31e182c20022e74324c4da2cb3bd9069ff9b131fe33466308"
@@ -535,6 +578,7 @@
     "github.com/Azure/azure-storage-blob-go/azblob",
     "github.com/Shopify/sarama",
     "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/s3",
@@ -551,12 +595,15 @@
     "github.com/gophercloud/gophercloud/openstack",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials",
     "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
+    "github.com/lestrrat-go/file-rotatelogs",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
     "github.com/micro/go-micro/client",
     "github.com/micro/go-micro/server",
     "github.com/micro/go-web",
+    "github.com/rifflock/lfshook",
     "github.com/robfig/cron",
+    "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "github.com/webrtcn/s3client",
     "github.com/webrtcn/s3client/models",

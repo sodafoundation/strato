@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -30,7 +30,7 @@ import (
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for create bucket: %s", bucketName)
+	log.Infof("Received request for create bucket: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
@@ -50,7 +50,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		} else {
 			backendName := createBucketConf.LocationConstraint
 			if backendName != "" {
-				log.Logf("backendName is %v\n", backendName)
+				log.Infof("backendName is %v\n", backendName)
 				bucket.Backend = backendName
 				client := getBackendByName(ctx, s, backendName)
 				if client == nil {
@@ -58,7 +58,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 					return
 				}
 			} else {
-				log.Log("default backend is not provided.")
+				log.Info("default backend is not provided.")
 				response.WriteError(http.StatusBadRequest, NoSuchBackend.Error())
 				return
 			}
@@ -70,6 +70,6 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Create bucket successfully.")
+	log.Info("Create bucket successfully.")
 	response.WriteEntity(res)
 }

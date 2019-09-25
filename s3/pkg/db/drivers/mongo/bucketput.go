@@ -19,7 +19,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -40,11 +40,11 @@ func (ad *adapter) CreateBucket(ctx context.Context, in *pb.Bucket) S3Error {
 	if err == mgo.ErrNotFound {
 		err := ss.DB(DataBaseName).C(BucketMD).Insert(&in)
 		if err != nil {
-			log.Log("add bucket to database failed, err:%v\n", err)
+			log.Errorf("add bucket to database failed, err:%v\n", err)
 			return InternalError
 		}
 	} else {
-		log.Log("the bucket already exists")
+		log.Info("the bucket already exists")
 		return BucketAlreadyExists
 	}
 
@@ -56,7 +56,7 @@ func (ad *adapter) UpdateBucket(ctx context.Context, bucket *pb.Bucket) S3Error 
 	ss := ad.s.Copy()
 	defer ss.Close()
 
-	log.Logf("update bucket, bucket name is %s\n", bucket.Name)
+	log.Infof("update bucket, bucket name is %s\n", bucket.Name)
 
 	m := bson.M{DBKEY_NAME: bucket.Name}
 	err := UpdateContextFilter(ctx, m)
@@ -67,10 +67,10 @@ func (ad *adapter) UpdateBucket(ctx context.Context, bucket *pb.Bucket) S3Error 
 	//Update database
 	err = ss.DB(DataBaseName).C(BucketMD).Update(m, bucket)
 	if err == mgo.ErrNotFound {
-		log.Log("update bucket failed: the specified bucket does not exist.")
+		log.Error("update bucket failed: the specified bucket does not exist.")
 		return NoSuchBucket
 	} else if err != nil {
-		log.Log("update bucket in database failed, err: %v.\n", err)
+		log.Errorf("update bucket in database failed, err: %v.\n", err)
 		return InternalError
 	}
 	return NoError
