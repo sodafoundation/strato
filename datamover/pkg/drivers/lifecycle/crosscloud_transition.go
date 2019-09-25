@@ -23,11 +23,11 @@ import (
 	"strconv"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	mover "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 //The max object size that can be moved directly, default is 16M.
@@ -69,10 +69,14 @@ func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *Ba
 		return errors.New(DMERR_TransitionInprogress)
 	}
 	var job *model.Job
+	var jobFSM *mover.JobFSM
+	jobFSM.FSM.SetState("create")
+	jobFSM.FSM.SetState("validate")
+	jobFSM.FSM.SetState("start")
 	if obj.Size <= PART_SIZE {
-		err = mover.MoveObj(obj, srcLoc, targetLoc, job)
+		err = mover.MoveObj(obj, srcLoc, targetLoc, job, jobFSM)
 	} else {
-		err = mover.MultipartMoveObj(obj, srcLoc, targetLoc, job)
+		err = mover.MultipartMoveObj(obj, srcLoc, targetLoc, job, jobFSM)
 	}
 
 	// TODO: Need to confirm the integrity by comparing Etags.

@@ -18,10 +18,10 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
+	log "github.com/sirupsen/logrus"
 )
 
 var dataMoverGroup = "datamover"
@@ -41,7 +41,7 @@ func InitDatamoverService() error {
 			addrs = append(addrs, addr[1])
 		}
 	}
-	topics := []string{"migration", "lifecycle"}
+	topics := []string{"migration", "lifecycle", "abort"}
 	err := kafka.Init(addrs, dataMoverGroup, topics)
 	if err != nil {
 		log.Info("init kafka consumer failed.")

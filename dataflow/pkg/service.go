@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/job"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
@@ -32,6 +31,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 type dataflowService struct{}
@@ -516,6 +516,60 @@ func (b *dataflowService) ListJob(ctx context.Context, in *pb.ListJobRequest, ou
 		log.Infof(errs.Error())
 	} else {
 		log.Infof("Got jobs: %s.\n", jsons)
+	}
+	//For debug -- end
+	return err
+}
+
+func (b *dataflowService) AbortJob(ctx context.Context, in *pb.AbortJobRequest, out *pb.AbortJobResponse) error {
+	log.Infof("Abort job is called in dataflow service.")
+
+	//dbcontext := &c.Context{}
+	j, err := db.DbAdapter.GetJob(ctx, in.Id)
+	if err != nil {
+		return err
+	}
+	if j.Status == model.JOB_STATUS_ABORTED {
+		out.Err = "job already aborted"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+	if j.Status == model.JOB_STATUS_CANCELLED {
+		out.Err = "job already cancelled"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+	if j.Status == model.JOB_STATUS_SUCCEED {
+		out.Err = "job already completed"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+	if j.Status == model.JOB_STATUS_FAILED {
+		out.Err = "job current status is failed"
+		out.Id = in.Id
+		out.Status = j.Status
+		return nil
+	}
+
+	err = job.AbortJob(ctx, in.Id)
+	if err != nil {
+		log.Infof("Get job err:%d.", err)
+		out.Err = err.Error()
+		return err
+	}
+	j, err = db.DbAdapter.GetJob(ctx, in.Id)
+	out.Id = in.Id
+	out.Status = model.JOB_STATUS_ABORTED
+
+	//For debug -- begin
+	jsons, errs := json.Marshal(out)
+	if errs != nil {
+		log.Errorf(errs.Error())
+	} else {
+		log.Infof("jsons1: %s.\n", jsons)
 	}
 	//For debug -- end
 	return err

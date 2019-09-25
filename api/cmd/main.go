@@ -16,12 +16,12 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
-	"github.com/micro/go-web"
+	"github.com/micro/go-micro/web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
+	log "github.com/sirupsen/logrus"
 
 	//	_ "github.com/micro/go-plugins/client/grpc"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
@@ -55,7 +55,7 @@ func main() {
 	ws.Filter(logging.FilterFactory())
 	ws.Filter(context.FilterFactory())
 	ws.Filter(auth.FilterFactory())
-	
+
 	s3ws := new(restful.WebService)
 	s3ws.Path("/v1/s3")
 	s3ws.Doc("OpenSDS Multi-Cloud API")

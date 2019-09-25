@@ -51,3 +51,7 @@ message LifecycleActionRequest {
 message LifecycleActionResonse {
 	string err = 1;
 }
+
+message AbortJobRequest{
+	string id = 1;
+}
