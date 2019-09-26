@@ -218,7 +218,7 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 	}
 
 	// set the bytes written.
-	result.Written = bytesWritten
+	result.BytesWritten = bytesWritten
 	result.ObjectId = oid
 	result.Etag = calculatedMd5
 	result.UpdateTime = time.Now().Unix()

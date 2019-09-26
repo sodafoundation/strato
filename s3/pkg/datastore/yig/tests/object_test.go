@@ -38,7 +38,9 @@ func (ys *YigSuite) TestPutObjectSucceed(c *C) {
 	}
 	result, err := yig.Put(ctx, bodyReader, obj)
 	c.Assert(err, Equals, nil)
-	c.Assert(result.Written, Equals, int64(len))
+	c.Assert(result.BytesWritten, Equals, int64(len))
 	c.Assert(result.ObjectId != "", Equals, true)
 	c.Assert(result.Etag == bodyMd5, Equals, true)
+	err = yig.Close()
+	c.Assert(err, Equals, nil)
 }

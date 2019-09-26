@@ -12,8 +12,8 @@ import (
 
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -76,14 +76,16 @@ func New(cfg *config.Config) (*YigStorage, error) {
 }
 
 func (y *YigStorage) Close() error {
+	return nil
+}
+
+func (y *YigStorage) DriverClose() {
 	y.Stopping = true
 	log.Info("Stopping storage...")
 	y.WaitGroup.Wait()
 	log.Info("done")
 	log.Info("Stopping MetaStorage...")
 	y.MetaStorage.Stop()
-
-	return nil
 }
 
 func newInitializationVector() (initializationVector []byte, err error) {

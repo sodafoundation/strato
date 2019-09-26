@@ -51,7 +51,7 @@ services:
   redis:
     image: redis
     container_name: redis
-    command: redis-server --requirepass hehehehe
+    command: redis-server
     ports:
       - "6379:6379"
 

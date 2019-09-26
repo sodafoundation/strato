@@ -2,7 +2,7 @@ package common
 
 type PutResult struct {
 	// bytes written to backend.
-	Written int64
+	BytesWritten int64
 	// object id
 	ObjectId string
 	// object content hash sum string.
