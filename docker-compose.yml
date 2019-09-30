@@ -48,16 +48,29 @@ services:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
 
+  redis:
+    image: redis
+    container_name: redis
+    command: redis-server
+    ports:
+      - "6379:6379"
+
   s3:
     image: opensdsio/multi-cloud-s3
     environment:
       - MICRO_REGISTRY=mdns
-      - DB_HOST=datastore:27017
+      #- DB_HOST=datastore:27017
+      - DB_HOST=tidb:4000
       # 0 means use user defined storage class, otherwise use default storage class.
       - USE_DEFAULT_STORAGE_CLASS=1
     volumes:
       - /etc/localtime:/etc/localtime
-      - /var/log/multi-cloud:/var/log/multi-cloud
+      - ./s3/pkg/conf:/etc/multi-cloud
+      - ./s3/pkg/datastore/yig/conf/:/etc/yig
+      - .:/etc/ceph
+    depends_on:
+      - redis
+      - tidb
 
   dataflow:
     image: opensdsio/multi-cloud-dataflow
@@ -98,3 +111,27 @@ services:
       - /var/log/multi-cloud:/var/log/multi-cloud
     ports:
       - 27017:27017
+
+  tidb:
+    image: pingcap/tidb:v2.1.16
+    container_name: tidb
+    ports:
+      - "4000:4000"
+      - "10080:10080"
+    volumes:
+      - ./s3/tidbconf/tidb.toml:/tidb.toml:ro
+    command:
+      - --store=mocktikv
+      - --config=/tidb.toml
+      - -L=info
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    volumes:
+      - ./s3/pkg/conf/tidb.sql:/yig.sql
+    command: mysql -h tidb  -P 4000 -u root -e "create database yig character set utf8;use yig;source /yig.sql"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    depends_on:
+      - tidb

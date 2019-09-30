@@ -29,7 +29,6 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
 )
 
@@ -126,7 +125,7 @@ func (s *APIService) listBackendDefault(ctx context.Context, request *restful.Re
 func (s *APIService) FilterBackendByTier(ctx context.Context, request *restful.Request, response *restful.Response,
 	tier int32) {
 	// Get those backend type which supporte the specific tier.
-	req := pb.GetBackendTypeByTierRequest{Tier: tier}
+	req := s3.GetBackendTypeByTierRequest{Tier: tier}
 	res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
 	req1 := &backend.ListBackendRequest{}
 	resp := &backend.ListBackendResponse{}
@@ -249,7 +248,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 			return
 		}
 		backendname := res.Backend.Name
-		if backendname == v.Backend {
+		if backendname == v.DefaultLocation {
 			count++
 		}
 	}

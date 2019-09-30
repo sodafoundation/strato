@@ -15,27 +15,24 @@
 package s3
 
 import (
-	"encoding/xml"
-	"net/http"
-	"time"
-
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+
+/*	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+*/
 )
 
 //ObjectPut -
 func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
+/*	//assign backend
 	log.Infof("Received request for multi-part upload init, bucket: %s, object: %s\n", bucketName, objectKey)
 
 	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
@@ -58,7 +55,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		object.Backend = backendName
 		client = getBackendByName(ctx, s, backendName)
 	} else {
-		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+		bucket, _ := s.s3Client.GetBucket(ctx, &s3.CommonRequest{Context: actx.ToJson(), Id: bucketName})
 		object.Backend = bucket.Backend
 		client = getBackendClient(ctx, s, bucketName)
 	}
@@ -145,5 +142,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	xmlstring = []byte(xml.Header + string(xmlstring))
 	log.Infof("resp:\n%s", xmlstring)
 	response.Write(xmlstring)
-	log.Info("Uploadpart successfully.")
+*/
+	log.Infof("Init multipart upload[bucketName=%s, objectKey=%s] successfully.\n",
+		bucketName, objectKey)
 }

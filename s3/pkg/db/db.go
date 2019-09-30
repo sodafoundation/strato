@@ -73,5 +73,5 @@ type DBAdapter interface {
 	UpdateObjMeta(ctx context.Context, objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error
 	AddMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error
 	DeleteMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error
-	ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest, out *[]pb.MultipartUploadRecord) S3Error
+	//ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest, out *[]pb.MultipartUploadRecord) S3Error
 }

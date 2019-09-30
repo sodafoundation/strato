@@ -38,8 +38,8 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	temp.Xmlns = model.Xmlns
 	buckets := []model.Bucket{}
 	for _, value := range list.Buckets {
-		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
-		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate, LocationConstraint: value.Backend}
+		ctime := time.Unix(value.CreateTime, 0).Format(time.RFC3339)
+		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
