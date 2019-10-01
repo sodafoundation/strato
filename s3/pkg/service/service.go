@@ -30,6 +30,8 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/backend/proto"
+	"github.com/micro/go-micro/client"
 )
 
 type Int2String map[int32]string
@@ -47,6 +49,7 @@ var SupportedClasses []pb.StorageClass
 
 type s3Service struct {
 	MetaStorage *meta.Meta
+	backendClient backend.BackendService
 }
 
 func NewS3Service() pb.S3Handler {
@@ -59,7 +62,10 @@ func NewS3Service() pb.S3Handler {
 		CacheType: meta.CacheType(helper.CONFIG.MetaCacheType),
 		TidbInfo:helper.CONFIG.TidbInfo,
 	}
-	return &s3Service{MetaStorage: meta.New(cfg),}
+	return &s3Service{
+		MetaStorage: meta.New(cfg),
+		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		}
 }
 
 func getNameFromTier(tier int32) (string, error) {

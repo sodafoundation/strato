@@ -7,13 +7,15 @@ import (
 
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	meta "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/s3/error"
+	. "github.com/opensds/multi-cloud/s3/error"
 )
 
 func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectResponse) error {
@@ -71,6 +73,21 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 	return
 }
 
+func getBackend(ctx context.Context, backedClient backend.BackendService, bucket *meta.Bucket) (*backend.BackendDetail, error) {
+	log.Infof("bucketName is %v:\n", bucket.Name)
+	backendRep, backendErr := backedClient.ListBackend(ctx, &backendpb.ListBackendRequest{
+		Offset: 0,
+		Limit:  1,
+		Filter: map[string]string{"name": bucket.DefaultLocation}})
+	log.Infof("backendErr is %v:", backendErr)
+	if backendErr != nil {
+		log.Errorf("get backend %s failed.", bucket.DefaultLocation)
+		return nil, backendErr
+	}
+	log.Infof("backendRep is %v:", backendRep)
+	backend := backendRep.Backends[0]
+	return backend, nil
+}
 
 func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) error {
 	log.Infoln("PutObject is called in s3 service.")
@@ -83,25 +100,24 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	var md map[string]string
 	md, ok = metadata.FromContext(ctx)
 	if !ok {
-		return nil
+		log.Error("get metadata from ctx failed.")
+		return ErrInternalError
 	}
 
 	if tenantId, ok = md[common.CTX_KEY_TENANT_ID]; !ok {
-		return nil
+		log.Error("get tenantid failed.")
+		return ErrInternalError
 	}
-
-	/*obj, err := getObjMetaFromCtx(md)
-	if err != nil {
-		log.Logf("get object metadata from context failed, err:%v\n", err)
-		return err
-	}*/
 
 	obj := &pb.Object{}
 	err := in.RecvMsg(obj)
 	if err != nil {
 		log.Errorln("failed to get msg with err:", err)
+		return ErrInternalError
 	}
 	obj.TenantId = tenantId
+	log.Infof("metadata of object is:%+v\n", obj)
+	log.Infof("*********bucket:%s,key:%s,size:%d\n", obj.BucketName, obj.ObjectKey, obj.Size)
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, obj.BucketName, true)
 	if err != nil {
@@ -117,7 +133,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		break
 	default:
 		if bucket.TenantId != obj.TenantId {
-			//return result, s3error.ErrBucketAccessForbidden
+			return s3error.ErrBucketAccessForbidden
 		}
 	}
 
@@ -129,14 +145,19 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = data
 	}
 
+	backend, err := getBackend(ctx, s.backendClient, bucket)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	log.Infoln("bucket location:", obj.Location, " backendtype:", backend.Type,
+		" endpoint:", backend.Endpoint)
 	bodyMd5 := md["md5Sum"]
 	ctx = context.Background()
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, obj.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
-	detail := &backendpb.BackendDetail{
-		Endpoint: "default",
-	}
-	sd, err := driver.CreateStorageDriver(constants.BackendTypeYIGS3, detail)
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
 		return nil
@@ -158,8 +179,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	//}
 	if bytesWritten < obj.Size {
 		//RecycleQueue <- maybeObjectToRecycle
-		log.Warnln("failed to write objects, already written(%d), total size(%d)", bytesWritten, obj.Size)
-		return nil
+		log.Warnf("write objects, already written(%d), total size(%d)\n", bytesWritten, obj.Size)
 	}
 	result.Md5 = res.Etag
 
@@ -210,7 +230,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
 		//RecycleQueue <- maybeObjectToRecycle
-		return nil
+		return ErrDBError
 	}
 	if err == nil {
 		//b.MetaStorage.Cache.Remove(redis.ObjectTable, obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectKey+":")

@@ -23,7 +23,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	var acl, cors, lc, policy, replication, createTime string
 	var updateTime sql.NullString
 
-	sqltext := "select bucketname,tenantid,createtime,usages,acl,cors,lc,policy,versioning,replication,update_time " +
+	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication,update_time " +
 		"from buckets where bucketname=?;"
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
 	err = t.Client.QueryRow(sqltext, bucketName).Scan(
@@ -31,6 +31,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		&tmp.TenantId,
 		&createTime,
 		&tmp.Usages,
+		&tmp.DefaultLocation,
 		&acl,
 		&cors,
 		&lc,
@@ -51,11 +52,14 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	}
 	tmp.CreateTime = ct.Unix()
 
-	err = json.Unmarshal([]byte(acl), &tmp.Acl)
+	pbAcl := pb.Acl{}
+	err = json.Unmarshal([]byte(acl), &pbAcl)
 	if err != nil {
 		err = handleDBError(err)
 		return
 	}
+	tmp.Acl = &pbAcl
+
 	err = json.Unmarshal([]byte(cors), &tmp.Cors)
 	if err != nil {
 		err = handleDBError(err)

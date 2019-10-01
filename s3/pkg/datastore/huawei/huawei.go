@@ -120,7 +120,7 @@ func (ad *OBSAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) 
 	return nil, nil
 }*/
 
-func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, S3Error) {
+func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	multipartUpload := &pb.MultipartUpload{}
@@ -144,7 +144,7 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 }
 
 func (ad *OBSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
-	partNumber int64, upBytes int64) (*model.UploadPartResult, S3Error) {
+	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
 	bucket := ad.backend.BucketName
 	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
 	log.Infof("upload part[OBS], objectId:%s, partNum:%d, bytes:%d\n", objectId, partNumber, upBytes)
@@ -204,7 +204,7 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	return result, nil
 }
 
-func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) S3Error {
+func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
 	bucket := ad.backend.BucketName
 	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
 	log.Infof("abort multipart upload[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
@@ -257,7 +257,7 @@ func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 	return nil, NoError
 }*/
 
-func (ad *OBSAdapter) Close(ctx context.Context) error {
+func (ad *OBSAdapter) Close() error {
 	//TODO
 	return nil
 }
