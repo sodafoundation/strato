@@ -16,7 +16,7 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/web"
+	"github.com/micro/go-web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
