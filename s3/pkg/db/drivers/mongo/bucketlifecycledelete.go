@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -29,7 +29,7 @@ func (ad *adapter) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifec
 	ss := ad.s.Copy()
 	defer ss.Close()
 
-	log.Logf("delete bucket lifecycle, bucketName is %v, lifecycle id is %s\n", in.Bucket, in.RuleID)
+	log.Infof("delete bucket lifecycle, bucketName is %v, lifecycle id is %s\n", in.Bucket, in.RuleID)
 
 	m := bson.M{DBKEY_NAME: in.Bucket}
 	err := UpdateContextFilter(ctx, m)
@@ -41,11 +41,11 @@ func (ad *adapter) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifec
 	err = ss.DB(DataBaseName).C(BucketMD).Update(m, bson.M{"$pull": bson.M{DBKEY_LIFECYCLE:
 		bson.M{DBKEY_ID: in.RuleID}}})
 	if err != nil {
-		log.Logf("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n",
+		log.Errorf("delete lifecycle for bucket : %s and lifecycle ruleID : %s failed,err:%v.\n",
 			in.Bucket, in.RuleID, err)
 		return NoSuchBucket
 	} else {
-		log.Logf("delete bucket lifecycle with rule id %s from database successfully", in.RuleID)
+		log.Infof("delete bucket lifecycle with rule id %s from database successfully", in.RuleID)
 		return NoError
 	}
 }

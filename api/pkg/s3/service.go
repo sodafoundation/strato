@@ -21,7 +21,7 @@ import (
 	"math"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
 	backend "github.com/opensds/multi-cloud/backend/proto"
@@ -74,23 +74,23 @@ func ReadBody(r *restful.Request) []byte {
 }
 
 func getBackendClient(ctx context.Context, s *APIService, bucketName string) datastore.DataStoreAdapter {
-	log.Logf("bucketName is %v:\n", bucketName)
+	log.Infof("bucketName is %v:\n", bucketName)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		return nil
 	}
 
-	log.Logf("bucketName is %v\n", bucketName)
+	log.Infof("bucketName is %v\n", bucketName)
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
 		Offset: 0,
 		Limit:  math.MaxInt32,
 		Filter: map[string]string{"name": bucket.Backend}})
-	log.Logf("backendErr is %v:", backendErr)
+	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Logf("get backend %s failed.", bucket.Backend)
+		log.Errorf("get backend %s failed.", bucket.Backend)
 		return nil
 	}
-	log.Logf("backendRep is %v:", backendRep)
+	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	client, _ := datastore.Init(backend)
 	return client
@@ -101,14 +101,13 @@ func getBackendByName(ctx context.Context, s *APIService, backendName string) da
 		Offset: 0,
 		Limit:  math.MaxInt32,
 		Filter: map[string]string{"name": backendName}})
-	log.Logf("backendErr is %v:", backendErr)
+	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Logf("get backend %s failed.", backendName)
+		log.Errorf("get backend %s failed.", backendName)
 		return nil
 	}
-	log.Logf("backendRep is %v:", backendRep)
+	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	client, _ := datastore.Init(backend)
 	return client
 }
-

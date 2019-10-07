@@ -21,7 +21,7 @@ import (
 	"os"
 	"reflect"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 //remove redundant elements
