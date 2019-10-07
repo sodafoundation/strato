@@ -588,9 +588,9 @@ func (b *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 }
 
 func (b *s3Service) DeleteBucketCORS(ctx context.Context, in *pb.DeleteCORSInput, out *pb.BaseResponse) error {
-	log.Log("DeleteBucketCORS is called in s3 service.")
+	log.Info("DeleteBucketCORS is called in s3 service.")
 	getCORSinput := pb.DeleteCORSInput{Bucket: in.Bucket, CorsID: in.CorsID}
-	log.Logf("Delete bucket CORS input in s3 service %s", getCORSinput)
+	log.Info("Delete bucket CORS input in s3 service %s", getCORSinput)
 	err := db.DbAdapter.DeleteBucketCORS(ctx, &getCORSinput)
 	if err.Code != ERR_OK {
 		msg := "Delete CORS configuration on bucket failed for $1"

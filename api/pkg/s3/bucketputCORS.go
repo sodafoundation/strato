@@ -38,7 +38,7 @@ func (s *APIService) BucketPutCORS(request *restful.Request, response *restful.R
 	log.Logf("Received request for CORS bucket: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	contentLength := request.HeaderParameter("content-length")
+	contentLength := request.HeaderParameter("Content-Length")
 	size, err := strconv.ParseInt(contentLength, 10, 64)
 	if err != nil {
 		log.Logf("get content length failed, err: %v\n", err)
@@ -70,7 +70,7 @@ func (s *APIService) BucketPutCORS(request *restful.Request, response *restful.R
 
 				//check if the corsID has any duplicate values
 				if _, ok := dupIdCheck[rule.Id]; ok {
-					log.Logf("duplicate ruleID found for rule : %s\n", rule.Id)
+					log.Logf("duplicate corsID found for rule : %s\n", rule.Id)
 					ErrStr := strings.Replace(DuplicateCORSIDError, "$1", rule.Id, 1)
 					response.WriteError(http.StatusBadRequest, fmt.Errorf(ErrStr))
 					return
@@ -96,7 +96,6 @@ func (s *APIService) BucketPutCORS(request *restful.Request, response *restful.R
 
 				bucket.CorsConfiguration = append(bucket.CorsConfiguration, &s3CORSRule)
 			}
-
 		}
 	} else {
 		log.Log("no request body provided for creating CORS configuration")

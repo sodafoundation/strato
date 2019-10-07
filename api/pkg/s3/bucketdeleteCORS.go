@@ -15,10 +15,11 @@
 package s3
 
 import (
-	"github.com/emicklei/go-restful"
 	"net/http"
 	"strings"
 
+	"github.com/emicklei/go-restful"
+	"github.com/micro/go-log"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
