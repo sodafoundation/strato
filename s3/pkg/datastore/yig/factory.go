@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
@@ -19,9 +20,16 @@ import (
 type YigDriverFactory struct {
 	Drivers    sync.Map
 	cfgWatcher *config.ConfigWatcher
+	initLock   sync.Mutex
+	initFlag   int32
 }
 
 func (ydf *YigDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
+	err := ydf.Init()
+	if err != nil {
+		log.Errorf("failed to perform YigDriverFactory init, err: %v", err)
+		return nil, err
+	}
 	// if driver already exists, just return it.
 	if driver, ok := ydf.Drivers.Load(backend.Endpoint); ok {
 		return driver.(*storage.YigStorage), nil
@@ -32,15 +40,37 @@ func (ydf *YigDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (dri
 }
 
 func (ydf *YigDriverFactory) Init() error {
+	// check
+	if atomic.LoadInt32(&ydf.initFlag) == 1 {
+		return nil
+	}
+
+	// lock
+	ydf.initLock.Lock()
+	defer ydf.initLock.Unlock()
+
+	// check
+	if ydf.initFlag == 1 {
+		return nil
+	}
+
 	// read common config settings
 	cc, err := config.ReadCommonConfig("/etc/yig")
 	if err != nil {
-		return err
+		log.Errorf("failed to read yig config, err: %v", err)
+		return nil
 	}
 
 	// create the driver.
 	rand.Seed(time.Now().UnixNano())
 	redis.Initialize(&cc.Cache)
+
+	// read the config.
+	err = config.ReadConfigs("/etc/yig", ydf.driverInit)
+	if err != nil {
+		log.Errorf("failed to read yig configs, err: %v", err)
+		return nil
+	}
 
 	// init config watcher.
 	watcher, err := config.NewConfigWatcher(ydf.driverInit)
@@ -49,15 +79,9 @@ func (ydf *YigDriverFactory) Init() error {
 		return err
 	}
 	ydf.cfgWatcher = watcher
-
-	// read the config.
-	err = config.ReadConfigs("/etc/yig", ydf.driverInit)
-	if err != nil {
-		log.Errorf("failed to read yig configs, err: %v", err)
-		return err
-	}
-
 	ydf.cfgWatcher.Watch("/etc/yig")
+
+	atomic.StoreInt32(&ydf.initFlag, 1)
 	return nil
 }
 
