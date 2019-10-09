@@ -586,3 +586,18 @@ func (b *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 
 	return nil
 }
+
+func (b *s3Service) DeleteBucketCORS(ctx context.Context, in *pb.DeleteCORSInput, out *pb.BaseResponse) error {
+	log.Info("DeleteBucketCORS is called in s3 service.")
+	getCORSinput := pb.DeleteCORSInput{Bucket: in.Bucket, CorsID: in.CorsID}
+	log.Info("Delete bucket CORS input in s3 service %s", getCORSinput)
+	err := db.DbAdapter.DeleteBucketCORS(ctx, &getCORSinput)
+	if err.Code != ERR_OK {
+		msg := "Delete CORS configuration on bucket failed for $1"
+		out.Msg = strings.Replace(msg, "$1", in.CorsID, 1)
+		return err.Error()
+	}
+	msg := "Delete bucket CORS Configuration successful for $1"
+	out.Msg = strings.Replace(msg, "$1", in.CorsID, 1)
+	return nil
+}
