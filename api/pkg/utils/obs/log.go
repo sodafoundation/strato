@@ -35,7 +35,7 @@ const (
 	defaultLogLevel        = "info"
 	unknownHost            = "unknownhost"
 	unknownUser            = "unknownuser"
-	configFileName         = "log.conf"
+	configFileName         = "/etc/log.conf"
 	defaultLogFormat       = "[%time%] [%level%] [%filename%] [%funcName%():%lineNo%] [PID:%process%] %message%"
 	defaultTimestampFormat = time.RFC3339
 	callStackDeep          = 12
