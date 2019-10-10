@@ -297,6 +297,7 @@ message Object {
 	int32 type = 22;
 	bool nullVersion = 23;
 	map<string, string> customAttributes = 24;
+	string storageMeta = 25;
 }
 
 message ListBucketsResponse {

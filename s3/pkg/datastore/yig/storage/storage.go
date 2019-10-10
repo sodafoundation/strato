@@ -13,8 +13,8 @@ import (
 
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,7 +43,7 @@ func New(cfg *config.Config) (*YigStorage, error) {
 	kms := crypto.NewKMS()
 	metaCfg := meta.MetaConfig{
 		CacheType: meta.SimpleCache,
-		TidbInfo: cfg.Database.DbUrl,
+		TidbInfo:  cfg.Database.DbUrl,
 	}
 	yig := YigStorage{
 		DataStorage: make(map[string]*CephStorage),
@@ -85,13 +85,14 @@ func (y *YigStorage) Close() error {
 	y.Stopping = true
 	log.Info("Stopping storage...")
 	y.WaitGroup.Wait()
-	log.Error("done")
+	log.Info("done")
 	log.Info("Stopping MetaStorage...")
 	y.MetaStorage.Stop()
 	y.logfile.Close()
 
 	return nil
 }
+
 /*
 func (yig *YigStorage) encryptionKeyFromSseRequest(sseRequest datatype.SseRequest, bucket, object string) (key []byte, encKey []byte, err error) {
 	switch sseRequest.Type {

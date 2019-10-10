@@ -1,11 +1,11 @@
 package meta
 
 import (
-	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
+	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -28,7 +28,7 @@ func (m *Meta) GetCluster(fsid string, pool string) (cluster Cluster, err error)
 
 	c, err := m.Cache.Get(redis.ClusterTable, CLUSTER_CACHE_PREFIX, rowKey, getCluster, toCluster, true)
 	if err != nil {
-		log.Errorf("failed to get cluster for fsid: %s, err: %v", fsid, err)
+		log.Infof("failed to get cluster for fsid: %s, err: %v", fsid, err)
 		return
 	}
 	cluster, ok := c.(Cluster)

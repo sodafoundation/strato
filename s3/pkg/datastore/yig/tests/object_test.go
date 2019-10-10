@@ -41,4 +41,38 @@ func (ys *YigSuite) TestPutObjectSucceed(c *C) {
 	c.Assert(result.Written, Equals, int64(len))
 	c.Assert(result.ObjectId != "", Equals, true)
 	c.Assert(result.Etag == bodyMd5, Equals, true)
+
+	// Get the object
+	obj.StorageMeta = result.Meta
+	obj.ObjectKey = result.ObjectId
+	reader, err := yig.Get(ctx, obj, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	defer reader.Close()
+	copyTarget := &pb.Object{
+		ObjectKey:  "t2",
+		BucketName: "b1",
+		Size:       int64(len),
+		Etag:       result.Etag,
+	}
+	// Copy the object
+	result, err = yig.Copy(ctx, reader, copyTarget)
+	c.Assert(err, Equals, nil)
+	c.Assert(result.Written, Equals, int64(len))
+	c.Assert(result.ObjectId != "", Equals, true)
+	c.Assert(result.Etag == bodyMd5, Equals, true)
+
+	// Get the copied object
+	copyTarget.StorageMeta = result.Meta
+	copyTarget.ObjectKey = result.ObjectId
+	reader2, err := yig.Get(ctx, copyTarget, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader2, Not(Equals), nil)
+	defer reader2.Close()
+	readBuf := make([]byte, len)
+	n, err := reader2.Read(readBuf)
+	c.Assert(err, Equals, nil)
+	c.Assert(n, Equals, len)
+	readRawMd5 := md5.Sum(readBuf)
+	c.Assert(rawMd5 == readRawMd5, Equals, true)
 }

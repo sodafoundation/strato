@@ -19,10 +19,10 @@ import (
 	"io"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
+	log "github.com/sirupsen/logrus"
 	//. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
@@ -114,6 +114,10 @@ func (ad *OBSAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) 
 
 	log.Infof("delete object[OBS] succeed, objectId:%s.\n", objectId)
 	return nil
+}
+
+func (ad *OBSAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	return
 }
 
 /*func (ad *OBSAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
