@@ -15,24 +15,34 @@
 package mongo
 
 import (
+	"context"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
-func (ad *adapter) GetBucketByName(bucketName string, out *pb.Bucket) S3Error {
+func (ad *adapter) GetBucketByName(ctx context.Context, bucketName string, out *pb.Bucket) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
-	c := ss.DB(DataBaseName).C(BucketMD)
-	log.Logf("GetBucketByName: bucketName %s", bucketName)
-	err := c.Find(bson.M{"name": bucketName}).One(out)
+
+	log.Infof("GetBucketByName: bucketName %s", bucketName)
+
+	m := bson.M{DBKEY_NAME: bucketName}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
+	err = ss.DB(DataBaseName).C(BucketMD).Find(m).One(out)
 	if err == mgo.ErrNotFound {
-		log.Log("Bucket does not exist.")
+		log.Error("bucket does not exist.")
 		return NoSuchBucket
 	} else if err != nil {
-		log.Logf("Get bucket from database failed,err:%v.\n", err)
+		log.Errorf("get bucket from database failed, err: %v.\n", err)
 		return InternalError
 	}
 

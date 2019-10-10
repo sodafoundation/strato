@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
@@ -30,7 +30,7 @@ import (
 	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	Gcps3mover "github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
-	obsmover "github.com/opensds/multi-cloud/datamover/pkg/hw/obs"
+	obsmover "github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
 	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
@@ -48,7 +48,7 @@ type Int2String map[int32]string
 var Int2ExtTierMap map[string]*Int2String
 
 func Init() {
-	log.Logf("Lifecycle datamover init.")
+	log.Infof("Lifecycle datamover init.")
 	s3client = osdss3.NewS3Service("s3", client.DefaultClient)
 	bkendclient = backend.NewBackendService("backend", client.DefaultClient)
 	bkendInfo = make(map[string]*BackendInfo)
@@ -58,7 +58,7 @@ func HandleMsg(msgData []byte) error {
 	var acReq datamover.LifecycleActionRequest
 	err := json.Unmarshal(msgData, &acReq)
 	if err != nil {
-		log.Logf("unmarshal lifecycle action request failed, err:%v\n", err)
+		log.Errorf("unmarshal lifecycle action request failed, err:%v\n", err)
 		return err
 	}
 
@@ -79,7 +79,7 @@ func doAction(acReq *datamover.LifecycleActionRequest) {
 	case utils.AbortIncompleteMultipartUpload:
 		doAbortUpload(acReq)
 	default:
-		log.Logf("unsupported action type: %d.\n", acType)
+		log.Infof("unsupported action type: %d.\n", acType)
 	}
 }
 
@@ -93,18 +93,18 @@ func getBackendInfo(backendName *string, force bool) (*BackendInfo, error) {
 	}
 
 	if *backendName == "" {
-		log.Log("get backend information failed, backendName is null.\n")
+		log.Info("get backend information failed, backendName is null.\n")
 		return nil, errors.New(DMERR_InternalError)
 	}
 
 	bk, err := db.DbAdapter.GetBackendByName(*backendName)
 	if err != nil {
-		log.Logf("get backend[%s] information failed, err:%v\n", backendName, err)
+		log.Errorf("get backend[%s] information failed, err:%v\n", backendName, err)
 		return nil, err
 	} else {
 		loca := &BackendInfo{bk.Type, bk.Region, bk.Endpoint, bk.BucketName,
 			bk.Access, bk.Security, *backendName}
-		log.Logf("refresh backend[name:%s, loca:%+v] successfully.\n", *backendName, *loca)
+		log.Infof("refresh backend[name:%s, loca:%+v] successfully.\n", *backendName, *loca)
 		bkendInfo[*backendName] = loca
 		return loca, nil
 	}
@@ -139,9 +139,9 @@ func deleteObjFromBackend(objKey string, loca *LocationInfo) error {
 	}
 
 	if err != nil {
-		log.Logf("delete object[%s] from backend[type:%s,bucket:%s] failed.\n", objKey, loca.StorType, loca.BucketName)
+		log.Errorf("delete object[%s] from backend[type:%s,bucket:%s] failed.\n", objKey, loca.StorType, loca.BucketName)
 	} else {
-		log.Logf("delete object[%s] from backend[type:%s,bucket:%s] successfully.\n", objKey, loca.StorType, loca.BucketName)
+		log.Infof("delete object[%s] from backend[type:%s,bucket:%s] successfully.\n", objKey, loca.StorType, loca.BucketName)
 	}
 
 	return err

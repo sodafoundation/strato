@@ -74,10 +74,11 @@ const (
 
 type Policy struct {
 	Id          bson.ObjectId `json:"-" bson:"_id,omitempty"`
+	TenantId    string        `json:"tenantId" bson:"tenantId"`
+	UserId      string        `json:"userId" bson:"userId"`
 	Name        string        `json:"name" bson:"name"`
 	Description string        `json:"description" bson:"description"`
 	Schedule    Schedule      `json:"schedule" bson:"schedule"`
-	Tenant      string        `json:"tenant" bson:"tenant"`
 }
 
 const (
@@ -131,15 +132,16 @@ const (
 )
 
 type Job struct {
-	Id             bson.ObjectId `json:"-" bson:"_id"` //make index on id, it cnanot be duplicate
-	TriggerType    string        `json:"triggerType" bson:"triggerType"`
-	Type           string        `json:"type" bson:"type"` //migration
-	PlanName       string        `json:"planName" bson:"planName"`
-	PlanId         string        `json:"planId" bson:"planId"`
-	TotalCount     int64         `json:"totalCount" bson:"totalCount"`
-	PassedCount    int64         `json:"passedCount" bson:"passedCount"`
-	TotalCapacity  int64         `json:"totalCapacity" bson:"totalCapacity"`
-	PassedCapacity int64         `json:"passedCapacity" bson:"passedCapacity"`
+	Id               bson.ObjectId `json:"-" bson:"_id"` //make index on id, it cnanot be duplicate
+	TriggerType      string        `json:"triggerType" bson:"triggerType"`
+	Type             string        `json:"type" bson:"type"` //migration
+	PlanName         string        `json:"planName" bson:"planName"`
+	PlanId           string        `json:"planId" bson:"planId"`
+	TotalCount       int64         `json:"totalCount" bson:"totalCount"`
+	PassedCount      int64         `json:"passedCount" bson:"passedCount"`
+	TotalCapacity    int64         `json:"totalCapacity" bson:"totalCapacity"`
+	PassedCapacity   int64         `json:"passedCapacity" bson:"passedCapacity"`
+	MigratedCapacity float64       `json:"migratedCapacity" bson:"migratedCapacity"`
 	//when the plan related connector type is OPENSDS, then location should be bucket name
 	SourceLocation string    `json:"sourceLocation" bson:"sourceLocation"`
 	DestLocation   string    `json:"destLocation" bson:"destLocation"`
@@ -148,7 +150,8 @@ type Job struct {
 	EndTime        time.Time `json:"endTime" bson:"endTime"`
 	RemainSource   bool      `json:"remainSource" bson:"remainSource"`
 	Status         string    `json:"status" bson:"status"` //queueing,
-	Tenant         string    `json:"tenant" bson:"tenant"`
+	TenantId       string    `json:"tenantId" bson:"tenantId"`
+	UserId         string    `json:"userId" bson:"userId"`
 	Progress       int64     `json:"progress" bson:"progress"`
 }
 

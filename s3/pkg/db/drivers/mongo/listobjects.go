@@ -15,25 +15,26 @@
 package mongo
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"time"
 
+	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/globalsign/mgo"
 )
 
-func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
+func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.Bucket)
 
-	log.Log("Find objects from database...... \n")
+	log.Info("Find objects from database...... \n")
 
 	filter := []bson.M{}
 	if in.Filter != nil {
@@ -44,7 +45,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 			var tmFilter map[string]string
 			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
 			if err != nil {
-				log.Logf("unmarshal lastmodified value failed:%s\n", err)
+				log.Errorf("unmarshal lastmodified value failed:%s\n", err)
 				return InvalidQueryParameter
 			}
 			for k, v := range tmFilter {
@@ -61,7 +62,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 				case "gte":
 					op = "$lte"
 				default:
-					log.Logf("unsupport filter action:%s\n", k)
+					log.Infof("unsupport filter action:%s\n", k)
 					return InvalidQueryParameter
 				}
 				filter = append(filter, bson.M{"lastmodified": bson.M{op: secs}})
@@ -70,7 +71,7 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 		if in.Filter[common.KStorageTier] != "" {
 			tier, err := strconv.Atoi(in.Filter[common.KStorageTier])
 			if err != nil {
-				log.Logf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
+				log.Errorf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
 				return InvalidQueryParameter
 			}
 			filter = append(filter, bson.M{"tier": bson.M{"$lte": tier}})
@@ -80,8 +81,14 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	filter = append(filter, bson.M{utils.DBKEY_INITFLAG: bson.M{"$ne": "0"}})
 	filter = append(filter, bson.M{utils.DBKEY_DELETEMARKER: bson.M{"$ne": "1"}})
 
-	log.Logf("filter:%+v\n", filter)
-	var err error
+	m := bson.M{}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+	filter = append(filter, m)
+
+	log.Infof("filter:%+v\n", filter)
 	offset := int(in.Offset)
 	limit := int(in.Limit)
 	if limit == 0 {
@@ -95,14 +102,14 @@ func (ad *adapter) ListObjects(in *pb.ListObjectsRequest, out *[]pb.Object) S3Er
 	}
 
 	if err != nil {
-		log.Logf("find objects from database failed, err:%v\n", err)
+		log.Errorf("find objects from database failed, err:%v\n", err)
 		return InternalError
 	}
 
 	return NoError
 }
 
-func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
+func (ad *adapter) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
 	c := ss.DB(DataBaseName).C(in.Bucket)
@@ -112,18 +119,24 @@ func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountI
 		filt = in.Filter[common.KObjKey]
 	}
 
+	m := bson.M{
+		utils.DBKEY_OBJECTKEY:    bson.M{"$regex": filt},
+		utils.DBKEY_INITFLAG:     bson.M{"$ne": "0"},
+		utils.DBKEY_DELETEMARKER: bson.M{"$ne": "1"},
+	}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return InternalError
+	}
+
 	q1 := bson.M{
-		"$match": bson.M{
-			"objectkey": bson.M{"$regex": filt},
-			"initflag": bson.M{"$ne": "0"},
-			"isdeletemarker": bson.M{"$ne": "1"},
-		},
+		"$match": m,
 	}
 
 	q2 := bson.M{
 		"$group": bson.M{
-			"_id": nil,
-			"size": bson.M{"$sum": "$size"},
+			"_id":   nil,
+			"size":  bson.M{"$sum": "$size"},
 			"count": bson.M{"$sum": 1},
 		},
 	}
@@ -131,17 +144,17 @@ func (ad *adapter) CountObjects(in *pb.ListObjectsRequest, out *utils.ObjsCountI
 	operations := []bson.M{q1, q2}
 	pipe := c.Pipe(operations)
 	var ret utils.ObjsCountInfo
-	err := pipe.One(&ret)
+	err = pipe.One(&ret)
 	if err == nil {
 		out.Count = ret.Count
 		out.Size = ret.Size
-		log.Logf("count objects of bucket[%s] successfully, count=%d, size=%d\n", in.Bucket, out.Count, out.Size)
+		log.Infof("count objects of bucket[%s] successfully, count=%d, size=%d\n", in.Bucket, out.Count, out.Size)
 	} else if err == mgo.ErrNotFound {
 		out.Count = 0
 		out.Size = 0
-		log.Logf("count objects of bucket[%s] successfully, count=0, size=0\n", in.Bucket)
+		log.Infof("count objects of bucket[%s] successfully, count=0, size=0\n", in.Bucket)
 	} else {
-		log.Logf("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
+		log.Errorf("count objects of bucket[%s] failed, err:%v\n", in.Bucket, err)
 		return InternalError
 	}
 

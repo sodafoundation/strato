@@ -1,0 +1,4 @@
+FROM alpine:latest
+
+COPY backend/backend /backend
+ENTRYPOINT ["/backend"]

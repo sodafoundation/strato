@@ -29,7 +29,8 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/model"
@@ -121,7 +122,7 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 
 	//Create a Signer and the calculate the signature based on the Header parameters passed in request
 	signer := NewSigner(credentials)
-	calculatedSignature, err := signer.Sign(req.Request, body, service, region, requestDateTime, requestDate, credentialStr)
+	calculatedSignature, err := signer.Sign(req, body, service, region, requestDateTime, requestDate, credentialStr)
 
 	if err != nil {
 		return
@@ -185,14 +186,14 @@ func NewSigner(credentials *credentials.Credentials, options ...func(*Signer)) *
 // date time the request is signed at.
 //
 // Returns the signature or an error if signing the request failed.
-func (signer Signer) Sign(req *http.Request, body string, service, region string, requestDateTime string, requestDate string, credentialStr string) (string, error) {
+func (signer Signer) Sign(req *restful.Request, body string, service, region string, requestDateTime string, requestDate string, credentialStr string) (string, error) {
 
 	sign := &Signature{
-		Request:         req,
+		Request:         req.Request,
 		requestDateTime: requestDateTime,
 		requestDate:     requestDate,
 		Body:            body,
-		Query:           req.URL.Query(),
+		Query:           req.Request.URL.Query(),
 		Service:         service,
 		Region:          region,
 	}
@@ -212,6 +213,10 @@ func (signer Signer) Sign(req *http.Request, body string, service, region string
 	if err := sign.build(); err != nil {
 		return "", err
 	}
+
+	ctx := req.Attribute(c.KContext).(*c.Context)
+	ctx.TenantId = sign.credValues.TenantID
+	ctx.UserId = sign.credValues.UserID
 
 	return sign.signature, nil
 }

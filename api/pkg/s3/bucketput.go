@@ -20,29 +20,25 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
+	"github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:put") {
-		return
-	}
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for create bucket: %s", bucketName)
-	ctx := context.Background()
+	log.Infof("Received request for create bucket: %s", bucketName)
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	actx := request.Attribute(c.KContext).(*c.Context)
 	bucket := s3.Bucket{Name: bucketName}
 	body := ReadBody(request)
-	//TODO owner
-	owner := "test"
-	ownerDisplayName := "test"
-	bucket.Owner = owner
+	bucket.TenantId = actx.TenantId
+	bucket.UserId = actx.UserId
 	bucket.Deleted = false
-	bucket.OwnerDisplayName = ownerDisplayName
 	bucket.CreationDate = time.Now().Unix()
 
 	if body != nil {
@@ -54,15 +50,15 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		} else {
 			backendName := createBucketConf.LocationConstraint
 			if backendName != "" {
-				log.Logf("backendName is %v\n", backendName)
+				log.Infof("backendName is %v\n", backendName)
 				bucket.Backend = backendName
-				client := getBackendByName(s, backendName)
+				client := getBackendByName(ctx, s, backendName)
 				if client == nil {
 					response.WriteError(http.StatusInternalServerError, NoSuchType.Error())
 					return
 				}
 			} else {
-				log.Log("default backend is not provided.")
+				log.Info("default backend is not provided.")
 				response.WriteError(http.StatusBadRequest, NoSuchBackend.Error())
 				return
 			}
@@ -74,6 +70,6 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Log("Create bucket successfully.")
+	log.Info("Create bucket successfully.")
 	response.WriteEntity(res)
 }

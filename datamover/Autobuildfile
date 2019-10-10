@@ -1,0 +1,4 @@
+FROM alpine:latest
+
+COPY datamover/datamover /datamover
+ENTRYPOINT ["/datamover"]
