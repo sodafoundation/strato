@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +37,6 @@ const (
 	configFileName         = "/etc/log.conf"
 	defaultLogFormat       = "[%time%] [%level%] [%filename%] [%funcName%():%lineNo%] [PID:%process%] %message%"
 	defaultTimestampFormat = time.RFC3339
-	callStackDeep          = 12
 )
 
 func InitLogs() {
@@ -182,10 +180,9 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	output = strings.Replace(output, "%process%", strconv.Itoa(os.Getpid()), 1)
 
-	pc, filename, line, _ := runtime.Caller(callStackDeep)
-	output = strings.Replace(output, "%filename%", filename, 1)
-	output = strings.Replace(output, "%lineNo%", strconv.Itoa(line), 1)
-	output = strings.Replace(output, "%funcName%", runtime.FuncForPC(pc).Name(), 1)
+	output = strings.Replace(output, "%filename%", entry.Caller.File, 1)
+	output = strings.Replace(output, "%lineNo%", strconv.Itoa(entry.Caller.Line), 1)
+	output = strings.Replace(output, "%funcName%", entry.Caller.Function, 1)
 
 	return []byte(output), nil
 }
