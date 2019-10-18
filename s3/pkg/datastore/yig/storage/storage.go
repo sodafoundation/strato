@@ -93,31 +93,6 @@ func (y *YigStorage) Close() error {
 	return nil
 }
 
-/*
-func (yig *YigStorage) encryptionKeyFromSseRequest(sseRequest datatype.SseRequest, bucket, object string) (key []byte, encKey []byte, err error) {
-	switch sseRequest.Type {
-	case "": // no encryption
-		return nil, nil, nil
-	// not implemented yet
-	case crypto.S3KMS.String():
-		return nil, nil, ErrNotImplemented
-	case crypto.S3.String():
-		if yig.KMS == nil {
-			return nil, nil, ErrKMSNotConfigured
-		}
-		key, encKey, err := yig.KMS.GenerateKey(yig.KMS.GetKeyID(), crypto.Context{bucket: path.Join(bucket, object)})
-		if err != nil {
-			return nil, nil, err
-		}
-		return key[:], encKey, nil
-	case crypto.SSEC.String():
-		return sseRequest.SseCustomerKey, nil, nil
-	default:
-		err = ErrInvalidSseHeader
-		return
-	}
-}
-*/
 func newInitializationVector() (initializationVector []byte, err error) {
 
 	initializationVector = make([]byte, INITIALIZATION_VECTOR_LENGTH)

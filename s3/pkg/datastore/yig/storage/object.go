@@ -215,7 +215,7 @@ func (yig *YigStorage) Get(ctx context.Context, object *pb.Object, start int64, 
 	}
 
 	len := end - start + 1
-	reader, err := cephCluster.getReader(objMeta.Pool, object.ObjectKey, start, len)
+	reader, err := cephCluster.getReader(objMeta.Pool, object.ObjectId, start, len)
 	if err != nil {
 		log.Errorf("failed to get ceph reader for pool(%s), obj(%s,%s) with err: %v", objMeta.Pool, object.BucketName, object.ObjectKey, err)
 		return nil, err

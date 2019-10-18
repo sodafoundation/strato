@@ -541,22 +541,6 @@ func (cluster *CephStorage) getAlignedReader(poolName string, oid string, startO
 	return cluster.getReader(poolName, oid, alignedOffset, length)
 }
 
-/*
-func (cluster *CephStorage) get(poolName string, oid string, startOffset int64,
-	length int64, writer io.Writer) error {
-
-	reader, err := cluster.getReader(poolName, oid, startOffset, length)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	buf := make([]byte, MAX_CHUNK_SIZE)
-	_, err = io.CopyBuffer(writer, reader, buf)
-	return err
-}
-*/
-
 func (cluster *CephStorage) doSmallRemove(poolname string, oid string) error {
 	pool, err := cluster.Conn.OpenPool(poolname)
 	if err != nil {
