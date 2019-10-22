@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
@@ -36,14 +36,14 @@ import (
 func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-	log.Logf("Received request for multi-part upload init, bucket: %s, object: %s\n", bucketName, objectKey)
+	log.Infof("Received request for multi-part upload init, bucket: %s, object: %s\n", bucketName, objectKey)
 
 	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
 	ctx := common.InitCtxWithVal(request, md)
 	actx := request.Attribute(c.KContext).(*c.Context)
 	//assign backend
 	backendName := request.HeaderParameter("x-amz-storage-class")
-	log.Logf("backendName is %v\n", backendName)
+	log.Infof("backendName is %v\n", backendName)
 
 	size := 0
 	object := s3.Object{}
@@ -107,8 +107,10 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, objectMD)
 		if err != nil {
-			log.Logf("err is %v\n", err)
+			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
+			client.AbortMultipartUpload(res, ctx)
+			return
 		}
 	} else {
 		object.Size = int64(size)
@@ -118,8 +120,10 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		//insert metadata
 		_, err := s.s3Client.CreateObject(ctx, &object)
 		if err != nil {
-			log.Logf("err is %v\n", err)
+			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
+			client.AbortMultipartUpload(res, ctx)
+			return
 		}
 	}
 
@@ -132,13 +136,14 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	xmlstring, err := xml.MarshalIndent(result, "", "  ")
 	if err != nil {
-		log.Logf("Parse ListBuckets error: %v", err)
+		log.Errorf("Parse ListBuckets error: %v", err)
 		response.WriteError(http.StatusInternalServerError, err)
+		client.AbortMultipartUpload(res, ctx)
 		return
 	}
 
 	xmlstring = []byte(xml.Header + string(xmlstring))
-	log.Logf("resp:\n%s", xmlstring)
+	log.Infof("resp:\n%s", xmlstring)
 	response.Write(xmlstring)
-	log.Log("Uploadpart successfully.")
+	log.Info("Uploadpart successfully.")
 }

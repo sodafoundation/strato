@@ -19,7 +19,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -39,10 +39,10 @@ func (ad *adapter) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput) S
 	//Delete it from database
 	_, err = ss.DB(DataBaseName).C(in.Bucket).RemoveAll(m)
 	if err == mgo.ErrNotFound {
-		log.Logf("delete object %s failed, err: the specified object does not exist", in.Key)
+		log.Errorf("delete object %s failed, err: the specified object does not exist", in.Key)
 		return NoSuchObject
 	} else if err != nil {
-		log.Log("delete object %s from database failed,err:%v.\n", in.Key, err)
+		log.Errorf("delete object %s from database failed,err:%v.\n", in.Key, err)
 		return InternalError
 	}
 	return NoError

@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/s3/proto"
 )
@@ -31,12 +31,12 @@ import (
 func checkLastmodifiedFilter(fmap *map[string]string) error {
 	for k, v := range *fmap {
 		if k != "lt" && k != "lte" && k != "gt" && k != "gte" {
-			log.Logf("invalid query parameter:k=%s,v=%s\n", k, v)
+			log.Infof("invalid query parameter:k=%s,v=%s\n", k, v)
 			return errors.New("invalid query parameter")
 		} else {
 			_, err := strconv.Atoi(v)
 			if err != nil {
-				log.Logf("invalid query parameter:k=%s,v=%s, err=%v\n", k, v, err)
+				log.Errorf("invalid query parameter:k=%s,v=%s, err=%v\n", k, v, err)
 				return errors.New("invalid query parameter")
 			}
 		}
@@ -48,13 +48,13 @@ func checkLastmodifiedFilter(fmap *map[string]string) error {
 func checkObjKeyFilter(val string) (string, error) {
 	// val should be like: objeKey=like:parttern
 	if strings.HasPrefix(val, "like:") == false {
-		log.Logf("invalid object key filter:%s\n", val)
+		log.Infof("invalid object key filter:%s\n", val)
 		return "", fmt.Errorf("invalid object key filter:%s", val)
 	}
 
 	vals := strings.Split(val, ":")
 	if len(vals) <= 1 {
-		log.Logf("invalid object key filter:%s\n", val)
+		log.Errorf("invalid object key filter:%s\n", val)
 		return "", fmt.Errorf("invalid object key filter:%s", val)
 	}
 
@@ -69,22 +69,22 @@ func checkObjKeyFilter(val string) (string, error) {
 func (s *APIService) BucketGet(request *restful.Request, response *restful.Response) {
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
-		log.Logf("get pagination parameters failed: %v\n", err)
+		log.Errorf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	bucketName := request.PathParameter("bucketName")
-	log.Logf("Received request for bucket details: %s\n", bucketName)
+	log.Infof("Received request for bucket details: %s\n", bucketName)
 
 	filterOpts := []string{common.KObjKey, common.KLastModified}
 	filter, err := common.GetFilter(request, filterOpts)
 	if err != nil {
-		log.Logf("get filter failed: %v\n", err)
+		log.Errorf("get filter failed: %v\n", err)
 		response.WriteError(http.StatusBadRequest, err)
 		return
 	} else {
-		log.Logf("Get filter for BucketGet, filterOpts=%+v, filter=%+v\n",
+		log.Infof("Get filter for BucketGet, filterOpts=%+v, filter=%+v\n",
 			filterOpts, filter)
 	}
 
@@ -92,7 +92,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		//filter[common.KObjKey] should be like: like:parttern
 		ret, err := checkObjKeyFilter(filter[common.KObjKey])
 		if err != nil {
-			log.Logf("invalid objkey:%s\v", filter[common.KObjKey])
+			log.Errorf("invalid objkey:%s\v", filter[common.KObjKey])
 			response.WriteError(http.StatusBadRequest,
 				fmt.Errorf("invalid objkey, it should be like objkey=like:parttern"))
 			return
@@ -105,14 +105,14 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 		var tmFilter map[string]string
 		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
 		if err != nil {
-			log.Logf("invalid lastModified:%s\v", filter[common.KLastModified])
+			log.Errorf("invalid lastModified:%s\v", filter[common.KLastModified])
 			response.WriteError(http.StatusBadRequest,
 				fmt.Errorf("invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
 			return
 		}
 		err = checkLastmodifiedFilter(&tmFilter)
 		if err != nil {
-			log.Logf("invalid lastModified:%s\v", filter[common.KLastModified])
+			log.Errorf("invalid lastModified:%s\v", filter[common.KLastModified])
 			response.WriteError(http.StatusBadRequest,
 				fmt.Errorf("invalid lastmodified, it should be like lastmodified={\"lt\":\"numb\"}"))
 			return
@@ -128,12 +128,12 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.s3Client.ListObjects(ctx, &req)
-	log.Logf("list objects result: %v\n", res)
+	log.Infof("list objects result: %v\n", res)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Log("Get bucket successfully.")
+	log.Info("Get bucket successfully.")
 	response.WriteEntity(res)
 }

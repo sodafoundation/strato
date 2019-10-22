@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
-	"github.com/micro/go-log"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
@@ -57,19 +57,19 @@ func (k *Keystone) SetUp() error {
 		Password:         os.Getenv("OS_PASSWORD"),
 		TenantName:       os.Getenv("OS_PROJECT_NAME"),
 	}
-	log.Logf("opts:%v", opts)
+	log.Infof("opts:%v", opts)
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
-		log.Logf("When get auth client:", err)
+		log.Errorf("When get auth client:", err)
 		return err
 	}
 	// Only support keystone v3
 	k.identity, err = openstack.NewIdentityV3(provider, gophercloud.EndpointOpts{})
 	if err != nil {
-		log.Logf("When get identity session:", err)
+		log.Errorf("When get identity session:", err)
 		return err
 	}
-	log.Logf("Service Token Info: %s", provider.TokenID)
+	log.Infof("Service Token Info: %s", provider.TokenID)
 	return nil
 }
 
@@ -97,10 +97,10 @@ func (k *Keystone) validateToken(req *restful.Request, res *restful.Response, to
 				return lastErr
 			}
 		}
-		log.Logf("k.identity:", k.identity)
+		log.Infof("k.identity:", k.identity)
 		r = tokens.Get(k.identity, token)
-		log.Logf("r:", r)
-		log.Logf("r.err:", r.Err)
+		log.Infof("r:", r)
+		log.Infof("r.err:", r.Err)
 		return r.Err
 	})
 	if err != nil {
@@ -112,7 +112,7 @@ func (k *Keystone) validateToken(req *restful.Request, res *restful.Response, to
 		return model.HttpError(res, http.StatusUnauthorized, "extract token failed,%v", err)
 
 	}
-	log.Logf("token: %v", t)
+	log.Infof("token: %v", t)
 
 	if time.Now().After(t.ExpiresAt) {
 		return model.HttpError(res, http.StatusUnauthorized,

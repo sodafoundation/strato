@@ -10,4 +10,5 @@ const (
 	DMERR_NoSuchKey             = "noSuchkey"
 	DMERR_NoSuchUpload          = "noSuchUpload"
 	DMERR_TransitionInprogress  = "transition in-progress"
+	DMERR_BucketNotFound        = "bucket not found"
 )
