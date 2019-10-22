@@ -1,0 +1,67 @@
+dist: xenial
+sudo: required
+
+language: go
+go_import_path: github.com/opensds/multi-cloud
+
+go:
+  - 1.11.x
+  - 1.12.x
+  - tip
+
+env:
+  matrix:
+  - TARGET=amd64
+  # - TARGET=arm64
+  # - TARGET=arm
+  # - TARGET=386
+  # - TARGET=ppc64le
+
+services:
+  - docker
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y build-essential gcc
+  #- sudo apt-get install -y librados-dev librbd-dev
+  #- sudo apt-get install -y lvm2 tgt open-iscsi
+
+matrix:
+  fast_finish: true
+  allow_failures:
+  - go: tip
+  - script: multicloud_verify
+  - script: multicloud_unittest
+  exclude:
+  # - go: tip
+  #   env: TARGET=arm
+  # - go: tip
+  #   env: TARGET=arm64
+  # - go: tip
+  #   env: TARGET=386
+  # - go: tip
+  #   env: TARGET=ppc64le
+
+install:
+  # Build OpenSDS Controller source code
+  - make all
+
+
+jobs:
+  include:
+    - stage: "Build and verify multi cloud"                # naming the Tests stage
+      script: make 
+      name: "build multi-cloud components"            # names the first Tests stage job
+    - script: make multicloud_verify
+      name: "verify multi-cloud components"     # names the second Tests stage job
+    - script: make multicloud_unittest
+      name: "unit test multi-cloud components"     # names the third Tests stage job
+    #- script: make osds_integration_test
+     # name: "integration test opensds"     # names the fourth Tests stage job
+    #- script: make osds_e2etest_build
+     # name: "e2e_test"     # names the fifth Tests stage job
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+  # Clean OpenSDS Controller built data
+  - make clean

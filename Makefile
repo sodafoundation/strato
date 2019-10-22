@@ -88,3 +88,12 @@ dist: build
 	zip -r $(DIST_DIR)/$(BUILD_TGT).zip $(BUILD_TGT) && \
 	tar zcvf $(DIST_DIR)/$(BUILD_TGT).tar.gz $(BUILD_TGT)
 	tree $(DIST_DIR)
+
+# multicloud_verify
+.PHONY: multicloud_verify
+multicloud_verify:
+	bash -x ./verify/verify.sh
+	
+.PHONY: multicloud_unittest
+multicloud_unittest:
+	bash -x ./test/unittest/unittest.sh
