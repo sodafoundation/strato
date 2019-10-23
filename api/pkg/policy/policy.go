@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
@@ -133,7 +133,7 @@ func (e *Enforcer) LoadPolicyFile(path string, forcedReload bool, overWrite bool
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		msg := fmt.Sprintf("read policy file (%s) failed, reason:(%v)", path, err)
-		log.Logf(msg)
+		log.Infof(msg)
 		return fmt.Errorf(msg)
 	}
 	r, err := NewRules(data, e.DefaultRules)
@@ -162,13 +162,13 @@ func (r *Rules) Load(data []byte, defaultRules []DefaultRule) error {
 	rulesMap := map[string]string{}
 	err := json.Unmarshal(data, &rulesMap)
 	if err != nil {
-		log.Logf(err.Error())
+		log.Errorf(err.Error())
 		return err
 	}
 	// add default value
 	for _, r := range defaultRules {
 		if v, ok := rulesMap[r.Name]; ok {
-			log.Logf("policy rule (%s:%s) has conflict with default rule(%s:%s),abandon default value\n",
+			log.Errorf("policy rule (%s:%s) has conflict with default rule(%s:%s),abandon default value\n",
 				r.Name, v, r.Name, r.CheckStr)
 		} else {
 			rulesMap[r.Name] = r.CheckStr
@@ -200,12 +200,12 @@ func Authorize(req *restful.Request, res *restful.Response, action string) bool 
 	target := map[string]string{
 		"tenant_id": TenantId,
 	}
-	log.Logf("Action: %v", action)
-	log.Logf("Target: %v", target)
-	log.Logf("policy-Credentials: %v", credentials)
+	log.Infof("Action: %v", action)
+	log.Infof("Target: %v", target)
+	log.Infof("policy-Credentials: %v", credentials)
 	ok, err := enforcer.Authorize(action, target, credentials)
 	if err != nil {
-		log.Logf("authorize failed, %s", err)
+		log.Errorf("authorize failed, %s", err)
 	}
 	if !ok {
 		model.HttpError(res, http.StatusForbidden, "Operation is not permitted")

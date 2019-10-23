@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -27,7 +27,7 @@ import (
 
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
 	url := request.Request.URL
-	log.Logf("URL is %v", request.Request.URL.String())
+	log.Infof("URL is %v", request.Request.URL.String())
 
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
@@ -48,14 +48,14 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 		}
 		res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
 		if err != nil {
-			log.Logf("err is %v\n", err)
+			log.Errorf("err is %v\n", err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
-		log.Logf("Delete object %s successfully.", objectKey)
+		log.Infof("Delete object %s successfully.", objectKey)
 		response.WriteEntity(res)
 	} else {
-		log.Logf("No such object")
+		log.Errorf("No such object")
 		return
 	}
 

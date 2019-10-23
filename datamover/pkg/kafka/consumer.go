@@ -45,7 +45,7 @@ func Init(addrs []string, group string, topics []string) error {
 	migration.Init()
 	lifecycle.Init()
 
-	//log.Logf("Init consumer finish, err:%v\n", err)
+	//log.Infof("Init consumer finish, err:%v\n", err)
 	logger.Println("Init consumer finish")
 	return err
 }
