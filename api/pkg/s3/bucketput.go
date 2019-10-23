@@ -16,6 +16,9 @@ package s3
 
 import (
 	"encoding/xml"
+	"strings"
+	"time"
+
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
@@ -23,24 +26,19 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	bucketName := strings.ToLower(request.PathParameter(common.REQUEST_PATH_BUCKET_NAME))
 	if !isValidBucketName(bucketName) {
-		response.WriteError(http.StatusBadRequest, s3error.ErrInvalidBucketName)
-
+		WriteErrorResponse(response, request, s3error.ErrInvalidBucketName)
 		return
 	}
 	log.Infof("received request: PUT bucket[name=%s]\n", bucketName)
 
 	if len(request.HeaderParameter(common.REQUEST_HEADER_CONTENT_LENGTH)) == 0 {
 		log.Errorf("missing content length")
-		response.WriteError(http.StatusLengthRequired, s3error.ErrMissingContentLength)
-
+		WriteErrorResponse(response, request, s3error.ErrMissingContentLength)
 		return
 	}
 
@@ -61,7 +59,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		err := xml.Unmarshal(body, &createBucketConf)
 		if err != nil {
 			log.Infof("unmarshal failed, body:%v, err:%v\n", body, err)
-			response.WriteError(http.StatusInternalServerError, s3error.ErrUnmarshalFailed)
+			WriteErrorResponse(response, request, s3error.ErrUnmarshalFailed)
 			return
 		}
 
@@ -74,17 +72,17 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	}
 	if flag == false {
 		log.Errorf("default backend is not provided or it is not exist.")
-		response.WriteError(http.StatusInternalServerError, s3error.ErrGetBackendFailed)
+		WriteErrorResponse(response, request, s3error.ErrGetBackendFailed)
 		return
 	}
 
 	res, err := s.s3Client.CreateBucket(ctx, &bucket)
 	if err != nil {
 		log.Errorf("create bucket failed, err:%v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 
 	log.Infof("create bucket[name=%s, defaultLocation=%s] successfully.\n", bucket.Name, bucket.DefaultLocation)
-	response.WriteEntity(res)
+	WriteSuccessResponse(response, EncodeResponse(res))
 }

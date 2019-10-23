@@ -51,6 +51,20 @@ func (hrange HttpRange) GetLength() int64 {
 	return 1 + hrange.OffsetEnd - hrange.OffsetBegin
 }
 
+func getOffset(offsetString string) (offset int64, err error) {
+	offset = int64(-1)
+	if len(offsetString) > 0 {
+		if !validBytePos.MatchString(offsetString) {
+			return offset, fmt.Errorf("'%s' does not have a valid first byte position value", offsetString)
+		}
+
+		if offset, err = strconv.ParseInt(offsetString, 10, 64); err != nil {
+			return offset, fmt.Errorf("'%s' does not have a valid first byte position value", offsetString)
+		}
+	}
+	return
+}
+
 func ParseRequestRange(rangeString string, resourceSize int64) (hrange *HttpRange, err error) {
 	// TODO handle multi-range request
 	// see https://tools.ietf.org/html/rfc7233
@@ -70,29 +84,14 @@ func ParseRequestRange(rangeString string, resourceSize int64) (hrange *HttpRang
 	}
 
 	offsetBeginString := byteRangeString[:sepIndex]
-	offsetBegin := int64(-1)
-	// Convert offsetBeginString only if its not empty.
-	if len(offsetBeginString) > 0 {
-		if !validBytePos.MatchString(offsetBeginString) {
-			return nil, fmt.Errorf("'%s' does not have a valid first byte position value", rangeString)
-		}
-
-		if offsetBegin, err = strconv.ParseInt(offsetBeginString, 10, 64); err != nil {
-			return nil, fmt.Errorf("'%s' does not have a valid first byte position value", rangeString)
-		}
+	offsetBegin, err := getOffset(offsetBeginString)
+	if err != nil {
+		return nil, err
 	}
-
 	offsetEndString := byteRangeString[sepIndex+1:]
-	offsetEnd := int64(-1)
-	// Convert offsetEndString only if its not empty.
-	if len(offsetEndString) > 0 {
-		if !validBytePos.MatchString(offsetEndString) {
-			return nil, fmt.Errorf("'%s' does not have a valid last byte position value", rangeString)
-		}
-
-		if offsetEnd, err = strconv.ParseInt(offsetEndString, 10, 64); err != nil {
-			return nil, fmt.Errorf("'%s' does not have a valid last byte position value", rangeString)
-		}
+	offsetEnd, err := getOffset(offsetEndString)
+	if err != nil {
+		return nil, err
 	}
 
 	// rangeString contains first and last byte positions. eg. "bytes=2-5"

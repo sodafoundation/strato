@@ -19,27 +19,21 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
-        log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/proto"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 var ChunkSize int = 2048
 
 //ObjectPut -
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
-	copySouce := request.HeaderParameter(common.REQUEST_HEADER_COPY_SOURCE)
-	if copySouce != "" {
-		response.WriteError(http.StatusBadRequest, s3error.ErrInvalidCopySource)
-	}
-
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
@@ -53,7 +47,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	//var authType = signature.GetRequestAuthType(r)
 	var err error
 	if !isValidObjectName(objectKey) {
-		response.WriteError(http.StatusBadRequest, s3error.ErrInvalidObjectName)
+		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
 		return
 	}
 
@@ -63,13 +57,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 	if size == -1 {
-		response.WriteError(http.StatusLengthRequired, s3error.ErrMissingContentLength)
+		WriteErrorResponse(response, request, s3error.ErrMissingContentLength)
 		return
 	}
 
 	// maximum Upload size for objects in a single operation
 	if isMaxObjectSize(size) {
-		response.WriteError(http.StatusBadRequest, s3error.ErrEntityTooLarge)
+		WriteErrorResponse(response, request, s3error.ErrEntityTooLarge)
 		return
 	}
 
@@ -81,13 +75,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	} else {
 		if len(request.Request.Header.Get("Content-Md5")) == 0 {
 			log.Infoln("Content Md5 is null!")
-			response.WriteError(http.StatusBadRequest, s3error.ErrInvalidDigest)
+			WriteErrorResponse(response, request, s3error.ErrInvalidDigest)
 			return
 		}
 		md5Bytes, err := checkValidMD5(request.Request.Header.Get("Content-Md5"))
 		if err != nil {
 			log.Infoln("Content Md5 is invalid!")
-			response.WriteError(http.StatusBadRequest, s3error.ErrInvalidDigest)
+			WriteErrorResponse(response, request, s3error.ErrInvalidDigest)
 			return
 		} else {
 			metadata["md5Sum"] = hex.EncodeToString(md5Bytes)
@@ -96,7 +90,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	acl, err := getAclFromHeader(request)
 	if err != nil {
-		WriteErrorResponse(request, response, err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 
@@ -104,7 +98,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	ctx := common.InitCtxWithAuthInfo(request)
 	bucketMeta := s.getBucketMeta(ctx, bucketName)
 	if bucketMeta == nil {
-		response.WriteError(http.StatusInternalServerError, s3error.ErrGetBucketFailed)
+		WriteErrorResponse(response, request, s3error.ErrGetBucketFailed)
 		return
 	}
 	//log.Logf("bucket, acl:%f", bucketMeta.Acl.CannedAcl)
@@ -112,7 +106,8 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	if backendName != "" {
 		// check if backend exist
 		if s.isBackendExist(ctx, backendName) == false {
-			response.WriteError(http.StatusBadRequest, s3error.ErrGetBackendFailed)
+			WriteErrorResponse(response, request, s3error.ErrGetBackendFailed)
+			return
 		}
 		location = backendName
 	}
@@ -138,7 +133,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	}
 	err = stream.SendMsg(&obj)
 	if err != nil {
-		response.WriteError(http.StatusInternalServerError, s3error.ErrInternalError)
+		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
 	for !eof {
@@ -160,7 +155,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	// if read or send data failed, then close stream and return error
 	if !eof {
-		response.WriteError(http.StatusInternalServerError, s3error.ErrInternalError)
+		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
 
@@ -169,11 +164,11 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	err = stream.RecvMsg(rsp)
 	if err != nil {
 		log.Infof("stream receive message failed:%v\n", err)
-		response.WriteError(http.StatusInternalServerError, s3error.ErrInternalError)
+		WriteErrorResponse(response, request, s3error.ErrInternalError)
 	}
 
 	log.Info("PUT object successfully.")
-	response.WriteEntity(rsp)
+	WriteSuccessResponse(response, nil)
 }
 
 func getSize(request *restful.Request, response *restful.Response) (int64, error) {
@@ -182,7 +177,7 @@ func getSize(request *restful.Request, response *restful.Response) (int64, error
 	size, err := strconv.ParseInt(contentLenght, 10, 64)
 	if err != nil {
 		log.Infof("parse contentLenght[%s] failed, err:%v\n", contentLenght, err)
-		response.WriteError(http.StatusLengthRequired, s3error.ErrMissingContentLength)
+		WriteErrorResponse(response, request, s3error.ErrMissingContentLength)
 		return 0, err
 	}
 
@@ -193,7 +188,7 @@ func getSize(request *restful.Request, response *restful.Response) (int64, error
 		errMsg := fmt.Sprintf("invalid contentLenght[%s], it should be less than %d and more than 0",
 			contentLenght, common.MaxObjectSize)
 		err := errors.New(errMsg)
-		response.WriteError(http.StatusBadRequest, err)
+		WriteErrorResponse(response, request, err)
 		return size, err
 	}
 

@@ -17,37 +17,57 @@
 package s3
 
 import (
+	"bytes"
 	"encoding/xml"
 	"net/http"
+	"strconv"
 
 	"github.com/emicklei/go-restful"
-	. "github.com/journeymidnight/yig/error"
-	"github.com/journeymidnight/yig/helper"
+	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/helper"
 )
 
 const (
 	timeFormatAMZ = "2006-01-02T15:04:05.000Z" // Reply date format
 )
 
+// Encodes the response headers into XML format.
+func EncodeResponse(response interface{}) []byte {
+	var bytesBuffer bytes.Buffer
+	bytesBuffer.WriteString(xml.Header)
+	e := xml.NewEncoder(&bytesBuffer)
+	e.Encode(response)
+	return bytesBuffer.Bytes()
+}
+
+// WriteSuccessResponse write success headers and response if any.
+func WriteSuccessResponse(response *restful.Response, data []byte) {
+	if data == nil {
+		response.WriteHeader(http.StatusOK)
+		return
+	}
+
+	response.AddHeader("Content-Length", strconv.Itoa(len(data)))
+	response.WriteHeader(http.StatusOK)
+	response.Write(data)
+	response.Flush()
+}
+
 // writeErrorResponse write error headers
 // w http.ResponseWriter, r *http.Request
-func WriteErrorResponse(request *restful.Request, response *restful.Response, err error) {
+func WriteErrorResponse(response *restful.Response, request *restful.Request, err error) {
 	WriteErrorResponseHeaders(response, err)
 	WriteErrorResponseNoHeader(response, request, err, request.Request.URL.Path)
 }
 
 func WriteErrorResponseHeaders(response *restful.Response, err error) {
 	var status int
-	apiErrorCode, ok := err.(ApiError)
+	apiErrorCode, ok := err.(S3Error)
 	if ok {
 		status = apiErrorCode.HttpStatusCode()
 	} else {
 		status = http.StatusInternalServerError
 	}
-	helper.Logger.Println(20, "Response status code:", status, "err:", err)
-
-	//ResponseRecorder
-	//w.(*ResponseRecorder).status = status
 
 	response.WriteHeader(status)
 }
@@ -60,7 +80,7 @@ func WriteErrorResponseNoHeader(response *restful.Response, request *restful.Req
 
 	// Generate error response.
 	errorResponse := ApiErrorResponse{}
-	apiErrorCode, ok := err.(ApiError)
+	apiErrorCode, ok := err.(S3Error)
 	if ok {
 		errorResponse.AwsErrorCode = apiErrorCode.AwsErrorCode()
 		errorResponse.Message = apiErrorCode.Description()
@@ -69,15 +89,11 @@ func WriteErrorResponseNoHeader(response *restful.Response, request *restful.Req
 		errorResponse.Message = "We encountered an internal error, please try again."
 	}
 	errorResponse.Resource = resource
-	//errorResponse.RequestId = requestIdFromContext(req.Context())
 	errorResponse.HostId = helper.CONFIG.InstanceId
 
-	//encodedErrorResponse := EncodeResponse(errorResponse)
+	encodedErrorResponse := EncodeResponse(errorResponse)
 
-	//ResponseRecorder
-	//w.(*ResponseRecorder).size = int64(len(encodedErrorResponse))
-
-	//w.Write(encodedErrorResponse)
+	response.Write(encodedErrorResponse)
 	response.ResponseWriter.(http.Flusher).Flush()
 }
 

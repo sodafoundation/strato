@@ -208,16 +208,15 @@ func CreatePolicyFromCanned(owner Owner, bucketOwner Owner, acl Acl) (
 		policy.AccessControlList = append(policy.AccessControlList, grant)
 	case "public-read-write":
 		owner := Owner{}
-		grant, err := createGrant(ACL_TYPE_GROUP, owner, ACL_PERM_READ, ACL_GROUP_TYPE_ALL_USERS)
+		rGrant, err := createGrant(ACL_TYPE_GROUP, owner, ACL_PERM_READ, ACL_GROUP_TYPE_ALL_USERS)
 		if err != nil {
 			return policy, err
 		}
-		policy.AccessControlList = append(policy.AccessControlList, grant)
-		grant, err = createGrant(ACL_TYPE_GROUP, owner, ACL_PERM_WRITE, ACL_GROUP_TYPE_ALL_USERS)
+		wGrant, err := createGrant(ACL_TYPE_GROUP, owner, ACL_PERM_WRITE, ACL_GROUP_TYPE_ALL_USERS)
 		if err != nil {
 			return policy, err
 		}
-		policy.AccessControlList = append(policy.AccessControlList, grant)
+		policy.AccessControlList = append(policy.AccessControlList, rGrant, wGrant)
 	case "authenticated-read":
 		owner := Owner{}
 		grant, err := createGrant(ACL_TYPE_GROUP, owner, ACL_PERM_READ, ACL_GROUP_TYPE_AUTHENTICATED_USERS)
