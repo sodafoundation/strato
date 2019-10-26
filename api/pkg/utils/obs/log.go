@@ -1,7 +1,6 @@
 package obs
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -50,7 +49,7 @@ func configureLogModule(path, level, format string) {
 	configureLevel(level)
 }
 
-func configureWriter(path, format string) error {
+func configureWriter(path, format string) {
 	logrus.SetFormatter(&LogFormatter{
 		TimestampFormat: defaultTimestampFormat,
 		LogFormat:       format + "\n",
@@ -77,18 +76,11 @@ func configureLevel(level string) {
 	logrus.SetReportCaller(true)
 }
 
-func logName(level string) (name string) {
+func logName() (name string) {
 	name = fmt.Sprintf("%s.%s.%s.log",
 		filepath.Base(os.Args[0]),
 		hostName(),
 		userName())
-	return name
-}
-
-func shortLogNameForRotateLogs(level string) (name string) {
-	name = fmt.Sprintf("%s.%s",
-		filepath.Base(os.Args[0]),
-		strings.ToUpper(level))
 	return name
 }
 
