@@ -32,11 +32,12 @@ const (
 	defaultLogLevel        = "info"
 	unknownHost            = "unknownhost"
 	unknownUser            = "unknownuser"
-	configFileName         = "/etc/log.conf"
+	configFileName         = "/etc/multi-cloud/multi-cloud.conf"
 	defaultLogFormat       = "[%time%] [%level%] [%filename%] [%funcName%():%lineNo%] [PID:%process%] %message%"
 	defaultTimestampFormat = time.RFC3339
-	tenMb				   = 10
-	threeMonth			   = 100
+	logSection             = "log"
+	tenMb                  = 10
+	threeMonth             = 100
 )
 
 func InitLogs() {
@@ -120,14 +121,14 @@ func readConfigurationFile() (cfgPath, cfgLevel, cfgFormat string) {
 		log.Println("Failed to open config file")
 		return cfgPath, cfgLevel, cfgFormat
 	}
-	if cfg.Section("").HasKey(path) {
-		cfgPath = cfg.Section("").Key(path).String()
+	if cfg.Section(logSection).HasKey(path) {
+		cfgPath = cfg.Section(logSection).Key(path).String()
 	}
-	if cfg.Section("").HasKey(level) {
-		cfgLevel = strings.ToLower(cfg.Section("").Key(level).String())
+	if cfg.Section(logSection).HasKey(level) {
+		cfgLevel = strings.ToLower(cfg.Section(logSection).Key(level).String())
 	}
-	if cfg.Section("").HasKey(format) {
-		cfgFormat = cfg.Section("").Key(format).String()
+	if cfg.Section(logSection).HasKey(format) {
+		cfgFormat = cfg.Section(logSection).Key(format).String()
 	}
 
 	return cfgPath, cfgLevel, cfgFormat

@@ -27,7 +27,7 @@ services:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
-      - ./log.conf:/etc/log.conf
+      - ./multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
     ports:
       - 8089:8089
     environment:
@@ -48,7 +48,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
-      - ./log.conf:/etc/log.conf
+      - ./multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
 
   s3:
     image: opensdsio/multi-cloud-s3
@@ -60,7 +60,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
-      - ./log.conf:/etc/log.conf
+      - ./multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
 
   dataflow:
     image: opensdsio/multi-cloud-dataflow
@@ -72,7 +72,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
-      - ./log.conf:/etc/log.conf
+      - ./multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
     depends_on:
       - zookeeper
       - kafka
@@ -84,7 +84,7 @@ services:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
-      - ./log.conf:/etc/log.conf
+      - ./multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -99,8 +99,5 @@ services:
 
   datastore:
     image: mongo
-    volumes:
-      - /var/log/multi-cloud:/var/log/multi-cloud
-      - ./log.conf:/etc/log.conf
     ports:
       - 27017:27017
