@@ -117,7 +117,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	log.Infof("received request for create bucket lifecycle: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.BaseRequest{Id: bucketName})
 	if err != nil {
 		log.Errorf("get bucket failed, err=%v\n", err)
 		response.WriteError(http.StatusInternalServerError, fmt.Errorf("bucket does not exist"))

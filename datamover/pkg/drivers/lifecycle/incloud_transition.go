@@ -119,7 +119,7 @@ func getStorageClassName(tier int32, storageType string) (string, error) {
 	case flowtype.STOR_TYPE_CEPH_S3:
 		key = backend.BackendTypeCeph
 	case flowtype.STOR_TYPE_GCP_S3:
-		key = backend.BackendTypeGcp
+		key = backend.BackendTypeGcs
 	default:
 		log.Info("map tier to storage class name failed: backend type is not support.")
 		return "", errors.New(DMERR_UnSupportBackendType)

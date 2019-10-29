@@ -15,17 +15,13 @@
 package s3
 
 import (
-	"bytes"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
+	/*c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"golang.org/x/net/context"
+	*/
 )
 
 //ObjectGet -
@@ -33,6 +29,8 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	rangestr := request.HeaderParameter("Range")
+	log.Infof("%v\n", rangestr)
+/*
 	log.Infof("Received request for object get, bucket: %s, object: %s, range: %s\n",
 		bucketName, objectKey, rangestr)
 
@@ -85,4 +83,6 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(body)
 	response.Write(buf.Bytes())
+	*/
+	log.Infof("Init multipart upload[bucketName=%s, objectKey=%s] successfully.\n", bucketName, objectKey)
 }
