@@ -59,6 +59,11 @@ func NewGlobalIdGen(machineId int64) (*GlobalIdGen, error) {
 	return gi, nil
 }
 
+/*
+* the global id is generated according to snowflake algo.
+* Please refer to https://github.com/twitter-archive/snowflake/tree/snowflake-2010.
+ */
+
 func (gi *GlobalIdGen) GetId() int64 {
 	gi.mux.Lock()
 	defer gi.mux.Unlock()
