@@ -91,16 +91,16 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	return err
 }
 
-func (s *s3Service) GetBucket(ctx context.Context, in *pb.BaseRequest, out *pb.Bucket) error {
+func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.Bucket) error {
 	log.Infof("GetBucket %s is called in s3 service.", in.Id)
 
-	bucket, err := s.MetaStorage.GetBucket(ctx, in.Id, false)
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Name, false)
 	if err != nil {
-		log.Errorf("get bucket[%s] failed, err:%v\n", in.Id, err)
+		log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
 		return err
 	}
 
-	out = &pb.Bucket{
+	*out = pb.Bucket{
 		Id:              bucket.Id,
 		Name:            bucket.Name,
 		TenantId:        bucket.TenantId,
@@ -129,8 +129,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 
 	// Check if bucket is empty
-	objs, _, _, _, _, err := s.MetaStorage.Db.ListObjects(ctx, bucketName, "", "", "",
-		"", false, 1)
+	objs, _, _, _, _, err := s.MetaStorage.Db.ListObjects(ctx, bucketName, false, 1, nil)
 	if err != nil {
 		log.Errorf("list objects failed, err:%v\n", err)
 		return err

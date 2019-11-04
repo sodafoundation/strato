@@ -32,11 +32,14 @@ import (
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"golang.org/x/net/context"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"time"
 )
 
 var topicLifecycle = "lifecycle"
 var s3client = osdss3.NewS3Service("s3", client.DefaultClient)
-
+const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
 type InterRules []*InternalLifecycleRule
 
 // map from a specific tier to an array of tiers, that means transition can happens from the specific tier to those tiers in the array.
@@ -194,34 +197,39 @@ func checkTransitionValidation(source int32, destination int32) bool {
 	return true
 }
 
-func getObjects(r *InternalLifecycleRule, offset, limit int32) ([]*osdss3.Object, error) {
+func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*osdss3.Object, error) {
 	// Get objects by communicating with s3 service.
 	filt := make(map[string]string)
-	if len(r.Filter.Prefix) > 0 {
-		filt[KObjKey] = "^" + r.Filter.Prefix
-	}
 
-	modifyFilt := fmt.Sprintf("{\"gte\":\"%d\"}", r.Days)
-	filt[KLastModified] = modifyFilt
+	timeFilt := fmt.Sprintf("{\"lte\":\"%s\"}",
+		time.Now().AddDate(0,0,int(0-r.Days)).Format(TIME_LAYOUT_TIDB))
+	filt[KLastModified] = timeFilt
 	if r.ActionType != ActionExpiration {
 		filt[KStorageTier] = strconv.Itoa(int(r.Tier))
 	}
 
+	log.Infof("filt: %+v\n", filt)
 	s3req := osdss3.ListObjectsRequest{
+		Version: 2,
 		Bucket: r.Bucket,
 		Filter: filt,
-		Offset: offset,
-		Limit:  limit,
+		StartAfter: marker,
+		MaxKeys:  limit,
 	}
-	ctx := context.Background()
+	if len(r.Filter.Prefix) > 0 {
+		s3req.Prefix = r.Filter.Prefix
+	}
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
+	})
 	log.Infof("ListObjectsRequest:%+v\n", s3req)
 	s3rsp, err := s3client.ListObjects(ctx, &s3req)
 	if err != nil {
-		log.Errorf("list objects failed, req: %v.\n", s3req)
+		log.Errorf("list objects failed, req:%+v,  err:%v.\n", s3req, err)
 		return nil, err
 	}
 
-	return s3rsp.ListObjects, nil
+	return s3rsp.Objects, nil
 }
 /*
 func schedSortedAbortRules(inRules *InterRules) {
@@ -271,15 +279,13 @@ func schedSortedActionsRules(inRules *InterRules) {
 	log.Info("schedSortedActionsRules begin ...")
 	dupCheck := map[string]struct{}{}
 	for _, r := range *inRules {
-		var offset, limit int32 = 0, 1000
+		var marker string
+		var limit int32 = 1000
 		for {
-			objs, err := getObjects(r, offset, limit)
+			objs, err := getObjects(r, marker, limit)
 			if err != nil {
 				break
 			}
-			num := int32(len(objs))
-			offset += num
-			// Check if the object exist in the dupCheck map.
 			for _, obj := range objs {
 				if obj.DeleteMarker == true {
 					log.Infof("deleteMarker of object[%s] is set, no lifecycle action need.\n", obj.ObjectKey)
@@ -291,7 +297,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 					continue
 				}
 				if _, ok := dupCheck[obj.ObjectKey]; !ok {
-					// Not exist means this object has is not processed in this round of scheduling.
+					// Not exist means this object has not processed in this round of scheduling.
 					if r.ActionType != ActionExpiration && obj.Tier == r.Tier &&
 						(obj.Location == r.Backend || r.Backend == "") {
 						// For transition, if target backend and storage class is the same as source backend and storage class, then no transition is need.
@@ -342,8 +348,9 @@ func schedSortedActionsRules(inRules *InterRules) {
 				} else {
 					log.Infof("object[%s] is already handled in this schedule time.\n", obj.ObjectKey)
 				}
+				marker = obj.ObjectKey
 			}
-			if num < limit {
+			if int32(len(objs)) < limit {
 				break
 			}
 		}

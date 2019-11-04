@@ -206,6 +206,9 @@ type Object struct {
 
 	// The class of storage used to store the object.
 	StorageClass string
+
+	Location string
+	Tier     int32
 }
 
 type VersionedObject struct {

@@ -5,24 +5,22 @@ import (
 	"io"
 	"time"
 
+	"github.com/journeymidnight/yig/helper"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/s3/error"
+	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	meta "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/s3/error"
-	. "github.com/opensds/multi-cloud/s3/error"
+	"net/url"
 )
-
-func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectResponse) error {
-	log.Infoln("ListObject is called in s3 service.")
-
-	return nil
-}
 
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
@@ -37,15 +35,15 @@ func (s *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 }
 
 type StreamReader struct {
-	in pb.S3_PutObjectStream
-	curr  int
+	in   pb.S3_PutObjectStream
+	curr int
 	req  *pb.PutObjectRequest
 }
 
 func (dr *StreamReader) Read(p []byte) (n int, err error) {
 	left := len(p)
 	for left > 0 {
-		if dr.curr == 0 || (dr.req != nil && dr.curr == len(dr.req.Data)){
+		if dr.curr == 0 || (dr.req != nil && dr.curr == len(dr.req.Data)) {
 			dr.req, err = dr.in.Recv()
 			if err != nil && err != io.EOF {
 				log.Errorln("failed to recv data with err:", err)
@@ -59,13 +57,13 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 		}
 
 		copyLen := 0
-		if len(dr.req.Data) - dr.curr > left {
+		if len(dr.req.Data)-dr.curr > left {
 			copyLen = left
 		} else {
 			copyLen = len(dr.req.Data) - dr.curr
 		}
 		log.Infoln("copy len:", copyLen)
-		copy(p[n:], dr.req.Data[dr.curr:(dr.curr + copyLen)])
+		copy(p[n:], dr.req.Data[dr.curr:(dr.curr+copyLen)])
 		dr.curr += copyLen
 		left -= copyLen
 		n += copyLen
@@ -137,7 +135,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		}
 	}
 
-	data := &StreamReader{ in: in}
+	data := &StreamReader{in: in}
 	var limitedDataReader io.Reader
 	if obj.Size > 0 { // request.ContentLength is -1 if length is unknown
 		limitedDataReader = io.LimitReader(data, obj.Size)
@@ -196,8 +194,10 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Etag = res.Etag
 	obj.ContentType = md["Content-Type"]
 	obj.DeleteMarker = false
-	obj.CustomAttributes = md  /* TODO: only reserve http header attr*/
+	obj.CustomAttributes = md /* TODO: only reserve http header attr*/
 	obj.Type = meta.ObjectTypeNormal
+	obj.Tier = utils.Tier1 // Currently only support tier1
+	obj.StorageMeta = res.Meta
 
 	object := &meta.Object{Object: obj}
 
@@ -250,4 +250,123 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	log.Infoln("DeleteObject is called in s3 service.")
 
 	return nil
+}
+func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponse) error {
+	log.Infof("ListObject is called in s3 service, bucket is %s.\n", in.Bucket)
+
+	var err error
+	defer func() {
+		if err != nil {
+			out.ErrorCode = GetHttpErrCode(err)
+		}
+	}()
+	// Check ACL
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+	if err != nil {
+		return err
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		return err
+	}
+
+	// administrator can get any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "public-read", "public-read-write":
+			break
+		case "authenticated-read":
+			if tenantId == "" {
+				log.Error("no tenant id provided")
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		default:
+			if bucket.TenantId != tenantId {
+				log.Errorf("tenantId(%s) does not much bucket.TenantId(%s)", tenantId, bucket.TenantId)
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		}
+		// TODO validate user policy and ACL
+	}
+
+	retObjects, prefixes, truncated, nextMarker, _, err := s.ListObjectsInternal(ctx, in)
+	if truncated && len(nextMarker) != 0 {
+		out.NextMarker = nextMarker
+	}
+	if in.Version == 2 {
+		out.NextMarker = util.Encrypt(out.NextMarker)
+	}
+
+	objects := make([]*pb.Object, 0, len(retObjects))
+	for _, obj := range retObjects {
+		object := pb.Object{
+			LastModified: obj.LastModified,
+			Etag:         obj.Etag,
+			Size:         obj.Size,
+			Tier:         obj.Tier,
+			Location:     obj.Location,
+			TenantId:     obj.TenantId,
+			BucketName:   obj.BucketName,
+		}
+		if in.EncodingType != "" { // only support "url" encoding for now
+			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
+		} else {
+			object.ObjectKey = obj.ObjectKey
+		}
+		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
+		objects = append(objects, &object)
+		log.Infof("object:%+v\n", object)
+	}
+	out.Objects = objects
+	out.Prefixes = prefixes
+	out.IsTruncated = truncated
+
+	if in.EncodingType != "" { // only support "url" encoding for now
+		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
+			return url.QueryEscape(s)
+		})
+		out.NextMarker = url.QueryEscape(out.NextMarker)
+	}
+
+	return nil
+}
+
+func (s *s3Service) ListObjectsInternal(ctx context.Context, request *pb.ListObjectsRequest) (retObjects []*meta.Object,
+	prefixes []string, truncated bool, nextMarker, nextVerIdMarker string, err error) {
+	log.Infoln("Prefix:", request.Prefix, "Marker:", request.Marker, "MaxKeys:",
+		request.MaxKeys, "Delimiter:", request.Delimiter, "Version:", request.Version,
+		"keyMarker:", request.KeyMarker, "versionIdMarker:", request.VersionIdMarker)
+
+	filt := make(map[string]string)
+	if request.Versioned {
+		filt[common.KMarker] = request.KeyMarker
+		filt[common.KVerMarker] = request.VersionIdMarker
+	} else if request.Version == 2 {
+		if request.ContinuationToken != "" {
+			var marker string
+			marker, err = util.Decrypt(request.ContinuationToken)
+			if err != nil {
+				err = ErrInvalidContinuationToken
+				return
+			}
+			filt[common.KMarker] = marker
+		} else {
+			filt[common.KMarker] = request.StartAfter
+		}
+	} else { // version 1
+		filt[common.KMarker] = request.Marker
+	}
+
+	filt[common.KPrefix] = request.Prefix
+	filt[common.KDelimiter] = request.Delimiter
+	// currentlly, request.Filter only support filter by 'lastmodified' and 'tier'
+	for k, v := range request.Filter {
+		filt[k] = v
+	}
+
+	return s.MetaStorage.Db.ListObjects(ctx, request.Bucket, request.Versioned, int(request.MaxKeys), filt)
 }
