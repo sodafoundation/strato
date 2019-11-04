@@ -16,14 +16,14 @@ package s3
 
 import (
 	"fmt"
-	"net/http"
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
+	"net/http"
 )
 
 //Convert function from storage tier to storage class for XML format output
@@ -58,7 +58,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	log.Infof("received request for getting lifecycle of bucket[name=%s].\n", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.BaseRequest{Id: bucketName})
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		log.Errorf("get bucket failed, err=%v\n", err)
 		response.WriteError(http.StatusInternalServerError, NoSuchBucket.Error())

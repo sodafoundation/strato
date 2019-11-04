@@ -97,7 +97,7 @@ func ReadBody(r *restful.Request) []byte {
 */
 
 func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.Bucket {
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.BaseRequest{Id: bucketName})
+	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		log.Infof("get bucket[name=%s] failed, err=%v.\n", bucketName, err)
 		return nil
@@ -126,4 +126,3 @@ func (s *APIService) isBackendExist(ctx context.Context, backendName string) boo
 
 	return flag
 }
-

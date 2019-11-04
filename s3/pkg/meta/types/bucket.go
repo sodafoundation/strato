@@ -61,6 +61,7 @@ func (b *Bucket) String() (s string) {
 	s += "Name: " + b.Name + "\n"
 	s += "CreateTime: " + time.Unix(b.CreateTime, 0).Format(CREATE_TIME_LAYOUT) + "\n"
 	s += "TenantId: " + b.TenantId + "\n"
+	s += "DefaultLocation: " + b.DefaultLocation + "\n"
 	s += "CORS: " + fmt.Sprintf("%+v", b.Cors) + "\n"
 	s += "ACL: " + fmt.Sprintf("%+v", b.Acl) + "\n"
 	s += "LifeCycle: " + fmt.Sprintf("%+v", b.LifecycleConfiguration) + "\n"
