@@ -15,11 +15,14 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strconv"
 
-	"github.com/micro/go-log"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
+	log "github.com/sirupsen/logrus"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
@@ -28,9 +31,10 @@ import (
 	"github.com/robfig/cron"
 )
 
-
 func LoadAllPlans() {
-	ctx := context.NewAdminContext()
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true),
+	})
 
 	offset := model.DefaultOffset
 	limit := model.DefaultLimit
@@ -39,9 +43,10 @@ func LoadAllPlans() {
 	for offset == 0 || planNum > 0 {
 		plans, err := db.DbAdapter.ListPlan(ctx, limit, offset, nil)
 		if err != nil {
-			log.Logf("Get all plan faild, %v", err)
+			log.Errorf("Get all plan faild, %v", err)
 			break
 		}
+		log.Infof("scheduler: planNum=%d\n", planNum)
 		planNum = len(plans)
 		if planNum == 0 {
 			break
@@ -52,13 +57,13 @@ func LoadAllPlans() {
 			if p.PolicyId == "" || !p.PolicyEnabled {
 				continue
 			}
-			e := plan.NewPlanExecutor(ctx, &p)
+			e := plan.NewPlanExecutor(&p)
 			err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 			if err != nil {
-				log.Logf("Load plan(%s) to trigger filed, %v", p.Id.Hex(), err)
+				log.Errorf("Load plan(%s) to trigger failed, %v", p.Id.Hex(), err)
 				continue
 			}
-			log.Logf("Load plan(%s) to trigger success", p.Id.Hex())
+			log.Infof("Load plan(%s) to trigger success", p.Id.Hex())
 		}
 	}
 }
@@ -66,17 +71,17 @@ func LoadAllPlans() {
 //This scheduler will scan all buckets periodically to get lifecycle rules, and scheduling according to these rules.
 func LoadLifecycleScheduler() error {
 	spec := os.Getenv("LIFECYCLE_CRON_CONFIG")
-	log.Logf("Value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
+	log.Infof("Value of LIFECYCLE_CRON_CONFIG is: %s\n", spec)
 
 	//TODO: Check the validation of spec
 	cn := cron.New()
 	//0 */10 * * * ?
 	if err := cn.AddFunc(spec, lifecycle.ScheduleLifecycle); err != nil {
-		log.Logf("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
+		log.Errorf("add lifecyecle scheduler to cron trigger failed: %v.\n", err)
 		return fmt.Errorf("add lifecyecle scheduler to cron trigger failed: %v", err)
 	}
 	cn.Start()
 
-	log.Log("add lifecycle scheduler to cron trigger successfully.")
+	log.Info("add lifecycle scheduler to cron trigger successfully.")
 	return nil
 }

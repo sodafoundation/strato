@@ -23,10 +23,12 @@ message Connector {
 
 message RunJobRequest{
 	string id = 1;
-	Connector sourceConn = 2;
-	Connector destConn = 3;
-	Filter filt = 4;
-	bool remainSource = 5;
+	string tenanId = 2;
+	string userId = 3;
+	Connector sourceConn = 4;
+	Connector destConn = 5;
+	Filter filt = 6;
+	bool remainSource = 7;
 }
 
 message RunJobResponse {

@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
 )
 
@@ -56,7 +56,7 @@ func check(rule BaseCheck,
 	enforcer Enforcer,
 	currentRule string) bool {
 	ret := rule.Exec(target, cred, enforcer, currentRule)
-	log.V(8).Infof("check rules:%s -- %v", rule, ret)
+	log.Infof("check rules:%s -- %v", rule, ret)
 	return ret
 }
 
