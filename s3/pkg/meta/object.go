@@ -1,3 +1,16 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package meta
 
 import (
@@ -45,6 +58,46 @@ func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName stri
 		return
 	}
 	return object, nil
+}
+
+func (m *Meta) DeleteObject(ctx context.Context, object *Object, DeleteMarker bool, objMap *ObjMap) error {
+	tx, err := m.Db.NewTrans()
+	defer func() {
+		if err != nil {
+			m.Db.AbortTrans(tx)
+		}
+	}()
+
+	err = m.Db.DeleteObject(ctx, object, tx)
+	if err != nil {
+		return err
+	}
+
+	// TODO: versioning
+	/*if objMap != nil {
+		err = m.Db.DeleteObjectMap(ctx, objMap, tx)
+		if err != nil {
+			return err
+		}
+	}*/
+
+	if DeleteMarker {
+		return nil
+	}
+
+	// TODO: gc
+	err = m.Db.PutObjectToGarbageCollection(ctx, object, tx)
+	if err != nil {
+		return err
+	}
+
+	err = m.UpdateUsage(ctx, object.BucketName, -object.Size)
+	if err != nil {
+		return err
+	}
+	err = m.Db.CommitTrans(tx)
+
+	return err
 }
 
 /*

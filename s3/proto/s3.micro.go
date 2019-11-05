@@ -49,6 +49,7 @@ It has these top-level messages:
 	ListObjectsResponse
 	CountObjectsResponse
 	DeleteObjectInput
+	DeleteObjectOutput
 	GetObjectInput
 	MultipartUpload
 	ListParts
@@ -105,7 +106,7 @@ type S3Service interface {
 	PutObject(ctx context.Context, opts ...client.CallOption) (S3_PutObjectService, error)
 	UpdateObject(ctx context.Context, in *Object, opts ...client.CallOption) (*BaseResponse, error)
 	GetObject(ctx context.Context, in *GetObjectInput, opts ...client.CallOption) (*Object, error)
-	DeleteObject(ctx context.Context, in *DeleteObjectInput, opts ...client.CallOption) (*BaseResponse, error)
+	DeleteObject(ctx context.Context, in *DeleteObjectInput, opts ...client.CallOption) (*DeleteObjectOutput, error)
 	GetTierMap(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetTierMapResponse, error)
 	UpdateObjMeta(ctx context.Context, in *UpdateObjMetaRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetStorageClasses(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetStorageClassesResponse, error)
@@ -276,9 +277,9 @@ func (c *s3Service) GetObject(ctx context.Context, in *GetObjectInput, opts ...c
 	return out, nil
 }
 
-func (c *s3Service) DeleteObject(ctx context.Context, in *DeleteObjectInput, opts ...client.CallOption) (*BaseResponse, error) {
+func (c *s3Service) DeleteObject(ctx context.Context, in *DeleteObjectInput, opts ...client.CallOption) (*DeleteObjectOutput, error) {
 	req := c.c.NewRequest(c.name, "S3.DeleteObject", in)
-	out := new(BaseResponse)
+	out := new(DeleteObjectOutput)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -628,7 +629,7 @@ type S3Handler interface {
 	PutObject(context.Context, S3_PutObjectStream) error
 	UpdateObject(context.Context, *Object, *BaseResponse) error
 	GetObject(context.Context, *GetObjectInput, *Object) error
-	DeleteObject(context.Context, *DeleteObjectInput, *BaseResponse) error
+	DeleteObject(context.Context, *DeleteObjectInput, *DeleteObjectOutput) error
 	GetTierMap(context.Context, *BaseRequest, *GetTierMapResponse) error
 	UpdateObjMeta(context.Context, *UpdateObjMetaRequest, *BaseResponse) error
 	GetStorageClasses(context.Context, *BaseRequest, *GetStorageClassesResponse) error
@@ -676,7 +677,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		PutObject(ctx context.Context, stream server.Stream) error
 		UpdateObject(ctx context.Context, in *Object, out *BaseResponse) error
 		GetObject(ctx context.Context, in *GetObjectInput, out *Object) error
-		DeleteObject(ctx context.Context, in *DeleteObjectInput, out *BaseResponse) error
+		DeleteObject(ctx context.Context, in *DeleteObjectInput, out *DeleteObjectOutput) error
 		GetTierMap(ctx context.Context, in *BaseRequest, out *GetTierMapResponse) error
 		UpdateObjMeta(ctx context.Context, in *UpdateObjMetaRequest, out *BaseResponse) error
 		GetStorageClasses(ctx context.Context, in *BaseRequest, out *GetStorageClassesResponse) error
@@ -789,7 +790,7 @@ func (h *s3Handler) GetObject(ctx context.Context, in *GetObjectInput, out *Obje
 	return h.S3Handler.GetObject(ctx, in, out)
 }
 
-func (h *s3Handler) DeleteObject(ctx context.Context, in *DeleteObjectInput, out *BaseResponse) error {
+func (h *s3Handler) DeleteObject(ctx context.Context, in *DeleteObjectInput, out *DeleteObjectOutput) error {
 	return h.S3Handler.DeleteObject(ctx, in, out)
 }
 

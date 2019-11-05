@@ -126,12 +126,13 @@ services:
       - --config=/tidb.toml
       - -L=info
 
+  # mysql client, used to connect to tidb
   mysql:
     image: mysql:5.7
     container_name: mysql
     volumes:
       - ./s3/pkg/conf/tidb.sql:/yig.sql
-    command: mysql -h tidb  -P 4000 -u root -e "create database yig character set utf8;use yig;source /yig.sql"
+    command: mysql -h tidb  -P 4000 -u root -e "create database yig character set utf8;use yig;source /yig.sql;"
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     depends_on:
