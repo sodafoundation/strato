@@ -259,6 +259,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		}
 		rows, err = t.Client.Query(sqltext, args...)
 		if err != nil {
+			err = handleDBError(err)
 			return
 		}
 		defer rows.Close()
@@ -338,6 +339,10 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			obj.LastModified = lastModifiedTime.Unix()
 			retObjects = append(retObjects, obj)
 		}
+		// loopcount is the number of records we got from the last query command, not all of those records can meet the
+		// requirements to return to the end user, if the number of records that meet the requirement is less than
+		// maxKeys, then we need to run query command again, but if loopcount is less than MaxObjectList, then no need
+		// to run query coommand again.
 		if loopcount < MaxObjectList {
 			exit = true
 		}

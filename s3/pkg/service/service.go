@@ -17,6 +17,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 
@@ -31,7 +32,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type Int2String map[int32]string

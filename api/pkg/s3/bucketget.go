@@ -21,7 +21,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/emicklei/go-restful"
-	"github.com/journeymidnight/yig/helper"
+	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -51,7 +51,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	}
 
 	rsp := CreateListObjectsResponse(bucketName, &req, listObjectsRsp)
-	log.Infof("rsp:%+v\n", rsp)
+	log.Debugf("rsp:%+v\n", rsp)
 	// Write success response.
 	response.WriteEntity(rsp)
 
@@ -93,7 +93,7 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 		var maxKey int
 		maxKey, err = strconv.Atoi(query.Get("max-keys"))
 		if err != nil {
-			helper.Debugln("Error parsing max-keys:", err)
+			log.Error("parsing max-keys error:", err)
 			return request, ErrInvalidMaxKeys
 		}
 		request.MaxKeys = int32(maxKey)
@@ -124,11 +124,11 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 // this function refers to GenerateListObjectsResponse in api-response.go from Minio Cloud Storage.
 func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest,
 	listRsp *s3.ListObjectsResponse) (response datatype.ListObjectsResponse) {
-	log.Infof("listRsp:%v\n", listRsp)
+	log.Debugf("listRsp:%v\n", listRsp)
 	for _, o := range listRsp.Objects {
 		obj := datatype.Object{
 			Key:          o.ObjectKey,
-			LastModified: time.Unix(o.LastModified, o.LastModified).In(time.Local).Format(timeFormatAMZ),
+			LastModified: time.Unix(o.LastModified, 0).In(time.Local).Format(timeFormatAMZ),
 			ETag:         o.Etag,
 			Size:         o.Size,
 			StorageClass: o.StorageClass,
