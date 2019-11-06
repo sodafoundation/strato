@@ -560,6 +560,10 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 }
 
 func HandleS3Error(err error, out *pb.BaseResponse) {
+	if err == nil {
+		out.ErrorCode = http.StatusOK
+		return
+	}
 	s3err, ok := err.(S3ErrorCode)
 	if ok {
 		out.ErrorCode = int32(ErrorCodeResponse[s3err].HttpStatusCode)
