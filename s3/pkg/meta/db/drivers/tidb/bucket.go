@@ -1,3 +1,16 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package tidbclient
 
 import (
@@ -12,10 +25,11 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
-	helper "github.com/opensds/multi-cloud/s3/pkg/helper"
+	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error) {
@@ -214,9 +228,11 @@ func (t *TidbClient) CheckAndPutBucket(ctx context.Context, bucket *Bucket) (boo
 	return processed, err
 }
 
-func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdMarker, prefix, delimiter string,
-	versioned bool, maxKeys int) (retObjects []*Object, prefixes []string, truncated bool, nextMarker,
+func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int,
+	filter map[string]string) (retObjects []*Object, prefixes []string, truncated bool, nextMarker,
 	nextVerIdMarker string, err error) {
+	const MaxObjectList = 10000
+	// TODO: support versioning
 	if versioned {
 		return
 	}
@@ -225,37 +241,40 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 	objectMap := make(map[string]struct{})
 	objectNum := make(map[string]int)
 	commonPrefixes := make(map[string]struct{})
-	omarker := marker
+	omarker := filter[common.KMarker]
+	delimiter := filter[common.KDelimiter]
+	prefix := filter[common.KPrefix]
 	for {
 		var loopcount int
 		var sqltext string
 		var rows *sql.Rows
-		if marker == "" {
-			sqltext = "select bucketname,name,version,nullversion,deletemarker from objects where bucketName=? " +
-				"order by bucketname,name,version limit ?;"
-			rows, err = t.Client.Query(sqltext, bucketName, maxKeys)
-		} else {
-			sqltext = "select bucketname,name,version,nullversion,deletemarker from objects where bucketName=? " +
-				"and name >=? order by bucketname,name,version limit ?,?;"
-			rows, err = t.Client.Query(sqltext, bucketName, marker, objectNum[marker], objectNum[marker]+maxKeys)
+		args := make([]interface{}, 0)
+		sqltext = "select bucketname,name,location,tenantid,size,lastmodifiedtime,nullversion,tier from objects " +
+			"where deletemarker=0 and bucketName=?"
+		args = append(args, bucketName)
+		var inargs []interface{}
+		sqltext, inargs, err = buildSql(ctx, filter, sqltext)
+		for _, v := range inargs {
+			args = append(args, v)
 		}
+		rows, err = t.Client.Query(sqltext, args...)
 		if err != nil {
-			err = handleDBError(err)
 			return
 		}
 		defer rows.Close()
 		for rows.Next() {
 			loopcount += 1
-			//fetch related date
-			var bucketname, name string
-			var version uint64
-			var nullversion, deletemarker bool
+			obj := &Object{Object:&pb.Object{}}
+			var name, lastModified string
 			err = rows.Scan(
-				&bucketname,
+				&obj.BucketName,
 				&name,
-				&version,
-				&nullversion,
-				&deletemarker,
+				&obj.Location,
+				&obj.TenantId,
+				&obj.Size,
+				&lastModified,
+				&obj.NullVersion,
+				&obj.Tier,
 			)
 			if err != nil {
 				err = handleDBError(err)
@@ -267,32 +286,25 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 				objectNum[name] = 0
 			}
 			objectNum[name] += 1
-			marker = name
-			//filte row
-			//filte by prefix
-			hasPrefix := strings.HasPrefix(name, prefix)
-			if !hasPrefix {
-				continue
-			}
-			//filte by objectname
+			filter[common.KMarker] = name
+
 			if _, ok := objectMap[name]; !ok {
 				objectMap[name] = struct{}{}
 			} else {
 				continue
 			}
-			//filte by deletemarker
-			if deletemarker {
-				continue
-			}
+
 			if name == omarker {
 				continue
 			}
-			//filte by delemiter
+
+			// group by delimiter
 			if len(delimiter) != 0 {
 				subStr := strings.TrimPrefix(name, prefix)
 				n := strings.Index(subStr, delimiter)
 				if n != -1 {
 					prefixKey := prefix + string([]byte(subStr)[0:(n+1)])
+					filter[common.KMarker] = prefixKey[0:(len(prefixKey) - 1)] + string(delimiter[len(delimiter) - 1] + 1)
 					if prefixKey == omarker {
 						continue
 					}
@@ -309,28 +321,24 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 					continue
 				}
 			}
-			var o *Object
-			Strver := strconv.FormatUint(version, 10)
-			o, err = t.GetObject(ctx, bucketname, name, Strver)
-			if err != nil {
-				err = handleDBError(err)
-				return
-			}
+
 			count += 1
 			if count == maxKeys {
 				nextMarker = name
 			}
-			if count == 0 {
-				continue
-			}
+
 			if count > maxKeys {
 				truncated = true
 				exit = true
 				break
 			}
-			retObjects = append(retObjects, o)
+
+			obj.ObjectKey = name
+			lastModifiedTime, _ := time.ParseInLocation(TIME_LAYOUT_TIDB, lastModified, time.Local)
+			obj.LastModified = lastModifiedTime.Unix()
+			retObjects = append(retObjects, obj)
 		}
-		if loopcount == 0 {
+		if loopcount < MaxObjectList {
 			exit = true
 		}
 		if exit {
@@ -338,7 +346,29 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 		}
 	}
 	prefixes = helper.Keys(commonPrefixes)
+
 	return
+}
+
+
+func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string) (*utils.ObjsCountInfo, error){
+	var sqltext string
+	rsp := utils.ObjsCountInfo{}
+	var err error
+	if prefix == "" {
+		sqltext = "select count(*),sum(size) from objects where bucketname=?;"
+		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &rsp.Size)
+	} else {
+		filt := prefix + "%"
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ?;"
+		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &rsp.Size)
+	}
+
+	if err != nil {
+		log.Errorf("db error:%v\n", err)
+	}
+
+	return &rsp, err
 }
 
 func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) error {
@@ -405,3 +435,81 @@ func (t *TidbClient) UpdateUsages(ctx context.Context, usages map[string]int64, 
 	}
 	return nil
 }
+
+func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (string, []interface{}, error) {
+	const MaxObjectList = 10000
+	args := make([]interface{}, 0)
+
+	prefix := filter[common.KPrefix]
+	if prefix != "" {
+		sqltxt += " and name like ?"
+		args = append(args, prefix + "%")
+		log.Debug("query prefix:", prefix)
+	}
+	if filter[common.KMarker] != "" {
+		sqltxt += " and name >= ?"
+		args = append(args, filter[common.KMarker])
+		log.Debug("query marker:", filter[common.KMarker])
+	}
+
+	// lifecycle management may need to filter by LastModified
+	if filter[common.KLastModified] != "" {
+		var tmFilter map[string]string
+		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
+		if err != nil {
+			log.Errorf("unmarshal lastmodified value failed:%s\n", err)
+			return sqltxt, args, ErrInternalError
+		}
+		log.Debugf("tmpFilter:%+v\n", tmFilter)
+
+		for k, v := range tmFilter {
+			var op string
+			switch k {
+			case "lt":
+				op = "<"
+			case "gt":
+				op = ">"
+			case "lte":
+				op = "<="
+			case "gte":
+				op = ">="
+			default:
+				log.Infof("unsupport filter action:%s\n", k)
+				return sqltxt, args, ErrInternalError
+			}
+
+			sqltxt += " and lastmodifiedtime " + op + " ?"
+			args = append(args, v)
+		}
+	}
+
+	// lifecycle management may need to filter by StorageTier
+	if filter[common.KStorageTier] != "" {
+		tier, err := strconv.Atoi(filter[common.KStorageTier])
+		if err != nil {
+			log.Errorf("invalid storage tier:%s\n", filter[common.KStorageTier])
+			return sqltxt, args, ErrInternalError
+		}
+
+		sqltxt += " and tier <= ?"
+		args = append(args, tier)
+	}
+
+	delimiter := filter[common.KDelimiter]
+	if delimiter == "" {
+		sqltxt += " order by bucketname,name,version limit ?"
+		args = append(args, MaxObjectList)
+	} else {
+		num := len(strings.Split(prefix, delimiter))
+		if prefix == "" {
+			num += 1
+		}
+
+		sqltxt += " group by SUBSTRING_INDEX(name, ?, ?) limit ?"
+		args = append(args, delimiter, num, MaxObjectList)
+	}
+
+	log.Infof("sqltxt:%s\n", sqltxt)
+	return sqltxt, args, nil
+}
+

@@ -15,15 +15,15 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
-	"context"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/micro/go-micro/metadata"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -42,13 +42,17 @@ const (
 	KLastModified = "lastmodified"
 	KObjKey       = "objkey"
 	KStorageTier  = "tier"
+	KPrefix       = "prefix"
+	KMarker       = "marker"
+	KDelimiter    = "delimiter"
+	KVerMarker    = "verMarker"
 )
 
 const (
-	CTX_KEY_TENANT_ID = "Tenantid"
-	CTX_KEY_USER_ID   = "Userid"
-	CTX_KEY_IS_ADMIN  = "Isadmin"
-	CTX_VAL_TRUE      = "true"
+	CTX_KEY_TENANT_ID   = "Tenantid"
+	CTX_KEY_USER_ID     = "Userid"
+	CTX_KEY_IS_ADMIN    = "Isadmin"
+	CTX_VAL_TRUE        = "true"
 	CTX_KEY_OBJECT_KEY  = "ObjectKey"
 	CTX_KEY_BUCKET_NAME = "BucketName"
 	CTX_KEY_SIZE        = "ObjectSize"
@@ -60,8 +64,8 @@ const (
 	REQUEST_PATH_OBJECT_KEY       = "objectKey"
 	REQUEST_HEADER_CONTENT_LENGTH = "Content-Length"
 	REQUEST_HEADER_STORAGE_CLASS  = "x-amz-storage-class"
-	REQUEST_HEADER_COPY_SOURCE  = "X-Amz-Copy-Source"
-	REQUEST_HEADER_ACL = "x-amz-acl"
+	REQUEST_HEADER_COPY_SOURCE    = "X-Amz-Copy-Source"
+	REQUEST_HEADER_ACL            = "x-amz-acl"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {

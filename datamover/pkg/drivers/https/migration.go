@@ -597,9 +597,10 @@ func runjob(in *pb.RunJobRequest) error {
 	capa := make(chan int64)
 	// concurrent go routines is limited to be simuRoutines
 	th := make(chan int, simuRoutines)
-	var offset, limit int32 = 0, 1000
+	var limit int32 = 1000
+	var marker string
 	for {
-		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
+		objs, err := getObjs(ctx, in, marker, limit)
 		if err != nil {
 			//update database
 			j.Status = flowtype.JOB_STATUS_FAILED
@@ -615,10 +616,10 @@ func runjob(in *pb.RunJobRequest) error {
 
 		//Do migration for each object.
 		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, &j)
-		if len(objs) < int(limit) {
+		if num < int(limit) {
 			break
 		}
-		offset = offset + int32(num)
+		marker = objs[num-1].ObjectKey
 	}
 
 	var capacity, count, passedCount, totalObjs int64 = 0, 0, 0, j.TotalCount

@@ -72,12 +72,14 @@ func (o *Object) ObjectTypeToString() string {
 
 func (o *Object) String() (s string) {
 	s += "Name: " + o.ObjectKey + "\n"
+	s += "Bucket: " + o.BucketName + "\n"
 	s += "Location: " + o.Location + "\n"
 	//s += "Pool: " + o.Pool + "\n"
 	s += "Object ID: " + o.ObjectId + "\n"
 	s += "Last Modified Time: " + time.Unix(o.LastModified, 0).Format(CREATE_TIME_LAYOUT) + "\n"
 	s += "Version: " + o.VersionId + "\n"
 	s += "Type: " + o.ObjectTypeToString() + "\n"
+	s += "Tier: " + fmt.Sprintf("%d", o.Tier) + "\n"
 	//s += "StorageClass: " + o.StorageClass.ToString() + "\n"
 	/*for n, part := range o.Parts {
 		s += fmt.Sprintln("Part", n, "Object ID:", part.ObjectId)
@@ -120,8 +122,12 @@ func (o *Object) GetRowkey() (string, error) {
 }
 
 func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
-	var size bytes.Buffer
+	var size, tier bytes.Buffer
 	err = binary.Write(&size, binary.BigEndian, o.Size)
+	if err != nil {
+		return
+	}
+	err = binary.Write(&tier, binary.BigEndian, o.Tier)
 	if err != nil {
 		return
 	}
@@ -160,6 +166,7 @@ func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
 			"encryptionKey": o.ServerSideEncryption.EncryptionKey,
 			"IV":            o.ServerSideEncryption.InitilizationVector,
 			"type":          []byte(o.ObjectTypeToString()),
+			"tier":          tier.Bytes(),
 		},
 	}
 	/*if len(o.Parts) != 0 {
@@ -226,14 +233,20 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 	version := math.MaxUint64 - uint64(o.LastModified)
 	customAttributes, _ := json.Marshal(o.CustomAttributes)
 	acl, _ := json.Marshal(o.Acl)
+	var sseType string
+	var encryptionKey, initVector []byte
+	if o.ServerSideEncryption != nil {
+		sseType = o.ServerSideEncryption.SseType
+		encryptionKey = o.ServerSideEncryption.EncryptionKey
+		initVector = o.ServerSideEncryption.InitilizationVector
+	}
 
 	lastModifiedTime := time.Unix(o.LastModified, 0).Format(TIME_LAYOUT_TIDB)
-	sql := "insert into objects (bucketname, name, version, location, pool, ownerid, size, objectid, lastmodifiedtime, " +
-	" etag, contenttype, customattributes, acl, nullversion, deletemarker, " +
-	"type) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.Location, o.TenantId, o.Size, o.ObjectId,
-		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker,
-		o.Type}
+	sql := "insert into objects values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
+		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker, sseType,
+		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta}
+
 	return sql, args
 }
 /*

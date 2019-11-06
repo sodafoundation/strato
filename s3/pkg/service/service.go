@@ -16,13 +16,14 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	"github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
@@ -30,8 +31,7 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/micro/go-micro/client"
+	"net/http"
 )
 
 type Int2String map[int32]string
@@ -48,7 +48,7 @@ var TransitionMap map[int32][]int32
 var SupportedClasses []pb.StorageClass
 
 type s3Service struct {
-	MetaStorage *meta.Meta
+	MetaStorage   *meta.Meta
 	backendClient backend.BackendService
 }
 
@@ -60,28 +60,28 @@ func NewS3Service() pb.S3Handler {
 	initStorageClass()
 	cfg := meta.MetaConfig{
 		CacheType: meta.CacheType(helper.CONFIG.MetaCacheType),
-		TidbInfo:helper.CONFIG.TidbInfo,
+		TidbInfo:  helper.CONFIG.TidbInfo,
 	}
 	return &s3Service{
-		MetaStorage: meta.New(cfg),
+		MetaStorage:   meta.New(cfg),
 		backendClient: backend.NewBackendService("backend", client.DefaultClient),
-		}
+	}
 }
 
-func getNameFromTier(tier int32) (string, error) {
-	v, ok := Int2ExtTierMap[OSTYPE_OPENSDS]
+func GetNameFromTier(tier int32, backendType string) (string, error) {
+	v, ok := Int2ExtTierMap[backendType]
 	if !ok {
-		log.Errorf("get opensds storage class of tier[%d] failed.\n", tier)
-		return "", errors.New("internal error")
+		log.Errorf("get storage class of failed, no such backend type:%s.\n", backendType)
+		return "", ErrInternalError
 	}
 
 	v2, ok := (*v)[tier]
 	if !ok {
-		log.Errorf("get opensds storage class of tier[%d] failed.\n", tier)
-		return "", errors.New("internal error")
+		log.Errorf("get storage class of tier[%d] failed, backendType=%s.\n", tier, backendType)
+		return "", ErrInternalError
 	}
 
-	log.Infof("opensds storage class of tier[%d] is %s.\n", tier, v2)
+	log.Infof("storage class of tier[%d] for backend type[%s] is %s.\n", tier, backendType, v2)
 	return v2, nil
 }
 
@@ -566,4 +566,14 @@ func HandleS3Error(err error, out *pb.BaseResponse) {
 	} else {
 		out.ErrorCode = int32(ErrorCodeResponse[ErrInternalError].HttpStatusCode)
 	}
+}
+
+func GetHttpErrCode(err error) (errCode int32) {
+	errCode = http.StatusInternalServerError
+	s3err, ok := err.(S3ErrorCode)
+	if ok {
+		errCode = int32(ErrorCodeResponse[s3err].HttpStatusCode)
+	}
+
+	return errCode
 }
