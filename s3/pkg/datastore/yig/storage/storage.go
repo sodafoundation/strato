@@ -59,7 +59,7 @@ func New(cfg *config.Config) (*YigStorage, error) {
 	cephConfs, err := filepath.Glob(CephConfigPattern)
 	log.Infof("Reading Ceph conf files from %+v\n", cephConfs)
 	if err != nil || len(cephConfs) == 0 {
-		log.Fatal("PANIC: No ceph conf found")
+		log.Errorf("PANIC: No ceph conf found")
 		err = errors.New("no ceph conf found")
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func New(cfg *config.Config) (*YigStorage, error) {
 	}
 
 	if len(yig.DataStorage) == 0 {
-		log.Fatal("PANIC: No data storage can be used!")
+		log.Errorf("PANIC: No data storage can be used!")
 		err = errors.New("no working data storage")
 		return nil, err
 	}
