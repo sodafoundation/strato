@@ -44,7 +44,7 @@ func (ys *YigSuite) TestPutObjectSucceed(c *C) {
 
 	// Get the object
 	obj.StorageMeta = result.Meta
-	obj.ObjectKey = result.ObjectId
+	obj.ObjectId = result.ObjectId
 	reader, err := yig.Get(ctx, obj, 0, int64(len-1))
 	c.Assert(err, Equals, nil)
 	c.Assert(reader, Not(Equals), nil)

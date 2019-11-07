@@ -9,4 +9,5 @@ url="default"
 ceph_dir="/etc/ceph/*.conf"
 
 [database]
+db_type="tidb"
 db_url="root:@tcp(tidb:4000)/yig"

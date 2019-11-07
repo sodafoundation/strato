@@ -135,20 +135,31 @@ func (cc *CacheConfig) Parse(vals map[string]interface{}) error {
 }
 
 type DatabaseConfig struct {
-	DbType     int
-	DbUrl      string
-	DbPassword string
+	DbType       string
+	DbUrl        string
+	DbPassword   string
+	MaxIdleConns int
+	MaxOpenConns int
 }
 
 func (dc *DatabaseConfig) Parse(vals map[string]interface{}) error {
+	dc.MaxIdleConns = 0
+	dc.MaxOpenConns = 1024
+
 	if dt, ok := vals["db_type"]; ok {
-		dc.DbType = dt.(int)
+		dc.DbType = dt.(string)
 	}
 	if du, ok := vals["db_url"]; ok {
 		dc.DbUrl = du.(string)
 	}
 	if dp, ok := vals["db_password"]; ok {
 		dc.DbPassword = dp.(string)
+	}
+	if mi, ok := vals["db_maxidleconns"]; ok {
+		dc.MaxIdleConns = mi.(int)
+	}
+	if mc, ok := vals["db_maxopenconns"]; ok {
+		dc.MaxOpenConns = mc.(int)
 	}
 
 	return nil
