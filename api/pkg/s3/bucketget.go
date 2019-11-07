@@ -15,16 +15,18 @@
 package s3
 
 import (
+	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 	"unicode/utf8"
 
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -44,9 +46,10 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	listObjectsRsp, err := s.s3Client.ListObjects(ctx, &req)
-	if err != nil {
-		log.Errorf("list objects failed, ErrorCode:%d, err:%v\n", listObjectsRsp.ErrorCode, err)
-		WriteErrorResponseWithErrCode(response, listObjectsRsp.ErrorCode, err)
+	if listObjectsRsp.ErrorCode != http.StatusOK {
+		log.Errorf("list objects failed, ErrorCode:%d, ErrorMsg:%v\n", listObjectsRsp.ErrorCode,
+			listObjectsRsp.ErrorMsg)
+		WriteErrorResponseWithStatus(response, listObjectsRsp.ErrorCode, listObjectsRsp.ErrorMsg)
 		return
 	}
 
@@ -59,8 +62,8 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 }
 
 func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err error) {
-	if query.Get("list-type") == "2" {
-		request.Version = 2
+	if query.Get("list-type") == constants.ListObjectsType2Str {
+		request.Version = constants.ListObjectsType2Int
 		request.ContinuationToken = query.Get("continuation-token")
 		request.StartAfter = query.Get("start-after")
 		if !utf8.ValidString(request.StartAfter) {
@@ -70,7 +73,7 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 		request.FetchOwner = helper.Ternary(query.Get("fetch-owner") == "true",
 			true, false).(bool)
 	} else {
-		request.Version = 1
+		request.Version = constants.ListObjectsType1Int
 		request.Marker = query.Get("marker")
 		if !utf8.ValidString(request.Marker) {
 			err = ErrNonUTF8Encode
@@ -93,7 +96,7 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 		var maxKey int
 		maxKey, err = strconv.Atoi(query.Get("max-keys"))
 		if err != nil {
-			log.Error("parsing max-keys error:", err)
+			log.Errorf("Error parsing max-keys:%v\n", err)
 			return request, ErrInvalidMaxKeys
 		}
 		request.MaxKeys = int32(maxKey)
@@ -118,17 +121,18 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 		err = ErrNonUTF8Encode
 		return
 	}
+
+	log.Infof("request:%+v\n", request)
 	return
 }
 
 // this function refers to GenerateListObjectsResponse in api-response.go from Minio Cloud Storage.
 func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest,
 	listRsp *s3.ListObjectsResponse) (response datatype.ListObjectsResponse) {
-	log.Debugf("listRsp:%v\n", listRsp)
 	for _, o := range listRsp.Objects {
 		obj := datatype.Object{
 			Key:          o.ObjectKey,
-			LastModified: time.Unix(o.LastModified, 0).In(time.Local).Format(timeFormatAMZ),
+			LastModified: time.Unix(o.LastModified, o.LastModified).In(time.Local).Format(timeFormatAMZ),
 			ETag:         o.Etag,
 			Size:         o.Size,
 			StorageClass: o.StorageClass,
@@ -160,7 +164,7 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 	response.Prefix = request.Prefix
 	response.BucketName = bucketName
 
-	if request.Version == 2 {
+	if request.Version == constants.ListObjectsType2Int {
 		response.KeyCount = len(response.Contents)
 		response.ContinuationToken = request.ContinuationToken
 		response.NextContinuationToken = listRsp.NextMarker

@@ -32,6 +32,8 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
+const TimeDur = 5000  // milisecond
+
 func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error) {
 	log.Infof("get bucket[%s] from tidb ...\n", bucketName)
 	var acl, cors, lc, policy, replication, createTime string
@@ -249,35 +251,39 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		var sqltext string
 		var rows *sql.Rows
 		args := make([]interface{}, 0)
-		sqltext = "select bucketname,name,location,tenantid,size,lastmodifiedtime,nullversion,tier from objects " +
-			"where deletemarker=0 and bucketName=?"
+		// only select index column here to avoid slow query
+		sqltext = "select bucketname,name,version from objects where bucketName=?"
 		args = append(args, bucketName)
 		var inargs []interface{}
 		sqltext, inargs, err = buildSql(ctx, filter, sqltext)
 		for _, v := range inargs {
 			args = append(args, v)
 		}
+		log.Infof("sqltext:%s, args:%v\n", sqltext, args)
+		tstart := time.Now()
 		rows, err = t.Client.Query(sqltext, args...)
 		if err != nil {
 			err = handleDBError(err)
 			return
 		}
+		tqueryend := time.Now()
+		tdur := tqueryend.Sub(tstart).Nanoseconds()
+		if tdur/1000000 > TimeDur {
+			log.Debugf("slow query when list objects, sqltext:%s, args:%v, nanoseconds:%d\n", sqltext, args, tdur)
+		}
 		defer rows.Close()
 		for rows.Next() {
 			loopcount += 1
-			obj := &Object{Object:&pb.Object{}}
-			var name, lastModified string
+			//var name, lastModified string
+			var bname, name string
+			var version uint64
 			err = rows.Scan(
-				&obj.BucketName,
+				&bname,
 				&name,
-				&obj.Location,
-				&obj.TenantId,
-				&obj.Size,
-				&lastModified,
-				&obj.NullVersion,
-				&obj.Tier,
+				&version,
 			)
 			if err != nil {
+				log.Errorf("err:%v\n", err)
 				err = handleDBError(err)
 				return
 			}
@@ -295,7 +301,10 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 				continue
 			}
 
+			// TODO: filter by deletemarker if versioning enabled
+
 			if name == omarker {
+				log.Infof("%s euqals to omarker, continue\n", name)
 				continue
 			}
 
@@ -323,6 +332,14 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 				}
 			}
 
+			var o *Object
+			strVer := strconv.FormatUint(version, 10)
+			o, err = t.GetObject(ctx, bname, name, strVer)
+			if err != nil {
+				log.Errorf("err:%v\n", err)
+				return
+			}
+
 			count += 1
 			if count == maxKeys {
 				nextMarker = name
@@ -334,15 +351,15 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 				break
 			}
 
-			obj.ObjectKey = name
-			lastModifiedTime, _ := time.ParseInLocation(TIME_LAYOUT_TIDB, lastModified, time.Local)
-			obj.LastModified = lastModifiedTime.Unix()
-			retObjects = append(retObjects, obj)
+			retObjects = append(retObjects, o)
 		}
-		// loopcount is the number of records we got from the last query command, not all of those records can meet the
-		// requirements to return to the end user, if the number of records that meet the requirement is less than
-		// maxKeys, then we need to run query command again, but if loopcount is less than MaxObjectList, then no need
-		// to run query coommand again.
+
+		tend := time.Now()
+		tdur = tend.Sub(tqueryend).Nanoseconds()
+		if tdur/1000000 > TimeDur {
+			log.Debugf("slow get when list objects, time:%d\n", tdur)
+		}
+
 		if loopcount < MaxObjectList {
 			exit = true
 		}
@@ -514,7 +531,6 @@ func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (str
 		args = append(args, delimiter, num, MaxObjectList)
 	}
 
-	log.Infof("sqltxt:%s\n", sqltxt)
 	return sqltxt, args, nil
 }
 

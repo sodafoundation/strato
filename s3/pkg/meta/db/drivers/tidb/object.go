@@ -1,20 +1,23 @@
 package tidbclient
 
 import (
+	"context"
 	"database/sql"
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"encoding/hex"
+	"encoding/json"
 	"math"
 	"strconv"
-	"encoding/hex"
+	"time"
+
+	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 	"github.com/xxtea/xxtea-go/xxtea"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"context"
 )
 
 func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, version string) (object *Object, err error) {
-	var ibucketname, iname, customattributes, acl, lastModifiedTime string
+	var sqltext, ibucketname, iname, customattributes, acl, lastModified string
 	var iversion uint64
-	var sqltext string
 	var row *sql.Row
 	if version == "" {
 		sqltext = "select * from objects where bucketname=? and name=? order by bucketname,name,version limit 1;"
@@ -23,16 +26,18 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		sqltext = "select * from objects where bucketname=? and name=? and version=?;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName, version)
 	}
-	object = &Object{}
+	log.Infof("sqltext:%s, version:%s\n", sqltext, version)
+	object = &Object{Object: &pb.Object{ServerSideEncryption: &pb.ServerSideEncryption{}}}
 	err = row.Scan(
 		&ibucketname,
 		&iname,
 		&iversion,
 		&object.Location,
 		&object.TenantId,
+		&object.UserId,
 		&object.Size,
 		&object.ObjectId,
-		&lastModifiedTime,
+		&lastModified,
 		&object.Etag,
 		&object.ContentType,
 		&customattributes,
@@ -43,20 +48,21 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		&object.ServerSideEncryption.EncryptionKey,
 		&object.ServerSideEncryption.InitilizationVector,
 		&object.Type,
+		&object.Tier,
+		&object.StorageMeta,
 	)
-	if err == sql.ErrNoRows {
-		err = ErrNoSuchKey
-		return
-	} else if err != nil {
+	if err != nil {
+		log.Errorf("err: %v\n", err)
+		err = handleDBError(err)
 		return
 	}
-	rversion := math.MaxUint64 - iversion
-	object.LastModified = int64(rversion)
 	object.GetRowkey()
 	object.ObjectKey = objectName
 	object.BucketName = bucketName
+	lastModifiedTime, _ := time.ParseInLocation(TIME_LAYOUT_TIDB, lastModified, time.Local)
+	object.LastModified = lastModifiedTime.Unix()
 
-	/*err = json.Unmarshal([]byte(acl), &object.ACL)
+	err = json.Unmarshal([]byte(acl), &object.Acl)
 	if err != nil {
 		return
 	}
@@ -64,7 +70,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	if err != nil {
 		return
 	}
-	object.Parts, err = getParts(object.BucketName, object.Name, iversion, t.Client)
+	/*object.Parts, err = getParts(object.BucketName, object.Name, iversion, t.Client)
 	//build simple index for multipart
 	if len(object.Parts) != 0 {
 		var sortedPartNum = make([]int64, len(object.Parts))
@@ -74,8 +80,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		object.PartsIndex = &SimpleIndex{Index: sortedPartNum}
 	}*/
 
-	var reversedTime uint64
-	timestamp := math.MaxUint64 - reversedTime
+	timestamp := math.MaxUint64 - iversion
 	timeData := []byte(strconv.FormatUint(timestamp, 10))
 	object.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
 	return

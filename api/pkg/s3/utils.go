@@ -158,9 +158,9 @@ func WriteS3ErrorResponse(response *restful.Response, err error) {
 	response.WriteError(httpStatus, err)
 }
 
-func WriteErrorResponseWithErrCode(response *restful.Response, status int32, err error) {
-	logrus.Infof("response status code:", status, "err:", err)
+func WriteErrorResponseWithStatus(response *restful.Response, statusCode int32, errMsg string) {
+	logrus.Infof("response status code:", statusCode, "err:", errMsg)
 
-	httpStatus := int(status)
-	response.WriteError(httpStatus, err)
+	httpStatus := int(statusCode)
+	response.WriteError(httpStatus, errors.New(errMsg))
 }

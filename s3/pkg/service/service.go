@@ -17,7 +17,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 
@@ -32,6 +31,7 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 )
 
 type Int2String map[int32]string
@@ -568,12 +568,15 @@ func HandleS3Error(err error, out *pb.BaseResponse) {
 	}
 }
 
-func GetHttpErrCode(err error) (errCode int32) {
+func GetHttpErr(err error) (errCode int32, errMsg string) {
 	errCode = http.StatusInternalServerError
+	errMsg = ErrorCodeResponse[ErrInternalError].Description
+
 	s3err, ok := err.(S3ErrorCode)
 	if ok {
 		errCode = int32(ErrorCodeResponse[s3err].HttpStatusCode)
+		errMsg = ErrorCodeResponse[s3err].Description
 	}
 
-	return errCode
+	return errCode, errMsg
 }

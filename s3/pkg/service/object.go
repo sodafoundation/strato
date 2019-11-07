@@ -1,13 +1,29 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package service
 
 import (
 	"context"
 	"io"
+	"net/url"
 	"time"
 
 	"github.com/journeymidnight/yig/helper"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/error"
@@ -19,7 +35,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"net/url"
 )
 
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
@@ -251,25 +266,27 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 
 	return nil
 }
+
 func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponse) error {
 	log.Infof("ListObject is called in s3 service, bucket is %s.\n", in.Bucket)
-
 	var err error
 	defer func() {
 		if err != nil {
-			out.ErrorCode = GetHttpErrCode(err)
+			out.ErrorCode, out.ErrorMsg = GetHttpErr(err)
 		}
 	}()
 	// Check ACL
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
 	if err != nil {
-		return err
+		log.Errorf("err:%v\n", err)
+		return nil
 	}
 
 	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
-		return err
+		err = ErrInternalError
+		return nil
 	}
 
 	// administrator can get any resource
@@ -281,13 +298,13 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			if tenantId == "" {
 				log.Error("no tenant id provided")
 				err = ErrBucketAccessForbidden
-				return err
+				return nil
 			}
 		default:
 			if bucket.TenantId != tenantId {
 				log.Errorf("tenantId(%s) does not much bucket.TenantId(%s)", tenantId, bucket.TenantId)
 				err = ErrBucketAccessForbidden
-				return err
+				return nil
 			}
 		}
 		// TODO validate user policy and ACL
@@ -297,7 +314,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	if truncated && len(nextMarker) != 0 {
 		out.NextMarker = nextMarker
 	}
-	if in.Version == 2 {
+	if in.Version == constants.ListObjectsType2Int {
 		out.NextMarker = util.Encrypt(out.NextMarker)
 	}
 
@@ -332,6 +349,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		out.NextMarker = url.QueryEscape(out.NextMarker)
 	}
 
+	err = ErrNoErr
 	return nil
 }
 
@@ -345,7 +363,7 @@ func (s *s3Service) ListObjectsInternal(ctx context.Context, request *pb.ListObj
 	if request.Versioned {
 		filt[common.KMarker] = request.KeyMarker
 		filt[common.KVerMarker] = request.VersionIdMarker
-	} else if request.Version == 2 {
+	} else if request.Version == constants.ListObjectsType2Int {
 		if request.ContinuationToken != "" {
 			var marker string
 			marker, err = util.Decrypt(request.ContinuationToken)

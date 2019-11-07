@@ -341,11 +341,13 @@ message ListObjectsRequest {
 
 message ListObjectsResponse {
 	int32 errorCode = 1;
+	string errorMsg = 2;
+
 	// Indicates whether the returned list objects response is truncated. A
 	// value of true indicates that the list was truncated. The list can be truncated
 	// if the number of objects exceeds the limit allowed or specified
 	// by max keys.
-	bool isTruncated = 2;
+	bool isTruncated = 3;
 
 	// When response is truncated (the IsTruncated element value in the response
 	// is true), you can use the key name in this field as marker in the subsequent
@@ -353,13 +355,13 @@ message ListObjectsResponse {
 	//
 	// NOTE: This element is returned only if you have delimiter request parameter
 	// specified.
-	string nextMarker = 3;
+	string nextMarker = 4;
 
 	// List of prefixes for this request.
-	repeated string Prefixes = 4;
+	repeated string Prefixes = 5;
 
 	// List of objects info for this request.
-	repeated Object objects = 5;
+	repeated Object objects = 6;
 }
 
 message CountObjectsResponse {

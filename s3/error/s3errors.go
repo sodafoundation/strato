@@ -38,7 +38,8 @@ type S3ErrorCode int
 
 // Error codes, non exhaustive list - http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
 const (
-	ErrAccessDenied S3ErrorCode = iota
+	ErrNoErr S3ErrorCode = iota
+	ErrAccessDenied
 	ErrBadDigest
 	ErrBucketAlreadyExists
 	ErrEmptyEntity
@@ -162,6 +163,11 @@ const (
 // error code to APIError structure, these fields carry respective
 // descriptions for all the error responses.
 var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
+	ErrNoErr: {
+		AwsErrorCode:   "OK",
+		Description:    "OK",
+		HttpStatusCode: http.StatusOK,
+	},
 	ErrInvalidCopyDest: {
 		AwsErrorCode:   "InvalidRequest",
 		Description:    "This copy request is illegal because it is trying to copy an object to itself.",
