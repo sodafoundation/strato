@@ -46,8 +46,6 @@ type DBAdapter interface {
 	//PutObjectMap(objMap *ObjMap, tx interface{}) error
 	//DeleteObjectMap(objMap *ObjMap, tx interface{}) error
 
-	//cluster
-	GetCluster(fsid, pool string) (cluster Cluster, err error)
 	//lc
 	/*
 		PutBucketToLifeCycle(lifeCycle LifeCycle) error
