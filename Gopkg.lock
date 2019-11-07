@@ -823,7 +823,6 @@
   pruneopts = "NUT"
   revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
   version = "v2.2.2"
->>>>>>> 8e67e518f7857eef2520ca28f4604e68607c0f30
 
 [solve-meta]
   analyzer-name = "dep"
