@@ -393,14 +393,6 @@
   version = "v1.1.5"
 
 [[projects]]
-  digest = "1:58999a98719fddbac6303cb17e8d85b945f60b72f48e3a2df6b950b97fa926f1"
-  name = "github.com/konsorten/go-windows-terminal-sequences"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
-  version = "v1.0.2"
-
-[[projects]]
   digest = "1:7b21c7fc5551b46d1308b4ffa9e9e49b66c7a8b0ba88c0130474b0e7a20d859f"
   name = "github.com/kr/pretty"
   packages = ["."]
@@ -415,25 +407,6 @@
   pruneopts = "NUT"
   revision = "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f"
   version = "v0.1.0"
-
-[[projects]]
-  digest = "1:bfd3efe80b851037c1d1e58c7b8f18b7a3a250352bdd137a43df825d0ace4707"
-  name = "github.com/lestrrat-go/file-rotatelogs"
-  packages = [
-    ".",
-    "internal/option",
-  ]
-  pruneopts = "NUT"
-  revision = "3b4f34a036f374c18d604e1b8006d9fbb9593c06"
-  version = "v2.2.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:13dd539a69e687ce1552e1cc05e6faf43723811739993e8f246590b72b425275"
-  name = "github.com/lestrrat-go/strftime"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "5c849dd2c51dd10faf5f1b86abec2db1ac3b9101"
 
 [[projects]]
   digest = "1:802689c84994b7f2e41ffe7e39d29a8d8227f2121938dc025db44dfaa9633b15"
@@ -635,14 +608,6 @@
   revision = "3113b8401b8a98917cde58f8bbd42a1b1c03b1fd"
 
 [[projects]]
-  digest = "1:ffe8353de82ab7608fc1fd9a246e71b231af2479727dd165e3720cc2e8918177"
-  name = "github.com/rifflock/lfshook"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "b9218ef580f59a2e72dad1aa33d660150445d05a"
-  version = "v2.4"
-
-[[projects]]
   digest = "1:53c3320ee307f01fd24a88e396a8d2239cd8346d1a085320209319f2d33f59cc"
   name = "github.com/robfig/cron"
   packages = ["."]
@@ -807,6 +772,14 @@
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
+  name = "gopkg.in/natefinch/lumberjack.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
+  version = "v2.1"
+  
+[[projects]]
   branch = "master"
   digest = "1:9fdc2b55e8e0fafe4b41884091e51e77344f7dc511c5acedcfd98200003bff90"
   name = "golang.org/x/time"
@@ -859,7 +832,6 @@
     "github.com/BurntSushi/toml",
     "github.com/Shopify/sarama",
     "github.com/aws/aws-sdk-go/aws",
-    "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/s3",
@@ -883,14 +855,12 @@
     "github.com/journeymidnight/radoshttpd/rados",
     "github.com/journeymidnight/yig/error",
     "github.com/journeymidnight/yig/helper",
-    "github.com/lestrrat-go/file-rotatelogs",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
     "github.com/micro/go-micro/client",
     "github.com/micro/go-micro/metadata",
     "github.com/micro/go-micro/server",
     "github.com/micro/go-web",
-    "github.com/rifflock/lfshook",
     "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
@@ -901,6 +871,7 @@
     "github.com/xxtea/xxtea-go/xxtea",
     "golang.org/x/net/context",
     "gopkg.in/check.v1",
+    "gopkg.in/natefinch/lumberjack.v2",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
