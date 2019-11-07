@@ -17,13 +17,13 @@ import (
 
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
-	"github.com/xxtea/xxtea-go/xxtea"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 type Object struct {
 	*pb.Object
-	Rowkey           []byte // Rowkey cache
+	Rowkey []byte // Rowkey cache
 }
 
 type ObjectType string
@@ -80,10 +80,8 @@ func (o *Object) String() (s string) {
 	s += "Version: " + o.VersionId + "\n"
 	s += "Type: " + o.ObjectTypeToString() + "\n"
 	s += "Tier: " + fmt.Sprintf("%d", o.Tier) + "\n"
-	//s += "StorageClass: " + o.StorageClass.ToString() + "\n"
-	/*for n, part := range o.Parts {
-		s += fmt.Sprintln("Part", n, "Object ID:", part.ObjectId)
-	}*/
+	// TODO: multi-part handle
+
 	return s
 }
 
@@ -155,7 +153,7 @@ func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
 			"owner":         []byte(o.UserId),
 			"oid":           []byte(o.ObjectId),
 			"size":          size.Bytes(),
-			//"lastModified":  o.LastModified.Bytes() //[]byte(o.LastModified.Format(CREATE_TIME_LAYOUT)),
+			"lastModified":  []byte(time.Unix(o.LastModified, 0).Format(CREATE_TIME_LAYOUT)),
 			"etag":          []byte(o.Etag),
 			"content-type":  []byte(o.ContentType),
 			"attributes":    attrsData, // TODO
@@ -169,12 +167,8 @@ func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
 			"tier":          tier.Bytes(),
 		},
 	}
-	/*if len(o.Parts) != 0 {
-		values[OBJECT_PART_COLUMN_FAMILY], err = valuesForParts(o.Parts)
-		if err != nil {
-			return
-		}
-	}*/
+	// TODO: multipart handle
+
 	return
 }
 
@@ -249,41 +243,3 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 
 	return sql, args
 }
-/*
-func (o *Object) GetAppendSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModifiedTime.UnixNano())
-	lastModifiedTime := o.LastModifiedTime.Format(TIME_LAYOUT_TIDB)
-	sql := "update objects set lastmodifiedtime=?, size=?, version=? where bucketname=? and name=?"
-	args := []interface{}{lastModifiedTime, o.Size, version, o.BucketName, o.Name}
-	return sql, args
-}
-
-func (o *Object) GetUpdateAclSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModifiedTime.UnixNano())
-	acl, _ := json.Marshal(o.ACL)
-	sql := "update objects set acl=? where bucketname=? and name=? and version=?"
-	args := []interface{}{acl, o.BucketName, o.Name, version}
-	return sql, args
-}
-
-func (o *Object) GetUpdateAttrsSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModifiedTime.UnixNano())
-	attrs, _ := json.Marshal(o.CustomAttributes)
-	sql := "update objects set customattributes =?, storageclass=? where bucketname=? and name=? and version=?"
-	args := []interface{}{attrs, o.StorageClass, o.BucketName, o.Name, version}
-	return sql, args
-
-}
-
-func (o *Object) GetAddUsageSql() (string, []interface{}) {
-	sql := "update buckets set usages= usages + ? where bucketname=?"
-	args := []interface{}{o.Size, o.BucketName}
-	return sql, args
-}
-
-func (o *Object) GetSubUsageSql() (string, []interface{}) {
-	sql := "update buckets set usages= usages + ? where bucketname=?"
-	args := []interface{}{-o.Size, o.BucketName}
-	return sql, args
-}
-*/

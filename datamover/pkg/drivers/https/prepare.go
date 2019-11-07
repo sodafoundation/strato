@@ -182,8 +182,8 @@ func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, lim
 	logger.Println("get osds objects begin")
 
 	req := osdss3.ListObjectsRequest{
-		Bucket: in.SourceConn.BucketName,
-		Marker: marker,
+		Bucket:  in.SourceConn.BucketName,
+		Marker:  marker,
 		MaxKeys: limit,
 	}
 	if in.GetFilt() != nil && len(in.Filt.Prefix) > 0 {
@@ -254,7 +254,7 @@ func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 	}
 	for i := 0; i < len(objs); i++ {
 		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name,
-		Location: ""}
+			Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil

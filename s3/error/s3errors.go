@@ -700,23 +700,23 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 		HttpStatusCode: http.StatusInternalServerError,
 	},
 	ErrGetBackendFailed: {
-		AwsErrorCode: "GetBackendFailed",
-		Description: "Backend is not exist, or get it failed.",
+		AwsErrorCode:   "GetBackendFailed",
+		Description:    "Backend is not exist, or get it failed.",
 		HttpStatusCode: http.StatusInternalServerError,
 	},
 	ErrUnmarshalFailed: {
-		AwsErrorCode: "UnmarshalFailed",
-		Description: "Unmarshal failed.",
+		AwsErrorCode:   "UnmarshalFailed",
+		Description:    "Unmarshal failed.",
 		HttpStatusCode: http.StatusInternalServerError,
 	},
 	ErrGetBucketFailed: {
-		AwsErrorCode: "GetBucketFailed",
-		Description: "Bucket is not exist, or get it failed.",
+		AwsErrorCode:   "GetBucketFailed",
+		Description:    "Bucket is not exist, or get it failed.",
 		HttpStatusCode: http.StatusInternalServerError,
 	},
 	ErrDBError: {
-		AwsErrorCode: "InternalError",
-		Description: "DB error.",
+		AwsErrorCode:   "InternalError",
+		Description:    "DB error.",
 		HttpStatusCode: http.StatusInternalServerError,
 	},
 }

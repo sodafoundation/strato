@@ -46,6 +46,11 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	listObjectsRsp, err := s.s3Client.ListObjects(ctx, &req)
+	if err != nil {
+		log.Errorf("list objects of bucket[%s] failed, err:%v\n", bucketName, err)
+		WriteErrorResponseWithStatus(response, http.StatusInternalServerError, err.Error())
+		return
+	}
 	if listObjectsRsp.ErrorCode != http.StatusOK {
 		log.Errorf("list objects failed, ErrorCode:%d, ErrorMsg:%v\n", listObjectsRsp.ErrorCode,
 			listObjectsRsp.ErrorMsg)
@@ -96,7 +101,7 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 		var maxKey int
 		maxKey, err = strconv.Atoi(query.Get("max-keys"))
 		if err != nil {
-			log.Errorf("Error parsing max-keys:%v\n", err)
+			log.Errorf("parsing max-keys error:%v\n", err)
 			return request, ErrInvalidMaxKeys
 		}
 		request.MaxKeys = int32(maxKey)
@@ -132,7 +137,7 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 	for _, o := range listRsp.Objects {
 		obj := datatype.Object{
 			Key:          o.ObjectKey,
-			LastModified: time.Unix(o.LastModified, o.LastModified).In(time.Local).Format(timeFormatAMZ),
+			LastModified: time.Unix(o.LastModified, 0).In(time.Local).Format(timeFormatAMZ),
 			ETag:         o.Etag,
 			Size:         o.Size,
 			StorageClass: o.StorageClass,

@@ -27,12 +27,12 @@ import (
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
-const TimeDur = 5000  // milisecond
+const TimeDur = 5000 // milisecond
 
 func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error) {
 	log.Infof("get bucket[%s] from tidb ...\n", bucketName)
@@ -314,7 +314,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 				n := strings.Index(subStr, delimiter)
 				if n != -1 {
 					prefixKey := prefix + string([]byte(subStr)[0:(n+1)])
-					filter[common.KMarker] = prefixKey[0:(len(prefixKey) - 1)] + string(delimiter[len(delimiter) - 1] + 1)
+					filter[common.KMarker] = prefixKey[0:(len(prefixKey)-1)] + string(delimiter[len(delimiter)-1]+1)
 					if prefixKey == omarker {
 						continue
 					}
@@ -372,8 +372,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 	return
 }
 
-
-func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string) (*utils.ObjsCountInfo, error){
+func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string) (*utils.ObjsCountInfo, error) {
 	var sqltext string
 	rsp := utils.ObjsCountInfo{}
 	var err error
@@ -465,7 +464,7 @@ func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (str
 	prefix := filter[common.KPrefix]
 	if prefix != "" {
 		sqltxt += " and name like ?"
-		args = append(args, prefix + "%")
+		args = append(args, prefix+"%")
 		log.Debug("query prefix:", prefix)
 	}
 	if filter[common.KMarker] != "" {
@@ -533,4 +532,3 @@ func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (str
 
 	return sqltxt, args, nil
 }
-

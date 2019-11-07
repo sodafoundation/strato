@@ -20,13 +20,13 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
+	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/s3/error"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"regexp"
 	"strings"
-	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/s3/error"
-	"github.com/sirupsen/logrus"
 )
 
 // xmlDecoder provide decoded value in xml.
