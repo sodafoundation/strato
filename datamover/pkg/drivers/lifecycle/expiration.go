@@ -39,7 +39,7 @@ func deleteObj(objKey string, lastmodifed int64, virtBucket string, bkend *Backe
 	}
 
 	// delete metadata
-	delMetaReq := osdss3.DeleteObjectInput{Bucket: virtBucket, Key: objKey, Lastmodified: lastmodifed}
+	delMetaReq := osdss3.DeleteObjectInput{Bucket: virtBucket, Key: objKey/*, Lastmodified: lastmodifed*/}
 	ctx := context.Background()
 	_, err = s3client.DeleteObject(ctx, &delMetaReq)
 	if err != nil {

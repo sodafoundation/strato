@@ -463,7 +463,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
 	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo, job *flowtype.Job) {
 	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
-		obj.ObjectKey, obj.Backend, srcLoca.BakendName, destLoca.BakendName)
+		obj.ObjectKey, obj.Location, srcLoca.BakendName, destLoca.BakendName)
 
 	succeed := true
 	needMove := true
@@ -499,16 +499,16 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	//add object metadata to the destination bucket if destination is not self-defined
 	if succeed && destLoca.VirBucket != "" {
 		obj.BucketName = destLoca.VirBucket
-		obj.Backend = destLoca.BakendName
+		obj.Location = destLoca.BakendName
 		obj.LastModified = time.Now().Unix()
-		_, err := s3client.CreateObject(ctx, obj)
+		/*_, err := s3client.CreateObject(ctx, obj)
 		if err != nil {
 			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] failed, err:%v.\n", obj.ObjectKey,
 				obj.BucketName, err)
 		} else {
 			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.ObjectKey,
 				obj.BucketName)
-		}
+		}*/
 	}
 
 	//Delete source data if needed

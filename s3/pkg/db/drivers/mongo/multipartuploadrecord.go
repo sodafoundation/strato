@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"context"
-	"time"
+	//"time"
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
@@ -51,7 +51,7 @@ func (ad *adapter) DeleteMultipartUpload(ctx context.Context, record *pb.Multipa
 	return NoError
 }
 
-func (ad *adapter) ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest,
+/*func (ad *adapter) ListUploadRecords(ctx context.Context, in *pb.ListMultipartUploadRequest,
 	out *[]pb.MultipartUploadRecord) S3Error {
 	ss := ad.s.Copy()
 	defer ss.Close()
@@ -74,4 +74,5 @@ func (ad *adapter) ListUploadRecords(ctx context.Context, in *pb.ListMultipartUp
 	}
 
 	return NoError
-}
+}*/
+
