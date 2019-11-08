@@ -20,7 +20,7 @@ reserved_origins = "s3.test.com,s3-internal.test.com"
 # Meta Config
 meta_cache_type = 0
 meta_store = "tidb"
-tidb_info = "root:@tcp(tidb:4000)/yig"
+tidb_info = "root:@tcp(tidb:4000)/s3"
 keepalive = true
 zk_address = "hbase:2181"
 redis_address = "redis:6379"
