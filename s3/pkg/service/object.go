@@ -271,9 +271,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	log.Infof("ListObject is called in s3 service, bucket is %s.\n", in.Bucket)
 	var err error
 	defer func() {
-		if err != nil {
-			out.ErrorCode, out.ErrorMsg = GetHttpErr(err)
-		}
+		out.ErrorCode = GetErrCode(err)
 	}()
 	// Check ACL
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)

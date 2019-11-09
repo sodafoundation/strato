@@ -20,9 +20,6 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
-	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/s3/error"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"regexp"
@@ -144,23 +141,3 @@ func setXmlHeader(w http.ResponseWriter, body []byte) {
 /*func hasServerSideEncryptionHeader(header http.Header) bool {
 	return crypto.S3.IsRequested(header) || crypto.SSEC.IsRequested(header)
 }*/
-
-func WriteS3ErrorResponse(response *restful.Response, err error) {
-	var httpStatus int
-	s3ErrorCode, ok := err.(s3error.S3Error)
-	if ok {
-		httpStatus = s3ErrorCode.HttpStatusCode()
-	} else {
-		httpStatus = http.StatusInternalServerError
-	}
-	logrus.Infof("response status code:", httpStatus, "err:", err)
-
-	response.WriteError(httpStatus, err)
-}
-
-func WriteErrorResponseWithStatus(response *restful.Response, statusCode int32, errMsg string) {
-	logrus.Infof("response status code:", statusCode, "err:", errMsg)
-
-	httpStatus := int(statusCode)
-	response.WriteError(httpStatus, errors.New(errMsg))
-}

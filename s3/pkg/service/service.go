@@ -566,21 +566,23 @@ func HandleS3Error(err error, out *pb.BaseResponse) {
 	}
 	s3err, ok := err.(S3ErrorCode)
 	if ok {
-		out.ErrorCode = int32(ErrorCodeResponse[s3err].HttpStatusCode)
+		out.ErrorCode = int32(s3err)
 	} else {
-		out.ErrorCode = int32(ErrorCodeResponse[ErrInternalError].HttpStatusCode)
+		out.ErrorCode = int32(ErrInternalError)
 	}
 }
 
-func GetHttpErr(err error) (errCode int32, errMsg string) {
-	errCode = http.StatusInternalServerError
-	errMsg = ErrorCodeResponse[ErrInternalError].Description
-
-	s3err, ok := err.(S3ErrorCode)
-	if ok {
-		errCode = int32(ErrorCodeResponse[s3err].HttpStatusCode)
-		errMsg = ErrorCodeResponse[s3err].Description
+func GetErrCode(err error) (errCode int32) {
+	if err == nil {
+		errCode = int32(ErrNoErr)
+		return
 	}
 
-	return errCode, errMsg
+	errCode = int32(ErrInternalError)
+	s3err, ok := err.(S3ErrorCode)
+	if ok {
+		errCode = int32(s3err)
+	}
+
+	return errCode
 }

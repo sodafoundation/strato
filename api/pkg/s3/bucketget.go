@@ -15,7 +15,6 @@
 package s3
 
 import (
-	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -39,7 +38,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	var err error
 	req, err := parseListObjectsQuery(request.Request.URL.Query())
 	if err != nil {
-		WriteS3ErrorResponse(response, err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 	req.Bucket = bucketName
@@ -48,13 +47,12 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	listObjectsRsp, err := s.s3Client.ListObjects(ctx, &req)
 	if err != nil {
 		log.Errorf("list objects of bucket[%s] failed, err:%v\n", bucketName, err)
-		WriteErrorResponseWithStatus(response, http.StatusInternalServerError, err.Error())
+		WriteErrorResponse(response, request, err)
 		return
 	}
-	if listObjectsRsp.ErrorCode != http.StatusOK {
-		log.Errorf("list objects failed, ErrorCode:%d, ErrorMsg:%v\n", listObjectsRsp.ErrorCode,
-			listObjectsRsp.ErrorMsg)
-		WriteErrorResponseWithStatus(response, listObjectsRsp.ErrorCode, listObjectsRsp.ErrorMsg)
+	if listObjectsRsp.ErrorCode != int32(ErrNoErr) {
+		log.Errorf("list objects failed, ErrorCode:%d\n", listObjectsRsp.ErrorCode)
+		WriteErrorResponse(response, request, S3ErrorCode(listObjectsRsp.ErrorCode))
 		return
 	}
 

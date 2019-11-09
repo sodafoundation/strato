@@ -56,7 +56,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		err = handleDBError(err)
 		return
 	}
-	object.GetRowkey()
+
 	object.ObjectKey = objectName
 	object.BucketName = bucketName
 	lastModifiedTime, _ := time.ParseInLocation(TIME_LAYOUT_TIDB, lastModified, time.Local)
@@ -93,7 +93,7 @@ func (t *TidbClient) PutObject(ctx context.Context, object *Object, tx interface
 	sqlTx, _ = tx.(*sql.Tx)
 	sql, args := object.GetCreateSql()
 	_, err = sqlTx.Exec(sql, args...)
-	// TODO: multi-part handle
+	// TODO: multi-part handle, see issue https://github.com/opensds/multi-cloud/issues/690
 
 	return err
 }

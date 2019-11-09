@@ -178,6 +178,7 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 		Description:    "Copy Source must mention the source bucket and key: sourcebucket/sourcekey.",
 		HttpStatusCode: http.StatusBadRequest,
 	},
+
 	ErrInvalidCopySourceStorageClass: {
 		AwsErrorCode:   "InvalidCopySourceStorageClass",
 		Description:    "Storage class of copy source cannot be GLACIER or DEEP_ARCHIVE.",

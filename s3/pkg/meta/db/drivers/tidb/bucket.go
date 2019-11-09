@@ -39,8 +39,8 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	var acl, cors, lc, policy, replication, createTime string
 	var updateTime sql.NullString
 
-	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication,update_time " +
-		"from buckets where bucketname=?;"
+	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
+		"update_time from buckets where bucketname=?;"
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
 	err = t.Client.QueryRow(sqltext, bucketName).Scan(
 		&tmp.Name,
@@ -287,7 +287,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 				err = handleDBError(err)
 				return
 			}
-			//prepare next marker
+			//prepare next marker, marker is last bucketname got from the last query,
 			//TODU: be sure how tidb/mysql compare strings
 			if _, ok := objectNum[name]; !ok {
 				objectNum[name] = 0
@@ -308,7 +308,11 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 				continue
 			}
 
-			// group by delimiter
+			// Group by delimiter, delimiter is used to group object keys. Object keys that contain the same string
+			// between the prefix and the first occurrence of the delimiter to be rolled up into a single result element
+			// in the CommonPrefixes collection. These rolled-up keys are not returned elsewhere in the response. Each
+			// rolled-up result counts as only one return against the MaxKeys value. Those are compatible with AWS S3,
+			// please see https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjectsV2.html for details.
 			if len(delimiter) != 0 {
 				subStr := strings.TrimPrefix(name, prefix)
 				n := strings.Index(subStr, delimiter)
@@ -325,6 +329,10 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 							break
 						}
 						commonPrefixes[prefixKey] = struct{}{}
+						// When response is truncated (the IsTruncated element value in the response is true), you can
+						// use the key name in this field as marker in the subsequent request to get next set of objects,
+						// the same as AWS S3. See https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjects.html
+						// for details.
 						nextMarker = prefixKey
 						count += 1
 					}
@@ -455,80 +463,4 @@ func (t *TidbClient) UpdateUsages(ctx context.Context, usages map[string]int64, 
 		}
 	}
 	return nil
-}
-
-func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (string, []interface{}, error) {
-	const MaxObjectList = 10000
-	args := make([]interface{}, 0)
-
-	prefix := filter[common.KPrefix]
-	if prefix != "" {
-		sqltxt += " and name like ?"
-		args = append(args, prefix+"%")
-		log.Debug("query prefix:", prefix)
-	}
-	if filter[common.KMarker] != "" {
-		sqltxt += " and name >= ?"
-		args = append(args, filter[common.KMarker])
-		log.Debug("query marker:", filter[common.KMarker])
-	}
-
-	// lifecycle management may need to filter by LastModified
-	if filter[common.KLastModified] != "" {
-		var tmFilter map[string]string
-		err := json.Unmarshal([]byte(filter[common.KLastModified]), &tmFilter)
-		if err != nil {
-			log.Errorf("unmarshal lastmodified value failed:%s\n", err)
-			return sqltxt, args, ErrInternalError
-		}
-		log.Debugf("tmpFilter:%+v\n", tmFilter)
-
-		for k, v := range tmFilter {
-			var op string
-			switch k {
-			case "lt":
-				op = "<"
-			case "gt":
-				op = ">"
-			case "lte":
-				op = "<="
-			case "gte":
-				op = ">="
-			default:
-				log.Infof("unsupport filter action:%s\n", k)
-				return sqltxt, args, ErrInternalError
-			}
-
-			sqltxt += " and lastmodifiedtime " + op + " ?"
-			args = append(args, v)
-		}
-	}
-
-	// lifecycle management may need to filter by StorageTier
-	if filter[common.KStorageTier] != "" {
-		tier, err := strconv.Atoi(filter[common.KStorageTier])
-		if err != nil {
-			log.Errorf("invalid storage tier:%s\n", filter[common.KStorageTier])
-			return sqltxt, args, ErrInternalError
-		}
-
-		sqltxt += " and tier <= ?"
-		args = append(args, tier)
-	}
-
-	delimiter := filter[common.KDelimiter]
-	if delimiter == "" {
-		sqltxt += " order by bucketname,name,version limit ?"
-		args = append(args, MaxObjectList)
-	} else {
-		num := len(strings.Split(prefix, delimiter))
-		if prefix == "" {
-			num += 1
-		}
-
-		sqltxt += " group by SUBSTRING_INDEX(name, ?, ?) limit ?"
-		args = append(args, delimiter, num, MaxObjectList)
-	}
-
-	return sqltxt, args, nil
 }

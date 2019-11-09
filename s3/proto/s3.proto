@@ -335,19 +335,18 @@ message ListObjectsRequest {
 	string keyMarker = 12;
 	string versionIdMarker = 13;
 
-    // for internal use
+    // for internal use, for example, lifecycle management may need to filter objects by tier, or create time.
     map<string, string> filter = 14;
 }
 
 message ListObjectsResponse {
 	int32 errorCode = 1;
-	string errorMsg = 2;
 
 	// Indicates whether the returned list objects response is truncated. A
 	// value of true indicates that the list was truncated. The list can be truncated
 	// if the number of objects exceeds the limit allowed or specified
 	// by max keys.
-	bool isTruncated = 3;
+	bool isTruncated = 2;
 
 	// When response is truncated (the IsTruncated element value in the response
 	// is true), you can use the key name in this field as marker in the subsequent
@@ -355,13 +354,13 @@ message ListObjectsResponse {
 	//
 	// NOTE: This element is returned only if you have delimiter request parameter
 	// specified.
-	string nextMarker = 4;
+	string nextMarker = 3;
 
 	// List of prefixes for this request.
-	repeated string Prefixes = 5;
+	repeated string Prefixes = 4;
 
 	// List of objects info for this request.
-	repeated Object objects = 6;
+	repeated Object objects = 5;
 }
 
 message CountObjectsResponse {

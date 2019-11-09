@@ -23,7 +23,6 @@ import (
 
 type Object struct {
 	*pb.Object
-	Rowkey []byte // Rowkey cache
 }
 
 type ObjectType string
@@ -95,28 +94,6 @@ func (o *Object) GetVersionNumber() (uint64, error) {
 		return 0, err
 	}
 	return version, nil
-}
-
-// Rowkey format:
-// BucketName +
-// ObjectNameSeparator +
-// ObjectName +
-// ObjectNameSeparator +
-// bigEndian(uint64.max - unixNanoTimestamp)
-func (o *Object) GetRowkey() (string, error) {
-	if len(o.Rowkey) != 0 {
-		return string(o.Rowkey), nil
-	}
-	var rowkey bytes.Buffer
-	rowkey.WriteString(o.BucketName + ObjectNameSeparator)
-	rowkey.WriteString(o.ObjectKey + ObjectNameSeparator)
-	err := binary.Write(&rowkey, binary.BigEndian,
-		math.MaxUint64-uint64(o.LastModified))
-	if err != nil {
-		return "", err
-	}
-	o.Rowkey = rowkey.Bytes()
-	return string(o.Rowkey), nil
 }
 
 func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
