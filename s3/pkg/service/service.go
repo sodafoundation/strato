@@ -300,12 +300,6 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 	return nil
 }
 
-func (s *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput, out *pb.BaseResponse) error {
-	log.Info("DeleteBucketlifecycle is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
@@ -573,12 +567,8 @@ func HandleS3Error(err error, out *pb.BaseResponse) {
 }
 
 func GetErrCode(err error) (errCode int32) {
-	if err == nil {
-		errCode = int32(ErrNoErr)
-		return
-	}
-
 	errCode = int32(ErrInternalError)
+
 	s3err, ok := err.(S3ErrorCode)
 	if ok {
 		errCode = int32(s3err)

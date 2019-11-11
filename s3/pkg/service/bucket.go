@@ -20,6 +20,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -105,8 +106,14 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	return err
 }
 
-func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.Bucket) error {
+func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBucketResponse) error {
 	log.Infof("GetBucket %s is called in s3 service.", in.Id)
+	var err error
+	defer func() {
+		if err != nil {
+			out.ErrorCode = GetErrCode(err)
+		}
+	}()
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.Name, false)
 	if err != nil {
@@ -114,7 +121,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.Bucket
 		return err
 	}
 
-	*out = pb.Bucket{
+	out.BucketMeta = &pb.Bucket{
 		Id:              bucket.Id,
 		Name:            bucket.Name,
 		TenantId:        bucket.TenantId,
@@ -178,5 +185,138 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		}
 	}*/
 
+	return nil
+}
+
+func (s *s3Service) PutBucketLifecycle(ctx context.Context, in *pb.PutBucketLifecycleRequest, out *pb.BaseResponse) error {
+	log.Infof("set lifecycle for bucket[%s]\n", in.BucketName)
+	var err error
+	defer func() {
+		if err != nil {
+			out.ErrorCode = GetErrCode(err)
+		}
+	}()
+
+	_, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed.")
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.BucketName, true)
+	if err != nil {
+		log.Errorf("get bucket failed, err:%v\n", err)
+		return err
+	}
+	if bucket.TenantId != tenantId {
+		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
+		return ErrBucketAccessForbidden
+	}
+	bucket.LifecycleConfiguration = in.Lc
+	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
+	if err != nil {
+		return err
+	}
+	/* TODO: enable cache, see https://github.com/opensds/multi-cloud/issues/698
+	if err == nil {
+		s.MetaStorage.Cache.Remove(redis.BucketTable, meta.BUCKET_CACHE_PREFIX, bucketName)
+	}*/
+
+	return nil
+}
+
+func (s *s3Service) GetBucketLifecycle(ctx context.Context, in *pb.BaseRequest, out *pb.GetBucketLifecycleResponse) error {
+	var err error
+	defer func() {
+		if err != nil {
+			out.ErrorCode = GetErrCode(err)
+		}
+	}()
+
+	_, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed.")
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Id, true)
+	if err != nil {
+		log.Errorf("get bucket failed, err:%v\n", err)
+		return err
+	}
+
+	if bucket.TenantId != tenantId {
+		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
+		return ErrBucketAccessForbidden
+	}
+	/*
+		// TODO: acording to aws s3 style, need to return error if no configuration configured.
+		if len(bucket.LifecycleConfiguration) == 0 {
+			log.Errorf("bucket[%s] has no lifecycle configuration\n", in.Id)
+			return ErrNoSuchBucketLc
+		}*/
+
+	out.Lc = bucket.LifecycleConfiguration
+	return nil
+}
+
+func (s *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
+	var err error
+	defer func() {
+		if err != nil {
+			out.ErrorCode = GetErrCode(err)
+		}
+	}()
+
+	_, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed.")
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Id, true)
+	if err != nil {
+		return err
+	}
+
+	if bucket.TenantId != tenantId {
+		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
+		return ErrBucketAccessForbidden
+	}
+	bucket.LifecycleConfiguration = nil
+	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
+	if err != nil {
+		return err
+	}
+
+	/* TODO: enable cache
+	if err == nil {
+		yig.MetaStorage.Cache.Remove(redis.BucketTable, meta.BUCKET_CACHE_PREFIX, bucketName)
+	}*/
+
+	return nil
+}
+
+func (s *s3Service) ListBucketLifecycle(ctx context.Context, in *pb.BaseRequest, out *pb.ListBucketsResponse) error {
+	log.Info("ListBucketLifecycle is called in s3 service.")
+	//buckets := []pb.Bucket{}
+	buckets, err := s.MetaStorage.Db.ListBucketLifecycle(ctx)
+	if err != nil {
+		log.Errorf("list buckets with lifecycle failed, err:%v\n", err)
+		return err
+	}
+
+	// TODO: paging list
+	for _, v := range buckets {
+		if v.Deleted != true {
+			out.Buckets = append(out.Buckets, &pb.Bucket{
+				Name:                   v.Name,
+				DefaultLocation:        v.DefaultLocation,
+				LifecycleConfiguration: v.LifecycleConfiguration,
+			})
+		}
+	}
+
+	log.Infof("out.Buckets:%+v\n", out.Buckets)
 	return nil
 }

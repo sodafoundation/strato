@@ -16,12 +16,10 @@ package s3
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
+	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -56,13 +54,12 @@ func (s *APIService) tier2class(tier int32) (string, error) {
 //Function for GET Bucket Lifecycle API
 func (s *APIService) BucketLifecycleGet(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
-	log.Infof("received request for getting lifecycle of bucket[name=%s].\n", bucketName)
+	log.Infof("received request for bucket details in GET lifecycle: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		log.Errorf("get bucket failed, err=%v\n", err)
-		response.WriteError(http.StatusInternalServerError, NoSuchBucket.Error())
+	rsp, err := s.s3Client.GetBucketLifecycle(ctx, &s3.BaseRequest{Id: bucketName})
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("get bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return
 	}
 
@@ -70,47 +67,51 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	lifecycleConfXml := model.LifecycleConfiguration{}
 
 	// convert lifecycle rule to xml Rule
-	for _, lcRule := range bucket.LifecycleConfiguration {
-		xmlRule := model.Rule{}
+	if len(rsp.Lc) > 0 {
+		for _, lcRule := range rsp.Lc {
+			xmlRule := model.Rule{}
 
-		xmlRule.Status = lcRule.Status
-		xmlRule.ID = lcRule.Id
-		xmlRule.Filter = converts3FilterToRuleFilter(lcRule.Filter)
-		xmlRule.AbortIncompleteMultipartUpload = converts3UploadToRuleUpload(lcRule.AbortIncompleteMultipartUpload)
-		xmlRule.Transition = make([]model.Transition, 0)
+			xmlRule.Status = lcRule.Status
+			xmlRule.ID = lcRule.Id
+			xmlRule.Filter = converts3FilterToRuleFilter(lcRule.Filter)
+			xmlRule.AbortIncompleteMultipartUpload = converts3UploadToRuleUpload(lcRule.AbortIncompleteMultipartUpload)
+			xmlRule.Transition = make([]model.Transition, 0)
 
-		//Arranging the transition and expiration actions in XML
-		for _, action := range lcRule.Actions {
-			log.Infof("action is : %v\n", action)
+			//Arranging the transition and expiration actions in XML
+			for _, action := range lcRule.Actions {
+				log.Infof("action is : %v\n", action)
 
-			if action.Name == ActionNameTransition {
-				xmlTransition := model.Transition{}
-				xmlTransition.Days = action.Days
-				xmlTransition.Backend = action.Backend
-				className, err := s.tier2class(action.Tier)
-				if err == nil {
-					xmlTransition.StorageClass = className
+				if action.Name == ActionNameTransition {
+					xmlTransition := model.Transition{}
+					xmlTransition.Days = action.Days
+					xmlTransition.Backend = action.Backend
+					className, err := s.tier2class(action.Tier)
+					if err == nil {
+						xmlTransition.StorageClass = className
+					}
+					xmlRule.Transition = append(xmlRule.Transition, xmlTransition)
 				}
-				xmlRule.Transition = append(xmlRule.Transition, xmlTransition)
+				if action.Name == ActionNameExpiration {
+					xmlExpiration := model.Expiration{}
+					xmlExpiration.Days = action.Days
+					xmlRule.Expiration = append(xmlRule.Expiration, xmlExpiration)
+				}
 			}
-			if action.Name == ActionNameExpiration {
-				xmlExpiration := model.Expiration{}
-				xmlExpiration.Days = action.Days
-				xmlRule.Expiration = append(xmlRule.Expiration, xmlExpiration)
-			}
+			// append each xml rule to xml array
+			lifecycleConfXml.Rule = append(lifecycleConfXml.Rule, xmlRule)
 		}
-		// append each xml rule to xml array
-		lifecycleConfXml.Rule = append(lifecycleConfXml.Rule, xmlRule)
-	}
 
-	// marshall the array back to xml format
-	err = response.WriteAsXml(lifecycleConfXml)
-	if err != nil {
-		log.Infof("write lifecycle of bucket[%s] as xml failed, lifecycle =%s, err=%v.\n", bucketName,
-			bucket.LifecycleConfiguration, err)
-		response.WriteError(http.StatusInternalServerError, InternalError.Error())
+		// marshall the array back to xml format
+		err = response.WriteAsXml(lifecycleConfXml)
+		if err != nil {
+			log.Infof("write lifecycle of bucket[%s] as xml failed, lifecycle =%s, err=%v.\n", bucketName,
+				lifecycleConfXml, err)
+			WriteErrorResponse(response, request, ErrInternalError)
+			return
+		}
+
+		log.Info("GET lifecycle succeed.")
 	}
-	log.Info("GET lifecycle successful.")
 }
 
 func converts3FilterToRuleFilter(filter *s3.LifecycleFilter) model.Filter {

@@ -15,7 +15,7 @@
 package s3
 
 const (
-	DuplicateRuleIDError               = "error: PUT bucket lifecycle failed because the ruleId $1 is duplicate."
+	DuplicateRuleIDError               = "error: PUT bucket lifecycle failed because the ruleId %s is duplicate."
 	NoRequestBodyLifecycle             = "error: No request body specified for creating lifecycle configuration"
 	MoreThanOneExpirationAction        = "error: More than one expiration action is not permitted in one rule"
 	DaysInStorageClassBeforeExpiration = "error: minimum days for an object in the current storage class should be less than Expiration Days"
@@ -23,4 +23,11 @@ const (
 	NoRuleIDForLifecycleDelete         = "error: No rule ID specified to delete from lifecycle configuration"
 	WrongRuleIDForLifecycleDelete      = "error: The rule ID which is specified for delete does not exist"
 	InvalidTier                        = "error: Invalid tier"
+	InvalidExpireDays                  = "error: Days for Expiring object must not be less than %d"
+	InvalidTransistionDays             = "error: days for transitioning object to tier_%d must not be less than %d"
+	TooMuchLCRuls                      = "number of rules should not more than %d"
+)
+
+const (
+	AWSErrCodeInvalidArgument = "InvalidArgument"
 )

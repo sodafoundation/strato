@@ -97,6 +97,32 @@ func WriteErrorResponseNoHeader(response *restful.Response, request *restful.Req
 	response.ResponseWriter.(http.Flusher).Flush()
 }
 
+// writeSuccessNoContent write success headers with http status 204
+func WriteSuccessNoContent(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func WriteApiErrorResponse(response *restful.Response, request *restful.Request, status int, awsErrCode, message string) {
+	// write header
+	response.WriteHeader(status)
+
+	// HEAD should have no body, do not attempt to write to it
+	if request.Request.Method == "HEAD" {
+		return
+	}
+
+	errorResponse := ApiErrorResponse{}
+	errorResponse.AwsErrorCode = awsErrCode
+	errorResponse.Message = message
+	errorResponse.Resource = request.Request.URL.Path
+	errorResponse.HostId = helper.CONFIG.InstanceId
+
+	encodedErrorResponse := EncodeResponse(errorResponse)
+
+	response.Write(encodedErrorResponse)
+	response.ResponseWriter.(http.Flusher).Flush()
+}
+
 // APIErrorResponse - error response format
 type ApiErrorResponse struct {
 	XMLName      xml.Name `xml:"Error" json:"-"`

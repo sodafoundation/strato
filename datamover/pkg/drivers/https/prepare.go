@@ -109,7 +109,7 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 			logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
 			return nil, errors.New("get bucket information failed")
 		}
-		return getOsdsLocation(ctx, virtBkname, rspbk.DefaultLocation)
+		return getOsdsLocation(ctx, virtBkname, rspbk.BucketMeta.DefaultLocation)
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		cfg := conn.ConnConfig
 		loca := LocationInfo{}

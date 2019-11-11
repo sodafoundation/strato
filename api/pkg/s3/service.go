@@ -24,6 +24,7 @@ import (
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -97,13 +98,13 @@ func ReadBody(r *restful.Request) []byte {
 */
 
 func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.Bucket {
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil {
 		log.Infof("get bucket[name=%s] failed, err=%v.\n", bucketName, err)
 		return nil
 	}
 
-	return bucket
+	return rsp.BucketMeta
 }
 
 func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
@@ -125,4 +126,18 @@ func (s *APIService) isBackendExist(ctx context.Context, backendName string) boo
 	}
 
 	return flag
+}
+
+func HandleS3Error(response *restful.Response, request *restful.Request, err error, errCode int32) error {
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return err
+	}
+	if errCode != int32(ErrNoErr) {
+		err := S3ErrorCode(errCode)
+		WriteErrorResponse(response, request, err)
+		return err
+	}
+
+	return nil
 }
