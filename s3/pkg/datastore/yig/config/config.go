@@ -7,6 +7,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	DEFAULT_DB_MAX_IDLE_CONNS = 1024
+	DEFAULT_DB_MAX_OPEN_CONNS = 1024
+)
+
 type Config struct {
 	Endpoint   EndpointConfig
 	Log        LogConfig
@@ -143,8 +148,8 @@ type DatabaseConfig struct {
 }
 
 func (dc *DatabaseConfig) Parse(vals map[string]interface{}) error {
-	dc.MaxIdleConns = 0
-	dc.MaxOpenConns = 1024
+	dc.MaxIdleConns = DEFAULT_DB_MAX_IDLE_CONNS
+	dc.MaxOpenConns = DEFAULT_DB_MAX_OPEN_CONNS
 
 	if dt, ok := vals["db_type"]; ok {
 		dc.DbType = dt.(string)
