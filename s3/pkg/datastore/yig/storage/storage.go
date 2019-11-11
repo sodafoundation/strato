@@ -13,7 +13,7 @@ import (
 
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
-	"github.com/opensds/multi-cloud/s3/pkg/meta"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,12 +42,16 @@ type YigStorage struct {
 func New(cfg *config.Config) (*YigStorage, error) {
 	kms := crypto.NewKMS()
 	metaCfg := meta.MetaConfig{
-		CacheType: meta.SimpleCache,
-		TidbInfo:  cfg.Database.DbUrl,
+		Dbcfg: cfg.Database,
+	}
+	metaStorage, err := meta.New(metaCfg)
+	if err != nil {
+		log.Errorf("failed to new meta, err: %v", err)
+		return nil, err
 	}
 	yig := YigStorage{
 		DataStorage: make(map[string]*CephStorage),
-		MetaStorage: meta.New(metaCfg),
+		MetaStorage: metaStorage,
 		KMS:         kms,
 		Stopping:    false,
 		WaitGroup:   new(sync.WaitGroup),
@@ -87,7 +91,7 @@ func (y *YigStorage) Close() error {
 	y.WaitGroup.Wait()
 	log.Info("done")
 	log.Info("Stopping MetaStorage...")
-	y.MetaStorage.Stop()
+	y.MetaStorage.Close()
 	y.logfile.Close()
 
 	return nil

@@ -183,7 +183,7 @@ func getSize(request *restful.Request, response *restful.Response) (int64, error
 
 	log.Infof("object size is %v\n", size)
 
-	if size == 0 || size > common.MaxObjectSize {
+	if size > common.MaxObjectSize {
 		log.Infof("invalid contentLenght:%s\n", contentLenght)
 		errMsg := fmt.Sprintf("invalid contentLenght[%s], it should be less than %d and more than 0",
 			contentLenght, common.MaxObjectSize)

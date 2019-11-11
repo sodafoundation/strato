@@ -66,6 +66,7 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 			}
 			if len(dr.req.Data) == 0 {
 				log.Errorln("no data left to read.")
+				err = io.EOF
 				return
 			}
 			dr.curr = 0
