@@ -1,21 +1,31 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package obs
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-ini/ini"
-	"github.com/lestrrat-go/file-rotatelogs"
-	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type LogFormatter struct {
@@ -35,10 +45,12 @@ const (
 	defaultLogLevel        = "info"
 	unknownHost            = "unknownhost"
 	unknownUser            = "unknownuser"
-	configFileName         = "log.conf"
+	configFileName         = "/etc/multi-cloud/multi-cloud.conf"
 	defaultLogFormat       = "[%time%] [%level%] [%filename%] [%funcName%():%lineNo%] [PID:%process%] %message%"
 	defaultTimestampFormat = time.RFC3339
-	callStackDeep          = 12
+	logSection             = "log"
+	tenMb                  = 10
+	threeMonth             = 100
 )
 
 func InitLogs() {
@@ -51,35 +63,17 @@ func configureLogModule(path, level, format string) {
 	configureLevel(level)
 }
 
-func configureWriter(path, format string) error {
-	debugWriter, debugWriterErr := createWriter(path, debugLevel)
-	infoWriter, infoWriterErr := createWriter(path, infoLevel)
-	warnWriter, warnWriterErr := createWriter(path, warnLevel)
-	errorWriter, errorWriterErr := createWriter(path, errorLevel)
-	if debugWriterErr != nil || infoWriterErr != nil || warnWriterErr != nil || errorWriterErr != nil {
-		return errors.New("Failed to create writer!\n")
-	}
-	lfsHook := lfshook.NewHook(lfshook.WriterMap{
-		logrus.DebugLevel: debugWriter,
-		logrus.InfoLevel:  infoWriter,
-		logrus.WarnLevel:  warnWriter,
-		logrus.ErrorLevel: errorWriter}, &LogFormatter{
+func configureWriter(path, format string) {
+	logrus.SetFormatter(&LogFormatter{
 		TimestampFormat: defaultTimestampFormat,
 		LogFormat:       format + "\n",
 	})
-	logrus.AddHook(lfsHook)
-	return nil
-}
-
-func createWriter(path, level string) (*rotatelogs.RotateLogs, error) {
-	writer, err := rotatelogs.New(
-		filepath.Join(path, logNameForRotateLogs(level)),
-		rotatelogs.WithLinkName(filepath.Join(path, shortLogNameForRotateLogs(level))),
-		rotatelogs.WithRotationTime(time.Hour))
-	if err != nil {
-		log.Println(err)
-	}
-	return writer, err
+	logrus.SetOutput(&lumberjack.Logger{
+		Filename: filepath.Join(path, logName()),
+		MaxSize: tenMb,
+		MaxAge: threeMonth,
+		Compress: true,
+	})
 }
 
 func configureLevel(level string) {
@@ -96,20 +90,11 @@ func configureLevel(level string) {
 	logrus.SetReportCaller(true)
 }
 
-func logNameForRotateLogs(level string) (name string) {
-	name = fmt.Sprintf("%s.%s.%s.log.%s.%%Y%%m%%d%%H.%d",
+func logName() (name string) {
+	name = fmt.Sprintf("%s.%s.%s.log",
 		filepath.Base(os.Args[0]),
 		hostName(),
-		userName(),
-		strings.ToUpper(level),
-		os.Getpid())
-	return name
-}
-
-func shortLogNameForRotateLogs(level string) (name string) {
-	name = fmt.Sprintf("%s.%s",
-		filepath.Base(os.Args[0]),
-		strings.ToUpper(level))
+		userName())
 	return name
 }
 
@@ -149,14 +134,14 @@ func readConfigurationFile() (cfgPath, cfgLevel, cfgFormat string) {
 		log.Println("Failed to open config file")
 		return cfgPath, cfgLevel, cfgFormat
 	}
-	if cfg.Section("").HasKey(path) {
-		cfgPath = cfg.Section("").Key(path).String()
+	if cfg.Section(logSection).HasKey(path) {
+		cfgPath = cfg.Section(logSection).Key(path).String()
 	}
-	if cfg.Section("").HasKey(level) {
-		cfgLevel = strings.ToLower(cfg.Section("").Key(level).String())
+	if cfg.Section(logSection).HasKey(level) {
+		cfgLevel = strings.ToLower(cfg.Section(logSection).Key(level).String())
 	}
-	if cfg.Section("").HasKey(format) {
-		cfgFormat = cfg.Section("").Key(format).String()
+	if cfg.Section(logSection).HasKey(format) {
+		cfgFormat = cfg.Section(logSection).Key(format).String()
 	}
 
 	return cfgPath, cfgLevel, cfgFormat
@@ -182,10 +167,9 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	output = strings.Replace(output, "%process%", strconv.Itoa(os.Getpid()), 1)
 
-	pc, filename, line, _ := runtime.Caller(callStackDeep)
-	output = strings.Replace(output, "%filename%", filename, 1)
-	output = strings.Replace(output, "%lineNo%", strconv.Itoa(line), 1)
-	output = strings.Replace(output, "%funcName%", runtime.FuncForPC(pc).Name(), 1)
+	output = strings.Replace(output, "%filename%", entry.Caller.File, 1)
+	output = strings.Replace(output, "%lineNo%", strconv.Itoa(entry.Caller.Line), 1)
+	output = strings.Replace(output, "%funcName%", entry.Caller.Function, 1)
 
 	return []byte(output), nil
 }

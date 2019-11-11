@@ -1,6 +1,6 @@
 -- MySQL dump 10.14  Distrib 5.5.56-MariaDB, for Linux (x86_64)
 --
--- Host: 10.5.0.17    Database: yig
+-- Host: 10.5.0.17    Database: s3
 -- ------------------------------------------------------
 -- Server version	5.7.10-TiDB-v2.0.0-rc.1-71-g7f958c5
 
