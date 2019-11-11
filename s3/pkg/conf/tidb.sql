@@ -69,7 +69,7 @@ CREATE TABLE `gc` (
   `objectname` varchar(255) DEFAULT NULL,
   `version` bigint(20) UNSIGNED DEFAULT NULL,
   `location` varchar(255) DEFAULT NULL,
-  `pool` varchar(255) DEFAULT NULL,
+  `storagemeta` varchar(255) DEFAULT NULL,
   `objectid` varchar(255) DEFAULT NULL,
   `status` varchar(255) DEFAULT NULL,
   `mtime` datetime DEFAULT NULL,
@@ -183,8 +183,8 @@ CREATE TABLE `objects` (
   `name` varchar(255) DEFAULT NULL,
   `version` bigint(20) UNSIGNED DEFAULT NULL,
   `location` varchar(255) DEFAULT NULL,
-  `pool` varchar(255) DEFAULT NULL,
-  `ownerid` varchar(255) DEFAULT NULL,
+  `tenantid` varchar(255) DEFAULT NULL,
+  `userid` varchar(255) DEFAULT NULL,
   `size` bigint(20) DEFAULT NULL,
   `objectid` varchar(255) DEFAULT NULL,
   `lastmodifiedtime` datetime DEFAULT NULL,
@@ -198,7 +198,8 @@ CREATE TABLE `objects` (
   `encryptionkey` blob DEFAULT NULL,
   `initializationvector` blob DEFAULT NULL,
   `type` tinyint(1) DEFAULT 0,
-  `storageclass` tinyint(1) DEFAULT 0,
+  `tier` int(11) DEFAULT 1,
+  `storageMeta` varchar(255) DEFAULT NULL,
    UNIQUE KEY `rowkey` (`bucketname`,`name`,`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;

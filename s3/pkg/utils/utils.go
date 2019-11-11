@@ -75,3 +75,9 @@ type ObjsCountInfo struct {
 	Size  int64
 	Count int64
 }
+
+const (
+	MaxObjectList  = 1000 // Limit number of objects in a listObjectsResponse.
+	MaxUploadsList = 1000 // Limit number of uploads in a listUploadsResponse.
+	MaxPartsList   = 1000 // Limit number of parts in a listPartsResponse.
+)

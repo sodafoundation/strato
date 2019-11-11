@@ -4,8 +4,8 @@ service S3 {
 	rpc ListBuckets(BaseRequest) returns (ListBucketsResponse) {}
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
-	rpc GetBucket(BaseRequest) returns (Bucket) {}
-	rpc ListObjects(ListObjectsRequest) returns (ListObjectResponse) {}
+	rpc GetBucket(Bucket) returns (Bucket) {}
+	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
 	rpc PutObject(stream PutObjectRequest) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
@@ -297,7 +297,7 @@ message Object {
 	int32 type = 22;
 	bool nullVersion = 23;
 	map<string, string> customAttributes = 24;
-	string storageMeta = 25;
+	string storageMeta = 25; // append info used by storage driver
 }
 
 message ListBucketsResponse {
@@ -315,16 +315,52 @@ message BaseRequest {
 }
 
 message ListObjectsRequest {
-    // Bucket is a required field
-    string bucket = 1;
-    string delimiter = 2;
-	map<string, string> filter = 3;
-	int32  offset = 4;
-	int32  limit = 5;
+	string bucket = 1;
+	bool versioned = 2; // should return versioned objects?
+	int32 version = 3;  // Currently 1 or 2
+	string delimiter = 4;
+	string encodingType = 5;
+	int32 maxKeys = 6;
+	string prefix = 7;
+
+	// v1 specific
+	string marker = 8;
+
+	// v2 specific
+	string continuationToken = 9;
+	string startAfter = 10;
+	bool fetchOwner = 11;
+
+	// versioned specific
+	string keyMarker = 12;
+	string versionIdMarker = 13;
+
+    // for internal use, for example, lifecycle management may need to filter objects by tier, or create time.
+    map<string, string> filter = 14;
 }
 
-message ListObjectResponse {
-	repeated Object ListObjects = 1;
+message ListObjectsResponse {
+	int32 errorCode = 1;
+
+	// Indicates whether the returned list objects response is truncated. A
+	// value of true indicates that the list was truncated. The list can be truncated
+	// if the number of objects exceeds the limit allowed or specified
+	// by max keys.
+	bool isTruncated = 2;
+
+	// When response is truncated (the IsTruncated element value in the response
+	// is true), you can use the key name in this field as marker in the subsequent
+	// request to get next set of objects.
+	//
+	// NOTE: This element is returned only if you have delimiter request parameter
+	// specified.
+	string nextMarker = 3;
+
+	// List of prefixes for this request.
+	repeated string Prefixes = 4;
+
+	// List of objects info for this request.
+	repeated Object objects = 5;
 }
 
 message CountObjectsResponse {

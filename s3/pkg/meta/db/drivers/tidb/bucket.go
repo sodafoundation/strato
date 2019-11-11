@@ -1,3 +1,16 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package tidbclient
 
 import (
@@ -12,19 +25,22 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
-	helper "github.com/opensds/multi-cloud/s3/pkg/helper"
+	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
+
+const TimeDur = 5000 // milisecond
 
 func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error) {
 	log.Infof("get bucket[%s] from tidb ...\n", bucketName)
 	var acl, cors, lc, policy, replication, createTime string
 	var updateTime sql.NullString
 
-	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication,update_time " +
-		"from buckets where bucketname=?;"
+	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
+		"update_time from buckets where bucketname=?;"
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
 	err = t.Client.QueryRow(sqltext, bucketName).Scan(
 		&tmp.Name,
@@ -214,9 +230,11 @@ func (t *TidbClient) CheckAndPutBucket(ctx context.Context, bucket *Bucket) (boo
 	return processed, err
 }
 
-func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdMarker, prefix, delimiter string,
-	versioned bool, maxKeys int) (retObjects []*Object, prefixes []string, truncated bool, nextMarker,
+func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int,
+	filter map[string]string) (retObjects []*Object, prefixes []string, truncated bool, nextMarker,
 	nextVerIdMarker string, err error) {
+	const MaxObjectList = 10000
+	// TODO: support versioning
 	if versioned {
 		return
 	}
@@ -225,74 +243,82 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 	objectMap := make(map[string]struct{})
 	objectNum := make(map[string]int)
 	commonPrefixes := make(map[string]struct{})
-	omarker := marker
+	omarker := filter[common.KMarker]
+	delimiter := filter[common.KDelimiter]
+	prefix := filter[common.KPrefix]
 	for {
 		var loopcount int
 		var sqltext string
 		var rows *sql.Rows
-		if marker == "" {
-			sqltext = "select bucketname,name,version,nullversion,deletemarker from objects where bucketName=? " +
-				"order by bucketname,name,version limit ?;"
-			rows, err = t.Client.Query(sqltext, bucketName, maxKeys)
-		} else {
-			sqltext = "select bucketname,name,version,nullversion,deletemarker from objects where bucketName=? " +
-				"and name >=? order by bucketname,name,version limit ?,?;"
-			rows, err = t.Client.Query(sqltext, bucketName, marker, objectNum[marker], objectNum[marker]+maxKeys)
+		args := make([]interface{}, 0)
+		// only select index column here to avoid slow query
+		sqltext = "select bucketname,name,version from objects where bucketName=?"
+		args = append(args, bucketName)
+		var inargs []interface{}
+		sqltext, inargs, err = buildSql(ctx, filter, sqltext)
+		for _, v := range inargs {
+			args = append(args, v)
 		}
+		log.Infof("sqltext:%s, args:%v\n", sqltext, args)
+		tstart := time.Now()
+		rows, err = t.Client.Query(sqltext, args...)
 		if err != nil {
 			err = handleDBError(err)
 			return
 		}
+		tqueryend := time.Now()
+		tdur := tqueryend.Sub(tstart).Nanoseconds()
+		if tdur/1000000 > TimeDur {
+			log.Debugf("slow query when list objects, sqltext:%s, args:%v, nanoseconds:%d\n", sqltext, args, tdur)
+		}
 		defer rows.Close()
 		for rows.Next() {
 			loopcount += 1
-			//fetch related date
-			var bucketname, name string
+			//var name, lastModified string
+			var bname, name string
 			var version uint64
-			var nullversion, deletemarker bool
 			err = rows.Scan(
-				&bucketname,
+				&bname,
 				&name,
 				&version,
-				&nullversion,
-				&deletemarker,
 			)
 			if err != nil {
+				log.Errorf("err:%v\n", err)
 				err = handleDBError(err)
 				return
 			}
-			//prepare next marker
+			//prepare next marker, marker is last bucketname got from the last query,
 			//TODU: be sure how tidb/mysql compare strings
 			if _, ok := objectNum[name]; !ok {
 				objectNum[name] = 0
 			}
 			objectNum[name] += 1
-			marker = name
-			//filte row
-			//filte by prefix
-			hasPrefix := strings.HasPrefix(name, prefix)
-			if !hasPrefix {
-				continue
-			}
-			//filte by objectname
+			filter[common.KMarker] = name
+
 			if _, ok := objectMap[name]; !ok {
 				objectMap[name] = struct{}{}
 			} else {
 				continue
 			}
-			//filte by deletemarker
-			if deletemarker {
-				continue
-			}
+
+			// TODO: filter by deletemarker if versioning enabled
+
 			if name == omarker {
+				log.Infof("%s euqals to omarker, continue\n", name)
 				continue
 			}
-			//filte by delemiter
+
+			// Group by delimiter, delimiter is used to group object keys. Object keys that contain the same string
+			// between the prefix and the first occurrence of the delimiter to be rolled up into a single result element
+			// in the CommonPrefixes collection. These rolled-up keys are not returned elsewhere in the response. Each
+			// rolled-up result counts as only one return against the MaxKeys value. Those are compatible with AWS S3,
+			// please see https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjectsV2.html for details.
 			if len(delimiter) != 0 {
 				subStr := strings.TrimPrefix(name, prefix)
 				n := strings.Index(subStr, delimiter)
 				if n != -1 {
 					prefixKey := prefix + string([]byte(subStr)[0:(n+1)])
+					filter[common.KMarker] = prefixKey[0:(len(prefixKey)-1)] + string(delimiter[len(delimiter)-1]+1)
 					if prefixKey == omarker {
 						continue
 					}
@@ -303,34 +329,46 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 							break
 						}
 						commonPrefixes[prefixKey] = struct{}{}
+						// When response is truncated (the IsTruncated element value in the response is true), you can
+						// use the key name in this field as marker in the subsequent request to get next set of objects,
+						// the same as AWS S3. See https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjects.html
+						// for details.
 						nextMarker = prefixKey
 						count += 1
 					}
 					continue
 				}
 			}
+
 			var o *Object
-			Strver := strconv.FormatUint(version, 10)
-			o, err = t.GetObject(ctx, bucketname, name, Strver)
+			strVer := strconv.FormatUint(version, 10)
+			o, err = t.GetObject(ctx, bname, name, strVer)
 			if err != nil {
-				err = handleDBError(err)
+				log.Errorf("err:%v\n", err)
 				return
 			}
+
 			count += 1
 			if count == maxKeys {
 				nextMarker = name
 			}
-			if count == 0 {
-				continue
-			}
+
 			if count > maxKeys {
 				truncated = true
 				exit = true
 				break
 			}
+
 			retObjects = append(retObjects, o)
 		}
-		if loopcount == 0 {
+
+		tend := time.Now()
+		tdur = tend.Sub(tqueryend).Nanoseconds()
+		if tdur/1000000 > TimeDur {
+			log.Debugf("slow get when list objects, time:%d\n", tdur)
+		}
+
+		if loopcount < MaxObjectList {
 			exit = true
 		}
 		if exit {
@@ -338,7 +376,28 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName, marker, verIdM
 		}
 	}
 	prefixes = helper.Keys(commonPrefixes)
+
 	return
+}
+
+func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string) (*utils.ObjsCountInfo, error) {
+	var sqltext string
+	rsp := utils.ObjsCountInfo{}
+	var err error
+	if prefix == "" {
+		sqltext = "select count(*),sum(size) from objects where bucketname=?;"
+		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &rsp.Size)
+	} else {
+		filt := prefix + "%"
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ?;"
+		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &rsp.Size)
+	}
+
+	if err != nil {
+		log.Errorf("db error:%v\n", err)
+	}
+
+	return &rsp, err
 }
 
 func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) error {

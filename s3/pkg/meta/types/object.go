@@ -17,13 +17,12 @@ import (
 
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
-	"github.com/xxtea/xxtea-go/xxtea"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 type Object struct {
 	*pb.Object
-	Rowkey           []byte // Rowkey cache
 }
 
 type ObjectType string
@@ -72,16 +71,16 @@ func (o *Object) ObjectTypeToString() string {
 
 func (o *Object) String() (s string) {
 	s += "Name: " + o.ObjectKey + "\n"
+	s += "Bucket: " + o.BucketName + "\n"
 	s += "Location: " + o.Location + "\n"
 	//s += "Pool: " + o.Pool + "\n"
 	s += "Object ID: " + o.ObjectId + "\n"
 	s += "Last Modified Time: " + time.Unix(o.LastModified, 0).Format(CREATE_TIME_LAYOUT) + "\n"
 	s += "Version: " + o.VersionId + "\n"
 	s += "Type: " + o.ObjectTypeToString() + "\n"
-	//s += "StorageClass: " + o.StorageClass.ToString() + "\n"
-	/*for n, part := range o.Parts {
-		s += fmt.Sprintln("Part", n, "Object ID:", part.ObjectId)
-	}*/
+	s += "Tier: " + fmt.Sprintf("%d", o.Tier) + "\n"
+	// TODO: multi-part handle
+
 	return s
 }
 
@@ -97,31 +96,13 @@ func (o *Object) GetVersionNumber() (uint64, error) {
 	return version, nil
 }
 
-// Rowkey format:
-// BucketName +
-// ObjectNameSeparator +
-// ObjectName +
-// ObjectNameSeparator +
-// bigEndian(uint64.max - unixNanoTimestamp)
-func (o *Object) GetRowkey() (string, error) {
-	if len(o.Rowkey) != 0 {
-		return string(o.Rowkey), nil
-	}
-	var rowkey bytes.Buffer
-	rowkey.WriteString(o.BucketName + ObjectNameSeparator)
-	rowkey.WriteString(o.ObjectKey + ObjectNameSeparator)
-	err := binary.Write(&rowkey, binary.BigEndian,
-		math.MaxUint64-uint64(o.LastModified))
-	if err != nil {
-		return "", err
-	}
-	o.Rowkey = rowkey.Bytes()
-	return string(o.Rowkey), nil
-}
-
 func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
-	var size bytes.Buffer
+	var size, tier bytes.Buffer
 	err = binary.Write(&size, binary.BigEndian, o.Size)
+	if err != nil {
+		return
+	}
+	err = binary.Write(&tier, binary.BigEndian, o.Tier)
 	if err != nil {
 		return
 	}
@@ -149,7 +130,7 @@ func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
 			"owner":         []byte(o.UserId),
 			"oid":           []byte(o.ObjectId),
 			"size":          size.Bytes(),
-			//"lastModified":  o.LastModified.Bytes() //[]byte(o.LastModified.Format(CREATE_TIME_LAYOUT)),
+			"lastModified":  []byte(time.Unix(o.LastModified, 0).Format(CREATE_TIME_LAYOUT)),
 			"etag":          []byte(o.Etag),
 			"content-type":  []byte(o.ContentType),
 			"attributes":    attrsData, // TODO
@@ -160,14 +141,11 @@ func (o *Object) GetValues() (values map[string]map[string][]byte, err error) {
 			"encryptionKey": o.ServerSideEncryption.EncryptionKey,
 			"IV":            o.ServerSideEncryption.InitilizationVector,
 			"type":          []byte(o.ObjectTypeToString()),
+			"tier":          tier.Bytes(),
 		},
 	}
-	/*if len(o.Parts) != 0 {
-		values[OBJECT_PART_COLUMN_FAMILY], err = valuesForParts(o.Parts)
-		if err != nil {
-			return
-		}
-	}*/
+	// TODO: multipart handle
+
 	return
 }
 
@@ -226,51 +204,19 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 	version := math.MaxUint64 - uint64(o.LastModified)
 	customAttributes, _ := json.Marshal(o.CustomAttributes)
 	acl, _ := json.Marshal(o.Acl)
+	var sseType string
+	var encryptionKey, initVector []byte
+	if o.ServerSideEncryption != nil {
+		sseType = o.ServerSideEncryption.SseType
+		encryptionKey = o.ServerSideEncryption.EncryptionKey
+		initVector = o.ServerSideEncryption.InitilizationVector
+	}
 
 	lastModifiedTime := time.Unix(o.LastModified, 0).Format(TIME_LAYOUT_TIDB)
-	sql := "insert into objects (bucketname, name, version, location, pool, ownerid, size, objectid, lastmodifiedtime, " +
-	" etag, contenttype, customattributes, acl, nullversion, deletemarker, " +
-	"type) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.Location, o.TenantId, o.Size, o.ObjectId,
-		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker,
-		o.Type}
-	return sql, args
-}
-/*
-func (o *Object) GetAppendSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModifiedTime.UnixNano())
-	lastModifiedTime := o.LastModifiedTime.Format(TIME_LAYOUT_TIDB)
-	sql := "update objects set lastmodifiedtime=?, size=?, version=? where bucketname=? and name=?"
-	args := []interface{}{lastModifiedTime, o.Size, version, o.BucketName, o.Name}
-	return sql, args
-}
+	sql := "insert into objects values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
+		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker, sseType,
+		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta}
 
-func (o *Object) GetUpdateAclSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModifiedTime.UnixNano())
-	acl, _ := json.Marshal(o.ACL)
-	sql := "update objects set acl=? where bucketname=? and name=? and version=?"
-	args := []interface{}{acl, o.BucketName, o.Name, version}
 	return sql, args
 }
-
-func (o *Object) GetUpdateAttrsSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModifiedTime.UnixNano())
-	attrs, _ := json.Marshal(o.CustomAttributes)
-	sql := "update objects set customattributes =?, storageclass=? where bucketname=? and name=? and version=?"
-	args := []interface{}{attrs, o.StorageClass, o.BucketName, o.Name, version}
-	return sql, args
-
-}
-
-func (o *Object) GetAddUsageSql() (string, []interface{}) {
-	sql := "update buckets set usages= usages + ? where bucketname=?"
-	args := []interface{}{o.Size, o.BucketName}
-	return sql, args
-}
-
-func (o *Object) GetSubUsageSql() (string, []interface{}) {
-	sql := "update buckets set usages= usages + ? where bucketname=?"
-	args := []interface{}{-o.Size, o.BucketName}
-	return sql, args
-}
-*/
