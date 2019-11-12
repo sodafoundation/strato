@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"net/http"
+	"path"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
@@ -95,6 +96,11 @@ func WriteErrorResponseNoHeader(response *restful.Response, request *restful.Req
 
 	response.Write(encodedErrorResponse)
 	response.ResponseWriter.(http.Flusher).Flush()
+}
+
+// getLocation get URL location.
+func GetLocation(r *http.Request) string {
+	return path.Clean(r.URL.Path) // Clean any trailing slashes.
 }
 
 // writeSuccessNoContent write success headers with http status 204

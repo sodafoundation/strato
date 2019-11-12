@@ -70,8 +70,8 @@ func configureWriter(path, format string) {
 	})
 	logrus.SetOutput(&lumberjack.Logger{
 		Filename: filepath.Join(path, logName()),
-		MaxSize: tenMb,
-		MaxAge: threeMonth,
+		MaxSize:  tenMb,
+		MaxAge:   threeMonth,
 		Compress: true,
 	})
 }

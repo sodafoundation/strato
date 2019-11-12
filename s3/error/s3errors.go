@@ -146,8 +146,6 @@ const (
 	ErrUnsupportedAcl
 	ErrNonUTF8Encode
 	ErrInvalidLc
-	ErrTooManyLcRules
-	ErrDuplicateRuleId
 	ErrNoSuchBucketLc
 	ErrInvalidStorageClass
 	ErrPutToBackendFailed
@@ -648,16 +646,6 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 		HttpStatusCode: http.StatusNotFound,
 	},
 	ErrInvalidLc: {
-		AwsErrorCode:   "IllegalLcConfigurationException",
-		Description:    "The LC configuration specified in the request is invalid.",
-		HttpStatusCode: http.StatusBadRequest,
-	},
-	ErrTooManyLcRules: {
-		AwsErrorCode:   "IllegalLcConfigurationException",
-		Description:    "Too many LC rules.",
-		HttpStatusCode: http.StatusBadRequest,
-	},
-	ErrDuplicateRuleId: {
 		AwsErrorCode:   "IllegalLcConfigurationException",
 		Description:    "The LC configuration specified in the request is invalid.",
 		HttpStatusCode: http.StatusBadRequest,

@@ -73,34 +73,10 @@ func ReadBody(r *restful.Request) []byte {
 	return b
 }
 
-/*func getBackendClient(ctx context.Context, s *APIService, bucketName string) datastore.DataStoreAdapter {
-	log.Infof("bucketName is %v:\n", bucketName)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		return nil
-	}
-
-	log.Infof("bucketName is %v\n", bucketName)
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  math.MaxInt32,
-		Filter: map[string]string{"name": bucket.Backend}})
-	log.Infof("backendErr is %v:", backendErr)
-	if backendErr != nil {
-		log.Errorf("get backend %s failed.", bucket.Backend)
-		return nil
-	}
-	log.Infof("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	client, _ := datastore.Init(backend)
-	return client
-}
-*/
-
 func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.Bucket {
 	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		log.Infof("get bucket[name=%s] failed, err=%v.\n", bucketName, err)
+	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
+		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return nil
 	}
 

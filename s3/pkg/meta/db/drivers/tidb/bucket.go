@@ -243,6 +243,9 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 	objectMap := make(map[string]struct{})
 	objectNum := make(map[string]int)
 	commonPrefixes := make(map[string]struct{})
+	if filter == nil {
+		filter = make(map[string]string)
+	}
 	omarker := filter[common.KMarker]
 	delimiter := filter[common.KDelimiter]
 	prefix := filter[common.KPrefix]

@@ -67,51 +67,49 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	lifecycleConfXml := model.LifecycleConfiguration{}
 
 	// convert lifecycle rule to xml Rule
-	if len(rsp.Lc) > 0 {
-		for _, lcRule := range rsp.Lc {
-			xmlRule := model.Rule{}
+	for _, lcRule := range rsp.Lc {
+		xmlRule := model.Rule{}
 
-			xmlRule.Status = lcRule.Status
-			xmlRule.ID = lcRule.Id
-			xmlRule.Filter = converts3FilterToRuleFilter(lcRule.Filter)
-			xmlRule.AbortIncompleteMultipartUpload = converts3UploadToRuleUpload(lcRule.AbortIncompleteMultipartUpload)
-			xmlRule.Transition = make([]model.Transition, 0)
+		xmlRule.Status = lcRule.Status
+		xmlRule.ID = lcRule.Id
+		xmlRule.Filter = converts3FilterToRuleFilter(lcRule.Filter)
+		xmlRule.AbortIncompleteMultipartUpload = converts3UploadToRuleUpload(lcRule.AbortIncompleteMultipartUpload)
+		xmlRule.Transition = make([]model.Transition, 0)
 
-			//Arranging the transition and expiration actions in XML
-			for _, action := range lcRule.Actions {
-				log.Infof("action is : %v\n", action)
+		//Arranging the transition and expiration actions in XML
+		for _, action := range lcRule.Actions {
+			log.Infof("action is : %v\n", action)
 
-				if action.Name == ActionNameTransition {
-					xmlTransition := model.Transition{}
-					xmlTransition.Days = action.Days
-					xmlTransition.Backend = action.Backend
-					className, err := s.tier2class(action.Tier)
-					if err == nil {
-						xmlTransition.StorageClass = className
-					}
-					xmlRule.Transition = append(xmlRule.Transition, xmlTransition)
+			if action.Name == ActionNameTransition {
+				xmlTransition := model.Transition{}
+				xmlTransition.Days = action.Days
+				xmlTransition.Backend = action.Backend
+				className, err := s.tier2class(action.Tier)
+				if err == nil {
+					xmlTransition.StorageClass = className
 				}
-				if action.Name == ActionNameExpiration {
-					xmlExpiration := model.Expiration{}
-					xmlExpiration.Days = action.Days
-					xmlRule.Expiration = append(xmlRule.Expiration, xmlExpiration)
-				}
+				xmlRule.Transition = append(xmlRule.Transition, xmlTransition)
 			}
-			// append each xml rule to xml array
-			lifecycleConfXml.Rule = append(lifecycleConfXml.Rule, xmlRule)
+			if action.Name == ActionNameExpiration {
+				xmlExpiration := model.Expiration{}
+				xmlExpiration.Days = action.Days
+				xmlRule.Expiration = append(xmlRule.Expiration, xmlExpiration)
+			}
 		}
-
-		// marshall the array back to xml format
-		err = response.WriteAsXml(lifecycleConfXml)
-		if err != nil {
-			log.Infof("write lifecycle of bucket[%s] as xml failed, lifecycle =%s, err=%v.\n", bucketName,
-				lifecycleConfXml, err)
-			WriteErrorResponse(response, request, ErrInternalError)
-			return
-		}
-
-		log.Info("GET lifecycle succeed.")
+		// append each xml rule to xml array
+		lifecycleConfXml.Rule = append(lifecycleConfXml.Rule, xmlRule)
 	}
+
+	// marshall the array back to xml format
+	err = response.WriteAsXml(lifecycleConfXml)
+	if err != nil {
+		log.Infof("write lifecycle of bucket[%s] as xml failed, lifecycle =%s, err=%v.\n", bucketName,
+			lifecycleConfXml, err)
+		WriteErrorResponse(response, request, ErrInternalError)
+		return
+	}
+
+	log.Info("GET lifecycle succeed.")
 }
 
 func converts3FilterToRuleFilter(filter *s3.LifecycleFilter) model.Filter {

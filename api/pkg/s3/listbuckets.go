@@ -16,15 +16,14 @@ package s3
 
 import (
 	"encoding/xml"
-	"net/http"
 	"time"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) []byte {
@@ -60,13 +59,13 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	log.Infof("Received request for all buckets")
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
+	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("list bucket failed, err=%v, errCode=%d\n", err, rsp.ErrorCode)
 		return
 	}
 
-	realRes := parseListBuckets(res)
+	realRes := parseListBuckets(rsp)
 
 	log.Infof("Get List of buckets successfully:%v\n", string(realRes))
 	response.Write(realRes)

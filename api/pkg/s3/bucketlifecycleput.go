@@ -113,12 +113,12 @@ func checkValidationOfActions(actions []*s3.Action) error {
 
 func (s *APIService) BucketLifecyclePut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
-	log.Infof("received request for create bucket lifecycle: %s", bucketName)
+	log.Infof("received request for creating lifecycle of bucket: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
-		log.Errorf("put bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
+		log.Errorf("get bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return
 	}
 

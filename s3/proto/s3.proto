@@ -17,7 +17,7 @@ service S3 {
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
 	rpc DeleteBucketLifecycle(BaseRequest) returns (BaseResponse) {}
 	rpc PutBucketLifecycle(PutBucketLifecycleRequest) returns (BaseResponse) {}
-    rpc GetBucketLifecycle(BaseRequest) returns (GetBucketLifecycleResponse) {}
+	rpc GetBucketLifecycle(BaseRequest) returns (GetBucketLifecycleResponse) {}
 	rpc ListBucketLifecycle(BaseRequest) returns (ListBucketsResponse) {}
 	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
 	rpc ListBucketUploadRecords(ListBucketPartsRequest) returns (ListBucketPartsResponse) {}
@@ -234,8 +234,8 @@ message PutBucketLifecycleRequest {
 }
 
 message GetBucketLifecycleResponse {
-    int32 errorCode = 1;
-    repeated LifecycleRule lc = 2;
+	int32 errorCode = 1;
+	repeated LifecycleRule lc = 2;
 }
 
 message ReplicationInfo {

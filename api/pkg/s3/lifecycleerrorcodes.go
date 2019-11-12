@@ -25,7 +25,7 @@ const (
 	InvalidTier                        = "error: Invalid tier"
 	InvalidExpireDays                  = "error: Days for Expiring object must not be less than %d"
 	InvalidTransistionDays             = "error: days for transitioning object to tier_%d must not be less than %d"
-	TooMuchLCRuls                      = "number of rules should not more than %d"
+	TooMuchLCRuls                      = "error: number of rules should not more than %d"
 )
 
 const (
