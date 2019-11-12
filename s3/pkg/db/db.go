@@ -67,7 +67,6 @@ type DBAdapter interface {
 	UpdateObject(ctx context.Context, in *pb.Object) S3Error
 	DeleteObject(ctx context.Context, in *pb.DeleteObjectInput) S3Error
 	GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) S3Error
-	ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *[]pb.Object) S3Error
 	CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *ObjsCountInfo) S3Error
 	DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput) S3Error
 	UpdateObjMeta(ctx context.Context, objKey *string, bucketName *string, lastmod int64, setting map[string]interface{}) S3Error

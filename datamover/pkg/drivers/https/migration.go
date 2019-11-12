@@ -26,6 +26,8 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
@@ -39,8 +41,6 @@ import (
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/micro/go-micro/metadata"
 )
 
 var simuRoutines = 10
@@ -551,8 +551,8 @@ func runjob(in *pb.RunJobRequest) error {
 
 	// set context tiemout
 	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_USER_ID:    in.UserId,
-		common.CTX_KEY_TENANT_ID:  in.TenanId,
+		common.CTX_KEY_USER_ID:   in.UserId,
+		common.CTX_KEY_TENANT_ID: in.TenanId,
 	})
 	dur := getCtxTimeout()
 	_, ok := ctx.Deadline()
@@ -564,7 +564,7 @@ func runjob(in *pb.RunJobRequest) error {
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
 	j.StartTime = time.Now()
 	j.Status = flowtype.JOB_STATUS_RUNNING
-	j.Type="migration"
+	j.Type = "migration"
 	updateJob(&j)
 
 	// get location information
@@ -597,9 +597,10 @@ func runjob(in *pb.RunJobRequest) error {
 	capa := make(chan int64)
 	// concurrent go routines is limited to be simuRoutines
 	th := make(chan int, simuRoutines)
-	var offset, limit int32 = 0, 1000
+	var limit int32 = 1000
+	var marker string
 	for {
-		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
+		objs, err := getObjs(ctx, in, marker, limit)
 		if err != nil {
 			//update database
 			j.Status = flowtype.JOB_STATUS_FAILED
@@ -615,10 +616,10 @@ func runjob(in *pb.RunJobRequest) error {
 
 		//Do migration for each object.
 		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, &j)
-		if len(objs) < int(limit) {
+		if num < int(limit) {
 			break
 		}
-		offset = offset + int32(num)
+		marker = objs[num-1].ObjectKey
 	}
 
 	var capacity, count, passedCount, totalObjs int64 = 0, 0, 0, j.TotalCount
@@ -637,7 +638,7 @@ func runjob(in *pb.RunJobRequest) error {
 				if totalObjs < 100 || count == totalObjs || count%deci == 0 {
 					//update database
 					j.PassedCount = (int64(passedCount))
-					j.PassedCapacity=capacity
+					j.PassedCapacity = capacity
 					logger.Printf("ObjectMigrated:%d,TotalCapacity:%d Progress:%d\n", j.PassedCount, j.TotalCapacity, j.Progress)
 					db.DbAdapter.UpdateJob(&j)
 				}
