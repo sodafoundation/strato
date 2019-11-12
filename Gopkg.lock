@@ -393,6 +393,14 @@
   version = "v1.1.5"
 
 [[projects]]
+
+
+
+
+
+
+
+
   digest = "1:7b21c7fc5551b46d1308b4ffa9e9e49b66c7a8b0ba88c0130474b0e7a20d859f"
   name = "github.com/kr/pretty"
   packages = ["."]
@@ -406,6 +414,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:8520e78cbe9878f6bf0cfdcfaed5761cd575b3568c260a1c891ac1f5c5c6a726"
+  name = "github.com/looplab/fsm"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "84b5307469f859464403f80919467950a79de1b1"
   version = "v0.1.0"
 
 [[projects]]
@@ -778,7 +794,7 @@
   pruneopts = "UT"
   revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
   version = "v2.1"
-  
+
 [[projects]]
   branch = "master"
   digest = "1:9fdc2b55e8e0fafe4b41884091e51e77344f7dc511c5acedcfd98200003bff90"
@@ -855,6 +871,7 @@
     "github.com/journeymidnight/radoshttpd/rados",
     "github.com/journeymidnight/yig/error",
     "github.com/journeymidnight/yig/helper",
+	"github.com/looplab/fsm",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
     "github.com/micro/go-micro/client",

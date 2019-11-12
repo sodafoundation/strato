@@ -24,7 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
 [[constraint]]
   name = "github.com/Azure/azure-storage-blob-go"
   version = "0.3.0"
@@ -105,3 +104,7 @@
 [[constraint]]
   name = "gopkg.in/natefinch/lumberjack.v2"
   version = "2.1.0"
+
+[[constraint]]
+  name = "github.com/looplab/fsm"
+  version = "0.1.0"
