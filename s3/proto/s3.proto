@@ -5,9 +5,9 @@ service S3 {
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
 	rpc GetBucket(Bucket) returns (Bucket) {}
-	rpc ListObjects(ListObjectsRequest) returns (ListObjectResponse) {}
+	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
-	rpc CreateObject(Object) returns (BaseResponse) {}
+	rpc PutObject(stream PutObjectRequest) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (Object) {}
 	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
@@ -17,21 +17,117 @@ service S3 {
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
 	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
 	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
+	rpc ListBucketUploadRecords(ListBucketPartsRequest) returns (ListBucketPartsResponse) {}
+
+	rpc InitMultipartUpload(BaseRequest) returns (BaseResponse) {}
+	rpc AbortMultipartUpload(BaseRequest) returns (BaseResponse) {}
+	rpc CompleteMultipartUpload(BaseRequest) returns (BaseResponse) {}
+	rpc UploadPart(BaseRequest) returns (BaseResponse) {}
+	rpc ListObjectParts(BaseRequest) returns (BaseResponse) {}
+	rpc AppendObject(BaseRequest) returns (BaseResponse) {}
+	rpc PostObject(BaseRequest) returns (BaseResponse) {}
+
+	// For lifecycle, may need some change.
 	rpc AddUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 	rpc DeleteUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
-	rpc ListUploadRecord(ListMultipartUploadRequest) returns (ListMultipartUploadResponse) {}
+
+	rpc HeadObject(BaseObjRequest) returns (Object) {}
+	rpc CopyObject(CopyObjectRequest) returns (BaseResponse) {}
+	rpc CopyObjPart(CopyObjPartRequest) returns (CopyObjPartResponse) {}
+	rpc PutObjACL(PutObjACLRequest) returns (BaseResponse) {}
+	rpc GetObjACL(BaseObjRequest) returns (ObjACL) {}
+	rpc GetBucketLocation(BaseRequest) returns (BaseResponse) {}
+	rpc GetBucketVersioning(BaseBucketRequest) returns (BucketVersioning) {}
+	rpc PutBucketVersioning(PutBucketVersioningRequest) returns (BaseResponse) {}
+	rpc PutBucketACL(PutBucketACLRequest) returns (BaseResponse) {}
+	rpc GetBucketACL(BaseBucketRequest) returns (BucketACL) {}
+	rpc PutBucketCORS(BaseRequest) returns (BaseResponse) {}
+	rpc GetBucketCORS(BaseRequest) returns (BaseResponse) {}
+	rpc DeleteBucketCORS(BaseRequest) returns (BaseResponse) {}
+	rpc PutBucketPolicy(BaseRequest) returns (BaseResponse) {}
+	rpc GetBucketPolicy(BaseRequest) returns (BaseResponse) {}
+	rpc DeleteBucketPolicy(BaseRequest) returns (BaseResponse) {}
+	rpc HeadBucket(BaseRequest) returns (Bucket) {}
+}
+
+message CopyObjectRequest {
+	string objKey = 1;
+	string srcBucket = 2;
+	string targetBucket = 3;
+	string targetBackend = 4;
+	int32  targetTier = 5;
+}
+
+message PutObjectRequest {
+	bytes data = 1;
+}
+
+message PutObjectResponse {
+	Object objMeta = 1;
+	string status = 2;
+	string md5 = 3;
+	string versionId = 4;
+	int64 lastModified = 5;
+}
+
+message PutBucketVersioningRequest {
+	string Status = 1;
+}
+
+message PutBucketACLRequest {
+	BucketACL ACLConfig = 1;
+}
+
+message BucketACL {
+	string BucketName = 1;
+	string ACL = 2;
+}
+
+message BucketVersioning {
+	string Status = 1;
+}
+
+message ObjACL {
+	string BucketName = 1;
+	string ObjectKey = 2;
+	string ACL = 3;
+}
+
+message PutObjACLRequest {
+	string Context = 1;
+	ObjACL ACLConfig = 2;
+}
+
+message BaseBucketRequest {
+	string Context = 1;
+	string BucketName = 2;
+}
+
+message BaseObjRequest {
+	string Context = 1;
+	string BucketName = 2;
+	string ObjectKey = 3;
+}
+
+message CopyObjPartRequest {
+	string SourceBucket = 1;
+	string SourceObj = 2;
+	string TargetBucket = 3;
+	string TargetObject = 4;
+	string UploadID = 5;
+	string PartID = 6;
+	// TODO: Add more parameters
+}
+
+message CopyObjPartResponse {
+	string LastModified = 1;
+	string Etag = 2;
 }
 
 message ServerSideEncryption {
-	string cryptScheme = 1;
-	string algorithm = 2;
-	string masterKeyId = 3;
-	bool mandtory = 4;
-}
-
-message VersioningConfiguration {
-	string Status = 1;
-	string MfaDelete = 2;
+    string sseType = 1;
+    bytes encryptionKey = 2;
+    bytes initilizationVector = 3;
 }
 
 message RedirectAllRequestsTo {
@@ -135,27 +231,34 @@ message ReplicationInfo {
 	string storageClass = 3;
 }
 
+message Acl {
+	string cannedAcl = 1;
+}
+
 message Bucket {
 	string name = 1;
 	string tenantId = 2;
 	string userId = 3;
-	string acl = 4;
-    int64 creationDate = 5;
-	bool transient = 6;
+	Acl acl = 4;
+	int64 createTime = 5;
+	string id = 6;
 	bool deleted = 7;
 	ServerSideEncryption serverSideEncryption = 8;
-	VersioningConfiguration versioningConfiguration = 9;
-	string backend = 10;
+	string versioning = 9;
+	string defaultLocation = 10;	// Means backend
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
 	repeated LifecycleRule lifecycleConfiguration = 14;
 	string bucketPolicy = 15;
+	int64 usages = 16;
+	int32 tier = 17;
+	repeated ReplicationInfo replicationInfo = 18;
 }
 
 message Partion {
 	string key = 1;
-	string partNumber = 2;
+	int64 partNumber = 2;
 	int64 size = 3;
 	string etag = 4;
 	int64 lastModified = 5;
@@ -174,37 +277,36 @@ message Object {
 	string bucketName = 2;
 	string tenantId = 3;
 	string userId = 4;
-	string cacheControl = 5;
-	string contentDisposition = 6;
-	string contentEncoding = 7;
-	string expires = 8;
-	string contentLength = 9;
-	string contentType = 10;
-	string contentMd5 = 11;
-	repeated Version versions = 12;
-	string storageClass = 13;
-	ServerSideEncryption serverSideEncryption = 14;
-	string websiteRedirectLocation = 15;
-	string acl = 16;
-	string backend = 17;
-	string isNull = 18;
-	string isDeleteMarker = 19;
-	repeated ReplicationInfo replicationInfo = 20;
-	int64 size = 21;
-	repeated Partion partions = 22;
-	repeated Tag tags = 23;
-	int64 lastModified = 24;
-	string initFlag = 25;
-	string ETag = 26;
-	int32 tier = 27;
+	string versionId = 5;
+	string objectId = 6;
+	string contentType = 7;
+	string contentMd5 = 8;
+	repeated Version versions = 9;
+	string storageClass = 10;
+	ServerSideEncryption serverSideEncryption = 11;
+	string websiteRedirectLocation = 12;
+	Acl acl = 13;
+	string location = 14;
+	bool isNull = 15;
+	bool deleteMarker = 16;
+	int64 size = 17;
+	repeated Tag tags = 18;
+	int64 lastModified = 19;
+	string etag = 20;
+	int32 tier = 21;
+	int32 type = 22;
+	bool nullVersion = 23;
+	map<string, string> customAttributes = 24;
+	string storageMeta = 25; // append info used by storage driver
 }
 
 message ListBucketsResponse {
-	repeated Bucket buckets = 1;
+	int32 errorCode = 1;
+	repeated Bucket buckets = 2;
 }
 
 message BaseResponse {
-	string errorCode = 1;
+	int32 errorCode = 1;
 	string msg = 2;
 }
 
@@ -213,17 +315,52 @@ message BaseRequest {
 }
 
 message ListObjectsRequest {
-    // Bucket is a required field
-    string Bucket = 1;
-    string Delimiter = 2;
-    string Owner = 3;
-	map<string, string> Filter = 4;
-	int32  offset = 5;
-	int32  limit = 6;
+	string bucket = 1;
+	bool versioned = 2; // should return versioned objects?
+	int32 version = 3;  // Currently 1 or 2
+	string delimiter = 4;
+	string encodingType = 5;
+	int32 maxKeys = 6;
+	string prefix = 7;
+
+	// v1 specific
+	string marker = 8;
+
+	// v2 specific
+	string continuationToken = 9;
+	string startAfter = 10;
+	bool fetchOwner = 11;
+
+	// versioned specific
+	string keyMarker = 12;
+	string versionIdMarker = 13;
+
+    // for internal use, for example, lifecycle management may need to filter objects by tier, or create time.
+    map<string, string> filter = 14;
 }
 
-message ListObjectResponse {
-	repeated Object ListObjects = 1;
+message ListObjectsResponse {
+	int32 errorCode = 1;
+
+	// Indicates whether the returned list objects response is truncated. A
+	// value of true indicates that the list was truncated. The list can be truncated
+	// if the number of objects exceeds the limit allowed or specified
+	// by max keys.
+	bool isTruncated = 2;
+
+	// When response is truncated (the IsTruncated element value in the response
+	// is true), you can use the key name in this field as marker in the subsequent
+	// request to get next set of objects.
+	//
+	// NOTE: This element is returned only if you have delimiter request parameter
+	// specified.
+	string nextMarker = 3;
+
+	// List of prefixes for this request.
+	repeated string Prefixes = 4;
+
+	// List of objects info for this request.
+	repeated Object objects = 5;
 }
 
 message CountObjectsResponse {
@@ -232,10 +369,10 @@ message CountObjectsResponse {
 }
 
 message DeleteObjectInput {
-    string Bucket = 1;
-    string Key = 2;
-    string Versionid = 3;
-    int64  Lastmodified = 4;
+    string bucket = 1;
+    string key = 2;
+    string versioId = 3;
+    int64  lastModified = 5;
 }
 
 message GetObjectInput {
@@ -245,9 +382,10 @@ message GetObjectInput {
 }
 
 message MultipartUpload {
-    string Bucket = 1;
-    string Key = 2;
+    string bucket = 1;
+    string key = 2;
     string uploadId = 3;
+    string objectId = 4;  // id used in backend
 }
 
 message ListParts {
@@ -310,14 +448,14 @@ message MultipartUploadRecord {
 	string userId = 7;
 }
 
-message ListMultipartUploadRequest {
-	string Bucket = 1;
-	string Prefix = 2;
-	int32  Days = 3;
+message ListBucketPartsRequest {
+	string bucket = 1;
+	string prefix = 2;
+	int32  days = 3;
 	int32  limit = 4;
 	int32  offset = 5;
 }
 
-message ListMultipartUploadResponse {
+message ListBucketPartsResponse {
 	repeated MultipartUploadRecord records = 1;
 }

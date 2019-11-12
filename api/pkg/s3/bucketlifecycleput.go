@@ -23,11 +23,11 @@ import (
 	"sync"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 

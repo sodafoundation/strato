@@ -1,0 +1,13 @@
+[log]
+log_path="/var/log/yig"
+log_level=20
+
+[endpoint]
+url="default"
+
+[storage]
+ceph_dir="/etc/ceph/*.conf"
+
+[database]
+db_type="tidb"
+db_url="root:@tcp(tidb:4000)/yig"

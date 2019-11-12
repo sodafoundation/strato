@@ -21,21 +21,26 @@ import (
 	"strconv"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
-	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"time"
 )
 
 var topicLifecycle = "lifecycle"
 var s3client = osdss3.NewS3Service("s3", client.DefaultClient)
+
+const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
 
 type InterRules []*InternalLifecycleRule
 
@@ -78,7 +83,7 @@ func ScheduleLifecycle() {
 	}
 
 	// Get bucket list.
-	listReq := s3.BaseRequest{Id: "test"}
+	listReq := s3.BaseRequest{}
 	listRsp, err := s3client.ListBuckets(context.Background(), &listReq)
 	if err != nil {
 		log.Errorf("[ScheduleLifecycle]list buckets failed: %v.\n", err)
@@ -94,7 +99,7 @@ func ScheduleLifecycle() {
 
 		log.Infof("[ScheduleLifecycle]bucket[%s] has lifecycle rule.\n", v.Name)
 
-		err := handleBucketLifecyle(v.Name, v.LifecycleConfiguration)
+		err = handleBucketLifecyle(v.Name, v.LifecycleConfiguration)
 		if err != nil {
 			log.Errorf("[ScheduleLifecycle]handle bucket lifecycle for bucket[%s] failed, err:%v.\n", v.Name, err)
 			continue
@@ -180,7 +185,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 		log.Infof("abort rule: %+v\n", *v)
 	}
 	// End: Log for debug
-	schedSortedAbortRules(&abortRules)
+	//TODO: schedSortedAbortRules(&abortRules)
 
 	return nil
 }
@@ -194,94 +199,54 @@ func checkTransitionValidation(source int32, destination int32) bool {
 	return true
 }
 
-func getObjects(r *InternalLifecycleRule, offset, limit int32) ([]*osdss3.Object, error) {
+func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*osdss3.Object, error) {
 	// Get objects by communicating with s3 service.
 	filt := make(map[string]string)
-	if len(r.Filter.Prefix) > 0 {
-		filt[KObjKey] = "^" + r.Filter.Prefix
-	}
 
-	modifyFilt := fmt.Sprintf("{\"gte\":\"%d\"}", r.Days)
-	filt[KLastModified] = modifyFilt
+	timeFilt := fmt.Sprintf("{\"lte\":\"%s\"}",
+		time.Now().AddDate(0, 0, int(0-r.Days)).Format(TIME_LAYOUT_TIDB))
+	filt[KLastModified] = timeFilt
 	if r.ActionType != ActionExpiration {
 		filt[KStorageTier] = strconv.Itoa(int(r.Tier))
 	}
 
+	log.Infof("The filter: %+v\n", filt)
 	s3req := osdss3.ListObjectsRequest{
-		Bucket: r.Bucket,
-		Filter: filt,
-		Offset: offset,
-		Limit:  limit,
+		Version:    2,
+		Bucket:     r.Bucket,
+		Filter:     filt,
+		StartAfter: marker,
+		MaxKeys:    limit,
 	}
-	ctx := context.Background()
+	if len(r.Filter.Prefix) > 0 {
+		s3req.Prefix = r.Filter.Prefix
+	}
+	ctx := metadata.NewContext(context.Background(), map[string]string{
+		common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true),
+	})
 	log.Infof("ListObjectsRequest:%+v\n", s3req)
 	s3rsp, err := s3client.ListObjects(ctx, &s3req)
 	if err != nil {
-		log.Errorf("list objects failed, req: %v.\n", s3req)
+		log.Errorf("list objects failed, req:%+v,  err:%v.\n", s3req, err)
 		return nil, err
 	}
 
-	return s3rsp.ListObjects, nil
-}
-
-func schedSortedAbortRules(inRules *InterRules) {
-	log.Info("schedSortedAbortRules begin ...")
-	dupCheck := map[string]struct{}{}
-	for _, r := range *inRules {
-		var offset, limit int32 = 0, 1000
-		for {
-			req := osdss3.ListMultipartUploadRequest{Bucket: r.Bucket, Prefix: r.Filter.Prefix, Days: r.Days, Limit: limit, Offset: offset}
-			s3rsp, err := s3client.ListUploadRecord(context.Background(), &req)
-			if err != nil {
-				log.Errorf("schedule for rule[id=%s,bucket=%s] failed, err:%v\n", r.Id, r.Bucket, err)
-				break
-			}
-			records := s3rsp.Records
-			num := int32(len(records))
-			offset += num
-			log.Infof("schedSortedAbortRules:num=%d,offset=%d\n", num, offset)
-			for _, rc := range records {
-				if _, ok := dupCheck[rc.UploadId]; !ok {
-					req := datamover.LifecycleActionRequest{
-						ObjKey:        rc.ObjectKey,
-						BucketName:    rc.Bucket,
-						UploadId:      rc.UploadId,
-						TargetBackend: rc.Backend,
-						Action:        AbortIncompleteMultipartUpload,
-					}
-					// If send failed, then ignore it, because it will be re-sent in the next schedule period.
-					sendActionRequest(&req)
-
-					// Add object key to dupCheck so it will not be processed repeatedly in this round or scheduling.
-					dupCheck[rc.UploadId] = struct{}{}
-
-				} else {
-					log.Infof("upload[id=%s] is already handled in this schedule time.\n", rc.UploadId)
-				}
-			}
-			if num < limit {
-				break
-			}
-		}
-	}
-	log.Info("schedSortedAbortRules end ...")
+	return s3rsp.Objects, nil
 }
 
 func schedSortedActionsRules(inRules *InterRules) {
 	log.Info("schedSortedActionsRules begin ...")
 	dupCheck := map[string]struct{}{}
 	for _, r := range *inRules {
-		var offset, limit int32 = 0, 1000
+		var marker string
+		var limit int32 = 1000
 		for {
-			objs, err := getObjects(r, offset, limit)
+			objs, err := getObjects(r, marker, limit)
 			if err != nil {
 				break
 			}
-			num := int32(len(objs))
-			offset += num
-			// Check if the object exist in the dupCheck map.
 			for _, obj := range objs {
-				if obj.IsDeleteMarker == "1" {
+				if obj.DeleteMarker == true {
 					log.Infof("deleteMarker of object[%s] is set, no lifecycle action need.\n", obj.ObjectKey)
 					continue
 				}
@@ -291,8 +256,9 @@ func schedSortedActionsRules(inRules *InterRules) {
 					continue
 				}
 				if _, ok := dupCheck[obj.ObjectKey]; !ok {
-					// Not exist means this object has is not processed in this round of scheduling.
-					if r.ActionType != ActionExpiration && obj.Tier == r.Tier && (obj.Backend == r.Backend || r.Backend == "") {
+					// Not exist means this object has not processed in this round of scheduling.
+					if r.ActionType != ActionExpiration && obj.Tier == r.Tier &&
+						(obj.Location == r.Backend || r.Backend == "") {
 						// For transition, if target backend and storage class is the same as source backend and storage class, then no transition is need.
 						log.Infof("no need transition for object[%s], backend=%s, tier=%d\n", obj.ObjectKey, r.Backend, r.Tier)
 						// in case different actions exist for an object at the same time, for example transition to aws after 30 days
@@ -305,7 +271,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 					var action int32
 					if r.ActionType == ActionExpiration {
 						action = int32(ActionExpiration)
-					} else if r.Backend == "" || obj.Backend == r.Backend {
+					} else if r.Backend == "" || obj.Location == r.Backend {
 						action = int32(ActionIncloudTransition)
 					} else {
 						action = int32(ActionCrosscloudTransition)
@@ -318,15 +284,16 @@ func schedSortedActionsRules(inRules *InterRules) {
 						dupCheck[obj.ObjectKey] = struct{}{}
 						continue
 					}
-					log.Infof("lifecycle action: object=[%s] type=[%d] source-tier=[%d] target-tier=[%d] source-backend=[%s] target-backend=[%s].\n",
-						obj.ObjectKey, r.ActionType, obj.Tier, r.Tier, obj.Backend, r.Backend)
+					log.Infof("lifecycle action: object=[%s] type=[%d] source-tier=[%d] target-tier=[%d] "+
+						"source-backend=[%s] target-backend=[%s].\n", obj.ObjectKey, r.ActionType, obj.Tier, r.Tier,
+						obj.Location, r.Backend)
 					acreq := datamover.LifecycleActionRequest{
 						ObjKey:        obj.ObjectKey,
 						BucketName:    obj.BucketName,
 						Action:        action,
 						SourceTier:    obj.Tier,
 						TargetTier:    r.Tier,
-						SourceBackend: obj.Backend,
+						SourceBackend: obj.Location,
 						TargetBackend: r.Backend,
 						ObjSize:       obj.Size,
 						LastModified:  obj.LastModified,
@@ -340,8 +307,9 @@ func schedSortedActionsRules(inRules *InterRules) {
 				} else {
 					log.Infof("object[%s] is already handled in this schedule time.\n", obj.ObjectKey)
 				}
+				marker = obj.ObjectKey
 			}
-			if num < limit {
+			if int32(len(objs)) < limit {
 				break
 			}
 		}
@@ -373,7 +341,7 @@ func (r InterRules) Less(i, j int) bool {
 	var ret bool
 	if r[i].ActionType == ActionExpiration && r[i].ActionType < r[j].ActionType {
 		ret = true
-	} else if r[i].ActionType > r[j].ActionType && r[j].ActionType == ActionExpiration{
+	} else if r[i].ActionType > r[j].ActionType && r[j].ActionType == ActionExpiration {
 		ret = false
 	} else {
 		if r[i].Days >= r[j].Days {

@@ -30,7 +30,7 @@ import (
 	"github.com/micro/go-micro/client"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	backend "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
 	blobmover "github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
@@ -534,7 +534,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object, loca *LocationInfo) erro
 func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, srcLoca *LocationInfo,
 	destLoca *LocationInfo, remainSource bool, locaMap map[string]*LocationInfo, job *flowtype.Job, jobFSM *JobFSM) {
 	logger.Printf("Obj[%s] is stored in the backend is [%s], default backend is [%s], target backend is [%s].\n",
-		obj.ObjectKey, obj.Backend, srcLoca.BakendName, destLoca.BakendName)
+		obj.ObjectKey, obj.Location, srcLoca.BakendName, destLoca.BakendName)
 
 	succeed := true
 	needMove := true
@@ -576,16 +576,16 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 	//add object metadata to the destination bucket if destination is not self-defined
 	if succeed && destLoca.VirBucket != "" {
 		obj.BucketName = destLoca.VirBucket
-		obj.Backend = destLoca.BakendName
+		obj.Location = destLoca.BakendName
 		obj.LastModified = time.Now().Unix()
-		_, err := s3client.CreateObject(ctx, obj)
+		/*_, err := s3client.CreateObject(ctx, obj)
 		if err != nil {
 			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] failed, err:%v.\n", obj.ObjectKey,
 				obj.BucketName, err)
 		} else {
 			logger.Printf("add object metadata of obj [objKey:%s] to bucket[name:%s] succeed.\n", obj.ObjectKey,
 				obj.BucketName)
-		}
+		}*/
 	}
 
 	//Delete source data if needed
@@ -708,9 +708,10 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	capa := make(chan int64)
 	// concurrent go routines is limited to be simuRoutines
 	th := make(chan int, simuRoutines)
-	var offset, limit int32 = 0, 1000
+	var limit int32 = 1000
+	var marker string
 	for {
-		objs, err := getObjs(ctx, in, srcLoca, offset, limit)
+		objs, err := getObjs(ctx, in, marker, limit)
 		if err != nil {
 			//update database
 			j.Status = flowtype.JOB_STATUS_FAILED
@@ -730,10 +731,10 @@ func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 
 		//Do migration for each object.
 		go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, jobFSM, &j)
-		if len(objs) < int(limit) {
+		if num < int(limit) {
 			break
 		}
-		offset = offset + int32(num)
+		marker = objs[num-1].ObjectKey
 	}
 
 	var capacity, count, passedCount, totalObjs int64 = 0, 0, 0, j.TotalCount

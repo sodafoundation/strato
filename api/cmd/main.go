@@ -21,9 +21,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
-	log "github.com/sirupsen/logrus"
-
-	//	_ "github.com/micro/go-plugins/client/grpc"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
@@ -61,6 +58,7 @@ func main() {
 	s3ws.Doc("OpenSDS Multi-Cloud API")
 	s3ws.Consumes(restful.MIME_XML)
 	s3ws.Produces(restful.MIME_XML)
+
 	s3ws.Filter(logging.FilterFactory())
 	s3ws.Filter(context.FilterFactory())
 	s3ws.Filter(signer.FilterFactory())

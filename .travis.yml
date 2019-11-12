@@ -18,7 +18,11 @@ env:
   - secure: "IhEskTMEAsBNYTQCpDSlvDxIJK5cu1r2V"
 
 before_install:
-  - sudo apt-get update
+  - wget -qO - https://packages.confluent.io/deb/5.3/archive.key | sudo apt-key add -
+  - wget -q -O- "https://download.ceph.com/keys/release.asc" | sudo apt-key add -
+  - sudo add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/5.3 stable main"
+  - sudo apt-add-repository "deb https://download.ceph.com/debian-luminous/ xenial main"
+  - sudo apt-get update && sudo apt-get install -y libradosstriper-dev librados-dev librdkafka-dev
 
 matrix:
   fast_finish: true

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	flowutils "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
 	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
@@ -63,19 +62,19 @@ func getLocationInfo(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest)
 
 func refreshSrcLocation(ctx context.Context, obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo,
 	locMap map[string]*LocationInfo) (newSrcLoca *LocationInfo, err error) {
-	if obj.Backend != srcLoca.BakendName && obj.Backend != "" {
+	if obj.Location != srcLoca.BakendName && obj.Location != "" {
 		//If oject does not use the default backend
 		logger.Printf("locaMap:%+v\n", locMap)
-		//for selfdefined connector, obj.backend and srcLoca.backendname would be ""
+		//for selfdefined connector, obj.Location and srcLoca.backendname would be ""
 		//TODO: use read/wirte lock
-		newLoc, exists := locMap[obj.Backend]
+		newLoc, exists := locMap[obj.Location]
 		if !exists {
-			newLoc, err = getOsdsLocation(ctx, obj.BucketName, obj.Backend)
+			newLoc, err = getOsdsLocation(ctx, obj.BucketName, obj.Location)
 			if err != nil {
 				return nil, err
 			}
 		}
-		locMap[obj.Backend] = newLoc
+		locMap[obj.Location] = newLoc
 		logger.Printf("newSrcLoca=%+v\n", newLoc)
 		return newLoc, nil
 	}
@@ -105,13 +104,12 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		virtBkname := conn.GetBucketName()
-		reqbk := osdss3.Bucket{Name: virtBkname}
-		rspbk, err := s3client.GetBucket(ctx, &reqbk)
+		rspbk, err := s3client.GetBucket(ctx, &osdss3.Bucket{Name: virtBkname})
 		if err != nil {
 			logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
 			return nil, errors.New("get bucket information failed")
 		}
-		return getOsdsLocation(ctx, virtBkname, rspbk.Backend)
+		return getOsdsLocation(ctx, virtBkname, rspbk.DefaultLocation)
 	case flowtype.STOR_TYPE_AWS_S3, flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_AZURE_BLOB, flowtype.STOR_TYPE_CEPH_S3, flowtype.STOR_TYPE_GCP_S3, flowtype.STOR_TYPE_IBM_COS:
 		cfg := conn.ConnConfig
 		loca := LocationInfo{}
@@ -140,10 +138,10 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 	return nil, errors.New("unsupport type")
 }
 
-func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *LocationInfo, offset, limit int32) ([]*osdss3.Object, error) {
+func getObjs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*osdss3.Object, error) {
 	switch in.SourceConn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
-		return getOsdsS3Objs(ctx, in, offset, limit)
+		return getOsdsS3Objs(ctx, in, marker, limit)
 	default:
 		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
 	}
@@ -152,22 +150,20 @@ func getObjs(ctx context.Context, in *pb.RunJobRequest, defaultSrcLoca *Location
 }
 
 func countOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, err error) {
-	logger.Printf("count objects of bucket[%s]\n", in.SourceConn.BucketName)
-	filt := make(map[string]string)
+	logger.Printf("count objects of bucket[%s].\n", in.SourceConn.BucketName)
+
+	req := osdss3.ListObjectsRequest{Bucket: in.SourceConn.BucketName}
 	if in.GetFilt() != nil && len(in.Filt.Prefix) > 0 {
-		filt[flowutils.KObjKey] = "^" + in.Filt.Prefix
+		req.Prefix = in.Filt.Prefix
 	}
 
-	req := osdss3.ListObjectsRequest{
-		Bucket: in.SourceConn.BucketName,
-		Filter: filt,
-	}
 	rsp, err := s3client.CountObjects(ctx, &req)
 	if err != nil {
+		logger.Printf("err: %v\n", err)
 		return 0, 0, errors.New(DMERR_InternalError)
 	}
 
-	logger.Printf("count objects of bucket[%s]: count=%d,size=%d\n", in.SourceConn.BucketName, count, size)
+	logger.Printf("count objects of bucket[%s]: count=%d,size=%d\n", in.SourceConn.BucketName, rsp.Count, rsp.Size)
 	return rsp.Count, rsp.Size, nil
 }
 
@@ -182,27 +178,26 @@ func countObjs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, er
 	return 0, 0, errors.New(DMERR_UnSupportBackendType)
 }
 
-func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, offset, limit int32) ([]*osdss3.Object, error) {
+func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*osdss3.Object, error) {
 	logger.Println("get osds objects begin")
-	filt := make(map[string]string)
-	if in.GetFilt() != nil && len(in.Filt.Prefix) > 0 {
-		filt[flowutils.KObjKey] = "^" + in.Filt.Prefix
-	}
 
 	req := osdss3.ListObjectsRequest{
-		Bucket: in.SourceConn.BucketName,
-		Filter: filt,
-		Offset: offset,
-		Limit:  limit,
+		Bucket:  in.SourceConn.BucketName,
+		Marker:  marker,
+		MaxKeys: limit,
+	}
+	if in.GetFilt() != nil && len(in.Filt.Prefix) > 0 {
+		req.Prefix = in.Filt.Prefix
 	}
 	rsp, err := s3client.ListObjects(ctx, &req)
 	if err != nil {
-		logger.Printf("list objects failed, bucket=%s, offset=%d, limit=%d, err:%v\n", in.SourceConn.BucketName, offset, limit, err)
+		logger.Printf("list objects failed, bucket=%s, marker=%s, limit=%d, err:%v\n",
+			in.SourceConn.BucketName, marker, limit, err)
 		return nil, err
 	}
 
 	logger.Println("get osds objects successfully")
-	return rsp.ListObjects, nil
+	return rsp.Objects, nil
 }
 
 func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
@@ -214,7 +209,7 @@ func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -229,7 +224,7 @@ func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -244,7 +239,7 @@ func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -258,7 +253,8 @@ func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name, Backend: ""}
+		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name,
+			Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -273,7 +269,7 @@ func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
@@ -288,7 +284,7 @@ func getGcpS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
 		return nil, err
 	}
 	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Backend: ""}
+		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
 		srcObjs = append(srcObjs, &obj)
 	}
 	return srcObjs, nil
