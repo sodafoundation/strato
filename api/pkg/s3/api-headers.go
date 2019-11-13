@@ -51,7 +51,6 @@ func SetObjectHeaders(response *restful.Response, object *pb.Object, contentRang
 
 	w.Header().Set("Content-Type", object.ContentType)
 	if object.Etag != "" {
-		//	w.Header().Set("ETag", "\""+object.Etag+"\"")
 		w.Header()["ETag"] = []string{"\"" + object.Etag + "\""}
 	}
 

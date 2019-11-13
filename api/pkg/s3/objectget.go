@@ -26,11 +26,6 @@ import (
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	/*c "github.com/opensds/multi-cloud/api/pkg/context"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	"golang.org/x/net/context"
-	*/
 )
 
 // supportedGetReqParams - supported request parameters for GET presigned request.
@@ -136,13 +131,10 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 			dataWritten = true
 		}
 		n, err := response.Write(p)
-		if n > 0 {
-
-		}
 		return n, err
 	})
 
-	s3err := int32(0)
+	s3err := int32(s3error.ErrNoErr)
 	eof := false
 	left := length
 	for !eof && left > 0 {
@@ -157,11 +149,11 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 
 		if rsp.ErrorCode != int32(s3error.ErrNoErr) {
 			s3err = rsp.ErrorCode
-			log.Errorf("received s3 service error, error code:", rsp.ErrorCode)
+			log.Errorf("received s3 service error, error code:%v", rsp.ErrorCode)
 			break
 		}
 		if len(rsp.Data) == 0 {
-			continue
+			break
 		}
 		_, err = writer.Write(rsp.Data)
 		if err != nil {
@@ -180,5 +172,5 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		}
 	}
 
-	log.Info("PUT object successfully.")
+	log.Info("Get object successfully.")
 }

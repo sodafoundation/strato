@@ -331,10 +331,10 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			eof = true
 		}
 		if n == 0 {
-			continue
+			break
 		}
 
-		err = stream.Send(&pb.GetObjectResponse{ErrorCode:0, Data:buf[0:n]})
+		err = stream.Send(&pb.GetObjectResponse{ErrorCode:int32(ErrNoErr), Data:buf[0:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break
