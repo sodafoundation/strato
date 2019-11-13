@@ -223,7 +223,7 @@ func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 }
 
 func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
-	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
+	partNumber int, upBytes int64) (*model.UploadPartResult, error) {
 	tries := 1
 	bucket := ad.backend.BucketName
 	bytess, _ := ioutil.ReadAll(stream)
@@ -231,7 +231,7 @@ func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 		Body:          bytes.NewReader(bytess),
 		Bucket:        &bucket,
 		Key:           &multipartUpload.ObjectId,
-		PartNumber:    aws.Int64(partNumber),
+		PartNumber:    aws.Int64(int64(partNumber)),
 		UploadId:      &multipartUpload.UploadId,
 		ContentLength: aws.Int64(upBytes),
 	}
@@ -268,10 +268,10 @@ func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	log.Infof("complete multipart upload[AWS S3], bucket:%s, objectId:%s.\n", bucket, multipartUpload.ObjectId)
 
 	var completeParts []*awss3.CompletedPart
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		completePart := &awss3.CompletedPart{
 			ETag:       aws.String(p.ETag),
-			PartNumber: aws.Int64(p.PartNumber),
+			PartNumber: aws.Int64(int64(p.PartNumber)),
 		}
 		completeParts = append(completeParts, completePart)
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,6 +38,7 @@ type YigStorage struct {
 	Logger      *log.Logger
 	Stopping    bool
 	WaitGroup   *sync.WaitGroup
+	idGen       *utils.GlobalIdGen
 }
 
 func New(cfg *config.Config) (*YigStorage, error) {
@@ -49,12 +51,18 @@ func New(cfg *config.Config) (*YigStorage, error) {
 		log.Errorf("failed to new meta, err: %v", err)
 		return nil, err
 	}
+	idGen, err := utils.NewGlobalIdGen(int64(cfg.Endpoint.MachineId))
+	if err != nil {
+		log.Errorf("failed to new global id generator, err: %v", err)
+		return nil, err
+	}
 	yig := YigStorage{
 		DataStorage: make(map[string]*CephStorage),
 		MetaStorage: metaStorage,
 		KMS:         kms,
 		Stopping:    false,
 		WaitGroup:   new(sync.WaitGroup),
+		idGen:       idGen,
 	}
 	CephConfigPattern := cfg.StorageCfg.CephPath
 	if CephConfigPattern == "" {

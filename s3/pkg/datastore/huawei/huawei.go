@@ -148,7 +148,7 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 }
 
 func (ad *OBSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
-	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
+	partNumber int, upBytes int64) (*model.UploadPartResult, error) {
 	bucket := ad.backend.BucketName
 	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
 	log.Infof("upload part[OBS], objectId:%s, partNum:%d, bytes:%d\n", objectId, partNumber, upBytes)
@@ -184,7 +184,7 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	input.Bucket = bucket
 	input.Key = objectId
 	input.UploadId = multipartUpload.UploadId
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		part := obs.Part{
 			PartNumber: int(p.PartNumber),
 			ETag:       p.ETag,

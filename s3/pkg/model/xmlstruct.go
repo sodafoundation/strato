@@ -60,7 +60,7 @@ type Part struct {
 
 type CompleteMultipartUpload struct {
 	Xmlns string `xml:"xmlns,attr"`
-	Part  []Part `xml:"Part"`
+	Parts []Part `xml:"Part"`
 }
 
 type CompleteMultipartUploadResult struct {
