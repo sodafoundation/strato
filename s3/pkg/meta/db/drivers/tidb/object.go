@@ -20,10 +20,14 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	var iversion uint64
 	var row *sql.Row
 	if version == "" {
-		sqltext = "select * from objects where bucketname=? and name=? order by bucketname,name,version limit 1;"
+		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
+			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta" +
+			" from objects where bucketname=? and name=? order by bucketname,name,version limit 1;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName)
 	} else {
-		sqltext = "select * from objects where bucketname=? and name=? and version=?;"
+		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
+			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta" +
+			" from objects where bucketname=? and name=? and version=?;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName, version)
 	}
 	log.Infof("sqltext:%s, version:%s\n", sqltext, version)
