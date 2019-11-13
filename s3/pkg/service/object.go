@@ -262,10 +262,97 @@ func (s *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *p
 	return nil
 }
 
-func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.BaseResponse) error {
+// When bucket versioning is Disabled/Enabled/Suspended, and request versionId is set/unset:
+//
+// |           |        with versionId        |                   without versionId                    |
+// |-----------|------------------------------|--------------------------------------------------------|
+// | Disabled  | error                        | remove object                                          |
+// | Enabled   | remove corresponding version | add a delete marker                                    |
+// | Suspended | remove corresponding version | remove null version object(if exists) and add a        |
+// |           |                              | null version delete marker                             |
+//
+// See http://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html
+func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.DeleteObjectOutput) error {
 	log.Infoln("DeleteObject is called in s3 service.")
 
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return nil
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed.")
+		return nil
+	}
+
+	// administrator can delete any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if bucket.TenantId != tenantId && tenantId != "" {
+				log.Errorf("delete object failed: tenant[id=%s] has no access right.", tenantId)
+				err = ErrBucketAccessForbidden
+				return nil
+			}
+		} // TODO policy and fancy ACL
+	}
+
+	switch bucket.Versioning {
+	case utils.VersioningDisabled:
+		if in.VersioId != "" && in.VersioId != "null" {
+			err = ErrNoSuchVersion
+		} else {
+			err = s.removeObjectEntryByName(ctx, in.Bucket, in.Key)
+		}
+	case utils.VersioningEabled:
+		// TODO: versioning
+		err = ErrInternalError
+	case utils.VersioningSuspended:
+		// TODO: versioning
+		err = ErrInternalError
+	default:
+		log.Errorf("versioing of bucket[%s] is invalid:%s\n", bucket.Name, bucket.Versioning)
+		err = ErrInternalError
+	}
+
+	if err == nil {
+		// TODO: enable cache
+		/*
+			yig.MetaStorage.Cache.Remove(redis.ObjectTable, obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectName+":")
+			yig.DataCache.Remove(bucketName + ":" + objectName + ":")
+			yig.DataCache.Remove(bucketName + ":" + objectName + ":" + "null")
+			if version != "" {
+				yig.MetaStorage.Cache.Remove(redis.ObjectTable,
+					obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectName+":"+version)
+				yig.DataCache.Remove(bucketName + ":" + objectName + ":" + version)
+			}*/
+	}
+
 	return nil
+}
+
+func (s *s3Service) removeObjectEntryByName(ctx context.Context, bucketName, objectName string) (err error) {
+	obj, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, true)
+	if err == ErrNoSuchKey {
+		return nil
+	}
+	if err != nil {
+		log.Errorf("get object failed, err:%v\n", err)
+		return ErrInternalError
+	}
+	
+	err = s.MetaStorage.DeleteObject(ctx, obj)
+
+	return
 }
 
 func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponse) error {
