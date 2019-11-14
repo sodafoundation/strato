@@ -19,11 +19,9 @@ type MultipartReader struct {
 	parts []*types.PartInfo
 	// YigStorage handle.
 	yig *YigStorage
-	// reader from ceph cluster.
-	reader io.ReadCloser
 }
 
-func (mr *MultipartReader) Read(p []byte) (n int, err error) {
+func (mr *MultipartReader) Read(p []byte) (int, error) {
 	if len(mr.parts) == 0 || mr.len <= 0 {
 		return 0, io.EOF
 	}
@@ -80,10 +78,6 @@ func (mr *MultipartReader) Read(p []byte) (n int, err error) {
 }
 
 func (mr *MultipartReader) Close() error {
-	if mr.reader != nil {
-		return mr.reader.Close()
-	}
-
 	return nil
 }
 
