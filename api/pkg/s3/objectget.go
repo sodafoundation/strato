@@ -47,13 +47,6 @@ func setGetRespHeaders(w http.ResponseWriter, reqParams url.Values) {
 	}
 }
 
-// Simple way to convert a func to io.Writer type.
-type funcToWriter func([]byte) (int, error)
-
-func (f funcToWriter) Write(p []byte) (int, error) {
-	return f(p)
-}
-
 // GetObjectHandler - GET Object
 func (s *APIService) ObjectGet(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
@@ -120,7 +113,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	// Indicates if any data was written to the http.ResponseWriter
 	dataWritten := false
 	// io.Writer type which keeps track if any data was written.
-	writer := funcToWriter(func(p []byte) (int, error) {
+	writer := func(p []byte)(int, error) {
 		if !dataWritten {
 			// Set headers on the first write.
 			// Set standard object headers.
@@ -132,7 +125,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		}
 		n, err := response.Write(p)
 		return n, err
-	})
+	}
 
 	s3err := int32(s3error.ErrNoErr)
 	eof := false
@@ -155,7 +148,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		if len(rsp.Data) == 0 {
 			break
 		}
-		_, err = writer.Write(rsp.Data)
+		_, err = writer(rsp.Data)
 		if err != nil {
 			log.Errorln("failed to write data to client. err:", err)
 			break
@@ -165,7 +158,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 
 	if !dataWritten {
 		if s3err == int32(s3error.ErrNoErr) {
-			writer.Write(nil)
+			writer(nil)
 		} else {
 			WriteErrorResponse(response, request, s3error.S3ErrorCode(s3err))
 			return
