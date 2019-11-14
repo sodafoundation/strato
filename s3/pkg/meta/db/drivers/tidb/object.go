@@ -1,3 +1,16 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package tidbclient
 
 import (
@@ -113,8 +126,13 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 	}
 	sqlTx, _ = tx.(*sql.Tx)
 
-	v := math.MaxUint64 - uint64(object.LastModified)
-	version := strconv.FormatUint(v, 10)
+	vidByte, _ := hex.DecodeString(object.VersionId)
+	decrByte := xxtea.Decrypt(vidByte, XXTEA_KEY)
+	reVersion, _ := strconv.ParseUint(string(decrByte), 10, 64)
+	version := math.MaxUint64 - reVersion
+	log.Infof("delete from objects where name=%s and bucketname=%s and version=%d;\n",
+		object.ObjectKey, object.BucketName, version)
+
 	sqltext := "delete from objects where name=? and bucketname=? and version=?;"
 	_, err = sqlTx.Exec(sqltext, object.ObjectKey, object.BucketName, version)
 	if err != nil {

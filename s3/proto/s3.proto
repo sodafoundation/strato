@@ -10,7 +10,7 @@ service S3 {
 	rpc PutObject(stream PutObjectRequest) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (Object) {}
-	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
+	rpc DeleteObject(DeleteObjectInput) returns (DeleteObjectOutput) {}
 	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
 	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
 	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
@@ -390,7 +390,12 @@ message DeleteObjectInput {
     string bucket = 1;
     string key = 2;
     string versioId = 3;
-    int64  lastModified = 5;
+}
+
+message DeleteObjectOutput {
+    int32 errorCode = 1;
+    bool deleteMarker = 3;
+    string versionId = 4;
 }
 
 message GetObjectInput {

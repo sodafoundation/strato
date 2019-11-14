@@ -146,7 +146,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return nil
 	}
 
-	log.Errorf("delete bucket[%s] successfully%v\n", bucketName)
+	log.Infof("delete bucket[%s] successfully\n", bucketName)
 	return nil
 }
 

@@ -87,15 +87,16 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 	return
 }
 
-func getBackend(ctx context.Context, backedClient backend.BackendService, bucket *meta.Bucket) (*backend.BackendDetail, error) {
-	log.Infof("bucketName is %v:\n", bucket.Name)
+func getBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,
+	error) {
+	log.Infof("backendName is %v:\n", backendName)
 	backendRep, backendErr := backedClient.ListBackend(ctx, &backendpb.ListBackendRequest{
 		Offset: 0,
 		Limit:  1,
-		Filter: map[string]string{"name": bucket.DefaultLocation}})
+		Filter: map[string]string{"name": backendName}})
 	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Errorf("get backend %s failed.", bucket.DefaultLocation)
+		log.Errorf("get backend %s failed.", backendName)
 		return nil, backendErr
 	}
 	log.Infof("backendRep is %v:", backendRep)
@@ -159,7 +160,11 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = data
 	}
 
-	backend, err := getBackend(ctx, s.backendClient, bucket)
+	backendName := bucket.DefaultLocation
+	if obj.Location != "" {
+		backendName = obj.Location
+	}
+	backend, err := getBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -262,10 +267,126 @@ func (s *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *p
 	return nil
 }
 
-func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.BaseResponse) error {
+// When bucket versioning is Disabled/Enabled/Suspended, and request versionId is set/unset:
+//
+// |           |        with versionId        |                   without versionId                    |
+// |-----------|------------------------------|--------------------------------------------------------|
+// | Disabled  | error                        | remove object                                          |
+// | Enabled   | remove corresponding version | add a delete marker                                    |
+// | Suspended | remove corresponding version | remove null version object(if exists) and add a        |
+// |           |                              | null version delete marker                             |
+//
+// See http://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html
+func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.DeleteObjectOutput) error {
 	log.Infoln("DeleteObject is called in s3 service.")
 
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return nil
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed.")
+		return nil
+	}
+
+	// administrator can delete any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if bucket.TenantId != tenantId && tenantId != "" {
+				log.Errorf("delete object failed: tenant[id=%s] has no access right.", tenantId)
+				err = ErrBucketAccessForbidden
+				return nil
+			}
+		} // TODO policy and fancy ACL
+	}
+
+	switch bucket.Versioning {
+	case utils.VersioningDisabled:
+		if in.VersioId != "" && in.VersioId != "null" {
+			err = ErrNoSuchVersion
+		} else {
+			err = s.removeObject(ctx, bucket, in.Key)
+		}
+	case utils.VersioningEabled:
+		// TODO: versioning
+		err = ErrInternalError
+	case utils.VersioningSuspended:
+		// TODO: versioning
+		err = ErrInternalError
+	default:
+		log.Errorf("versioing of bucket[%s] is invalid:%s\n", bucket.Name, bucket.Versioning)
+		err = ErrInternalError
+	}
+
+	if err == nil {
+		// TODO: enable cache
+		/*
+			yig.MetaStorage.Cache.Remove(redis.ObjectTable, obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectName+":")
+			yig.DataCache.Remove(bucketName + ":" + objectName + ":")
+			yig.DataCache.Remove(bucketName + ":" + objectName + ":" + "null")
+			if version != "" {
+				yig.MetaStorage.Cache.Remove(redis.ObjectTable,
+					obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectName+":"+version)
+				yig.DataCache.Remove(bucketName + ":" + objectName + ":" + version)
+			}*/
+	}
+
 	return nil
+}
+
+func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objectKey string) error {
+	log.Debugf("remove object[%s] from bucket[%s]\n", objectKey, bucket.Name)
+	obj, err := s.MetaStorage.GetObject(ctx, bucket.Name, objectKey, true)
+	if err == ErrNoSuchKey {
+		return nil
+	}
+	if err != nil {
+		log.Errorf("get object failed, err:%v\n", err)
+		return ErrInternalError
+	}
+
+	backendName := bucket.DefaultLocation
+	if obj.Location != "" {
+		backendName = obj.Location
+	}
+	backend, err := getBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend with err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage, err:", err)
+		return err
+	}
+
+	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: obj.VersionId})
+	if err != nil {
+		log.Errorf("failed to delete obejct[%s] from backend storage, err:", objectKey, err)
+		return err
+	} else {
+		log.Infof("delete obejct[%s] from backend storage successfully.", err)
+	}
+
+	err = s.MetaStorage.DeleteObject(ctx, obj)
+	if err != nil {
+		log.Errorf("failed to delete obejct[%s] metadata, err:", objectKey, err)
+	} else {
+		log.Infof("delete obejct[%s] metadata successfully.", objectKey)
+	}
+
+	return err
 }
 
 func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponse) error {
