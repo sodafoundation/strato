@@ -19,10 +19,9 @@
 -- Table structure for table `buckets`
 --
 
-DROP TABLE IF EXISTS `buckets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `buckets` (
+CREATE TABLE IF NOT EXISTS `buckets` (
   `bucketname` varchar(255) NOT NULL DEFAULT '',
   `tenantid` varchar(255) DEFAULT NULL,
   `userid` varchar(255) DEFAULT NULL,
@@ -46,10 +45,9 @@ CREATE TABLE `buckets` (
 -- Table structure for table `cluster`
 --
 
-DROP TABLE IF EXISTS `cluster`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `cluster` (
+CREATE TABLE IF NOT EXISTS `cluster` (
   `fsid` varchar(255) DEFAULT NULL,
   `pool` varchar(255) DEFAULT NULL,
   `weight` int(11) DEFAULT NULL,
@@ -61,10 +59,9 @@ CREATE TABLE `cluster` (
 -- Table structure for table `gc`
 --
 
-DROP TABLE IF EXISTS `gc`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `gc` (
+CREATE TABLE IF NOT EXISTS `gc` (
   `bucketname` varchar(255) DEFAULT NULL,
   `objectname` varchar(255) DEFAULT NULL,
   `version` bigint(20) UNSIGNED DEFAULT NULL,
@@ -83,10 +80,9 @@ CREATE TABLE `gc` (
 -- Table structure for table `gcpart`
 --
 
-DROP TABLE IF EXISTS `gcpart`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `gcpart` (
+CREATE TABLE IF NOT EXISTS `gcpart` (
   `partnumber` int(11) DEFAULT NULL,
   `size` bigint(20) DEFAULT NULL,
   `objectid` varchar(255) DEFAULT NULL,
@@ -105,10 +101,9 @@ CREATE TABLE `gcpart` (
 -- Table structure for table `multipartpart`
 --
 
-DROP TABLE IF EXISTS `multipartpart`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `multipartpart` (
+CREATE TABLE IF NOT EXISTS `multipartpart` (
   `partnumber` int(11) DEFAULT NULL,
   `size` bigint(20) DEFAULT NULL,
   `objectid` varchar(255) DEFAULT NULL,
@@ -127,10 +122,9 @@ CREATE TABLE `multipartpart` (
 -- Table structure for table `multiparts`
 --
 
-DROP TABLE IF EXISTS `multiparts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `multiparts` (
+CREATE TABLE IF NOT EXISTS `multiparts` (
   `bucketname` varchar(255) DEFAULT NULL,
   `objectname` varchar(255) DEFAULT NULL,
   `uploadtime` bigint(20) UNSIGNED DEFAULT NULL,
@@ -152,10 +146,9 @@ CREATE TABLE `multiparts` (
 -- Table structure for table `objectpart`
 --
 
-DROP TABLE IF EXISTS `objectpart`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `objectpart` (
+CREATE TABLE IF NOT EXISTS `objectpart` (
   `partnumber` int(11) DEFAULT NULL,
   `size` bigint(20) DEFAULT NULL,
   `objectid` varchar(255) DEFAULT NULL,
@@ -175,10 +168,9 @@ CREATE TABLE `objectpart` (
 -- Table structure for table `objects`
 --
 
-DROP TABLE IF EXISTS `objects`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `objects` (
+CREATE TABLE IF NOT EXISTS `objects` (
   `bucketname` varchar(255) DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
   `version` bigint(20) UNSIGNED DEFAULT NULL,
@@ -208,10 +200,9 @@ CREATE TABLE `objects` (
 -- Table structure for table `objmap`
 --
 
-DROP TABLE IF EXISTS `objmap`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `objmap` (
+CREATE TABLE IF NOT EXISTS `objmap` (
   `bucketname` varchar(255) DEFAULT NULL,
   `objectname` varchar(255) DEFAULT NULL,
   `nullvernum` bigint(20) DEFAULT NULL,
@@ -223,10 +214,9 @@ CREATE TABLE `objmap` (
 -- Table structure for table `users`
 --
 
-DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `userid` varchar(255) DEFAULT NULL,
   `bucketname` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
@@ -244,8 +234,7 @@ CREATE TABLE `users` (
 -- Dump completed on 2018-03-20 18:26:36
 
 
-DROP TABLE IF EXISTS `lifecycle`;
-CREATE TABLE `lifecycle` (
+CREATE TABLE IF NOT EXISTS `lifecycle` (
                        `bucketname` varchar(255) DEFAULT NULL,
                        `status` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
