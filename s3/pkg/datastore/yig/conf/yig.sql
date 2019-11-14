@@ -44,7 +44,7 @@ DROP TABLE IF EXISTS `multiparts`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `multiparts` (
   `upload_id` bigint(20) UNSIGNED DEFAULT 0,
-  `part_num`  int(4) UNSIGNED DEFAULT 0,
+  `part_num`  bigint(20)  DEFAULT 0,
   `object_id` varchar(255) DEFAULT '',
   `location` varchar(255) DEFAULT '',
   `pool` varchar(255) DEFAULT '',

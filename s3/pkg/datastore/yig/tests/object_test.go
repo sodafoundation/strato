@@ -155,7 +155,7 @@ func (ys *YigSuite) TestMultipartUploadSucceed(c *C) {
 		go func(num int, elem *ReaderElem) {
 			ctx := context.Background()
 			ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, elem.Md5)
-			elem.Result, elem.Err = yig.UploadPart(ctx, elem.Reader, mu, num, int64(elem.Len))
+			elem.Result, elem.Err = yig.UploadPart(ctx, elem.Reader, mu, int64(num), int64(elem.Len))
 			wg.Done()
 		}(i+1, readerElems[i])
 	}
@@ -166,7 +166,7 @@ func (ys *YigSuite) TestMultipartUploadSucceed(c *C) {
 	for i := 0; i < loopCount; i++ {
 		c.Assert(readerElems[i].Err, Equals, nil)
 		c.Assert(readerElems[i].Result, Not(Equals), nil)
-		c.Assert(i+1, Equals, readerElems[i].Result.PartNumber)
+		c.Assert(int64(i+1), Equals, readerElems[i].Result.PartNumber)
 		c.Assert(readerElems[i].Md5, Equals, readerElems[i].Result.ETag)
 		part := model.Part{
 			PartNumber: readerElems[i].Result.PartNumber,
@@ -257,7 +257,7 @@ func (ys *YigSuite) TestMultipartUploadSinglePartSucceed(c *C) {
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, elem.Md5)
-	elem.Result, elem.Err = yig.UploadPart(ctx, elem.Reader, mu, 1, int64(elem.Len))
+	elem.Result, elem.Err = yig.UploadPart(ctx, elem.Reader, mu, int64(1), int64(elem.Len))
 
 	completes := &model.CompleteMultipartUpload{}
 	part := model.Part{

@@ -49,12 +49,12 @@ type InitiateMultipartUploadResult struct {
 //Please refer to https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/dev/qfacts.html
 type UploadPartResult struct {
 	Xmlns      string `xml:"xmlns,attr"`
-	PartNumber int    `xml:"PartNumber"`
+	PartNumber int64  `xml:"PartNumber"`
 	ETag       string `xml:"ETag"`
 }
 
 type Part struct {
-	PartNumber int    `xml:"PartNumber"`
+	PartNumber int64  `xml:"PartNumber"`
 	ETag       string `xml:"ETag"`
 }
 

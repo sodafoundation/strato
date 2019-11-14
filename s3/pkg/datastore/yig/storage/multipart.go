@@ -51,7 +51,7 @@ func (yig *YigStorage) InitMultipartUpload(ctx context.Context, object *pb.Objec
  */
 
 func (yig *YigStorage) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
-	partNumber int, upBytes int64) (*model.UploadPartResult, error) {
+	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
 	// check the limiation https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/dev/qfacts.html
 	if upBytes > MAX_PART_SIZE {
 		log.Errorf("UploadPart(%s, %s, %s, %d) failed, the size %d exceeds the maximum size.", multipartUpload.Bucket, multipartUpload.Key, multipartUpload.UploadId, partNumber, upBytes)
@@ -106,7 +106,7 @@ func (yig *YigStorage) UploadPart(ctx context.Context, stream io.Reader, multipa
 	}
 	partInfo := &types.PartInfo{
 		UploadId: uploadId,
-		PartNum:  uint(partNumber),
+		PartNum:  partNumber,
 		ObjectId: oid,
 		Location: cephCluster.Name,
 		Pool:     poolName,
@@ -149,13 +149,13 @@ func (yig *YigStorage) CompleteMultipartUpload(ctx context.Context, multipartUpl
 	totalSize := uint64(0)
 	for k, part := range completeUpload.Parts {
 		// chech whether the part number starts at 1 and increases one by one.
-		if part.PartNumber != k+1 {
+		if part.PartNumber != int64(k+1) {
 			log.Errorf("got invalid part[%d, %s] for uploadId %d with idx %d", part.PartNumber, part.ETag, uploadId, k)
 			return nil, s3err.ErrInvalidPart
 		}
 		// check whether the given parts are already recorded in db.
-		i := sort.Search(len(parts), func(i int) bool { return parts[i].PartNum >= uint(part.PartNumber) })
-		if i >= len(parts) || parts[i].PartNum != uint(part.PartNumber) {
+		i := sort.Search(len(parts), func(i int) bool { return parts[i].PartNum >= part.PartNumber })
+		if i >= len(parts) || parts[i].PartNum != part.PartNumber {
 			log.Errorf("we cannot find the part[%d, %s] for uploadId %d", part.PartNumber, part.ETag, uploadId)
 			return nil, s3err.ErrInvalidPart
 		}

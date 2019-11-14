@@ -20,7 +20,7 @@ type StorageDriver interface {
 
 	InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error)
 	UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
-		partNumber int, upBytes int64) (*model.UploadPartResult, error)
+		partNumber int64, upBytes int64) (*model.UploadPartResult, error)
 	// TODO CopyPart
 	CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 		completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error)

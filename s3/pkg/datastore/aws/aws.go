@@ -223,7 +223,7 @@ func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 }
 
 func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
-	partNumber int, upBytes int64) (*model.UploadPartResult, error) {
+	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
 	tries := 1
 	bucket := ad.backend.BucketName
 	bytess, _ := ioutil.ReadAll(stream)
@@ -231,7 +231,7 @@ func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 		Body:          bytes.NewReader(bytess),
 		Bucket:        &bucket,
 		Key:           &multipartUpload.ObjectId,
-		PartNumber:    aws.Int64(int64(partNumber)),
+		PartNumber:    aws.Int64(partNumber),
 		UploadId:      &multipartUpload.UploadId,
 		ContentLength: aws.Int64(upBytes),
 	}

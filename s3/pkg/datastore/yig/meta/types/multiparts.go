@@ -14,7 +14,7 @@ type PartInfo struct {
 	// Note: this upload id is increasing monoatomicly only in one node.
 	UploadId uint64
 	// part number in this upload
-	PartNum uint
+	PartNum int64
 	// object id in ceph which relates to the part.
 	ObjectId string
 	// ceph cluster
