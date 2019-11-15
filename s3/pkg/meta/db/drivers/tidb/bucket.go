@@ -243,6 +243,9 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 	objectMap := make(map[string]struct{})
 	objectNum := make(map[string]int)
 	commonPrefixes := make(map[string]struct{})
+	if filter == nil {
+		filter = make(map[string]string)
+	}
 	omarker := filter[common.KMarker]
 	delimiter := filter[common.KDelimiter]
 	prefix := filter[common.KPrefix]
@@ -463,4 +466,42 @@ func (t *TidbClient) UpdateUsages(ctx context.Context, usages map[string]int64, 
 		}
 	}
 	return nil
+}
+
+func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket, err error) {
+	log.Infoln("list bucket lifecycle from tidb ...\n")
+
+	var rows *sql.Rows
+	sqltext := "select bucketname,lc from buckets where lc!=CAST('null' AS JSON);"
+	rows, err = t.Client.Query(sqltext)
+	if err == sql.ErrNoRows {
+		err = nil
+		return
+	} else if err != nil {
+		err = handleDBError(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		tmp := Bucket{Bucket: &pb.Bucket{}}
+		var lc string
+		err = rows.Scan(
+			&tmp.Name,
+			&lc)
+		if err != nil {
+			err = handleDBError(err)
+			return
+		}
+
+		err = json.Unmarshal([]byte(lc), &tmp.LifecycleConfiguration)
+		if err != nil {
+			err = handleDBError(err)
+			return
+		}
+
+		buckets = append(buckets, &tmp)
+	}
+
+	return
 }

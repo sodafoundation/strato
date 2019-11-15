@@ -4,7 +4,7 @@ service S3 {
 	rpc ListBuckets(BaseRequest) returns (ListBucketsResponse) {}
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
-	rpc GetBucket(Bucket) returns (Bucket) {}
+	rpc GetBucket(Bucket) returns (GetBucketResponse) {}
 	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
 	rpc PutObject(stream PutObjectRequest) returns (PutObjectResponse) {}
@@ -15,7 +15,10 @@ service S3 {
 	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
 	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
-	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
+	rpc DeleteBucketLifecycle(BaseRequest) returns (BaseResponse) {}
+	rpc PutBucketLifecycle(PutBucketLifecycleRequest) returns (BaseResponse) {}
+	rpc GetBucketLifecycle(BaseRequest) returns (GetBucketLifecycleResponse) {}
+	rpc ListBucketLifecycle(BaseRequest) returns (ListBucketsResponse) {}
 	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
 	rpc ListBucketUploadRecords(ListBucketPartsRequest) returns (ListBucketPartsResponse) {}
 
@@ -225,6 +228,16 @@ message LifecycleRule {
 	AbortMultipartUpload abortIncompleteMultipartUpload = 5;
 }
 
+message PutBucketLifecycleRequest {
+	string bucketName = 1;
+	repeated LifecycleRule lc = 2;
+}
+
+message GetBucketLifecycleResponse {
+	int32 errorCode = 1;
+	repeated LifecycleRule lc = 2;
+}
+
 message ReplicationInfo {
 	string status = 1;
 	string backend = 2;
@@ -233,6 +246,11 @@ message ReplicationInfo {
 
 message Acl {
 	string cannedAcl = 1;
+}
+
+message GetBucketResponse {
+	int32 errorCode = 1;
+	Bucket bucketMeta = 2;
 }
 
 message Bucket {
@@ -431,11 +449,6 @@ message GetBackendTypeByTierRequest {
 
 message GetBackendTypeByTierResponse {
 	repeated string Types = 1;
-}
-
-message DeleteLifecycleInput {
-	string bucket = 1;
-	string ruleID = 2;
 }
 
 message MultipartUploadRecord {
