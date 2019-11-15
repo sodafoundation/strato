@@ -58,9 +58,8 @@ func (t *Tidb) ListParts(uploadId uint64) ([]*types.PartInfo, error) {
 	return parts, nil
 }
 
-func (t *Tidb) PutPart(partInfo *types.PartInfo) error {
+func (t *Tidb) PutPart(partInfo *types.PartInfo) (err error) {
 	sqlText := "insert into multiparts(upload_id, part_num, object_id, location, pool, offset, size, etag, flag) values(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	var err error
 	var tx *sql.Tx
 	tx, err = t.DB.Begin()
 	if err != nil {
@@ -101,10 +100,9 @@ func (t *Tidb) DeleteParts(uploadId uint64) error {
 	return nil
 }
 
-func (t *Tidb) CompleteParts(uploadId uint64, parts []*types.PartInfo) error {
+func (t *Tidb) CompleteParts(uploadId uint64, parts []*types.PartInfo) (err error) {
 	sqlText := "update multiparts set offset=?, flag=? where upload_id=? and part_num=?"
 	var tx *sql.Tx
-	var err error
 	var stmt *sql.Stmt
 
 	tx, err = t.DB.Begin()
