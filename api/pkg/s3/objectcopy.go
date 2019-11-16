@@ -15,15 +15,204 @@
 package s3
 
 import (
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/emicklei/go-restful"
-	s3error "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
-
-//ObjectPut -
-func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Response) {
-	log.Infof("received request: Copy object")
-	WriteErrorResponse(response, request, s3error.ErrNotImplemented)
+func getStorageClassFromHeader(request *restful.Request) (types.StorageClass, error) {
+	storageClassStr := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	if storageClassStr != "" {
+		return types.MatchStorageClassIndex(storageClassStr)
+	} else {
+		// If you don't specify this header, Amazon S3 uses STANDARD
+		return types.ObjectStorageClassStandard, nil
+	}
 }
 
+// ObjectCopy copy object from http header x-amz-copy-source
+func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Response) {
+	log.Infof("received request: Copy object")
+
+	targetBucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
+	targetObjectName := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
+	//backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	log.Infof("received request: Copy object, objectkey=%s, bucketName=%s\n:",
+		targetObjectName, targetBucketName)
+
+	// copy source is of form: /bucket-name/object-name?versionId=xxxxxx
+	copySource := request.HeaderParameter(common.REQUEST_HEADER_COPY_SOURCE)
+	if copySource == "" {
+		WriteErrorResponse(response, request, ErrInvalidCopySource)
+		return
+	}
+	// Skip the first element if it is '/', split the rest.
+	if strings.HasPrefix(copySource, "/") {
+		copySource = copySource[1:]
+	}
+	splits := strings.SplitN(copySource, "/", 2)
+
+	// Save sourceBucket and sourceObject extracted from url Path.
+	var err error
+	var sourceBucketName, sourceObjectName, sourceVersion string
+	if len(splits) == 2 {
+		sourceBucketName = splits[0]
+		sourceObjectName = splits[1]
+	}
+	// If source object is empty, reply back error.
+	if sourceObjectName == "" {
+		WriteErrorResponse(response, request, ErrInvalidCopySource)
+		return
+	}
+
+	splits = strings.SplitN(sourceObjectName, "?", 2)
+	if len(splits) == 2 {
+		sourceObjectName = splits[0]
+		if !strings.HasPrefix(splits[1], "versionId=") {
+			WriteErrorResponse(response, request, ErrInvalidCopySource)
+			return
+		}
+		sourceVersion = strings.TrimPrefix(splits[1], "versionId=")
+	}
+
+	// X-Amz-Copy-Source should be URL-encoded
+	sourceBucketName, err = url.QueryUnescape(sourceBucketName)
+	if err != nil {
+		WriteErrorResponse(response, request, ErrInvalidCopySource)
+		return
+	}
+	sourceObjectName, err = url.QueryUnescape(sourceObjectName)
+	if err != nil {
+		WriteErrorResponse(response, request, ErrInvalidCopySource)
+		return
+	}
+
+	var isOnlyUpdateMetadata = false
+	if sourceBucketName == targetBucketName && sourceObjectName == targetObjectName {
+		if request.HeaderParameter("X-Amz-Metadata-Directive") == "COPY" {
+			WriteErrorResponse(response, request, ErrInvalidCopyDest)
+			return
+		} else if request.HeaderParameter("X-Amz-Metadata-Directive") == "REPLACE" {
+			isOnlyUpdateMetadata = true
+		} else {
+			WriteErrorResponse(response, request, ErrInvalidRequestBody)
+			return
+		}
+	}
+
+	log.Infoln("sourceBucketName:", sourceBucketName, " sourceObjectName:", sourceObjectName, " sourceVersion:", sourceVersion)
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	sourceObject, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName)
+	if err != nil {
+		log.Errorln("unable to fetch object info. err:", err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	// Verify before x-amz-copy-source preconditions before continuing with CopyObject.
+	if err = checkObjectPreconditions(response.ResponseWriter, request.Request, sourceObject); err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	//TODO: In a versioning-enabled bucket, you cannot change the storage class of a specific version of an object. When you copy it, Amazon S3 gives it a new version ID.
+	storageClassFromHeader, err := getStorageClassFromHeader(request)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+	if storageClassFromHeader == types.ObjectStorageClassGlacier || storageClassFromHeader == types.ObjectStorageClassDeepArchive {
+		WriteErrorResponse(response, request, ErrInvalidCopySourceStorageClass)
+		return
+	}
+
+	// if source == dest and X-Amz-Metadata-Directive == REPLACE, only update the meta;
+	if isOnlyUpdateMetadata {
+		log.Infoln("only update metadata.")
+		targetObject := sourceObject
+
+		//update custom attrs from headers
+		newMetadata := extractMetadataFromHeader(request)
+		if c, ok := newMetadata["Content-Type"]; ok {
+			targetObject.ContentType = c
+		} else {
+			targetObject.ContentType = sourceObject.ContentType
+		}
+		targetObject.CustomAttributes = newMetadata
+		targetObject.StorageClass = storageClassFromHeader.ToString()
+
+		result, err := s.s3Client.UpdateObjectMeta(ctx, targetObject)
+		if err != nil {
+			log.Errorf("unable to update object meta for %v", targetObject.ObjectId)
+			WriteErrorResponse(response, request, err)
+			return
+		}
+		copyObjRes := GenerateCopyObjectResponse(result.Md5, time.Unix(result.LastModified, 0))
+		encodedSuccessResponse := EncodeResponse(copyObjRes)
+		// write headers
+		if result.Md5 != "" {
+			response.ResponseWriter.Header()["ETag"] = []string{"\"" + result.Md5 + "\""}
+		}
+		if sourceVersion != "" {
+			response.AddHeader("x-amz-copy-source-version-id", sourceVersion)
+		}
+		if result.VersionId != "" {
+			response.AddHeader("x-amz-version-id", result.VersionId)
+		}
+
+		log.Info("COPY object successfully.")
+		// write success response.
+		WriteSuccessResponse(response, encodedSuccessResponse)
+		return
+	}
+
+	/// maximum Upload size for object in a single CopyObject operation.
+	if isMaxObjectSize(sourceObject.Size) {
+		WriteErrorResponseWithResource(response, request, ErrEntityTooLarge, copySource)
+		return
+	}
+
+	// Note that sourceObject and targetObject are pointers
+	targetObject := &pb.Object{}
+	targetObject.Acl = sourceObject.Acl
+	targetObject.BucketName = targetBucketName
+	targetObject.ObjectKey = targetObjectName
+	targetObject.Size = sourceObject.Size
+	targetObject.Etag = sourceObject.Etag
+	targetObject.ContentType = sourceObject.ContentType
+	targetObject.CustomAttributes = sourceObject.CustomAttributes
+
+	log.Infoln("srcBucket:", sourceBucketName, " srcObject:", sourceObjectName,
+		" targetBucket:", targetBucketName, " targetObject:", targetObjectName)
+
+	result, err := s.s3Client.CopyObject(ctx, &pb.CopyObjectRequest{
+		SrcBucketName:    sourceBucketName,
+		TargetBucketName: targetBucketName,
+		SrcObjectName:    sourceObjectName,
+		TargetObjectName: targetObjectName,
+	})
+	if err != nil {
+		log.Errorln("unable to copy object from ", sourceObjectName, " to ", targetObjectName, " err:", err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	copyObjRes := GenerateCopyObjectResponse(result.Md5, time.Unix(result.LastModified, 0))
+	encodedSuccessResponse := EncodeResponse(copyObjRes)
+	// write headers
+	if result.Md5 != "" {
+		response.ResponseWriter.Header()["ETag"] = []string{"\"" + result.Md5 + "\""}
+	}
+
+	// write success response.
+	WriteSuccessResponse(response, encodedSuccessResponse)
+	log.Info("COPY object successfully.")
+}
