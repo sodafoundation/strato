@@ -308,7 +308,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage driver. err:", err)
-		return nil
+		return err
 	}
 	log.Infof("get object offset %v, length %v", offset, length)
 	reader, err := sd.Get(ctx, object.Object, offset, offset + length - 1)
@@ -331,6 +331,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			eof = true
 		}
 		if n == 0 {
+			log.Infoln("reader return zero bytes.")
 			break
 		}
 
