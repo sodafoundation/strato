@@ -271,7 +271,7 @@ func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	for _, p := range completeUpload.Parts {
 		completePart := &awss3.CompletedPart{
 			ETag:       aws.String(p.ETag),
-			PartNumber: aws.Int64(int64(p.PartNumber)),
+			PartNumber: aws.Int64(p.PartNumber),
 		}
 		completeParts = append(completeParts, completePart)
 	}
