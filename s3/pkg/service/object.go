@@ -37,6 +37,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var ChunkSize int = 2048
+
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
 
@@ -256,9 +258,99 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	return nil
 }
 
-func (s *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) error {
-	log.Infoln("GetObject is called in s3 service.")
+func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.GetObjectMetaResult) error {
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	} ()
 
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	out.Object = object.Object
+	return nil
+}
+
+func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
+	log.Infoln("GetObject is called in s3 service.")
+	bucketName := req.Bucket
+	objectName := req.Key
+	offset := req.Offset
+	length := req.Length
+
+	var err error
+	getObjRes := &pb.GetObjectResponse{}
+	defer func ()  {
+		getObjRes.ErrorCode = GetErrCode(err)
+		stream.SendMsg(getObjRes)
+	} ()
+
+	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+
+	// if this object has only one part
+	backend, err := getBackend(ctx, s.backendClient, bucket)
+	if err != nil {
+		log.Errorln("unable to get backend. err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	log.Infof("get object offset %v, length %v", offset, length)
+	reader, err := sd.Get(ctx, object.Object, offset, offset + length - 1)
+	if err != nil {
+		log.Errorln("failed to get data. err:", err)
+		return err
+	}
+
+	eof := false
+	left := object.Size
+	buf := make([]byte, ChunkSize)
+	for !eof && left > 0 {
+		n, err := reader.Read(buf)
+		if err != nil && err != io.EOF {
+			log.Errorln("failed to read, err:", err)
+			break
+		}
+		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
+		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
+		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
+		if err == io.EOF {
+			log.Debugln("finished read")
+			eof = true
+		}
+		// From https://golang.org/pkg/io/, there is the following statement.
+		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
+		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
+		// If n is equal 0, it indicate that there is no more data to read
+		if n == 0 {
+			log.Infoln("reader return zero bytes.")
+			break
+		}
+
+		err = stream.Send(&pb.GetObjectResponse{ErrorCode:int32(ErrNoErr), Data:buf[0:n]})
+		if err != nil {
+			log.Infof("stream send error: %v\n", err)
+			break
+		}
+		left -= int64(n)
+	}
+
+	log.Infoln("get object successfully")
 	return nil
 }
 
