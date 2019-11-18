@@ -268,7 +268,7 @@ func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	log.Infof("complete multipart upload[AWS S3], bucket:%s, objectId:%s.\n", bucket, multipartUpload.ObjectId)
 
 	var completeParts []*awss3.CompletedPart
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		completePart := &awss3.CompletedPart{
 			ETag:       aws.String(p.ETag),
 			PartNumber: aws.Int64(p.PartNumber),

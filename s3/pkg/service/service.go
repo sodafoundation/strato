@@ -31,7 +31,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type Int2String map[int32]string
@@ -300,12 +299,6 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 	return nil
 }
 
-func (s *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.DeleteLifecycleInput, out *pb.BaseResponse) error {
-	log.Info("DeleteBucketlifecycle is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
@@ -486,39 +479,6 @@ func (s *s3Service) UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaReque
 	return nil
 }
 
-func CheckReqObjMeta(req map[string]string, valid map[string]struct{}) (map[string]interface{}, error) {
-	/*	ret := make(map[string]interface{})
-		for k, v := range req {
-			if _, ok := valid[k]; !ok {
-				log.Errorf("s3 service check object metadata failed, invalid key: %s.\n", k)
-				return nil, BadRequest
-			}
-			if k == "tier" {
-				v1, err := strconv.Atoi(v)
-				if err != nil {
-					log.Errorf("s3 service check object metadata failed, invalid tier: %s.\n", v)
-					return nil, BadRequest
-				}
-				ret[k] = v1
-
-				// update storage class accordingly
-				name, err := getNameFromTier(int32(v1))
-				if err != nil {
-
-					return nil, InternalError
-				} else {
-					ret["storageclass"] = name
-				}
-			} else {
-				ret[k] = v
-			}
-		}
-
-		return ret, NoError
-	*/
-	return nil, nil
-}
-
 func (s *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendTypeByTierRequest, out *pb.GetBackendTypeByTierResponse) error {
 	for k, v := range Int2ExtTierMap {
 		for k1, _ := range *v {
@@ -557,19 +517,6 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	out.Size = countInfo.Size
 
 	return nil
-}
-
-func HandleS3Error(err error, out *pb.BaseResponse) {
-	if err == nil {
-		out.ErrorCode = http.StatusOK
-		return
-	}
-	s3err, ok := err.(S3ErrorCode)
-	if ok {
-		out.ErrorCode = int32(s3err)
-	} else {
-		out.ErrorCode = int32(ErrInternalError)
-	}
 }
 
 func GetErrCode(err error) (errCode int32) {

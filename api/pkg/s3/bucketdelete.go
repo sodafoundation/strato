@@ -15,11 +15,8 @@
 package s3
 
 import (
-	"net/http"
-
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,14 +26,11 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 	log.Infof("Received request for deleting bucket[name=%s].\n", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	_, err := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		if err.Error() == s3error.ErrNoSuchBucket.Error() {
-			response.WriteError(http.StatusNotFound, err)
-		} else {
-			response.WriteError(http.StatusInternalServerError, err)
-		}
-		log.Errorf("delete bucket failed, err:%v\n", err)
+	rsp, err := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("delete bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return
 	}
+
+	log.Infof("delete bucket[%s] successfully\n", bucketName)
 }

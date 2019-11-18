@@ -24,6 +24,7 @@ import (
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -72,38 +73,14 @@ func ReadBody(r *restful.Request) []byte {
 	return b
 }
 
-/*func getBackendClient(ctx context.Context, s *APIService, bucketName string) datastore.DataStoreAdapter {
-	log.Infof("bucketName is %v:\n", bucketName)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		return nil
-	}
-
-	log.Infof("bucketName is %v\n", bucketName)
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  math.MaxInt32,
-		Filter: map[string]string{"name": bucket.Backend}})
-	log.Infof("backendErr is %v:", backendErr)
-	if backendErr != nil {
-		log.Errorf("get backend %s failed.", bucket.Backend)
-		return nil
-	}
-	log.Infof("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	client, _ := datastore.Init(backend)
-	return client
-}
-*/
-
 func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.Bucket {
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil {
-		log.Infof("get bucket[name=%s] failed, err=%v.\n", bucketName, err)
+	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
+		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return nil
 	}
 
-	return bucket
+	return rsp.BucketMeta
 }
 
 func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
@@ -125,4 +102,18 @@ func (s *APIService) isBackendExist(ctx context.Context, backendName string) boo
 	}
 
 	return flag
+}
+
+func HandleS3Error(response *restful.Response, request *restful.Request, err error, errCode int32) error {
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return err
+	}
+	if errCode != int32(ErrNoErr) {
+		err := S3ErrorCode(errCode)
+		WriteErrorResponse(response, request, err)
+		return err
+	}
+
+	return nil
 }

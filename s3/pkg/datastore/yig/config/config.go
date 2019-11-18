@@ -49,15 +49,23 @@ func (cc *CommonConfig) Parse() error {
 }
 
 type EndpointConfig struct {
-	Url string
+	Url       string
+	MachineId int
 }
 
 func (ec *EndpointConfig) Parse(vals map[string]interface{}) error {
 	if url, ok := vals["url"]; ok {
 		ec.Url = url.(string)
 		return nil
+	} else {
+		return errors.New("no url found")
 	}
-	return errors.New("no url found")
+
+	if id, ok := vals["machine_id"]; ok {
+		ec.MachineId = id.(int)
+		return nil
+	}
+	return errors.New("no machine_id found")
 }
 
 type LogConfig struct {

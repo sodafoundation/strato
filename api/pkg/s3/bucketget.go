@@ -44,19 +44,13 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	req.Bucket = bucketName
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	listObjectsRsp, err := s.s3Client.ListObjects(ctx, &req)
-	if err != nil {
-		log.Errorf("list objects of bucket[%s] failed, err:%v\n", bucketName, err)
-		WriteErrorResponse(response, request, err)
-		return
-	}
-	if listObjectsRsp.ErrorCode != int32(ErrNoErr) {
-		log.Errorf("list objects failed, ErrorCode:%d\n", listObjectsRsp.ErrorCode)
-		WriteErrorResponse(response, request, S3ErrorCode(listObjectsRsp.ErrorCode))
+	lsRsp, err := s.s3Client.ListObjects(ctx, &req)
+	if HandleS3Error(response, request, err, lsRsp.ErrorCode) != nil {
+		log.Errorf("get bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, lsRsp.ErrorCode)
 		return
 	}
 
-	rsp := CreateListObjectsResponse(bucketName, &req, listObjectsRsp)
+	rsp := CreateListObjectsResponse(bucketName, &req, lsRsp)
 	log.Debugf("rsp:%+v\n", rsp)
 	// Write success response.
 	response.WriteEntity(rsp)
