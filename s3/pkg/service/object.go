@@ -326,10 +326,17 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			log.Errorln("failed to read, err:", err)
 			break
 		}
+		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
+		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
+		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
 		if err == io.EOF {
 			log.Debugln("finished read")
 			eof = true
 		}
+		// From https://golang.org/pkg/io/, there is the following statement.
+		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
+		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
+		// If n is equal 0, it indicate that there is no more data to read
 		if n == 0 {
 			log.Infoln("reader return zero bytes.")
 			break

@@ -136,15 +136,18 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 			log.Errorln("recv err", err)
 			break
 		}
+		// If err is equal to EOF, a non-zero number of bytes may be returned.
+		// the err is set EOF, returned data is processed at the subsequent code.
 		if err == io.EOF {
 			eof = true
 		}
-
+		// It indicate that there is a error from grpc server.
 		if rsp.ErrorCode != int32(s3error.ErrNoErr) {
 			s3err = rsp.ErrorCode
 			log.Errorf("received s3 service error, error code:%v", rsp.ErrorCode)
 			break
 		}
+		// If there is no data in rsp.Data, it show that there is no more data to receive
 		if len(rsp.Data) == 0 {
 			break
 		}
