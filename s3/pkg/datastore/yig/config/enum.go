@@ -40,7 +40,8 @@ func ReadConfigs(dir string, funcConfigParse FuncConfigParse) error {
 		viper.SetConfigFile(path)
 		err = viper.ReadInConfig()
 		if err != nil {
-			return err
+			// skip the config file which is failed to parse and continue the next one.
+			return nil
 		}
 		config := &Config{}
 		err = config.Parse()
