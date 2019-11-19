@@ -69,12 +69,13 @@ func configureWriter(path, format string) {
 		TimestampFormat: defaultTimestampFormat,
 		LogFormat:       format + "\n",
 	})
-	multiWriter := io.MultiWriter(os.Stdout, &lumberjack.Logger{
+	fileWriter := &lumberjack.Logger{
 		Filename: filepath.Join(path, logName()),
 		MaxSize:  tenMb,
 		MaxAge:   threeMonth,
 		Compress: true,
-	})
+	}
+	multiWriter := io.MultiWriter(os.Stdout, fileWriter)
 	logrus.SetOutput(multiWriter)
 }
 
@@ -171,7 +172,11 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	output = strings.Replace(output, "%filename%", entry.Caller.File, 1)
 	output = strings.Replace(output, "%lineNo%", strconv.Itoa(entry.Caller.Line), 1)
-	output = strings.Replace(output, "%funcName%", entry.Caller.Function, 1)
+	funcName := entry.Caller.Function
+	if strings.Contains(funcName, "/") {
+		funcName = string([]byte(funcName)[strings.LastIndex(funcName, "/")+1:])
+	}
+	output = strings.Replace(output, "%funcName%", funcName, 1)
 
 	return []byte(output), nil
 }

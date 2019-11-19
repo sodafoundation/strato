@@ -329,18 +329,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		err = ErrInternalError
 	}
 
-	if err == nil {
-		// TODO: enable cache
-		/*
-			yig.MetaStorage.Cache.Remove(redis.ObjectTable, obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectName+":")
-			yig.DataCache.Remove(bucketName + ":" + objectName + ":")
-			yig.DataCache.Remove(bucketName + ":" + objectName + ":" + "null")
-			if version != "" {
-				yig.MetaStorage.Cache.Remove(redis.ObjectTable,
-					obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectName+":"+version)
-				yig.DataCache.Remove(bucketName + ":" + objectName + ":" + version)
-			}*/
-	}
+	// TODO: need to refresh cache if it is enabled
 
 	return nil
 }
@@ -371,7 +360,16 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objec
 		return err
 	}
 
-	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: obj.VersionId})
+	// mark object as deleted
+	err = s.MetaStorage.MarkObjectAsDeleted(ctx, obj)
+	if err != nil {
+		log.Errorln("failed to mark object as deleted, err:", err)
+		return err
+	}
+
+	// delete object data in backend
+	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: obj.VersionId,
+		ETag: obj.Etag, StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
 	if err != nil {
 		log.Errorf("failed to delete obejct[%s] from backend storage, err:", objectKey, err)
 		return err
@@ -379,6 +377,7 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objec
 		log.Infof("delete obejct[%s] from backend storage successfully.", err)
 	}
 
+	// delete object meta data from database
 	err = s.MetaStorage.DeleteObject(ctx, obj)
 	if err != nil {
 		log.Errorf("failed to delete obejct[%s] metadata, err:", objectKey, err)
@@ -430,9 +429,9 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		// TODO validate user policy and ACL
 	}
 
-	retObjects, prefixes, truncated, nextMarker, _, err := s.ListObjectsInternal(ctx, in)
-	if truncated && len(nextMarker) != 0 {
-		out.NextMarker = nextMarker
+	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
+	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
+		out.NextMarker = appendInfo.NextMarker
 	}
 	if in.Version == constants.ListObjectsType2Int {
 		out.NextMarker = util.Encrypt(out.NextMarker)
@@ -459,8 +458,8 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		log.Infof("object:%+v\n", object)
 	}
 	out.Objects = objects
-	out.Prefixes = prefixes
-	out.IsTruncated = truncated
+	out.Prefixes = appendInfo.Prefixes
+	out.IsTruncated = appendInfo.Truncated
 
 	if in.EncodingType != "" { // only support "url" encoding for now
 		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
@@ -474,7 +473,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 }
 
 func (s *s3Service) ListObjectsInternal(ctx context.Context, request *pb.ListObjectsRequest) (retObjects []*meta.Object,
-	prefixes []string, truncated bool, nextMarker, nextVerIdMarker string, err error) {
+	appendInfo utils.ListObjsAppendInfo, err error) {
 	log.Infoln("Prefix:", request.Prefix, "Marker:", request.Marker, "MaxKeys:",
 		request.MaxKeys, "Delimiter:", request.Delimiter, "Version:", request.Version,
 		"keyMarker:", request.KeyMarker, "versionIdMarker:", request.VersionIdMarker)

@@ -145,3 +145,18 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 	}
 	return nil
 }
+
+func (t *TidbClient) SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error {
+	vidByte, _ := hex.DecodeString(object.VersionId)
+	decrByte := xxtea.Decrypt(vidByte, XXTEA_KEY)
+	reVersion, _ := strconv.ParseUint(string(decrByte), 10, 64)
+	version := math.MaxUint64 - reVersion
+
+	sqltext := "update objects set deletemarker=? where bucketname=? and name=? and version=?;"
+	_, err := t.Client.Exec(sqltext, deleteMarker, object.BucketName, object.ObjectKey, version)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

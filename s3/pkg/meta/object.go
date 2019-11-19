@@ -95,7 +95,7 @@ func (m *Meta) DeleteObject(ctx context.Context, object *Object) error {
 		return err
 	}
 
-	// TODO: usage need to be updated for charging, and it depends on redis, and the mechanism is:
+	// TODO: usage need to be updated for charging, it depends on redis, and the mechanism is:
 	// 1. Update usage in redis when each delete happens.
 	// 2. Update usage in database periodically based on redis.
 	// see https://github.com/opensds/multi-cloud/issues/698 for redis related issue.
@@ -103,4 +103,8 @@ func (m *Meta) DeleteObject(ctx context.Context, object *Object) error {
 	err = m.Db.CommitTrans(tx)
 
 	return err
+}
+
+func (m *Meta) MarkObjectAsDeleted(ctx context.Context, object *Object) error {
+	return m.Db.SetObjectDeleteMarker(ctx, object, true)
 }

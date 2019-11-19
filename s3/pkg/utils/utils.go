@@ -87,3 +87,9 @@ const (
 	VersioningDisabled  = "Disabled"
 	VersioningSuspended = "Suspended"
 )
+
+type ListObjsAppendInfo struct {
+	Prefixes   []string
+	Truncated  bool
+	NextMarker string
+}

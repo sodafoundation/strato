@@ -130,7 +130,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 
 	// Check if bucket is empty
-	objs, _, _, _, _, err := s.MetaStorage.Db.ListObjects(ctx, bucketName, false, 1, nil)
+	objs, _, err := s.MetaStorage.Db.ListObjects(ctx, bucketName, false, 1, nil)
 	if err != nil {
 		log.Errorf("list objects failed, err:%v\n", err)
 		return nil

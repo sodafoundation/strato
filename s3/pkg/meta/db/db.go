@@ -17,6 +17,7 @@ import (
 	"context"
 
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 //DB Adapter Interface
@@ -31,6 +32,7 @@ type DBAdapter interface {
 	//GetAllObject(bucketName, objectName, version string) (object []*Object, err error)
 	PutObject(ctx context.Context, object *Object, tx interface{}) error
 	DeleteObject(ctx context.Context, object *Object, tx interface{}) error
+	SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
@@ -39,7 +41,7 @@ type DBAdapter interface {
 	CheckAndPutBucket(ctx context.Context, bucket *Bucket) (bool, error)
 	DeleteBucket(ctx context.Context, bucket *Bucket) error
 	ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int, filter map[string]string) (
-		retObjects []*Object, prefixes []string, truncated bool, nextMarker, nextVerIdMarker string, err error)
+		retObjects []*Object, appendInfo utils.ListObjsAppendInfo, err error)
 
 	UpdateUsage(ctx context.Context, bucketName string, size int64, tx interface{}) error
 	UpdateUsages(ctx context.Context, usages map[string]int64, tx interface{}) error
