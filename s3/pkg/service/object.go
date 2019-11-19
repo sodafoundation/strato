@@ -304,8 +304,12 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 
+	backendName := bucket.DefaultLocation
+	if object.Location != "" {
+		backendName = object.Location
+	}
 	// if this object has only one part
-	backend, err := getBackend(ctx, s.backendClient, bucket)
+	backend, err := getBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("unable to get backend. err:", err)
 		return err
