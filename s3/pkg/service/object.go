@@ -287,10 +287,10 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 
 	var err error
 	getObjRes := &pb.GetObjectResponse{}
-	defer func() {
+	defer func ()  {
 		getObjRes.ErrorCode = GetErrCode(err)
 		stream.SendMsg(getObjRes)
-	}()
+	} ()
 
 	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, true)
 	if err != nil {
@@ -304,12 +304,8 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 
-	backendName := bucket.DefaultLocation
-	if object.Location != "" {
-		backendName = object.Location
-	}
 	// if this object has only one part
-	backend, err := getBackend(ctx, s.backendClient, backendName)
+	backend, err := getBackend(ctx, s.backendClient, bucket)
 	if err != nil {
 		log.Errorln("unable to get backend. err:", err)
 		return err
@@ -320,7 +316,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 	log.Infof("get object offset %v, length %v", offset, length)
-	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
+	reader, err := sd.Get(ctx, object.Object, offset, offset + length - 1)
 	if err != nil {
 		log.Errorln("failed to get data. err:", err)
 		return err
@@ -351,7 +347,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			break
 		}
 
-		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
+		err = stream.Send(&pb.GetObjectResponse{ErrorCode:int32(ErrNoErr), Data:buf[0:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break

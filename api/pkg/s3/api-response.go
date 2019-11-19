@@ -17,7 +17,6 @@
 package s3
 
 import (
-	"bytes"
 	"encoding/xml"
 	"net/http"
 	"path"
@@ -32,14 +31,6 @@ const (
 	timeFormatAMZ = "2006-01-02T15:04:05.000Z" // Reply date format
 )
 
-// Encodes the response headers into XML format.
-func EncodeResponse(response interface{}) []byte {
-	var bytesBuffer bytes.Buffer
-	bytesBuffer.WriteString(xml.Header)
-	e := xml.NewEncoder(&bytesBuffer)
-	e.Encode(response)
-	return bytesBuffer.Bytes()
-}
 
 // WriteSuccessResponse write success headers and response if any.
 func WriteSuccessResponse(response *restful.Response, data []byte) {

@@ -199,6 +199,15 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 }
 
 func (yig *YigStorage) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
+	// if object.StorageMeta is nil, it may be the multipart uploaded object.
+	if len(object.StorageMeta) == 0 {
+		reader, err := NewMultipartReader(yig, object.ObjectId, start, end)
+		if err != nil {
+			log.Errorf("failed to get object(%s, %s, %s) with start(%d), end(%d), err: %v", object.BucketName, object.ObjectKey, object.ObjectId, start, end, err)
+			return nil, err
+		}
+		return reader, nil
+	}
 	// get the cluster name and pool name from meta data of object
 	objMeta := ObjectMetaInfo{}
 

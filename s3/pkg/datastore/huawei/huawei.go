@@ -184,7 +184,7 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	input.Bucket = bucket
 	input.Key = objectId
 	input.UploadId = multipartUpload.UploadId
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		part := obs.Part{
 			PartNumber: int(p.PartNumber),
 			ETag:       p.ETag,
