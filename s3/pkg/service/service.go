@@ -302,6 +302,14 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
+	//update SSE if not nil
+	if in.ServerSideEncryption != nil{
+		err := s.MetaStorage.Db.UpdateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType)
+		if err != nil {
+			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
+			return err
+		}
+	}
 	return nil
 }
 

@@ -14,6 +14,8 @@
 
 package model
 
+import "encoding/xml"
+
 var Xmlns = "http://s3.amazonaws.com/doc/2006-03-01"
 
 type CreateBucketConfiguration struct {
@@ -30,6 +32,7 @@ type Bucket struct {
 	Name               string `xml:"Name"`
 	CreateTime         string `xml:"CreateTime"`
 	LocationConstraint string `xml:"LocationConstraint"`
+	SSEOpts            SSEConfiguration
 }
 
 type ListAllMyBucketsResult struct {
@@ -84,6 +87,20 @@ type ListPartsOutput struct {
 
 type LifecycleConfiguration struct {
 	Rule []Rule `xml:"Rule"`
+}
+
+type SSEConfiguration struct {
+	XMLName xml.Name `xml:"SSEConfiguration"`
+	Text    string   `xml:",chardata"`
+	SSE     struct {
+		Text    string `xml:",chardata"`
+		Enabled string `xml:"enabled"`
+	} `xml:"SSE"`
+	SSEKMS struct {
+		Text                string `xml:",chardata"`
+		Enabled             string `xml:"enabled"`
+		DefaultKMSMasterKey string `xml:"DefaultKMSMasterKey"`
+	} `xml:"SSE-KMS"`
 }
 
 type Rule struct {

@@ -42,12 +42,13 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 	for j := 0; j < len(buckets); j++ {
 		if buckets[j].Deleted != true {
 			out.Buckets = append(out.Buckets, &pb.Bucket{
-				Name:            buckets[j].Name,
-				TenantId:        buckets[j].TenantId,
-				CreateTime:      buckets[j].CreateTime,
-				Usages:          buckets[j].Usages,
-				Tier:            buckets[j].Tier,
-				DefaultLocation: buckets[j].DefaultLocation,
+				Name:                 buckets[j].Name,
+				TenantId:             buckets[j].TenantId,
+				CreateTime:           buckets[j].CreateTime,
+				Usages:               buckets[j].Usages,
+				Tier:                 buckets[j].Tier,
+				DefaultLocation:      buckets[j].DefaultLocation,
+				ServerSideEncryption: buckets[j].ServerSideEncryption,
 			})
 		}
 	}
@@ -83,6 +84,21 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		}
 	}
 
+	if in.ServerSideEncryption != nil {
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType)
+		if err != nil {
+			log.Error("Error creating SSE entry: ", err)
+			return err
+		}
+	} else {
+		// set default SSE option to none
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE")
+		if err != nil {
+			log.Error("Error creating SSE entry: ", err)
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -110,6 +126,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		DefaultLocation: bucket.DefaultLocation,
 		Tier:            bucket.Tier,
 		Usages:          bucket.Usages,
+		ServerSideEncryption: bucket.ServerSideEncryption,
 	}
 
 	return nil

@@ -38,7 +38,13 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	buckets := []model.Bucket{}
 	for _, value := range list.Buckets {
 		ctime := time.Unix(value.CreateTime, 0).Format(time.RFC3339)
-		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation}
+		sseOpts := model.SSEConfiguration{}
+		if value.ServerSideEncryption != nil {
+			if value.ServerSideEncryption.SseType == "SSE" {
+				sseOpts.SSE.Enabled = "true"
+			}
+		}
+		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation, SSEOpts: sseOpts}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
