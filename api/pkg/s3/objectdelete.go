@@ -15,8 +15,54 @@
 package s3
 
 import (
+	"strings"
+
 	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
+	url := request.Request.URL
+	bucketName := request.PathParameter("bucketName")
+	objectName := request.PathParameter("objectKey")
+	version := url.Query().Get("versionId")
+	if strings.HasSuffix(url.String(), "/") { // This is for folder.
+		objectName = objectName + "/"
+	}
+
+	if len(bucketName) == 0 {
+		log.Errorf("invalid input, bucket=%s\n", bucketName)
+		WriteErrorResponse(response, request, ErrInvalidBucketName)
+		return
+	}
+	if len(objectName) == 0 {
+		log.Errorf("invalid input, object=%s\n", objectName)
+		WriteErrorResponse(response, request, ErrInvalidObjectName)
+	}
+
+	input := s3.DeleteObjectInput{Bucket: bucketName, Key: objectName}
+	if len(version) > 0 {
+		input.VersioId = version
+	}
+	ctx := common.InitCtxWithAuthInfo(request)
+	rsp, err := s.s3Client.DeleteObject(ctx, &input)
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("delete object[%s] failed, err=%v, errCode=%d\n", objectName, err, rsp.ErrorCode)
+		return
+	}
+
+	if rsp.DeleteMarker {
+		response.Header().Set("x-amz-delete-marker", "true")
+	} else {
+		response.Header().Set("x-amz-delete-marker", "false")
+	}
+	if rsp.VersionId != "" {
+		response.Header().Set("x-amz-version-id", rsp.VersionId)
+	}
+
+	log.Infof("delete object[%s] from bucket[%s] succeed.", objectName, bucketName)
+	WriteSuccessNoContent(response)
 }
