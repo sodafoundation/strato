@@ -138,7 +138,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 	// encrypt
-	key, _ := utils.GetRandom32BitKey()
 	for !eof {
 		n, err := limitedDataReader.Read(buf)
 		if err != nil && err != io.EOF {
@@ -151,6 +150,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		}
 		// encrypt if needed
 		if bucketMeta.ServerSideEncryption.SseType == "SSE"{
+			key := bucketMeta.ServerSideEncryption.EncryptionKey
 			_, encbuf := utils.EncryptWithAES256RandomKey(buf, key)
 			err = stream.Send(&s3.PutObjectRequest{Data: encbuf[:n]})
 		}else{

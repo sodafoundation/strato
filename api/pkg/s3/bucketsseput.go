@@ -18,6 +18,7 @@ import (
 	"crypto/md5"
 	"encoding/xml"
 	"fmt"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"net/http"
 	"strings"
 	"sync"
@@ -66,6 +67,7 @@ func (s *APIService) BucketSSEPut(request *restful.Request, response *restful.Re
 		}
 		if sseConf.SSE.Enabled=="true"{
 			s3SSE.SseType = "SSE"
+			s3SSE.EncryptionKey,_ = utils.GetRandom32BitKey()
 		}
 
 		bucket.BucketMeta.ServerSideEncryption = s3SSE

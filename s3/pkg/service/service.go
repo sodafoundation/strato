@@ -304,7 +304,7 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	//update SSE if not nil
 	if in.ServerSideEncryption != nil{
-		err := s.MetaStorage.Db.UpdateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType)
+		err := s.MetaStorage.Db.UpdateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, string(in.ServerSideEncryption.EncryptionKey))
 		if err != nil {
 			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
 			return err

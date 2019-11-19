@@ -15,6 +15,7 @@
 package s3
 
 import (
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"io"
 	"net/http"
 	"net/url"
@@ -102,7 +103,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		startOffset = hrange.OffsetBegin
 		length = hrange.GetLength()
 	}
-	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket:bucketName, Key:objectKey, Offset: startOffset, Length: length,})
+	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket: bucketName, Key: objectKey, Offset: startOffset, Length: length,})
 	if err != nil {
 		log.Errorln("get object failed, err:%v", err)
 		WriteErrorResponse(response, request, err)
@@ -113,7 +114,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	// Indicates if any data was written to the http.ResponseWriter
 	dataWritten := false
 	// io.Writer type which keeps track if any data was written.
-	writer := func(p []byte)(int, error) {
+	writer := func(p []byte) (int, error) {
 		if !dataWritten {
 			// Set headers on the first write.
 			// Set standard object headers.
@@ -151,7 +152,24 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		if len(rsp.Data) == 0 {
 			break
 		}
-		_, err = writer(rsp.Data)
+		// decrypt if needed
+		bucketMeta := s.getBucketMeta(ctx, bucketName)
+		if bucketMeta == nil {
+			WriteErrorResponse(response, request, s3error.ErrGetBucketFailed)
+			return
+		}
+		if bucketMeta.ServerSideEncryption.SseType == "SSE" {
+			// decrypt and write
+			decErr, decBytes := utils.DecryptWithAES256(rsp.Data, bucketMeta.ServerSideEncryption.EncryptionKey)
+			if err != nil {
+				log.Errorln("failed to decrypt data. err:", decErr)
+				WriteErrorResponse(response, request, s3error.ErrSSEEncryptedObject)
+				return
+			}
+			_, err = writer(decBytes)
+		} else {
+			_, err = writer(rsp.Data)
+		}
 		if err != nil {
 			log.Errorln("failed to write data to client. err:", err)
 			break

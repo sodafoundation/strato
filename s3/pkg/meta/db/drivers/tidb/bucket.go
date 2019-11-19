@@ -553,11 +553,11 @@ func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket
 	return
 }
 
-func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string) error {
+func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string, sseserverkey string) error {
 	log.Infof("put bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
-	sql := "update bucket_sseopts set sse=? where bucketname=?"
-	args := []interface{}{sseType, bucketName}
+	sql := "update bucket_sseopts set sse=?, sseserverkey=? where bucketname=?"
+	args := []interface{}{sseType, sseserverkey, bucketName}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {
@@ -567,11 +567,11 @@ func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sse
 	return nil
 }
 
-func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string) error {
+func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseserverkey string) error {
 	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
-	sql := "insert into bucket_sseopts(bucketname, sse) values(?,?);"
-	args := []interface{}{bucketName, sseType}
+	sql := "insert into bucket_sseopts(bucketname, sse, sseserverkey) values(?,?,?);"
+	args := []interface{}{bucketName, sseType, sseserverkey}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {
