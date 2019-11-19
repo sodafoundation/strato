@@ -5,12 +5,13 @@ service S3 {
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
 	rpc GetBucket(Bucket) returns (GetBucketResponse) {}
+	rpc GetObjectMeta(Object) returns (GetObjectMetaResult) {}
 	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
 	rpc PutObject(stream PutObjectRequest) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
-	rpc GetObject(GetObjectInput) returns (Object) {}
-	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
+	rpc GetObject(GetObjectInput) returns (stream GetObjectResponse) {}
+	rpc DeleteObject(DeleteObjectInput) returns (DeleteObjectOutput) {}
 	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
 	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
 	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
@@ -63,6 +64,16 @@ message CopyObjectRequest {
 
 message PutObjectRequest {
 	bytes data = 1;
+}
+
+message GetObjectResponse {
+	int32 errorCode = 1;
+	bytes data = 2;
+}
+
+message GetObjectMetaResult {
+	int32 errorCode = 1;
+	Object object = 2;
 }
 
 message PutObjectResponse {
@@ -390,15 +401,23 @@ message DeleteObjectInput {
     string bucket = 1;
     string key = 2;
     string versioId = 3;
-    int64  lastModified = 5;
-	string objectId = 6;
-    string storageMeta = 7;
+    string storageMeta = 4;
+    string eTag = 5;
+    string objectId = 6;
+}
+
+message DeleteObjectOutput {
+    int32 errorCode = 1;
+    bool deleteMarker = 3;
+    string versionId = 4;
 }
 
 message GetObjectInput {
     string Bucket = 1;
     string Key = 2;
-    string Versionid = 3;
+    string VersionId = 3;
+    int64  Offset = 4;
+    int64  Length = 5;
 }
 
 message MultipartUpload {

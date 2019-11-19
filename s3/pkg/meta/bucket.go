@@ -1,3 +1,16 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package meta
 
 import (
@@ -47,35 +60,6 @@ func (m *Meta) GetBucket(ctx context.Context, bucketName string, willNeed bool) 
 		return
 	}
 	return bucket, nil
-}
-
-/*
-func (m *Meta) GetBuckets() (buckets []*Bucket, err error) {
-	buckets, err = m.Client.GetBuckets()
-	return
-}
-*/
-
-func (m *Meta) UpdateUsage(ctx context.Context, bucketName string, size int64) error {
-	usage, err := m.Cache.HIncrBy(redis.BucketTable, BUCKET_CACHE_PREFIX, bucketName, FIELD_NAME_USAGE, size)
-	if err != nil {
-		log.Error(fmt.Sprintf("failed to update bucket[%s] usage by %d, err: %v",
-			bucketName, size, err))
-		return err
-	}
-
-	AddBucketUsageSyncEvent(bucketName, usage)
-	log.Infof("incr usage for bucket: ", bucketName, ", updated to ", usage)
-	return nil
-}
-
-func (m *Meta) GetUsage(ctx context.Context, bucketName string) (int64, error) {
-	usage, err := m.Cache.HGetInt64(redis.BucketTable, BUCKET_CACHE_PREFIX, bucketName, FIELD_NAME_USAGE)
-	if err != nil {
-		log.Error("failed to get usage for bucket: ", bucketName, ", err: ", err)
-		return 0, err
-	}
-	return usage, nil
 }
 
 /*
