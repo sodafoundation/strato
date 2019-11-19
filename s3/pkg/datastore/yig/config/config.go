@@ -10,6 +10,7 @@ import (
 const (
 	DEFAULT_DB_MAX_IDLE_CONNS = 1024
 	DEFAULT_DB_MAX_OPEN_CONNS = 1024
+	DEFAULT_GC_CHECK_TIME     = 5
 )
 
 type Config struct {
@@ -51,9 +52,12 @@ func (cc *CommonConfig) Parse() error {
 type EndpointConfig struct {
 	Url       string
 	MachineId int
+	// how frequency to perform a gc in seconds.
+	GcCheckTime int64
 }
 
 func (ec *EndpointConfig) Parse(vals map[string]interface{}) error {
+	ec.GcCheckTime = DEFAULT_GC_CHECK_TIME
 	if url, ok := vals["url"]; ok {
 		ec.Url = url.(string)
 		return nil
@@ -64,8 +68,14 @@ func (ec *EndpointConfig) Parse(vals map[string]interface{}) error {
 	if id, ok := vals["machine_id"]; ok {
 		ec.MachineId = id.(int)
 		return nil
+	} else {
+		return errors.New("no machine_id found")
 	}
-	return errors.New("no machine_id found")
+	if gc, ok := vals["gc_check_time"]; ok {
+		ec.GcCheckTime = gc.(int64)
+		return nil
+	}
+	return nil
 }
 
 type LogConfig struct {

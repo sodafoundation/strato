@@ -39,6 +39,7 @@ type YigStorage struct {
 	Stopping    bool
 	WaitGroup   *sync.WaitGroup
 	idGen       *utils.GlobalIdGen
+	gcMgr       *GcMgr
 }
 
 func New(cfg *config.Config) (*YigStorage, error) {
@@ -89,6 +90,10 @@ func New(cfg *config.Config) (*YigStorage, error) {
 		return nil, err
 	}
 
+	yig.gcMgr = NewGcMgr(RootContext, &yig, cfg.Endpoint.GcCheckTime)
+	// start gc
+	yig.gcMgr.Start()
+	// start recycler
 	initializeRecycler(&yig)
 	return &yig, nil
 }
@@ -96,6 +101,7 @@ func New(cfg *config.Config) (*YigStorage, error) {
 func (y *YigStorage) Close() error {
 	y.Stopping = true
 	log.Info("Stopping storage...")
+	y.gcMgr.Stop()
 	y.WaitGroup.Wait()
 	log.Info("done")
 	log.Info("Stopping MetaStorage...")

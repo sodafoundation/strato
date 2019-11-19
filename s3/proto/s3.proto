@@ -391,6 +391,8 @@ message DeleteObjectInput {
     string key = 2;
     string versioId = 3;
     int64  lastModified = 5;
+	string objectId = 6;
+    string storageMeta = 7;
 }
 
 message GetObjectInput {
