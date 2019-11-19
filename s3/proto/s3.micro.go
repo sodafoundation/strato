@@ -10,6 +10,8 @@ It is generated from these files:
 It has these top-level messages:
 	CopyObjectRequest
 	PutObjectRequest
+	GetObjectResponse
+	GetObjectMetaResult
 	PutObjectResponse
 	PutBucketVersioningRequest
 	PutBucketACLRequest
@@ -103,11 +105,12 @@ type S3Service interface {
 	CreateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*GetBucketResponse, error)
+	GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponse, error)
 	CountObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*CountObjectsResponse, error)
 	PutObject(ctx context.Context, opts ...client.CallOption) (S3_PutObjectService, error)
 	UpdateObject(ctx context.Context, in *Object, opts ...client.CallOption) (*BaseResponse, error)
-	GetObject(ctx context.Context, in *GetObjectInput, opts ...client.CallOption) (*Object, error)
+	GetObject(ctx context.Context, in *GetObjectInput, opts ...client.CallOption) (S3_GetObjectService, error)
 	DeleteObject(ctx context.Context, in *DeleteObjectInput, opts ...client.CallOption) (*DeleteObjectOutput, error)
 	GetTierMap(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetTierMapResponse, error)
 	UpdateObjMeta(ctx context.Context, in *UpdateObjMetaRequest, opts ...client.CallOption) (*BaseResponse, error)
@@ -206,6 +209,16 @@ func (c *s3Service) GetBucket(ctx context.Context, in *Bucket, opts ...client.Ca
 	return out, nil
 }
 
+func (c *s3Service) GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error) {
+	req := c.c.NewRequest(c.name, "S3.GetObjectMeta", in)
+	out := new(GetObjectMetaResult)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *s3Service) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.ListObjects", in)
 	out := new(ListObjectsResponse)
@@ -272,14 +285,48 @@ func (c *s3Service) UpdateObject(ctx context.Context, in *Object, opts ...client
 	return out, nil
 }
 
-func (c *s3Service) GetObject(ctx context.Context, in *GetObjectInput, opts ...client.CallOption) (*Object, error) {
-	req := c.c.NewRequest(c.name, "S3.GetObject", in)
-	out := new(Object)
-	err := c.c.Call(ctx, req, out, opts...)
+func (c *s3Service) GetObject(ctx context.Context, in *GetObjectInput, opts ...client.CallOption) (S3_GetObjectService, error) {
+	req := c.c.NewRequest(c.name, "S3.GetObject", &GetObjectInput{})
+	stream, err := c.c.Stream(ctx, req, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	if err := stream.Send(in); err != nil {
+		return nil, err
+	}
+	return &s3ServiceGetObject{stream}, nil
+}
+
+type S3_GetObjectService interface {
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Recv() (*GetObjectResponse, error)
+}
+
+type s3ServiceGetObject struct {
+	stream client.Stream
+}
+
+func (x *s3ServiceGetObject) Close() error {
+	return x.stream.Close()
+}
+
+func (x *s3ServiceGetObject) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *s3ServiceGetObject) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *s3ServiceGetObject) Recv() (*GetObjectResponse, error) {
+	m := new(GetObjectResponse)
+	err := x.stream.Recv(m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *s3Service) DeleteObject(ctx context.Context, in *DeleteObjectInput, opts ...client.CallOption) (*DeleteObjectOutput, error) {
@@ -659,11 +706,12 @@ type S3Handler interface {
 	CreateBucket(context.Context, *Bucket, *BaseResponse) error
 	DeleteBucket(context.Context, *Bucket, *BaseResponse) error
 	GetBucket(context.Context, *Bucket, *GetBucketResponse) error
+	GetObjectMeta(context.Context, *Object, *GetObjectMetaResult) error
 	ListObjects(context.Context, *ListObjectsRequest, *ListObjectsResponse) error
 	CountObjects(context.Context, *ListObjectsRequest, *CountObjectsResponse) error
 	PutObject(context.Context, S3_PutObjectStream) error
 	UpdateObject(context.Context, *Object, *BaseResponse) error
-	GetObject(context.Context, *GetObjectInput, *Object) error
+	GetObject(context.Context, *GetObjectInput, S3_GetObjectStream) error
 	DeleteObject(context.Context, *DeleteObjectInput, *DeleteObjectOutput) error
 	GetTierMap(context.Context, *BaseRequest, *GetTierMapResponse) error
 	UpdateObjMeta(context.Context, *UpdateObjMetaRequest, *BaseResponse) error
@@ -710,11 +758,12 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		CreateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		DeleteBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		GetBucket(ctx context.Context, in *Bucket, out *GetBucketResponse) error
+		GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error
 		ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error
 		CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error
 		PutObject(ctx context.Context, stream server.Stream) error
 		UpdateObject(ctx context.Context, in *Object, out *BaseResponse) error
-		GetObject(ctx context.Context, in *GetObjectInput, out *Object) error
+		GetObject(ctx context.Context, stream server.Stream) error
 		DeleteObject(ctx context.Context, in *DeleteObjectInput, out *DeleteObjectOutput) error
 		GetTierMap(ctx context.Context, in *BaseRequest, out *GetTierMapResponse) error
 		UpdateObjMeta(ctx context.Context, in *UpdateObjMetaRequest, out *BaseResponse) error
@@ -780,6 +829,10 @@ func (h *s3Handler) GetBucket(ctx context.Context, in *Bucket, out *GetBucketRes
 	return h.S3Handler.GetBucket(ctx, in, out)
 }
 
+func (h *s3Handler) GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error {
+	return h.S3Handler.GetObjectMeta(ctx, in, out)
+}
+
 func (h *s3Handler) ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error {
 	return h.S3Handler.ListObjects(ctx, in, out)
 }
@@ -827,8 +880,39 @@ func (h *s3Handler) UpdateObject(ctx context.Context, in *Object, out *BaseRespo
 	return h.S3Handler.UpdateObject(ctx, in, out)
 }
 
-func (h *s3Handler) GetObject(ctx context.Context, in *GetObjectInput, out *Object) error {
-	return h.S3Handler.GetObject(ctx, in, out)
+func (h *s3Handler) GetObject(ctx context.Context, stream server.Stream) error {
+	m := new(GetObjectInput)
+	if err := stream.Recv(m); err != nil {
+		return err
+	}
+	return h.S3Handler.GetObject(ctx, m, &s3GetObjectStream{stream})
+}
+
+type S3_GetObjectStream interface {
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Send(*GetObjectResponse) error
+}
+
+type s3GetObjectStream struct {
+	stream server.Stream
+}
+
+func (x *s3GetObjectStream) Close() error {
+	return x.stream.Close()
+}
+
+func (x *s3GetObjectStream) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *s3GetObjectStream) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *s3GetObjectStream) Send(m *GetObjectResponse) error {
+	return x.stream.Send(m)
 }
 
 func (h *s3Handler) DeleteObject(ctx context.Context, in *DeleteObjectInput, out *DeleteObjectOutput) error {
