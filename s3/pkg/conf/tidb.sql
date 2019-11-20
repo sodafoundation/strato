@@ -196,6 +196,29 @@ CREATE TABLE IF NOT EXISTS `objects` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+
+--
+-- Table structure for table `gcobjs`
+--
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `gcobjs` (
+  `bucketname` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `version` bigint(20) UNSIGNED DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `tenantid` varchar(255) DEFAULT NULL,
+  `userid` varchar(255) DEFAULT NULL,
+  `size` bigint(20) DEFAULT NULL,
+  `objectid` varchar(255) DEFAULT NULL,
+  `lastmodifiedtime` datetime DEFAULT NULL,
+  `etag` varchar(255) DEFAULT NULL,
+  `tier` int(11) DEFAULT 1,
+  `storageMeta` varchar(255) DEFAULT NULL,
+   UNIQUE KEY `rowkey` (`bucketname`,`name`,`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 --
 -- Table structure for table `objmap`
 --

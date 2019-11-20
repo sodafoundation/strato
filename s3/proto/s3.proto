@@ -37,6 +37,7 @@ service S3 {
 
 	rpc HeadObject(BaseObjRequest) returns (Object) {}
 	rpc CopyObject(CopyObjectRequest) returns (BaseResponse) {}
+	rpc MoveObject(MoveObjectRequest) returns (MoveObjectResponse) {}
 	rpc CopyObjPart(CopyObjPartRequest) returns (CopyObjPartResponse) {}
 	rpc PutObjACL(PutObjACLRequest) returns (BaseResponse) {}
 	rpc GetObjACL(BaseObjRequest) returns (ObjACL) {}
@@ -62,6 +63,25 @@ message CopyObjectRequest {
 	int32  targetTier = 5;
 }
 
+message MoveObjectRequest {
+	string srcObject = 1;
+	string targetObject = 2;
+	string srcBucket = 3;
+	string targetBucket = 4;
+	string targetLocation = 5;
+	int32  targetTier = 6;
+	int32  copyType = 7;
+	int32  sourceType = 8; // lifecyce service, migration service, end user, etc.
+}
+
+message MoveObjectResponse {
+    Object objMeta = 1;
+    string status = 2;
+    string md5 = 3;
+    string versionId = 4;
+    int64 lastModified = 5;
+}
+
 message PutObjectRequest {
 	bytes data = 1;
 }
@@ -78,7 +98,7 @@ message GetObjectMetaResult {
 
 message PutObjectResponse {
 	Object objMeta = 1;
-	string status = 2;
+	int32 errorCode = 2;
 	string md5 = 3;
 	string versionId = 4;
 	int64 lastModified = 5;
@@ -408,8 +428,8 @@ message DeleteObjectInput {
 
 message DeleteObjectOutput {
     int32 errorCode = 1;
-    bool deleteMarker = 3;
-    string versionId = 4;
+    bool deleteMarker = 2;
+    string versionId = 3;
 }
 
 message GetObjectInput {

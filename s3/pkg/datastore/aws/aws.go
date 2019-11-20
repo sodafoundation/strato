@@ -32,6 +32,8 @@ import (
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -83,25 +85,43 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	result := dscommon.PutResult{}
+	log.Infof("put object[AWS S3] begin, objKey:%s\n", objectId)
 
-	uploader := s3manager.NewUploader(ad.session)
-	log.Infof("put object[AWS S3] begin, objectId:%s\n", objectId)
-	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: &bucket,
-		Key:    &objectId,
-		Body:   stream,
-		// Currently, only support STANDARD for PUT.
-		StorageClass: aws.String(constants.StorageClassAWSStandard),
-	})
-	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
+	d, err := ioutil.ReadAll(stream)
+	if err != nil {
+		log.Errorf("put object[AWS S3] failed, err:%s\n", err)
+	}
+	data := []byte(d)
+	contentMD5 := utils.Md5Content(data)
+	log.Infof("contentMD5=%s\n", contentMD5)
+
+	if object.Tier == 0 {
+		// default
+		object.Tier = utils.Tier1
+	}
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
+	if err != nil {
+		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		return result, ErrInternalError
+	}
+
+	input := &awss3.PutObjectInput{
+		Body:         bytes.NewReader(data),
+		Bucket:       aws.String(bucket),
+		Key:          aws.String(objectId),
+		StorageClass: aws.String(storClass),
+	}
+
+	ret, err := awss3.New(ad.session).PutObject(input)
 	if err != nil {
 		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
+	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	// TODO: set ETAG
+	result.Etag = *ret.ETag
 	log.Infof("put object[AWS S3] successfully, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
@@ -111,7 +131,7 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	bucket := ad.backend.BucketName
 	var buf []byte
 	writer := aws.NewWriteAtBuffer(buf)
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &objectId,
@@ -132,7 +152,6 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	}
 
 	log.Infof("get object[AWS S3] succeed, objectId:%s, numBytes:%d\n", objectId, numBytes)
-	log.Infof("writer.Bytes() is %v \n", writer.Bytes())
 	body := bytes.NewReader(writer.Bytes())
 	ioReaderClose := ioutil.NopCloser(body)
 
@@ -158,7 +177,30 @@ func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 }
 
 func (ad *AwsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	log.Errorf("copy[AWS S3] is not supported.")
+	err = ErrInternalError
 	return
+}
+
+func (ad *AwsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	objectId := object.ObjectId
+	log.Infof("change storage class[AWS S3] of object[%s] to %s .\n", objectId, *newClass)
+
+	svc := awss3.New(ad.session)
+	input := &awss3.CopyObjectInput{
+		Bucket:     aws.String(ad.backend.BucketName),
+		Key:        aws.String(objectId),
+		CopySource: aws.String(ad.backend.BucketName + "/" + objectId),
+	}
+	input.StorageClass = aws.String(*newClass)
+	_, err := svc.CopyObject(input)
+	if err != nil {
+		log.Errorf("change storage class[AWS S3] of object[%s] to %s failed: %v.\n", objectId, *newClass, err)
+		return ErrPutToBackendFailed
+	}
+
+	log.Infof("change storage class[AWS S3] of object[%s] to %s succeed.\n", objectId, *newClass)
+	return nil
 }
 
 /*

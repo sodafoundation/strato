@@ -14,6 +14,11 @@
 
 package utils
 
+import (
+	"crypto/md5"
+	"encoding/hex"
+)
+
 type Database struct {
 	Credential string `conf:"credential,username:password@tcp(ip:port)/dbname"`
 	Driver     string `conf:"driver,mongodb"`
@@ -92,4 +97,26 @@ type ListObjsAppendInfo struct {
 	Prefixes   []string
 	Truncated  bool
 	NextMarker string
+}
+
+const (
+	MoveType_Invalid = iota
+	MoveType_MoveCrossBuckets
+	MoveType_ChangeLocation
+	MoveType_ChangeStorageTier
+)
+
+const (
+	CopySourceType_EndUser = iota
+	CopySourceType_Lifecycle
+	CopySourceType_Migration
+)
+
+func Md5Content(data []byte) string {
+	md5Ctx := md5.New()
+	md5Ctx.Write(data)
+	cipherStr := md5Ctx.Sum(nil)
+	//value := base64.StdEncoding.EncodeToString(cipherStr)
+	value := hex.EncodeToString(cipherStr)
+	return value
 }

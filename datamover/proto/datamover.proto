@@ -36,16 +36,18 @@ message RunJobResponse {
 }
 
 message LifecycleActionRequest {
-	string objKey = 1;      // for transition and expiration
-	string bucketName = 2;
-	int32 action = 3;		// 0-Expiration, 1-IncloudTransition, 2-CrossCloudTransition, 3-AbortMultipartUpload
-	int32 sourceTier = 4;   // only for transition
-	int32 targetTier = 5;   // only for transtion
-	string sourceBackend = 6; // for transition and expiration
-	string targetBackend = 7; // for transition and abort incomplete multipart upload
-	int64 objSize = 8;  	  // for transition
-	int64 lastModified = 9;   // for transition and expiration
-	string uploadId = 10;     // only for abort incomplete multipart upload
+	string objKey = 1;		// for transition and expiration
+	string bucketName = 2;	// for transition and expiration
+	string versionId = 3;	// for transition and expiration
+	string storageMeta = 4;	// for transition and expiration
+	string objectId = 5;	// for transition and expiration
+	int32 action = 6;		// 0-Expiration, 1-IncloudTransition, 2-CrossCloudTransition, 3-AbortMultipartUpload
+	int32 sourceTier = 7;   // only for transition
+	int32 targetTier = 8;   // only for transtion
+	string sourceBackend = 9;	//for transition and expiration
+	string targetBackend = 10;	//for transition and abort incomplete multipart upload
+	int64 objSize = 11;			// for transition
+	string uploadId = 12;		// only for abort incomplete multipart upload
 }
 
 message LifecycleActionResonse {

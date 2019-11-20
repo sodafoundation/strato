@@ -17,35 +17,26 @@ package ceph
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/base64"
 	"fmt"
-
 	"io"
 	"io/ioutil"
-	log "github.com/sirupsen/logrus"
+	"time"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	. "github.com/opensds/multi-cloud/s3/error"
+	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
 	. "github.com/webrtcn/s3client"
-	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/webrtcn/s3client/models"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"time"
 )
 
 type CephAdapter struct {
 	backend *backendpb.BackendDetail
 	session *s3client.Client
-}
-
-func md5Content(data []byte) string {
-	md5Ctx := md5.New()
-	md5Ctx.Write(data)
-	cipherStr := md5Ctx.Sum(nil)
-	value := base64.StdEncoding.EncodeToString(cipherStr)
-	return value
 }
 
 func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (result dscommon.PutResult, err error) {
@@ -57,7 +48,7 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 	cephObject := bucket.NewObject(bucketName)
 	d, err := ioutil.ReadAll(stream)
 	data := []byte(d)
-	contentMD5 := md5Content(data)
+	contentMD5 := utils.Md5Content(data)
 	length := int64(len(d))
 	body := ioutil.NopCloser(bytes.NewReader(data))
 
@@ -71,10 +62,10 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	// TODO: set ETAG
+	result.Etag = contentMD5
 	log.Infof("upload object[Ceph S3] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
-	return result,nil
+	return result, nil
 }
 
 func (ad *CephAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
@@ -118,6 +109,17 @@ func (ad *CephAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput)
 
 	log.Infof("delete object[Ceph S3] succeed, objectId:%s.\n", objectId)
 	return nil
+}
+
+func (ad *CephAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	log.Errorf("copy[Ceph S3] is not supported.")
+	err = ErrInternalError
+	return
+}
+
+func (ad *CephAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	log.Errorf("change storage class[Ceph S3] is not supported.")
+	return ErrInternalError
 }
 
 /*func (ad *CephAdapter) GetObjectInfo(context context.Context, bucketName string, key string) (*pb.Object, error) {
@@ -184,7 +186,7 @@ func (ad *CephAdapter) UploadPart(ctx context.Context, stream io.Reader, multipa
 		d, err := ioutil.ReadAll(stream)
 		data := []byte(d)
 		body := ioutil.NopCloser(bytes.NewReader(data))
-		contentMD5 := md5Content(data)
+		contentMD5 := utils.Md5Content(data)
 		//length := int64(len(data))
 		part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 
@@ -217,7 +219,7 @@ func (ad *CephAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpl
 	cephObject := bucket.NewObject(ad.backend.BucketName)
 	uploader := cephObject.NewUploads(multipartUpload.ObjectId)
 	var completeParts []CompletePart
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		completePart := CompletePart{
 			Etag:       p.ETag,
 			PartNumber: int(p.PartNumber),
@@ -296,8 +298,7 @@ func (ad *CephAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload
 	}
 }*/
 
-func (ad *CephAdapter) Close(ctx context.Context) error {
+func (ad *CephAdapter) Close() error {
 	// TODO
 	return nil
 }
-

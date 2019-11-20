@@ -64,7 +64,8 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}()
 
 	bucketName := in.Name
-	if err := s3.CheckValidBucketName(bucketName); err != nil {
+	if err = s3.CheckValidBucketName(bucketName); err != nil {
+		log.Errorf("invalid bucket name:%v\n", err)
 		err = ErrInvalidBucketName
 		return nil
 	}

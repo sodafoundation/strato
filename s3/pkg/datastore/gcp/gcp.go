@@ -17,20 +17,19 @@ package gcp
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
-	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/webrtcn/s3client"
 	"github.com/webrtcn/s3client/models"
 )
@@ -49,14 +48,6 @@ type GcsAdapter struct {
 	return adap
 }*/
 
-func md5Content(data []byte) string {
-	md5Ctx := md5.New()
-	md5Ctx.Write(data)
-	cipherStr := md5Ctx.Sum(nil)
-	value := base64.StdEncoding.EncodeToString(cipherStr)
-	return value
-}
-
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucketName := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
@@ -68,7 +59,7 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 	d, err := ioutil.ReadAll(stream)
 	data := []byte(d)
-	contentMD5 := md5Content(data)
+	contentMD5 := utils.Md5Content(data)
 	length := int64(len(d))
 	body := ioutil.NopCloser(bytes.NewReader(data))
 
@@ -80,14 +71,14 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	//object.LastModifiedTime = time.Now().Unix()
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	// TODO: set ETAG
+	result.Etag = contentMD5
 	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
 }
 
 func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectId
 	log.Infof("get object[GCS], objectId:%s\n", objectId)
 	getObjectOption := GetObjectOption{}
 	if start != 0 || end != 0 {
@@ -129,6 +120,11 @@ func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 
 	log.Infof("delete object[GCS] succeed, objectId:%s.\n", objectId)
 	return nil
+}
+
+func (ad *GcsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	log.Errorf("change storage class[gcs] is not supported.")
+	return ErrInternalError
 }
 
 /*func (ad *GcsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
@@ -314,4 +310,3 @@ func (ad *GcsAdapter) Close(ctx context.Context) error {
 	//TODO
 	return nil
 }
-

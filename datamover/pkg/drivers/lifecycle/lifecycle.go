@@ -16,42 +16,33 @@ package lifecycle
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"sync"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
-	blobmover "github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
-	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	Gcps3mover "github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
-	obsmover "github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
-	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
-var bkendInfo map[string]*BackendInfo
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
 var mutex sync.RWMutex
 
 type Int2String map[int32]string
 
+const INTERNAL_TENANT = "internal tenant"
+
 // map from cloud vendor name to it's map relation relationship between internal tier to it's storage class name.
 var Int2ExtTierMap map[string]*Int2String
+
+// TODO: do more test to choose the best value
+const CLOUD_OPR_TIMEOUT = 86400 // seconds
 
 func Init() {
 	log.Infof("Lifecycle datamover init.")
 	s3client = osdss3.NewS3Service("s3", client.DefaultClient)
 	bkendclient = backend.NewBackendService("backend", client.DefaultClient)
-	bkendInfo = make(map[string]*BackendInfo)
 }
 
 func HandleMsg(msgData []byte) error {
@@ -76,73 +67,10 @@ func doAction(acReq *datamover.LifecycleActionRequest) {
 		doInCloudTransition(acReq)
 	case utils.ActionExpiration:
 		doExpirationAction(acReq)
-	case utils.AbortIncompleteMultipartUpload:
-		doAbortUpload(acReq)
+	// This is left until multipart upload is implemented.
+	//case utils.AbortIncompleteMultipartUpload:
+	//doAbortUpload(acReq)
 	default:
 		log.Infof("unsupported action type: %d.\n", acType)
 	}
-}
-
-// force means get location information from database not from cache.
-func getBackendInfo(backendName *string, force bool) (*BackendInfo, error) {
-	if !force {
-		loc, exist := bkendInfo[*backendName]
-		if exist {
-			return loc, nil
-		}
-	}
-
-	if *backendName == "" {
-		log.Info("get backend information failed, backendName is null.\n")
-		return nil, errors.New(DMERR_InternalError)
-	}
-
-	bk, err := db.DbAdapter.GetBackendByName(*backendName)
-	if err != nil {
-		log.Errorf("get backend[%s] information failed, err:%v\n", backendName, err)
-		return nil, err
-	} else {
-		loca := &BackendInfo{bk.Type, bk.Region, bk.Endpoint, bk.BucketName,
-			bk.Access, bk.Security, *backendName}
-		log.Infof("refresh backend[name:%s, loca:%+v] successfully.\n", *backendName, *loca)
-		bkendInfo[*backendName] = loca
-		return loca, nil
-	}
-}
-
-func deleteObjFromBackend(objKey string, loca *LocationInfo) error {
-	if loca.VirBucket != "" {
-		objKey = loca.VirBucket + "/" + objKey
-	}
-	var err error = nil
-	switch loca.StorType {
-	case flowtype.STOR_TYPE_AWS_S3:
-		mover := s3mover.S3Mover{}
-		err = mover.DeleteObj(objKey, loca)
-	case flowtype.STOR_TYPE_IBM_COS:
-		mover := ibmcosmover.IBMCOSMover{}
-		err = mover.DeleteObj(objKey, loca)
-	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
-		mover := obsmover.ObsMover{}
-		err = mover.DeleteObj(objKey, loca)
-	case flowtype.STOR_TYPE_AZURE_BLOB:
-		mover := blobmover.BlobMover{}
-		err = mover.DeleteObj(objKey, loca)
-	case flowtype.STOR_TYPE_CEPH_S3:
-		mover := cephs3mover.CephS3Mover{}
-		err = mover.DeleteObj(objKey, loca)
-	case flowtype.STOR_TYPE_GCP_S3:
-		mover := Gcps3mover.GcpS3Mover{}
-		err = mover.DeleteObj(objKey, loca)
-	default:
-		err = fmt.Errorf("unspport storage type:%s", loca.StorType)
-	}
-
-	if err != nil {
-		log.Errorf("delete object[%s] from backend[type:%s,bucket:%s] failed.\n", objKey, loca.StorType, loca.BucketName)
-	} else {
-		log.Infof("delete object[%s] from backend[type:%s,bucket:%s] successfully.\n", objKey, loca.StorType, loca.BucketName)
-	}
-
-	return err
 }

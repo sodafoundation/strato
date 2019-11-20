@@ -26,12 +26,14 @@ import (
 	"time"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	log "github.com/sirupsen/logrus"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 // TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
@@ -98,16 +100,26 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 		return result, ErrPutToBackendFailed
 	}
 
-	// Currently, only support Hot
-	_, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+	if object.Tier == 0 {
+		// default
+		object.Tier = utils.Tier1
+	}
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_Azure)
 	if err != nil {
-		log.Infof("set azure blob tier failed:%v\n", err)
+		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		return result, ErrInternalError
+	}
+
+	// Currently, only support Hot
+	_, err = blobURL.SetTier(ctx, azblob.AccessTierType(storClass), azblob.LeaseAccessConditions{})
+	if err != nil {
+		log.Errorf("set azure blob tier[%s] failed:%v\n", object.Tier, err)
 		return result, ErrPutToBackendFailed
 	}
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	// TODO: set ETAG
+	result.Etag = string(uploadResp.ETag())
 	log.Infof("upload object[Azure Blob] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
@@ -185,6 +197,43 @@ func (ad *AzureAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput)
 	return nil
 }
 
+func (ad *AzureAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	log.Errorf("copy[Azure Blob] is not supported.")
+	err = ErrInternalError
+	return
+}
+
+func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	objectId := object.ObjectId
+	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
+	log.Infof("change storage class[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
+
+	var res *azblob.BlobSetTierResponse
+	var err error
+	switch *newClass {
+	case string(azblob.AccessTierHot):
+		res, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+	case string(azblob.AccessTierCool):
+		res, err = blobURL.SetTier(ctx, azblob.AccessTierCool, azblob.LeaseAccessConditions{})
+	case string(azblob.AccessTierArchive):
+		res, err = blobURL.SetTier(ctx, azblob.AccessTierArchive, azblob.LeaseAccessConditions{})
+	default:
+		log.Infof("change storage class[Azure Blob] of object[%s] to %s failed, err: invalid storage class.\n",
+			object.ObjectKey, newClass)
+		return ErrInvalidStorageClass
+	}
+	if err != nil {
+		log.Errorf("change storage class[Azure Blob] of object[%s] to %s failed, err:%v\n", object.ObjectKey,
+			newClass, err)
+		return ErrInternalError
+	} else {
+		log.Infof("change storage class[Azure Blob] of object[%s] to %s succeed, res:%v\n", object.ObjectKey,
+			newClass, res.Response())
+	}
+
+	return nil
+}
+
 func (ad *AzureAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, error) {
 	object := pb.Object{}
 	object.BucketName = bucketName
@@ -250,7 +299,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUp
 
 	blobURL := ad.containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	var completeParts []string
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		base64ID := ad.Int64ToBase64(p.PartNumber)
 		completeParts = append(completeParts, base64ID)
 	}
@@ -280,7 +329,7 @@ func (ad *AzureAdapter) AbortMultipartUpload(ctx context.Context, multipartUploa
 	return nil
 }
 
-func (ad *AzureAdapter) Close(ctx context.Context) error {
+func (ad *AzureAdapter) Close() error {
 	// TODO:
 	return nil
 }

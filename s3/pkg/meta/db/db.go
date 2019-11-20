@@ -33,6 +33,7 @@ type DBAdapter interface {
 	PutObject(ctx context.Context, object *Object, tx interface{}) error
 	DeleteObject(ctx context.Context, object *Object, tx interface{}) error
 	SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error
+	UpdateObject(ctx context.Context, old, new *Object, tx interface{}) error
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
@@ -43,7 +44,12 @@ type DBAdapter interface {
 	ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int, filter map[string]string) (
 		retObjects []*Object, appendInfo utils.ListObjsAppendInfo, err error)
 
+	CountObjects(ctx context.Context, bucketName, prefix string) (rsp *utils.ObjsCountInfo, err error)
 	UpdateUsage(ctx context.Context, bucketName string, size int64, tx interface{}) error
 	UpdateUsages(ctx context.Context, usages map[string]int64, tx interface{}) error
 	ListBucketLifecycle(ctx context.Context) (bucket []*Bucket, err error)
+
+	//gc
+	PutGcobjRecord(ctx context.Context, object *Object, tx interface{}) error
+	DeleteGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error)
 }

@@ -232,6 +232,16 @@ func loadDefaultTransition() error {
 	return nil
 }
 
+func validTier(tier int32) bool {
+	for _, v := range SupportedClasses {
+		if v.Tier == tier {
+			return true
+		}
+	}
+
+	return false
+}
+
 func loadUserDefinedTransition() error {
 	log.Info("user defined storage class is not supported now")
 	return fmt.Errorf("user defined storage class is not supported now")
@@ -508,13 +518,12 @@ func (s *s3Service) DeleteUploadRecord(ctx context.Context, record *pb.Multipart
 func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.CountObjectsResponse) error {
 	log.Info("Count objects is called in s3 service.")
 
-	countInfo := ObjsCountInfo{}
-	/*err := db.DbAdapter.CountObjects(in, &countInfo)
-	if err.Code != ERR_OK {
-		return err.Error()
-	}*/
-	out.Count = countInfo.Count
-	out.Size = countInfo.Size
+	rsp, err := s.MetaStorage.Db.CountObjects(ctx, in.Bucket, in.Prefix)
+	if err != nil {
+		return err
+	}
+	out.Count = rsp.Count
+	out.Size = rsp.Size
 
 	return nil
 }

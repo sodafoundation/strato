@@ -1,18 +1,16 @@
 package lifecycle
 
 import (
-	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	s3mover "github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
-	cephs3mover "github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
-	obsmover "github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
-	ibmcosmover "github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
+	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
+	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
+	"github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
+	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/datamover/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func clearFromBackend(objKey, uploadId string, loca *LocationInfo) error {
@@ -50,7 +48,7 @@ func clearFromBackend(objKey, uploadId string, loca *LocationInfo) error {
 }
 
 func doAbortUpload(acReq *datamover.LifecycleActionRequest) error {
-	log.Infof("abort incomplete upload: key=%s, uploadid=%s.\n", acReq.ObjKey, acReq.UploadId)
+	/*log.Infof("abort incomplete upload: key=%s, uploadid=%s.\n", acReq.ObjKey, acReq.UploadId)
 
 	// delete incomplete multipart upload data in each backend
 	bkend, err := getBackendInfo(&acReq.TargetBackend, false)
@@ -68,7 +66,7 @@ func doAbortUpload(acReq *datamover.LifecycleActionRequest) error {
 		record := osdss3.MultipartUploadRecord{ObjectKey: acReq.ObjKey, Bucket: acReq.BucketName, Backend: acReq.TargetBackend,
 			UploadId: acReq.UploadId}
 		s3client.DeleteUploadRecord(context.Background(), &record)
-	}
+	}*/
 
 	return nil
 }
