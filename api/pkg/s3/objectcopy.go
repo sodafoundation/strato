@@ -180,16 +180,6 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	// Note that sourceObject and targetObject are pointers
-	targetObject := &pb.Object{}
-	targetObject.Acl = sourceObject.Acl
-	targetObject.BucketName = targetBucketName
-	targetObject.ObjectKey = targetObjectName
-	targetObject.Size = sourceObject.Size
-	targetObject.Etag = sourceObject.Etag
-	targetObject.ContentType = sourceObject.ContentType
-	targetObject.CustomAttributes = sourceObject.CustomAttributes
-
 	log.Infoln("srcBucket:", sourceBucketName, " srcObject:", sourceObjectName,
 		" targetBucket:", targetBucketName, " targetObject:", targetObjectName)
 
@@ -199,9 +189,9 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		SrcObjectName:    sourceObjectName,
 		TargetObjectName: targetObjectName,
 	})
-	if err != nil {
+	if err != nil || result.ErrorCode != int32(ErrNoErr) {
 		log.Errorln("unable to copy object from ", sourceObjectName, " to ", targetObjectName, " err:", err)
-		WriteErrorResponse(response, request, err)
+		WriteErrorResponse(response, request, GetFinalError(err, result.ErrorCode))
 		return
 	}
 

@@ -33,6 +33,13 @@ const (
 	timeFormatAMZ = "2006-01-02T15:04:05.000Z" // Reply date format
 )
 
+func GetFinalError(err error, errorCode int32) error {
+	if errorCode != int32(ErrNoErr) {
+		return S3ErrorCode(errorCode)
+	} else {
+		return err
+	}
+}
 
 // WriteSuccessResponse write success headers and response if any.
 func WriteSuccessResponse(response *restful.Response, data []byte) {
