@@ -241,7 +241,9 @@ func (yig *YigStorage) Get(ctx context.Context, object *pb.Object, start int64, 
 *
  */
 func (yig *YigStorage) Delete(ctx context.Context, object *pb.DeleteObjectInput) error {
-	// check multipart uploaded object.
+	// For multipart uploaded objects, no storage metas are returned to caller,
+	// so, when delete these objects, the meta will be empty.
+	// we need to perform check for multipart uploaded objects.
 	if object.StorageMeta == "" {
 		uploadId, err := str2UploadId(object.ObjectId)
 		if err != nil {
