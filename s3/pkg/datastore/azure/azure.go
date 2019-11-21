@@ -84,19 +84,23 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
 	log.Infof("put object[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
 
-	bytess, _ := ioutil.ReadAll(stream)
 	result := dscommon.PutResult{}
-	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
-	uploadResp, err := blobURL.Upload(ctx, bytes.NewReader(bytess), azblob.BlobHTTPHeaders{}, nil,
-		azblob.BlobAccessConditions{})
-	log.Infof("put object[Azure Blob] end, objectId:%s\n", objectId)
+	_, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
 	if err != nil {
-		log.Infof("put object[Azure Blob] failed, objectId:%s, err = %v\n", objectId, err)
-		return result, ErrPutToBackendFailed
+		return result, ErrIncompleteBody
 	}
 
-	if uploadResp.StatusCode() != http.StatusCreated {
-		log.Infof("put object[Azure Blob], objectId:%s, StatusCode:%d\n", objectId, uploadResp.StatusCode())
+	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
+	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
+	options.BlobHTTPHeaders.ContentMD5 = []byte(userMd5)
+	uploadResp, err := azblob.UploadStreamToBlockBlob(ctx, stream, blobURL, options)
+	log.Infof("put object[Azure Blob] end, objectId:%s\n", objectId)
+	if err != nil {
+		log.Errorf("put object[Azure Blob], objectId:%s, err:%d\n", objectId, err)
+		return result, ErrPutToBackendFailed
+	}
+	if uploadResp.Response().StatusCode != http.StatusCreated {
+		log.Errorf("put object[Azure Blob], objectId:%s, StatusCode:%d\n", objectId, uploadResp.Response().StatusCode)
 		return result, ErrPutToBackendFailed
 	}
 
@@ -120,6 +124,8 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
 	result.Etag = string(uploadResp.ETag())
+	result.Meta = uploadResp.Version()
+	log.Info("### returnMd5:", result.Etag, "userMd5:", userMd5)
 	log.Infof("upload object[Azure Blob] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil

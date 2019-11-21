@@ -34,10 +34,6 @@ var InProgressObjs = make(map[string]struct{})
 
 func copyObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 	log.Infof("copy object[%s], size=%d\n", obj.ObjectKey, obj.Size)
-	if obj.Size <= 0 {
-		log.Infof("no need to copy object[%s]\n", obj.ObjectKey, obj.Size)
-		return nil
-	}
 
 	// add object to InProgressObjs
 	if _, ok := InProgressObjs[obj.ObjectKey]; !ok {

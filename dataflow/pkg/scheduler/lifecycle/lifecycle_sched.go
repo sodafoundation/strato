@@ -164,15 +164,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 			inRules = append(inRules, &v)
 		}
 
-		// Currently, incomplete multipart upload data will be cleaned by GC, so no lifecycle rules for those data
-		/*if rule.AbortIncompleteMultipartUpload.DaysAfterInitiation > 0 {
-			// abort incomplete multipart uploads
-			abortRule := InternalLifecycleRule{Bucket: bucket, Days: rule.AbortIncompleteMultipartUpload.DaysAfterInitiation, ActionType: AbortIncompleteMultipartUpload}
-			if rule.GetFilter() != nil {
-				abortRule.Filter = InternalLifecycleFilter{Prefix: rule.Filter.Prefix}
-			}
-			abortRules = append(abortRules, &abortRule)
-		}*/
+		// TODO: Incomplete multipart upload data will be cleaned if multipart upload provided
 	}
 
 	// Sort rules, in case different actions exist for an object at the same time, for example, expiration after 30 days
@@ -185,15 +177,6 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 	}
 	// End: Log for debug
 	schedSortedActionsRules(&inRules)
-
-	/*sort.Stable(abortRules)
-	// Begin: Log for debug
-	for _, v := range abortRules {
-		log.Infof("abort rule: %+v\n", *v)
-	}
-	// End: Log for debug
-	schedSortedAbortRules(&abortRules)
-	*/
 
 	return nil
 }

@@ -212,8 +212,6 @@ CREATE TABLE IF NOT EXISTS `gcobjs` (
   `size` bigint(20) DEFAULT NULL,
   `objectid` varchar(255) DEFAULT NULL,
   `lastmodifiedtime` datetime DEFAULT NULL,
-  `etag` varchar(255) DEFAULT NULL,
-  `tier` int(11) DEFAULT 1,
   `storageMeta` varchar(255) DEFAULT NULL,
    UNIQUE KEY `rowkey` (`bucketname`,`name`,`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;

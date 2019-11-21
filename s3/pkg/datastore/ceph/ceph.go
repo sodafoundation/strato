@@ -22,6 +22,8 @@ import (
 	"io/ioutil"
 	"time"
 
+	"crypto/md5"
+	"encoding/hex"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -44,26 +46,43 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("put object[Ceph S3], bucket:%s, objectId:%s\n", bucketName, objectId)
 
+	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
+	if err != nil {
+		return result, ErrIncompleteBody
+	}
+
+	// Limit the reader to its provided size if specified.
+	var limitedDataReader io.Reader
+	if size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(stream, size)
+	} else {
+		limitedDataReader = stream
+	}
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+
 	bucket := ad.session.NewBucket()
 	cephObject := bucket.NewObject(bucketName)
-	d, err := ioutil.ReadAll(stream)
-	data := []byte(d)
-	contentMD5 := utils.Md5Content(data)
-	length := int64(len(d))
-	body := ioutil.NopCloser(bytes.NewReader(data))
-
+	body := ioutil.NopCloser(dataReader)
 	log.Infof("put object[Ceph S3] begin, objectId:%s\n", objectId)
-	err = cephObject.Create(objectId, contentMD5, "", length, body, models.Private)
+	err = cephObject.Create(objectId, userMd5, "", size, body, models.Private)
 	log.Infof("put object[Ceph S3] end, objectId:%s\n", objectId)
 	if err != nil {
 		log.Infof("upload object[Ceph S3] failed, objectId:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
+	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+	if userMd5 != "" && userMd5 != calculatedMd5 {
+		return result, ErrBadDigest
+	}
+
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = contentMD5
-	log.Infof("upload object[Ceph S3] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
+	result.Etag = calculatedMd5
+	log.Infof("upload object[Ceph S3] succeed, objectId:%s, UpdateTime is:%v, etag:\n", objectId,
+		result.UpdateTime, result.Etag)
 
 	return result, nil
 }

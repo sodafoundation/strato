@@ -22,11 +22,12 @@ import (
 	"io/ioutil"
 	"time"
 
+	"crypto/md5"
+	"encoding/hex"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
@@ -53,25 +54,37 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
 
-	bucket := ad.session.NewBucket()
 	result := dscommon.PutResult{}
+	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
+	if err != nil {
+		return result, ErrIncompleteBody
+	}
+
+	// Limit the reader to its provided size if specified.
+	var limitedDataReader io.Reader
+	if size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(stream, size)
+	} else {
+		limitedDataReader = stream
+	}
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+
+	bucket := ad.session.NewBucket()
 	GcpObject := bucket.NewObject(bucketName)
-
-	d, err := ioutil.ReadAll(stream)
-	data := []byte(d)
-	contentMD5 := utils.Md5Content(data)
-	length := int64(len(d))
-	body := ioutil.NopCloser(bytes.NewReader(data))
-
-	err = GcpObject.Create(objectId, contentMD5, "", length, body, models.Private)
+	body := ioutil.NopCloser(dataReader)
+	err = GcpObject.Create(objectId, userMd5, "", size, body, models.Private)
 	if err != nil {
 		log.Infof("put object[GCS] failed, object:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
-	//object.LastModifiedTime = time.Now().Unix()
+
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
+	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = contentMD5
+	result.Etag = calculatedMd5
 	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil

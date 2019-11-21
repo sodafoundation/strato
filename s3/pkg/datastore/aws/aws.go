@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"time"
 
+	"crypto/md5"
+	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -87,13 +89,19 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	result := dscommon.PutResult{}
 	log.Infof("put object[AWS S3] begin, objKey:%s\n", objectId)
 
-	d, err := ioutil.ReadAll(stream)
+	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
 	if err != nil {
-		log.Errorf("put object[AWS S3] failed, err:%s\n", err)
+		return result, ErrIncompleteBody
 	}
-	data := []byte(d)
-	contentMD5 := utils.Md5Content(data)
-	log.Infof("contentMD5=%s\n", contentMD5)
+	// Limit the reader to its provided size if specified.
+	var limitedDataReader io.Reader
+	if size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(stream, size)
+	} else {
+		limitedDataReader = stream
+	}
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
 
 	if object.Tier == 0 {
 		// default
@@ -105,23 +113,33 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		return result, ErrInternalError
 	}
 
-	input := &awss3.PutObjectInput{
-		Body:         bytes.NewReader(data),
+	uploader := s3manager.NewUploader(ad.session)
+	ret, err := uploader.Upload(&s3manager.UploadInput{
+		Body:         dataReader,
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(objectId),
 		StorageClass: aws.String(storClass),
-	}
-
-	ret, err := awss3.New(ad.session).PutObject(input)
+		ContentMD5:   aws.String(userMd5),
+	})
 	if err != nil {
 		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
+	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+	if userMd5 != "" && userMd5 != calculatedMd5 {
+		return result, ErrBadDigest
+	}
+
+	if ret.VersionID != nil {
+		result.Meta = *ret.VersionID
+	}
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = *ret.ETag
+	result.Etag = calculatedMd5
+	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 	log.Infof("put object[AWS S3] successfully, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
