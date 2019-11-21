@@ -42,7 +42,6 @@ service S3 {
 	rpc GetObjACL(BaseObjRequest) returns (ObjACL) {}
 	rpc GetBucketLocation(BaseRequest) returns (BaseResponse) {}
 	rpc GetBucketVersioning(BaseBucketRequest) returns (BucketVersioning) {}
-	rpc PutBucketVersioning(PutBucketVersioningRequest) returns (BaseResponse) {}
 	rpc PutBucketACL(PutBucketACLRequest) returns (BaseResponse) {}
 	rpc GetBucketACL(BaseBucketRequest) returns (BucketACL) {}
 	rpc PutBucketCORS(BaseRequest) returns (BaseResponse) {}
@@ -82,10 +81,6 @@ message PutObjectResponse {
 	string md5 = 3;
 	string versionId = 4;
 	int64 lastModified = 5;
-}
-
-message PutBucketVersioningRequest {
-	string Status = 1;
 }
 
 message PutBucketACLRequest {
@@ -273,7 +268,7 @@ message Bucket {
 	string id = 6;
 	bool deleted = 7;
 	ServerSideEncryption serverSideEncryption = 8;
-	string versioning = 9;
+	BucketVersioning versioning = 9;
 	string defaultLocation = 10;	// Means backend
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;

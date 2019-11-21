@@ -146,6 +146,7 @@ const (
 	ErrUnsupportedAcl
 	ErrNonUTF8Encode
 	ErrInvalidLc
+	ErrInvalidVersion
 	ErrNoSuchBucketLc
 	ErrInvalidStorageClass
 	ErrPutToBackendFailed
@@ -648,6 +649,11 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 	ErrInvalidLc: {
 		AwsErrorCode:   "IllegalLcConfigurationException",
 		Description:    "The LC configuration specified in the request is invalid.",
+		HttpStatusCode: http.StatusBadRequest,
+	},
+	ErrInvalidVersion: {
+		AwsErrorCode:   "NoSuchBucketVersion",
+		Description:    "The Versioning configuration specified in the request is invalid.",
 		HttpStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidPosition: {

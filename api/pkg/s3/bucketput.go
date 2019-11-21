@@ -50,7 +50,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.UserId = actx.UserId
 	bucket.Deleted = false
 	bucket.CreateTime = time.Now().Unix()
-	bucket.Versioning = utils.VersioningDisabled // it's the default
+	bucket.Versioning.Status = utils.VersioningDisabled // it's the default
 	log.Infof("Bucket PUT: TenantId=%s, UserId=%s\n", bucket.TenantId, bucket.UserId)
 
 	body := ReadBody(request)

@@ -407,7 +407,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		} // TODO policy and fancy ACL
 	}
 
-	switch bucket.Versioning {
+	switch bucket.Versioning.Status {
 	case utils.VersioningDisabled:
 		if in.VersioId != "" && in.VersioId != "null" {
 			err = ErrNoSuchVersion
