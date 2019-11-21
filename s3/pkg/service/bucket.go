@@ -278,6 +278,42 @@ func (s *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.BaseReques
 	return nil
 }
 
+func (s *s3Service) DeleteBucketSSE(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
+	log.Infof("delete SSE for bucket:%s\n", in.Id)
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	_, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed.")
+		return nil
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Id, true)
+	if err != nil {
+		log.Errorf("get bucket err: %v\n", err)
+		return nil
+	}
+
+	if bucket.TenantId != tenantId {
+		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
+		err = ErrBucketAccessForbidden
+		return nil
+	}
+	bucket.LifecycleConfiguration = nil
+	err = s.MetaStorage.Db.DeleteBucketSSE(ctx, bucket.Name)
+	if err != nil {
+		log.Errorf("update bucket failed, err: %v\n", err)
+		return nil
+	} else {
+		log.Infof("delete SSE for bucket:%s successfully\n", in.Id)
+	}
+
+	return nil
+}
+
 // ListBucketLifecycle is used by lifecycle management service, not need to return error code
 func (s *s3Service) ListBucketLifecycle(ctx context.Context, in *pb.BaseRequest, out *pb.ListBucketsResponse) error {
 	log.Info("ListBucketLifecycle is called in s3 service.")

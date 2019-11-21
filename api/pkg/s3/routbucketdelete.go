@@ -38,7 +38,10 @@ func (s *APIService) RouteBucketDelete(request *restful.Request, response *restf
 	} else if IsQuery(request, "lifecycle") {
 		s.BucketLifecycleDelete(request, response)
 
-	} else {
+	}else if IsQuery(request, "DefaultEncryption") {
+		s.BucketSSEDelete(request, response)
+
+	}else {
 		s.BucketDelete(request, response)
 	}
 }

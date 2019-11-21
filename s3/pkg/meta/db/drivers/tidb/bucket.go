@@ -113,7 +113,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	}
 
 	// get SSE info for this bucket
-	sseOpts,sseErr := t.GetBucketSSE(ctx, tmp.Name)
+	sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
 	if sseErr != nil {
 		return
 	}
@@ -614,4 +614,13 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 		return tmp, nil
 	}
 	return
+}
+
+func (t *TidbClient) DeleteBucketSSE(ctx context.Context, bucketName string) error {
+	sqltext := "delete from bucket_sseopts where bucketname=?;"
+	_, err := t.Client.Exec(sqltext, bucketName)
+	if err != nil {
+		return handleDBError(err)
+	}
+	return nil
 }

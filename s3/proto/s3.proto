@@ -17,6 +17,7 @@ service S3 {
 	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
 	rpc DeleteBucketLifecycle(BaseRequest) returns (BaseResponse) {}
+	rpc DeleteBucketSSE(BaseRequest) returns (BaseResponse) {}
 	rpc PutBucketLifecycle(PutBucketLifecycleRequest) returns (BaseResponse) {}
 	rpc GetBucketLifecycle(BaseRequest) returns (GetBucketLifecycleResponse) {}
 	rpc ListBucketLifecycle(BaseRequest) returns (ListBucketsResponse) {}

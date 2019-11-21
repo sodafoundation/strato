@@ -50,6 +50,7 @@ type S3Service interface {
 	GetStorageClasses(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetStorageClassesResponse, error)
 	GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, opts ...client.CallOption) (*GetBackendTypeByTierResponse, error)
 	DeleteBucketLifecycle(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
+	DeleteBucketSSE(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	PutBucketLifecycle(ctx context.Context, in *PutBucketLifecycleRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucketLifecycle(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetBucketLifecycleResponse, error)
 	ListBucketLifecycle(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*ListBucketsResponse, error)
@@ -314,6 +315,16 @@ func (c *s3Service) GetBackendTypeByTier(ctx context.Context, in *GetBackendType
 
 func (c *s3Service) DeleteBucketLifecycle(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.DeleteBucketLifecycle", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) DeleteBucketSSE(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.DeleteBucketSSE", in)
 	out := new(BaseResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -651,6 +662,7 @@ type S3Handler interface {
 	GetStorageClasses(context.Context, *BaseRequest, *GetStorageClassesResponse) error
 	GetBackendTypeByTier(context.Context, *GetBackendTypeByTierRequest, *GetBackendTypeByTierResponse) error
 	DeleteBucketLifecycle(context.Context, *BaseRequest, *BaseResponse) error
+	DeleteBucketSSE(context.Context, *BaseRequest, *BaseResponse) error
 	PutBucketLifecycle(context.Context, *PutBucketLifecycleRequest, *BaseResponse) error
 	GetBucketLifecycle(context.Context, *BaseRequest, *GetBucketLifecycleResponse) error
 	ListBucketLifecycle(context.Context, *BaseRequest, *ListBucketsResponse) error
@@ -703,6 +715,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		GetStorageClasses(ctx context.Context, in *BaseRequest, out *GetStorageClassesResponse) error
 		GetBackendTypeByTier(ctx context.Context, in *GetBackendTypeByTierRequest, out *GetBackendTypeByTierResponse) error
 		DeleteBucketLifecycle(ctx context.Context, in *BaseRequest, out *BaseResponse) error
+		DeleteBucketSSE(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		PutBucketLifecycle(ctx context.Context, in *PutBucketLifecycleRequest, out *BaseResponse) error
 		GetBucketLifecycle(ctx context.Context, in *BaseRequest, out *GetBucketLifecycleResponse) error
 		ListBucketLifecycle(ctx context.Context, in *BaseRequest, out *ListBucketsResponse) error
@@ -870,6 +883,10 @@ func (h *s3Handler) GetBackendTypeByTier(ctx context.Context, in *GetBackendType
 
 func (h *s3Handler) DeleteBucketLifecycle(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
 	return h.S3Handler.DeleteBucketLifecycle(ctx, in, out)
+}
+
+func (h *s3Handler) DeleteBucketSSE(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
+	return h.S3Handler.DeleteBucketSSE(ctx, in, out)
 }
 
 func (h *s3Handler) PutBucketLifecycle(ctx context.Context, in *PutBucketLifecycleRequest, out *BaseResponse) error {
