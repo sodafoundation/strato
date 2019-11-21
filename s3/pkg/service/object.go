@@ -491,7 +491,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		out.ErrorCode = GetErrCode(err)
 	}()
 	// Check ACL
-	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+		bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
 	if err != nil {
 		log.Errorf("err:%v\n", err)
 		return nil
@@ -533,6 +533,9 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		out.NextMarker = util.Encrypt(out.NextMarker)
 	}
 
+	// handle versioning
+	var mapNameToListOfObjects = make(map[string]pb.ListObjects)
+
 	objects := make([]*pb.Object, 0, len(retObjects))
 	for _, obj := range retObjects {
 		object := pb.Object{
@@ -543,6 +546,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			Location:     obj.Location,
 			TenantId:     obj.TenantId,
 			BucketName:   obj.BucketName,
+			VersionId: 	  obj.VersionId,
 		}
 		if in.EncodingType != "" { // only support "url" encoding for now
 			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
@@ -552,8 +556,39 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
 		log.Infof("object:%+v\n", object)
+
+		objList, ok := mapNameToListOfObjects[object.ObjectKey]
+		if !ok{
+			// add a new obj list
+			objList = pb.ListObjects{
+				Objects:              make([]*pb.Object, 0),
+				XXX_NoUnkeyedLiteral: struct{}{},
+				XXX_unrecognized:     nil,
+				XXX_sizecache:        0,
+			}
+			objList.Objects = append(objList.Objects, &object)
+			mapNameToListOfObjects[object.ObjectKey] = objList
+		}else{
+			objList.Objects = append(objList.Objects, &object)
+			mapNameToListOfObjects[object.ObjectKey] = objList
+		}
 	}
-	out.Objects = objects
+
+	out.ListOfListOfObjects = make([]*pb.ListObjects, len(mapNameToListOfObjects))
+	var count = 0
+	for _,v := range mapNameToListOfObjects{
+		out.ListOfListOfObjects[count] = &pb.ListObjects{
+			Objects:              nil,
+			XXX_NoUnkeyedLiteral: struct{}{},
+			XXX_unrecognized:     nil,
+			XXX_sizecache:        0,
+		}
+		out.ListOfListOfObjects[count].Objects = make([]*pb.Object, 0)
+		for _,obj := range v.Objects{
+			out.ListOfListOfObjects[count].Objects = append(out.ListOfListOfObjects[count].Objects, obj)
+		}
+		count = count + 1
+	}
 	out.Prefixes = appendInfo.Prefixes
 	out.IsTruncated = appendInfo.Truncated
 

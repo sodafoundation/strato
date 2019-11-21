@@ -38,7 +38,8 @@ type TidbClient struct {
 
 func NewTidbClient(dbInfo string) *TidbClient {
 	cli := &TidbClient{}
-	conn, err := sql.Open("mysql", dbInfo)
+	//conn, err := sql.Open("mysql", dbInfo)
+	conn, err := sql.Open("mysql", "yiguser:password@tcp(localhost:3306)/yig")
 	if err != nil {
 		log.Errorf("connect to tidb failed, err:%v\n", err)
 		os.Exit(1)
@@ -146,7 +147,7 @@ func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (str
 
 	delimiter := filter[common.KDelimiter]
 	if delimiter == "" {
-		sqltxt += " order by bucketname,name,version limit ?"
+		//sqltxt += " order by bucketname,name,version limit ?"
 		args = append(args, MaxObjectList)
 	} else {
 		num := len(strings.Split(prefix, delimiter))

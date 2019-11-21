@@ -230,8 +230,12 @@ func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*osdss3
 		log.Errorf("list objects failed, req:%+v,  err:%v.\n", s3req, err)
 		return nil, err
 	}
+	retObjs := make([]*s3.Object, 0)
 
-	return s3rsp.Objects, nil
+	for _, list := range s3rsp.ListOfListOfObjects {
+		retObjs = append(retObjs, list.Objects...)
+	}
+	return retObjs, nil
 }
 
 func schedSortedActionsRules(inRules *InterRules) {

@@ -19,6 +19,7 @@ import (
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 func getCtxTimeout() time.Duration {
@@ -197,7 +198,12 @@ func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, lim
 	}
 
 	logger.Println("get osds objects successfully")
-	return rsp.Objects, nil
+	retObjs := make([]*s3.Object, 0)
+
+	for _, list := range rsp.ListOfListOfObjects {
+		retObjs = append(retObjs, list.Objects...)
+	}
+	return retObjs, nil
 }
 
 func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,

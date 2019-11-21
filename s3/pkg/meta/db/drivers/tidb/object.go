@@ -30,16 +30,16 @@ import (
 
 func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, version string) (object *Object, err error) {
 	var sqltext, ibucketname, iname, customattributes, acl, lastModified string
-	var iversion uint64
+	//var iversion uint64
 	var row *sql.Row
 	if version == "" {
-		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
-			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta" +
+		sqltext = "select bucketname,name,version,location,size,objectid,lastmodifiedtime,etag," +
+			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageclass" +
 			" from objects where bucketname=? and name=? order by bucketname,name,version limit 1;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName)
 	} else {
-		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
-			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta" +
+		sqltext = "select bucketname,name,version,location,size,objectid,lastmodifiedtime,etag," +
+			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageclass" +
 			" from objects where bucketname=? and name=? and version=?;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName, version)
 	}
@@ -48,10 +48,10 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	err = row.Scan(
 		&ibucketname,
 		&iname,
-		&iversion,
+		&object.VersionId,
 		&object.Location,
-		&object.TenantId,
-		&object.UserId,
+		//&object.TenantId,
+		//&object.UserId,
 		&object.Size,
 		&object.ObjectId,
 		&lastModified,
@@ -88,9 +88,9 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		return
 	}
 	// TODO: getting multi-parts
-	timestamp := math.MaxUint64 - iversion
+	/*timestamp := math.MaxUint64 - iversion
 	timeData := []byte(strconv.FormatUint(timestamp, 10))
-	object.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
+	object.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))*/
 	return
 }
 
