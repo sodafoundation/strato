@@ -491,9 +491,6 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		err = s.MetaStorage.AddGcobjRecord(ctx, newObj)
 		if err != nil {
 			log.Errorf("failed to add gcobj record[%v], err:%v", newObj, err)
-			// if delete failed, no error return, because gc will clean it
-			ierr := s.MetaStorage.DeleteGcobjRecord(ctx, newObj)
-			log.Infof("delete source object from gc finished, err:", ierr)
 			return err
 		}
 		// step 2: copy data
@@ -502,45 +499,51 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			log.Errorf("failed to copy object[%s], err:%v", srcObject.ObjectKey, err)
 			return err
 		}
+		if srcObject.Etag != targetObject.Etag {
+			log.Errorf("data integrity check failed, etag of source object is %s, etag of target object is:%s\n",
+				srcObject.Etag, targetObject.Etag)
+			delInput := &pb.DeleteObjectInput{
+				Bucket: targetObject.BucketName, Key: targetObject.ObjectKey, ObjectId: targetObject.ObjectId,
+				VersioId: targetObject.VersionId, StorageMeta: targetObject.StorageMeta,
+			}
+			// clean target object, if failed, gc will clean
+			s.cleanFromBackend(ctx, delInput, targetSd, newObj)
+		}
 		out.Md5 = targetObject.Etag
 		out.LastModified = targetObject.LastModified
 		// step 3: update meta data
 		err = s.MetaStorage.UpdateMetaAfterCopy(ctx, srcObject, newObj)
 		if err != nil {
 			log.Errorln("failed to update meta data after copy, err:", err)
-			// clean target object data from backend, if failed, gc will clean
-			ierr := targetSd.Delete(ctx, &pb.DeleteObjectInput{
+			delInput := &pb.DeleteObjectInput{
 				Bucket: targetObject.BucketName, Key: targetObject.ObjectKey, ObjectId: targetObject.ObjectId,
 				VersioId: targetObject.VersionId, StorageMeta: targetObject.StorageMeta,
-			})
-			if ierr != nil {
-				// if delete failed, no error return, because gc will clean it
-				ierr = s.MetaStorage.DeleteGcobjRecord(ctx, newObj)
-				log.Infof("delete source object from gc finished, err:", ierr)
 			}
+			// clean target object, if failed, gc will clean
+			s.cleanFromBackend(ctx, delInput, targetSd, newObj)
 			return err
 		}
-		// step 4: delete old data from backend storage
-		err = srcSd.Delete(ctx, &pb.DeleteObjectInput{
+		// step 4: delete source object from backend storage and clean gc record
+		delInput := &pb.DeleteObjectInput{
 			Bucket: srcObject.BucketName, Key: srcObject.ObjectKey, ObjectId: srcObject.ObjectId,
 			VersioId: srcObject.VersionId, StorageMeta: srcObject.StorageMeta,
-		})
-		if err != nil {
-			log.Warnln("delete source object failed, err:", err)
-			// if delete failed, no error return, because gc will clean it
-			return nil
 		}
-		// step 5: delete from gc
-		err = s.MetaStorage.DeleteGcobjRecord(ctx, srcObject)
-		if err != nil {
-			// if delete failed, no error return, because gc will clean it
-			log.Warnln("delete source object from gc failed, err:", err)
-		}
+		s.cleanFromBackend(ctx, delInput, srcSd, srcObject)
 	}
 
 	log.Infoln("MoveObject is finished.")
 
 	return nil
+}
+
+func (s *s3Service) cleanFromBackend(ctx context.Context, delInput *pb.DeleteObjectInput, sd driver.StorageDriver, gcObj *meta.Object) {
+	err := sd.Delete(ctx, delInput)
+	if err != nil {
+		log.Warnln("delete object[ObjectId=%s] failed, err:", delInput.ObjectId, err)
+		// if delete failed, no error return, because gc will clean it
+		err = s.MetaStorage.DeleteGcobjRecord(ctx, gcObj)
+		log.Debugf("delete object[key:%s,bucket:%s] from gc finished, err:\n", gcObj.Object, gcObj.BucketName, err)
+	}
 }
 
 func (s *s3Service) copyData(ctx context.Context, srcSd, targetSd driver.StorageDriver, srcObj, targetObj *pb.Object) error {
