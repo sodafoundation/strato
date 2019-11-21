@@ -65,7 +65,7 @@ func (gm *GcMgr) Start() {
 			// record the success or failure.
 			for result := range chResult {
 				if result.ErrNo == ErrNoErr {
-					log.Infof("succeed to remove object: %s", result.ObjectId)
+					log.Debugf("succeed to remove object: %s", result.ObjectId)
 					continue
 				}
 				log.Errorf("failed to remove object: %s, err: %s", result.ObjectId, result.Err)
@@ -93,7 +93,7 @@ func (gm *GcMgr) QueryGcObjectStream() <-chan *types.GcObject {
 				return
 			}
 			if gcObjects == nil || len(gcObjects) == 0 {
-				log.Infof("got empty gc objects(%d)", start)
+				log.Debugf("got empty gc objects(%d)", start)
 				return
 			}
 			// set the next marker to query the gc objects.

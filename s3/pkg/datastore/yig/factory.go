@@ -67,13 +67,6 @@ func (ydf *YigDriverFactory) Init() error {
 		return nil
 	}
 
-	// read common config settings
-	/*cc, err := config.ReadCommonConfig("/etc/yig")
-	if err != nil {
-		log.Errorf("failed to read yig config, err: %v", err)
-		return nil
-	}*/
-
 	// create the driver.
 	rand.Seed(time.Now().UnixNano())
 
