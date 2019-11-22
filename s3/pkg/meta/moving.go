@@ -6,14 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (m *Meta) AddGcobjRecord(ctx context.Context, obj *types.Object) error {
-	return m.Db.PutGcobjRecord(ctx, obj, nil)
-}
-
-func (m *Meta) DeleteGcobjRecord(ctx context.Context, obj *types.Object) error {
-	return m.Db.DeleteGcobjRecord(ctx, obj, nil)
-}
-
 func (m *Meta) UpdateMetaAfterCopy(ctx context.Context, old, new *types.Object) error {
 	tx, err := m.Db.NewTrans()
 	defer func() {

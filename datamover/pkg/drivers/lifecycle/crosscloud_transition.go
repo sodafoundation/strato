@@ -54,8 +54,8 @@ func copyObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 		SrcBucket:      obj.BucketName,
 		TargetLocation: targetLoc.BakendName,
 		TargetTier:     targetLoc.Tier,
-		CopyType:       utils.MoveType_ChangeLocation,
-		SourceType:     utils.CopySourceType_Lifecycle,
+		MoveType:       utils.MoveType_ChangeLocation,
+		SourceType:     utils.MoveSourceType_Lifecycle,
 	}
 
 	_, err := s3client.MoveObject(ctx, req)

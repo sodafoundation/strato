@@ -24,8 +24,6 @@ import (
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/backend/proto"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -90,23 +88,6 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 	return
 }
 
-func getBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,
-	error) {
-	log.Infof("backendName is %v:\n", backendName)
-	backendRep, backendErr := backedClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  1,
-		Filter: map[string]string{"name": backendName}})
-	log.Infof("backendErr is %v:", backendErr)
-	if backendErr != nil {
-		log.Errorf("get backend %s failed.", backendName)
-		return nil, backendErr
-	}
-	log.Infof("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	return backend, nil
-}
-
 func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) error {
 	log.Infoln("PutObject is called in s3 service.")
 
@@ -167,7 +148,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if obj.Location != "" {
 		backendName = obj.Location
 	}
-	backend, err := getBackend(ctx, s.backendClient, backendName)
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -310,7 +291,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		backendName = object.Location
 	}
 	// if this object has only one part
-	backend, err := getBackend(ctx, s.backendClient, backendName)
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("unable to get backend. err:", err)
 		return err
@@ -405,7 +386,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 	if ok {
 		targetObject.TenantId = tenantId
 	}
-	if in.SourceType == utils.CopySourceType_Lifecycle {
+	if in.SourceType == utils.MoveSourceType_Lifecycle {
 		targetObject.LastModified = srcObject.LastModified
 		targetObject.TenantId = srcObject.TenantId
 	}
@@ -422,7 +403,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		return err
 	}
 
-	srcBackend, err := getBackend(ctx, s.backendClient, srcObject.Location)
+	srcBackend, err := utils.GetBackend(ctx, s.backendClient, srcObject.Location)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -433,7 +414,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		return err
 	}
 
-	if in.CopyType == utils.MoveType_ChangeStorageTier {
+	if in.MoveType == utils.MoveType_ChangeStorageTier {
 		log.Infof("chagne storage class of %s\n", targetObject.ObjectKey)
 		// just change storage tier
 		targetBucket = srcBucket
@@ -451,7 +432,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		err = s.MetaStorage.UpdateObject(ctx, srcObject, newObj)
 	} else {
 		// need move data, get target location first
-		if in.CopyType == utils.MoveType_ChangeLocation {
+		if in.MoveType == utils.MoveType_ChangeLocation {
 			targetBucket = srcBucket
 			targetObject.Location = in.TargetLocation
 			log.Infof("move %s cross backends, srcBackend=%s, targetBackend=%s, targetTier=%d\n",
@@ -472,7 +453,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		}
 
 		// get storage driver
-		targetBackend, err := getBackend(ctx, s.backendClient, targetObject.Location)
+		targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetObject.Location)
 		if err != nil {
 			log.Errorln("failed to get backend client with err:", err)
 			return err
@@ -577,7 +558,7 @@ func (s *s3Service) checkMoveRequest(ctx context.Context, in *pb.MoveObjectReque
 		return
 	}
 
-	switch in.CopyType {
+	switch in.MoveType {
 	case utils.MoveType_ChangeStorageTier:
 		if !validTier(in.TargetTier) {
 			log.Error("cannot copy object to it's self.")
@@ -612,7 +593,7 @@ func (s *s3Service) checkMoveRequest(ctx context.Context, in *pb.MoveObjectReque
 		}
 	}
 
-	log.Infof("copyType:%d, srcObject:%v\n", in.CopyType, in.SrcObject)
+	log.Infof("MoveType:%d, srcObject:%v\n", in.MoveType, in.SrcObject)
 	return
 }
 
@@ -698,7 +679,7 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objec
 	if obj.Location != "" {
 		backendName = obj.Location
 	}
-	backend, err := getBackend(ctx, s.backendClient, backendName)
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend with err:", err)
 		return err

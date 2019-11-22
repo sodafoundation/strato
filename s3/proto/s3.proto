@@ -70,7 +70,7 @@ message MoveObjectRequest {
 	string targetBucket = 4;
 	string targetLocation = 5;
 	int32  targetTier = 6;
-	int32  copyType = 7;
+	int32  moveType = 7;
 	int32  sourceType = 8; // lifecyce service, migration service, end user, etc.
 }
 

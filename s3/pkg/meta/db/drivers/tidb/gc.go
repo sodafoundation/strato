@@ -19,8 +19,12 @@ import (
 	"math"
 	"time"
 
+	"encoding/hex"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"github.com/xxtea/xxtea-go/xxtea"
+	"strconv"
 )
 
 func (t *TidbClient) PutGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error) {
@@ -75,4 +79,43 @@ func (t *TidbClient) DeleteGcobjRecord(ctx context.Context, o *Object, tx interf
 	log.Debugf("err:%v\n", err)
 
 	return err
+}
+
+func (t *TidbClient) ListGcObjs(ctx context.Context, offset, limit int) (objs []*Object, err error) {
+	sqltext := "select bucketname,name,version,location,objectid,storageMeta from gcobjs order by bucketname,name," +
+		"version limit ?,?;"
+	args := []interface{}{offset, limit}
+	log.Debugf("sqltext:%s, args:%v\n", sqltext, args)
+
+	rows, err := t.Client.Query(sqltext, args...)
+	if err != nil {
+		log.Errorf("err:%v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	var iversion uint64
+	for rows.Next() {
+		obj := &Object{Object: &pb.Object{}}
+
+		err = rows.Scan(
+			&obj.BucketName,
+			&obj.ObjectKey,
+			&iversion,
+			&obj.Location,
+			&obj.ObjectId,
+			&obj.StorageMeta,
+		)
+		timestamp := math.MaxUint64 - iversion
+		timeData := []byte(strconv.FormatUint(timestamp, 10))
+		obj.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
+		objs = append(objs, obj)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Errorf("err:%v\n", err)
+	}
+
+	return
 }

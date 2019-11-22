@@ -52,4 +52,5 @@ type DBAdapter interface {
 	//gc
 	PutGcobjRecord(ctx context.Context, object *Object, tx interface{}) error
 	DeleteGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error)
+	ListGcObjs(ctx context.Context, offset, limit int) ([]*Object, error)
 }

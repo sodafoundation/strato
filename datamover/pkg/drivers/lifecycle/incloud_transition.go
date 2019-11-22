@@ -60,8 +60,8 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 		SrcObject:  acReq.ObjKey,
 		SrcBucket:  acReq.BucketName,
 		TargetTier: acReq.TargetTier,
-		CopyType:   utils.MoveType_ChangeStorageTier,
-		SourceType: utils.CopySourceType_Lifecycle,
+		MoveType:   utils.MoveType_ChangeStorageTier,
+		SourceType: utils.MoveSourceType_Lifecycle,
 	}
 
 	// add object to InProgressObjs

@@ -26,6 +26,7 @@ import (
 	"github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
+	"github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -61,8 +62,12 @@ func NewS3Service() pb.S3Handler {
 		CacheType: meta.CacheType(helper.CONFIG.MetaCacheType),
 		TidbInfo:  helper.CONFIG.TidbInfo,
 	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	metaStor := meta.New(cfg)
+	gc.Init(ctx, cancelFunc, metaStor)
 	return &s3Service{
-		MetaStorage:   meta.New(cfg),
+		MetaStorage:   metaStor,
 		backendClient: backend.NewBackendService("backend", client.DefaultClient),
 	}
 }
