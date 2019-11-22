@@ -81,3 +81,15 @@ const (
 	MaxUploadsList = 1000 // Limit number of uploads in a listUploadsResponse.
 	MaxPartsList   = 1000 // Limit number of parts in a listPartsResponse.
 )
+
+const (
+	VersioningEabled    = "Enabled"
+	VersioningDisabled  = "Disabled"
+	VersioningSuspended = "Suspended"
+)
+
+type ListObjsAppendInfo struct {
+	Prefixes   []string
+	Truncated  bool
+	NextMarker string
+}

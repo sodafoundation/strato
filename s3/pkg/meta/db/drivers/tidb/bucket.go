@@ -21,12 +21,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -38,11 +38,25 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	log.Infof("get bucket[%s] from tidb ...\n", bucketName)
 	var acl, cors, lc, policy, replication, createTime string
 	var updateTime sql.NullString
+	var row *sql.Row
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		return nil, ErrInternalError
+	}
 
 	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
 		"update_time from buckets where bucketname=?;"
+	if !isAdmin {
+		sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
+			"update_time from buckets where bucketname=? and tenantid=?;"
+		row = t.Client.QueryRow(sqltext, bucketName, tenantId)
+	} else {
+		row = t.Client.QueryRow(sqltext, bucketName)
+	}
+
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
-	err = t.Client.QueryRow(sqltext, bucketName).Scan(
+	err = row.Scan(
 		&tmp.Name,
 		&tmp.TenantId,
 		&createTime,
@@ -103,8 +117,8 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 
 func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err error) {
 	log.Info("list buckets from tidb ...")
-	m := bson.M{}
-	err = UpdateContextFilter(ctx, m)
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -113,8 +127,7 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 	sqltext := "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
 		"versioning,replication,update_time from buckets;"
 
-	tenantId, ok := m[common.CTX_KEY_TENANT_ID]
-	if ok {
+	if !isAdmin {
 		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
 			"versioning,replication,update_time from buckets where tenantid=?;"
 		rows, err = t.Client.Query(sqltext, tenantId)
@@ -231,13 +244,17 @@ func (t *TidbClient) CheckAndPutBucket(ctx context.Context, bucket *Bucket) (boo
 }
 
 func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int,
-	filter map[string]string) (retObjects []*Object, prefixes []string, truncated bool, nextMarker,
-	nextVerIdMarker string, err error) {
+	filter map[string]string) (retObjects []*Object, appendInfo utils.ListObjsAppendInfo, err error) {
 	const MaxObjectList = 10000
 	// TODO: support versioning
 	if versioned {
+		log.Errorf("not supported.")
+		err = ErrInternalError
 		return
 	}
+	defer func() {
+		err = handleDBError(err)
+	}()
 	var count int
 	var exit bool
 	objectMap := make(map[string]struct{})
@@ -255,7 +272,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		var rows *sql.Rows
 		args := make([]interface{}, 0)
 		// only select index column here to avoid slow query
-		sqltext = "select bucketname,name,version from objects where bucketName=?"
+		sqltext = "select bucketname,name,version from objects where bucketName=? and deletemarker=0"
 		args = append(args, bucketName)
 		var inargs []interface{}
 		sqltext, inargs, err = buildSql(ctx, filter, sqltext)
@@ -266,7 +283,6 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		tstart := time.Now()
 		rows, err = t.Client.Query(sqltext, args...)
 		if err != nil {
-			err = handleDBError(err)
 			return
 		}
 		tqueryend := time.Now()
@@ -287,7 +303,6 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			)
 			if err != nil {
 				log.Errorf("err:%v\n", err)
-				err = handleDBError(err)
 				return
 			}
 			//prepare next marker, marker is last bucketname got from the last query,
@@ -327,7 +342,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 					}
 					if _, ok := commonPrefixes[prefixKey]; !ok {
 						if count == maxKeys {
-							truncated = true
+							appendInfo.Truncated = true
 							exit = true
 							break
 						}
@@ -336,7 +351,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 						// use the key name in this field as marker in the subsequent request to get next set of objects,
 						// the same as AWS S3. See https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjects.html
 						// for details.
-						nextMarker = prefixKey
+						appendInfo.NextMarker = prefixKey
 						count += 1
 					}
 					continue
@@ -353,11 +368,11 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 
 			count += 1
 			if count == maxKeys {
-				nextMarker = name
+				appendInfo.NextMarker = name
 			}
 
 			if count > maxKeys {
-				truncated = true
+				appendInfo.Truncated = true
 				exit = true
 				break
 			}
@@ -377,8 +392,15 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		if exit {
 			break
 		}
+
+		err = rows.Err()
+		if err != nil {
+			log.Errorf("err:%v\n", err)
+			return
+		}
 	}
-	prefixes = helper.Keys(commonPrefixes)
+
+	appendInfo.Prefixes = helper.Keys(commonPrefixes)
 
 	return
 }
@@ -470,6 +492,9 @@ func (t *TidbClient) UpdateUsages(ctx context.Context, usages map[string]int64, 
 
 func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket, err error) {
 	log.Infoln("list bucket lifecycle from tidb ...\n")
+	defer func() {
+		err = handleDBError(err)
+	}()
 
 	var rows *sql.Rows
 	sqltext := "select bucketname,lc from buckets where lc!=CAST('null' AS JSON);"
@@ -478,7 +503,7 @@ func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket
 		err = nil
 		return
 	} else if err != nil {
-		err = handleDBError(err)
+		log.Errorf("db err:%v\n", err)
 		return
 	}
 	defer rows.Close()
@@ -490,17 +515,22 @@ func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket
 			&tmp.Name,
 			&lc)
 		if err != nil {
-			err = handleDBError(err)
+			log.Errorf("db err:%v\n", err)
 			return
 		}
 
 		err = json.Unmarshal([]byte(lc), &tmp.LifecycleConfiguration)
 		if err != nil {
-			err = handleDBError(err)
+			log.Errorf("db err:%v\n", err)
 			return
 		}
 
 		buckets = append(buckets, &tmp)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Errorf("db err:%v\n", err)
 	}
 
 	return

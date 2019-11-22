@@ -37,6 +37,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var ChunkSize int = 2048
+
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
 
@@ -87,15 +89,16 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 	return
 }
 
-func getBackend(ctx context.Context, backedClient backend.BackendService, bucket *meta.Bucket) (*backend.BackendDetail, error) {
-	log.Infof("bucketName is %v:\n", bucket.Name)
+func getBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,
+	error) {
+	log.Infof("backendName is %v:\n", backendName)
 	backendRep, backendErr := backedClient.ListBackend(ctx, &backendpb.ListBackendRequest{
 		Offset: 0,
 		Limit:  1,
-		Filter: map[string]string{"name": bucket.DefaultLocation}})
+		Filter: map[string]string{"name": backendName}})
 	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Errorf("get backend %s failed.", bucket.DefaultLocation)
+		log.Errorf("get backend %s failed.", backendName)
 		return nil, backendErr
 	}
 	log.Infof("backendRep is %v:", backendRep)
@@ -159,7 +162,11 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = data
 	}
 
-	backend, err := getBackend(ctx, s.backendClient, bucket)
+	backendName := bucket.DefaultLocation
+	if obj.Location != "" {
+		backendName = obj.Location
+	}
+	backend, err := getBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -256,16 +263,225 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	return nil
 }
 
-func (s *s3Service) GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) error {
+func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.GetObjectMetaResult) error {
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	out.Object = object.Object
+	return nil
+}
+
+func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
 	log.Infoln("GetObject is called in s3 service.")
+	bucketName := req.Bucket
+	objectName := req.Key
+	offset := req.Offset
+	length := req.Length
+
+	var err error
+	getObjRes := &pb.GetObjectResponse{}
+	defer func ()  {
+		getObjRes.ErrorCode = GetErrCode(err)
+		stream.SendMsg(getObjRes)
+	} ()
+
+	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+
+	backendName := bucket.DefaultLocation
+	if object.Location != "" {
+		backendName = object.Location
+	}
+	// if this object has only one part
+	backend, err := getBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("unable to get backend. err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	log.Infof("get object offset %v, length %v", offset, length)
+	reader, err := sd.Get(ctx, object.Object, offset, offset + length - 1)
+	if err != nil {
+		log.Errorln("failed to get data. err:", err)
+		return err
+	}
+
+	eof := false
+	left := object.Size
+	buf := make([]byte, ChunkSize)
+	for !eof && left > 0 {
+		n, err := reader.Read(buf)
+		if err != nil && err != io.EOF {
+			log.Errorln("failed to read, err:", err)
+			break
+		}
+		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
+		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
+		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
+		if err == io.EOF {
+			log.Debugln("finished read")
+			eof = true
+		}
+		// From https://golang.org/pkg/io/, there is the following statement.
+		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
+		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
+		// If n is equal 0, it indicate that there is no more data to read
+		if n == 0 {
+			log.Infoln("reader return zero bytes.")
+			break
+		}
+
+		err = stream.Send(&pb.GetObjectResponse{ErrorCode:int32(ErrNoErr), Data:buf[0:n]})
+		if err != nil {
+			log.Infof("stream send error: %v\n", err)
+			break
+		}
+		left -= int64(n)
+	}
+
+	log.Infoln("get object successfully")
+	return nil
+}
+
+// When bucket versioning is Disabled/Enabled/Suspended, and request versionId is set/unset:
+//
+// |           |        with versionId        |                   without versionId                    |
+// |-----------|------------------------------|--------------------------------------------------------|
+// | Disabled  | error                        | remove object                                          |
+// | Enabled   | remove corresponding version | add a delete marker                                    |
+// | Suspended | remove corresponding version | remove null version object(if exists) and add a        |
+// |           |                              | null version delete marker                             |
+//
+// See http://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html
+func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.DeleteObjectOutput) error {
+	log.Infoln("DeleteObject is called in s3 service.")
+
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return nil
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed.")
+		return nil
+	}
+
+	// administrator can delete any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if bucket.TenantId != tenantId && tenantId != "" {
+				log.Errorf("delete object failed: tenant[id=%s] has no access right.", tenantId)
+				err = ErrBucketAccessForbidden
+				return nil
+			}
+		} // TODO policy and fancy ACL
+	}
+
+	switch bucket.Versioning {
+	case utils.VersioningDisabled:
+		if in.VersioId != "" && in.VersioId != "null" {
+			err = ErrNoSuchVersion
+		} else {
+			err = s.removeObject(ctx, bucket, in.Key)
+		}
+	case utils.VersioningEabled:
+		// TODO: versioning
+		err = ErrInternalError
+	case utils.VersioningSuspended:
+		// TODO: versioning
+		err = ErrInternalError
+	default:
+		log.Errorf("versioing of bucket[%s] is invalid:%s\n", bucket.Name, bucket.Versioning)
+		err = ErrInternalError
+	}
+
+	// TODO: need to refresh cache if it is enabled
 
 	return nil
 }
 
-func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, out *pb.BaseResponse) error {
-	log.Infoln("DeleteObject is called in s3 service.")
+func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objectKey string) error {
+	log.Debugf("remove object[%s] from bucket[%s]\n", objectKey, bucket.Name)
+	obj, err := s.MetaStorage.GetObject(ctx, bucket.Name, objectKey, true)
+	if err == ErrNoSuchKey {
+		return nil
+	}
+	if err != nil {
+		log.Errorf("get object failed, err:%v\n", err)
+		return ErrInternalError
+	}
 
-	return nil
+	backendName := bucket.DefaultLocation
+	if obj.Location != "" {
+		backendName = obj.Location
+	}
+	backend, err := getBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend with err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage, err:", err)
+		return err
+	}
+
+	// mark object as deleted
+	err = s.MetaStorage.MarkObjectAsDeleted(ctx, obj)
+	if err != nil {
+		log.Errorln("failed to mark object as deleted, err:", err)
+		return err
+	}
+
+	// delete object data in backend
+	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: obj.VersionId,
+		ETag: obj.Etag, StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
+	if err != nil {
+		log.Errorf("failed to delete obejct[%s] from backend storage, err:", objectKey, err)
+		return err
+	} else {
+		log.Infof("delete obejct[%s] from backend storage successfully.", err)
+	}
+
+	// delete object meta data from database
+	err = s.MetaStorage.DeleteObject(ctx, obj)
+	if err != nil {
+		log.Errorf("failed to delete obejct[%s] metadata, err:", objectKey, err)
+	} else {
+		log.Infof("delete obejct[%s] metadata successfully.", objectKey)
+	}
+
+	return err
 }
 
 func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponse) error {
@@ -309,9 +525,9 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		// TODO validate user policy and ACL
 	}
 
-	retObjects, prefixes, truncated, nextMarker, _, err := s.ListObjectsInternal(ctx, in)
-	if truncated && len(nextMarker) != 0 {
-		out.NextMarker = nextMarker
+	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
+	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
+		out.NextMarker = appendInfo.NextMarker
 	}
 	if in.Version == constants.ListObjectsType2Int {
 		out.NextMarker = util.Encrypt(out.NextMarker)
@@ -338,8 +554,8 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		log.Infof("object:%+v\n", object)
 	}
 	out.Objects = objects
-	out.Prefixes = prefixes
-	out.IsTruncated = truncated
+	out.Prefixes = appendInfo.Prefixes
+	out.IsTruncated = appendInfo.Truncated
 
 	if in.EncodingType != "" { // only support "url" encoding for now
 		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
@@ -353,7 +569,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 }
 
 func (s *s3Service) ListObjectsInternal(ctx context.Context, request *pb.ListObjectsRequest) (retObjects []*meta.Object,
-	prefixes []string, truncated bool, nextMarker, nextVerIdMarker string, err error) {
+	appendInfo utils.ListObjsAppendInfo, err error) {
 	log.Infoln("Prefix:", request.Prefix, "Marker:", request.Marker, "MaxKeys:",
 		request.MaxKeys, "Delimiter:", request.Delimiter, "Version:", request.Version,
 		"keyMarker:", request.KeyMarker, "versionIdMarker:", request.VersionIdMarker)

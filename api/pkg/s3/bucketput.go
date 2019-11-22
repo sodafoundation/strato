@@ -24,6 +24,7 @@ import (
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -49,6 +50,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.UserId = actx.UserId
 	bucket.Deleted = false
 	bucket.CreateTime = time.Now().Unix()
+	bucket.Versioning = utils.VersioningDisabled // it's the default
 	log.Infof("Bucket PUT: TenantId=%s, UserId=%s\n", bucket.TenantId, bucket.UserId)
 
 	body := ReadBody(request)
