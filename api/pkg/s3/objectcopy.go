@@ -67,7 +67,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		sourceObjectName = splits[1]
 	}
 	// If source object is empty, reply back error.
-	if sourceObjectName == "" {
+	if sourceBucketName == "" || sourceObjectName == ""{
 		WriteErrorResponse(response, request, ErrInvalidCopySource)
 		return
 	}

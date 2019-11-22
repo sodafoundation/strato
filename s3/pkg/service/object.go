@@ -418,12 +418,6 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
-	if err != nil {
-		log.Errorln("failed to put data. err:", err)
-		return err
-	}
-	limitedDataReader := io.LimitReader(reader, srcObject.Size)
 
 	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
 	if err != nil {
@@ -440,6 +434,13 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
+
+	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
+	if err != nil {
+		log.Errorln("failed to put data. err:", err)
+		return err
+	}
+	limitedDataReader := io.LimitReader(reader, srcObject.Size)
 
 	targetObject := &pb.Object{
 		ObjectKey:  targetObjectName,

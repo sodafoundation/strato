@@ -227,8 +227,9 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 func (o *Object) GetUpdateMetaSql() (string, []interface{}) {
 	version := math.MaxUint64 - uint64(o.LastModified)
 	attrs, _ := json.Marshal(o.CustomAttributes)
-	sql := "update objects set customattributes =? where bucketname=? and name=? and version=?"
-	args := []interface{}{attrs, o.BucketName, o.ObjectKey, version}
+	acl, _ := json.Marshal(o.Acl)
+	sql := "update objects set acl, contenttype, customattributes =? where bucketname=? and name=? and version=?"
+	args := []interface{}{acl, o.ContentType, attrs, o.BucketName, o.ObjectKey, version}
 	return sql, args
 
 }
