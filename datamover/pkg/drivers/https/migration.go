@@ -111,8 +111,16 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 	destLoca *LocationInfo, remainSource bool, jobFSM *JobFSM, job *flowtype.Job) {
 	//Only three routines allowed to be running at the same time
 	//th := make(chan int, simuRoutines)
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return
+	}
 	locMap := make(map[string]*LocationInfo)
 	for i := 0; i < len(objs); i++ {
+		checkFSM(job.Id, jobFSM)
+		if jobFSM.FSM.Is(ABORTED) {
+			return
+		}
 		if objs[i].Tier == s3utils.Tier999 {
 			// archived object cannot be moved currently
 			logger.Printf("Object(key:%s) is archived, cannot be migrated.\n", objs[i].ObjectKey)
@@ -123,6 +131,10 @@ func doMove(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan
 		//Create one routine
 		th <- 1
 		logger.Printf("doMigrate: produce 1 routine, len(th):%d.\n", len(th))
+	}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		db.DbAdapter.UpdateJob(job)
 	}
 }
 
@@ -144,6 +156,10 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 	downloadObjKey := obj.ObjectKey
 	if srcLoca.VirBucket != "" {
 		downloadObjKey = srcLoca.VirBucket + "/" + downloadObjKey
+	}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return errors.New("job aborted")
 	}
 	//download
 	switch srcLoca.StorType {
@@ -181,16 +197,15 @@ func MoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, 
 		return err
 	}
 
-	checkFSM(job.Id, jobFSM)
-	if jobFSM.FSM.Is(ABORTED) {
-		return errors.New("job aborted")
-	}
 	if job.Type == "migration" {
 		progress(job, size, WT_DOWLOAD)
 	}
 
 	logger.Printf("Download object[%s] succeed, size=%d\n", obj.ObjectKey, size)
-
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return errors.New("job aborted")
+	}
 	//upload
 	uploadObjKey := obj.ObjectKey
 	if srcLoca.VirBucket != "" {
@@ -354,6 +369,10 @@ func deleteMultipartUpload(objKey, virtBucket, backendName, uploadId string) {
 }
 
 func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo, job *flowtype.Job, jobFSM *JobFSM) error {
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return errors.New("job aborted")
+	}
 	partCount := int64(obj.Size / PART_SIZE)
 	if obj.Size%PART_SIZE != 0 {
 		partCount++
@@ -465,6 +484,10 @@ func MultipartMoveObj(obj *osdss3.Object, srcLoca *LocationInfo, destLoca *Locat
 		logger.Printf("job cleaned")
 		return errors.New("job aborted")
 	}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return errors.New("job aborted")
+	}
 	err = completeMultipartUpload(uploadObjKey, destLoca, uploadMover)
 	if err != nil {
 		logger.Println(err.Error())
@@ -549,6 +572,9 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		return
 	}
 
+	if jobFSM.FSM.Is(ABORTED) {
+		return
+	}
 	if needMove {
 		//move object
 		part_size, err := strconv.ParseInt(os.Getenv("PARTSIZE"), 10, 64)
@@ -559,6 +585,10 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 				PART_SIZE = part_size * 1024 * 1024
 				logger.Printf("Set PART_SIZE to be %d.\n", PART_SIZE)
 			}
+		}
+		checkFSM(job.Id, jobFSM)
+		if jobFSM.FSM.Is(ABORTED) {
+			return
 		}
 		if obj.Size <= PART_SIZE {
 			err = MoveObj(obj, newSrcLoca, destLoca, job, jobFSM)
@@ -594,7 +624,7 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		deleteObj(ctx, obj, newSrcLoca)
 		//TODO: what if delete failed
 	}
-
+	checkFSM(job.Id, jobFSM)
 	if succeed {
 		//If migrate success, update capacity
 		logger.Printf("  migrate object[%s] succeed.", obj.ObjectKey)
@@ -602,9 +632,16 @@ func move(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int,
 		if job.Type == "migration" {
 			progress(job, obj.Size, WT_DELETE)
 		}
-	} else {
+
+	} else if !jobFSM.FSM.Is(ABORTED) {
 		logger.Printf("  migrate object[%s] failed.", obj.ObjectKey)
 		capa <- -1
+	} else {
+		logger.Printf(" migrate object[%s] aborted.", obj.ObjectKey)
+		if len(th) == 0 {
+			logger.Println("Migration Aborted Successfully.")
+		}
+		<-th
 	}
 	t := <-th
 	logger.Printf("  migrate: consume %d routine, len(th)=%d\n", t, len(th))
