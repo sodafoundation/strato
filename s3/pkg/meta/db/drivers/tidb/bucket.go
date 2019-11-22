@@ -16,6 +16,7 @@ package tidbclient
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -119,6 +120,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	}
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
 	tmp.ServerSideEncryption.SseType = sseOpts.SseType
+	tmp.ServerSideEncryption.EncryptionKey = sseOpts.EncryptionKey
 
 	bucket = tmp
 	return
@@ -590,7 +592,7 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 	}
 
 	var rows *sql.Rows
-	sqltext := "select sse from bucket_sseopts where bucketname=?;"
+	sqltext := "select sse,sseserverkey from bucket_sseopts where bucketname=?;"
 
 	rows, err = t.Client.Query(sqltext, bucketName)
 
@@ -605,8 +607,11 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 
 	for rows.Next() {
 		tmp := &pb.ServerSideEncryption{}
+		var key string
 		err = rows.Scan(
-			&tmp.SseType)
+			&tmp.SseType,
+			&key)
+		tmp.EncryptionKey,_ = hex.DecodeString(key)
 		if err != nil {
 			err = handleDBError(err)
 			return

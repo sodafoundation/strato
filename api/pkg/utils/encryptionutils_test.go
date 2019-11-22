@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/hex"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
@@ -21,6 +22,17 @@ func TestGetRandom32BitKey(t *testing.T) {
 		// add the new []byte to the array
 		sliceByteArray = append(sliceByteArray, newByteArr)
 	}
+}
+
+func TestEncAndDec32BitKey(t *testing.T) {
+
+	// get a new []byte, check none of the earlier []byte equal this
+	newByteArr, _ := GetRandom32BitKey()
+	s := hex.EncodeToString(newByteArr)
+	decByteArr,_ := hex.DecodeString(s)
+	assert.Equal(t, newByteArr, decByteArr)
+
+
 }
 
 func TestEncAndDec(t *testing.T) {
