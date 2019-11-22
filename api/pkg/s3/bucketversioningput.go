@@ -21,6 +21,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,22 +33,22 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 	ctx := common.InitCtxWithAuthInfo(request)
 	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if HandleS3Error(response, request, err, bucket.ErrorCode) != nil {
-		log.Errorf("get bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, bucket.ErrorCode)
+		log.Errorf("get bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, bucket.ErrorCode)
 		return
 	}
 
 	body := ReadBody(request)
-	log.Infof("MD5 sum for body is %x", md5.Sum(body))
 	if body == nil {
 		log.Info("no request body provided for creating versioning configuration")
-		WriteErrorResponse(response, request, S3ErrorCode(ErrInvalidVersion))
+		WriteErrorResponse(response, request, S3ErrorCode(ErrInvalidVersioning))
 		return
 	}
+	log.Infof("MD5 sum for body is %x", md5.Sum(body))
 
 	versionConf := model.VersioningConfiguration{}
 	err = xml.Unmarshal(body, &versionConf)
 	if err != nil {
-		WriteErrorResponse(response, request, S3ErrorCode(ErrInvalidVersion))
+		WriteErrorResponse(response, request, S3ErrorCode(ErrInvalidVersioning))
 		return
 	}
 
@@ -58,17 +59,17 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 		XXX_sizecache:        0,
 	}
 
-	if versionConf.Status == "Enabled"{
-		s3version.Status = "Enabled"
+	if versionConf.Status == utils.VersioningEnabled{
+		s3version.Status = utils.VersioningEnabled
 	} else{
-		s3version.Status = "Disabled"
+		s3version.Status = utils.VersioningDisabled
 	}
 
 	bucket.BucketMeta.Versioning = s3version
 
-	rsp, err := s.s3Client.CreateBucket(ctx, bucket.BucketMeta)
-	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
-		log.Errorf("versioning configuration failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
+	_, err = s.s3Client.UpdateBucket(ctx, bucket.BucketMeta)
+	if err != nil {
+		log.Errorf("versioning configuration failed, errCode=%d\n", bucketName, err)
 		return
 	}
 

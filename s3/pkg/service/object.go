@@ -414,7 +414,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		} else {
 			err = s.removeObject(ctx, bucket, in.Key)
 		}
-	case utils.VersioningEabled:
+	case utils.VersioningEnabled:
 		// TODO: versioning
 		err = ErrInternalError
 	case utils.VersioningSuspended:
