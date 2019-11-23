@@ -89,10 +89,9 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	result := dscommon.PutResult{}
 	log.Infof("put object[AWS S3] begin, objKey:%s\n", objectId)
 
-	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
-	if err != nil {
-		return result, ErrIncompleteBody
-	}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
+
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
 	if size > 0 { // request.ContentLength is -1 if length is unknown

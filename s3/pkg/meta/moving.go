@@ -41,5 +41,6 @@ func (m *Meta) UpdateMetaAfterCopy(ctx context.Context, old, new *types.Object) 
 		log.Errorf("err: %v\n", err)
 	}
 
+	log.Infoln("update meta data succeed")
 	return err
 }

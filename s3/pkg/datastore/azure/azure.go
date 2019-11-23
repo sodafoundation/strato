@@ -85,10 +85,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	log.Infof("put object[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
 
 	result := dscommon.PutResult{}
-	_, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
-	if err != nil {
-		return result, ErrIncompleteBody
-	}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
 
 	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
 	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
@@ -123,7 +120,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = string(uploadResp.ETag())
+	result.Etag = dscommon.TrimQuot(string(uploadResp.ETag()))
 	result.Meta = uploadResp.Version()
 	log.Info("### returnMd5:", result.Etag, "userMd5:", userMd5)
 	log.Infof("upload object[Azure Blob] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)

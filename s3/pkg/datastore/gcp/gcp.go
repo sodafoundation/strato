@@ -33,6 +33,7 @@ import (
 	"github.com/webrtcn/s3client"
 	. "github.com/webrtcn/s3client"
 	"github.com/webrtcn/s3client/models"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 type GcsAdapter struct {
@@ -55,10 +56,8 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
 
 	result := dscommon.PutResult{}
-	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
-	if err != nil {
-		return result, ErrIncompleteBody
-	}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
 
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
@@ -73,7 +72,7 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	bucket := ad.session.NewBucket()
 	GcpObject := bucket.NewObject(bucketName)
 	body := ioutil.NopCloser(dataReader)
-	err = GcpObject.Create(objectId, userMd5, "", size, body, models.Private)
+	err := GcpObject.Create(objectId, userMd5, "", size, body, models.Private)
 	if err != nil {
 		log.Infof("put object[GCS] failed, object:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
@@ -209,7 +208,7 @@ func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 		d, err := ioutil.ReadAll(stream)
 		data := []byte(d)
 		body := ioutil.NopCloser(bytes.NewReader(data))
-		contentMD5 := md5Content(data)
+		contentMD5 := utils.Md5Content(data)
 		//length := int64(len(data))
 		part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 
@@ -242,7 +241,7 @@ func (ad *GcsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	log.Infof("complete multipart upload[GCS], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
 
 	var completeParts []CompletePart
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		completePart := CompletePart{
 			Etag:       p.ETag,
 			PartNumber: int(p.PartNumber),

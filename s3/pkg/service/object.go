@@ -345,23 +345,11 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	return nil
 }
 
-func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, out *pb.MoveObjectResponse) error {
-	log.Infoln("MoveObject is called in s3 service.")
+func initTargeObject(ctx context.Context, in *pb.MoveObjectRequest, srcObject *pb.Object) (*pb.Object, error) {
 	md, ok := metadata.FromContext(ctx)
 	if !ok {
 		log.Error("get metadata from ctx failed.")
-		return ErrInternalError
-	}
-
-	err := s.checkMoveRequest(ctx, in)
-	if err != nil {
-		return err
-	}
-
-	srcObject, err := s.MetaStorage.GetObject(ctx, in.SrcBucket, in.SrcObject, true)
-	if err != nil {
-		log.Errorf("failed to get object[%s] of bucket[%s]. err:%v\n", in.SrcObject, in.SrcBucket, err)
-		return err
+		return nil, ErrInternalError
 	}
 
 	targetObject := &pb.Object{
@@ -393,6 +381,29 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 
 	if in.TargetTier > 0 {
 		targetObject.Tier = in.TargetTier
+	}
+
+	return targetObject, nil
+}
+
+func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, out *pb.MoveObjectResponse) error {
+	log.Infoln("MoveObject is called in s3 service.")
+
+	err := s.checkMoveRequest(ctx, in)
+	if err != nil {
+		return err
+	}
+
+	srcObject, err := s.MetaStorage.GetObject(ctx, in.SrcBucket, in.SrcObject, true)
+	if err != nil {
+		log.Errorf("failed to get object[%s] of bucket[%s]. err:%v\n", in.SrcObject, in.SrcBucket, err)
+		return err
+	}
+
+	targetObject, err := initTargeObject(ctx, in, srcObject.Object)
+	if err != nil {
+		log.Errorf("failed to get init target obejct. err:%v\n", err)
+		return err
 	}
 
 	var srcSd, targetSd driver.StorageDriver
@@ -489,6 +500,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			}
 			// clean target object, if failed, gc will clean
 			s.cleanFromBackend(ctx, delInput, targetSd, newObj)
+			return err
 		}
 		out.Md5 = targetObject.Etag
 		out.LastModified = targetObject.LastModified
@@ -504,6 +516,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			s.cleanFromBackend(ctx, delInput, targetSd, newObj)
 			return err
 		}
+		log.Infof("delete source object[key=%s]\n", srcObject.ObjectKey)
 		// step 4: delete source object from backend storage and clean gc record
 		delInput := &pb.DeleteObjectInput{
 			Bucket: srcObject.BucketName, Key: srcObject.ObjectKey, ObjectId: srcObject.ObjectId,

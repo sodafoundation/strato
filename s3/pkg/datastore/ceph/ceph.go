@@ -46,10 +46,8 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("put object[Ceph S3], bucket:%s, objectId:%s\n", bucketName, objectId)
 
-	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
-	if err != nil {
-		return result, ErrIncompleteBody
-	}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
 
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
@@ -65,7 +63,7 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 	cephObject := bucket.NewObject(bucketName)
 	body := ioutil.NopCloser(dataReader)
 	log.Infof("put object[Ceph S3] begin, objectId:%s\n", objectId)
-	err = cephObject.Create(objectId, userMd5, "", size, body, models.Private)
+	err = cephObject.Create(objectId, userMd5, "", object.Size, body, models.Private)
 	log.Infof("put object[Ceph S3] end, objectId:%s\n", objectId)
 	if err != nil {
 		log.Infof("upload object[Ceph S3] failed, objectId:%s, err:%v", objectId, err)

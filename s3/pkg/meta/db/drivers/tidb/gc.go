@@ -45,9 +45,9 @@ func (t *TidbClient) PutGcobjRecord(ctx context.Context, o *Object, tx interface
 	version := math.MaxUint64 - uint64(o.LastModified)
 	lastModifiedTime := time.Unix(o.LastModified, 0).Format(TIME_LAYOUT_TIDB)
 	sqltext := "insert into gcobjs (bucketname, name, version, location, tenantid, userid, size, objectid, " +
-		" lastmodifiedtime, etag, tier, storageMeta) values(?,?,?,?,?,?,?,?,?,?,?,?)"
+		" lastmodifiedtime, storageMeta) values(?,?,?,?,?,?,?,?,?,?)"
 	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
-		lastModifiedTime, o.Etag, o.Tier, o.StorageMeta}
+		lastModifiedTime, o.StorageMeta}
 	log.Debugf("sqltext:%s, args:%v\n", sqltext, args)
 	_, err = sqlTx.Exec(sqltext, args...)
 	log.Debugf("err:%v\n", err)

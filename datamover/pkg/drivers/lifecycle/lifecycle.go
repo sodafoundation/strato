@@ -68,8 +68,8 @@ func doAction(acReq *datamover.LifecycleActionRequest) {
 	case utils.ActionExpiration:
 		doExpirationAction(acReq)
 	// This is left until multipart upload is implemented.
-	//case utils.AbortIncompleteMultipartUpload:
-	//doAbortUpload(acReq)
+	case utils.AbortIncompleteMultipartUpload:
+	doAbortUpload(acReq)
 	default:
 		log.Infof("unsupported action type: %d.\n", acType)
 	}

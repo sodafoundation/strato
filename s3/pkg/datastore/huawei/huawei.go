@@ -57,10 +57,8 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	log.Infof("put object[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
 
 	result := dscommon.PutResult{}
-	size, userMd5, err := dscommon.GetSizeAndMd5FromCtx(ctx)
-	if err != nil {
-		return result, ErrIncompleteBody
-	}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
 
 	if object.Tier == 0 {
 		// default
@@ -90,7 +88,7 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 	result.ObjectId = objectId
 	result.UpdateTime = time.Now().Unix()
-	result.Etag = out.ETag
+	result.Etag = dscommon.TrimQuot(out.ETag)
 	result.Meta = out.VersionId
 	log.Info("### returnMd5:", result.Etag, "userMd5:", userMd5)
 	log.Infof("upload object[OBS] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
