@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"strconv"
 	"time"
 
@@ -201,7 +200,6 @@ func (o *Object) GetVersionId() string {
 //Tidb related function
 
 func (o *Object) GetCreateSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModified)
 	customAttributes, _ := json.Marshal(o.CustomAttributes)
 	acl, _ := json.Marshal(o.Acl)
 	var sseType string
@@ -217,7 +215,7 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 		" lastmodifiedtime, etag, contenttype, customattributes, acl, nullversion, deletemarker, ssetype, " +
 		" encryptionkey, initializationvector, type, tier, storageMeta) " +
 		"values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
+	args := []interface{}{o.BucketName, o.ObjectKey, o.VersionId, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
 		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker, sseType,
 		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta}
 

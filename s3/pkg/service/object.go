@@ -16,10 +16,6 @@ package service
 
 import (
 	"context"
-	"io"
-	"net/url"
-	"time"
-
 	"github.com/journeymidnight/yig/helper"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -35,6 +31,11 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"io"
+	"math"
+	"net/url"
+	"strconv"
+	"time"
 )
 
 var ChunkSize int = 2048
@@ -183,6 +184,14 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return nil
 	}
+	obj.LastModified = time.Now().UTC().Unix()
+	version := math.MaxUint64 - uint64(obj.LastModified)
+	strVersion := strconv.FormatUint(version, 10)
+	obj.VersionId = strVersion
+
+	if true{
+		obj.ObjectKey = obj.ObjectKey + "_" + obj.VersionId
+	}
 	res, err := sd.Put(ctx, limitedDataReader, obj)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
@@ -213,7 +222,6 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}*/
 	// TODO validate bucket policy and fancy ACL
 	obj.ObjectId = oid
-	obj.LastModified = time.Now().UTC().Unix()
 	obj.Etag = res.Etag
 	obj.ContentType = md["Content-Type"]
 	obj.DeleteMarker = false

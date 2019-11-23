@@ -147,7 +147,7 @@ func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (str
 
 	delimiter := filter[common.KDelimiter]
 	if delimiter == "" {
-		//sqltxt += " order by bucketname,name,version limit ?"
+		sqltxt += " order by bucketname,name,version limit ?"
 		args = append(args, MaxObjectList)
 	} else {
 		num := len(strings.Split(prefix, delimiter))

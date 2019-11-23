@@ -257,7 +257,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 	}()
 	var count int
 	var exit bool
-	objectMap := make(map[string]struct{})
+	//objectMap := make(map[string]struct{})
 	objectNum := make(map[string]int)
 	commonPrefixes := make(map[string]struct{})
 	if filter == nil {
@@ -313,11 +313,11 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			objectNum[name] += 1
 			filter[common.KMarker] = name
 
-			if _, ok := objectMap[name]; !ok {
+			/*if _, ok := objectMap[name]; !ok {
 				objectMap[name] = struct{}{}
 			} else {
 				continue
-			}
+			}*/
 
 			// TODO: filter by deletemarker if versioning enabled
 
