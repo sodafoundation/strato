@@ -65,6 +65,10 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 	if len(splits) == 2 {
 		sourceBucketName = splits[0]
 		sourceObjectName = splits[1]
+	} else {
+		log.Infoln("copy source should be splited at least two parts.")
+		WriteErrorResponse(response, request, ErrInvalidCopySource)
+		return
 	}
 	// If source object is empty, reply back error.
 	if sourceBucketName == "" || sourceObjectName == ""{
@@ -168,7 +172,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 			response.AddHeader("x-amz-version-id", result.VersionId)
 		}
 
-		log.Info("COPY object successfully.")
+		log.Info("Update object meta successfully.")
 		// write success response.
 		WriteSuccessResponse(response, encodedSuccessResponse)
 		return
