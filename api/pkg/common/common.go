@@ -65,7 +65,7 @@ const (
 	REQUEST_HEADER_CONTENT_LENGTH = "Content-Length"
 	REQUEST_HEADER_STORAGE_CLASS  = "x-amz-storage-class"
 	REQUEST_HEADER_COPY_SOURCE    = "X-Amz-Copy-Source"
-	REQUEST_HEADER_ACL            = "x-amz-acl"
+	REQUEST_HEADER_ACL            = "X-Amz-Acl"
 	REQUEST_HEADER_CONTENT_MD5    = "Content-Md5"
 )
 

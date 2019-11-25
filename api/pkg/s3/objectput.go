@@ -96,9 +96,9 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	// check if specific bucket exist
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucketMeta := s.getBucketMeta(ctx, bucketName)
-	if bucketMeta == nil {
-		WriteErrorResponse(response, request, s3error.ErrGetBucketFailed)
+	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
 		return
 	}
 	//log.Logf("bucket, acl:%f", bucketMeta.Acl.CannedAcl)
