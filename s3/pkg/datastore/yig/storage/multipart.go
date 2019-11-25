@@ -248,10 +248,10 @@ func (yig *YigStorage) ListParts(ctx context.Context, multipartUpload *pb.ListPa
 	var partList []model.Part
 
 	for i, part := range parts {
-		if int64(i) <= multipartUpload.PartNumberMarker {
+		if multipartUpload.PartNumberMarker > 0 && int64(i) <= multipartUpload.PartNumberMarker {
 			continue
 		}
-		if int64(i) > multipartUpload.MaxParts {
+		if multipartUpload.MaxParts > 0 && int64(i) > multipartUpload.MaxParts {
 			break
 		}
 		p := model.Part{
