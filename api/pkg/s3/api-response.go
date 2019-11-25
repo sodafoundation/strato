@@ -21,9 +21,11 @@ import (
 	"net/http"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	. "github.com/opensds/multi-cloud/s3/error"
+	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 )
 
@@ -31,6 +33,13 @@ const (
 	timeFormatAMZ = "2006-01-02T15:04:05.000Z" // Reply date format
 )
 
+func GetFinalError(err error, errorCode int32) error {
+	if errorCode != int32(ErrNoErr) {
+		return S3ErrorCode(errorCode)
+	} else {
+		return err
+	}
+}
 
 // WriteSuccessResponse write success headers and response if any.
 func WriteSuccessResponse(response *restful.Response, data []byte) {
@@ -50,6 +59,11 @@ func WriteSuccessResponse(response *restful.Response, data []byte) {
 func WriteErrorResponse(response *restful.Response, request *restful.Request, err error) {
 	WriteErrorResponseHeaders(response, err)
 	WriteErrorResponseNoHeader(response, request, err, request.Request.URL.Path)
+}
+
+func WriteErrorResponseWithResource(response *restful.Response, request *restful.Request, err error, resource string) {
+	WriteErrorResponseHeaders(response, err)
+	WriteErrorResponseNoHeader(response, request, err, resource)
 }
 
 func WriteErrorResponseHeaders(response *restful.Response, err error) {
@@ -118,6 +132,14 @@ func WriteApiErrorResponse(response *restful.Response, request *restful.Request,
 
 	response.Write(encodedErrorResponse)
 	response.ResponseWriter.(http.Flusher).Flush()
+}
+
+// GenerateCopyObjectResponse
+func GenerateCopyObjectResponse(etag string, lastModified time.Time) CopyObjectResponse {
+	return CopyObjectResponse{
+		ETag:         "\"" + etag + "\"",
+		LastModified: lastModified.UTC().Format(timeFormatAMZ),
+	}
 }
 
 // APIErrorResponse - error response format

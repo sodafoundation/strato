@@ -30,7 +30,7 @@ const (
 	MaxPaginationLimit      = 1000
 	DefaultPaginationLimit  = MaxPaginationLimit
 	DefaultPaginationOffset = 0
-	MaxObjectSize           = 5 * 1024 * 1024 // 5GB
+	MaxObjectSize           = 5 * 1024 * 1024 * 1024 // 5GB
 	SortDirectionAsc        = "asc"
 	SortDirectionDesc       = "desc"
 )
