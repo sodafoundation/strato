@@ -73,10 +73,7 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
-	ctx = metadata.NewContext(ctx, map[string]string{
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
-		common.CTX_KEY_TENANT_ID: INTERNAL_TENANT,
-	})
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	_, err := s3client.MoveObject(ctx, req)
 	if err != nil {
 		// if failed, it will try again in the next round schedule

@@ -29,6 +29,7 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -540,4 +541,18 @@ func GetErrCode(err error) (errCode int32) {
 	}
 
 	return errCode
+}
+
+func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, error) {
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Errorf("get credential faied, err:%v\n", err)
+		return isAdmin, tenantId, ErrInternalError
+	}
+	if !isAdmin && tenantId != tenantId4Source {
+		log.Errorf("access forbidden, tenantId=%s, tenantId4Source=%s\n", tenantId, tenantId4Source)
+		return isAdmin, tenantId, ErrNoSuchKey
+	}
+
+	return isAdmin, tenantId, nil
 }

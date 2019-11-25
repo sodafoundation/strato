@@ -256,6 +256,12 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
+
+	_, _, err = CheckRights(ctx, object.TenantId)
+	if err != nil {
+		return nil
+	}
+
 	out.Object = object.Object
 	return nil
 }
@@ -277,6 +283,10 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	_, _, err = CheckRights(ctx, object.TenantId)
+	if err != nil {
 		return err
 	}
 
@@ -352,6 +362,16 @@ func (s *s3Service) UpdateObjectMeta(ctx context.Context, in *pb.Object, out *pb
 		out.ErrorCode = GetErrCode(err)
 	}()
 
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	_, _, err = CheckRights(ctx, object.TenantId)
+	if err != nil {
+		return err
+	}
+
 	err = s.MetaStorage.UpdateObjectMeta(&meta.Object{Object: in})
 	if err != nil {
 		log.Errorf("failed to update object meta storage, err:", err)
@@ -386,6 +406,12 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
+	_, _, err = CheckRights(ctx, srcObject.TenantId)
+	if err != nil {
+		log.Errorf("no rights to access the source object[%s]\n", srcObject.ObjectKey)
+		return nil
+	}
+
 	backendName := srcBucket.DefaultLocation
 	if srcObject.Location != "" {
 		backendName = srcObject.Location
@@ -759,9 +785,14 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		return nil
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
-		log.Error("get tenant id failed.")
+	object, err := s.MetaStorage.GetObject(ctx, in.Bucket, in.Key, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	isAdmin, tenantId, err := CheckRights(ctx, object.TenantId)
+	if err != nil {
+		log.Errorf("no rights to access the object[%s]\n", object.ObjectKey)
 		return nil
 	}
 
@@ -870,7 +901,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	}
 
 	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
+	if err != nil {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
 		return nil

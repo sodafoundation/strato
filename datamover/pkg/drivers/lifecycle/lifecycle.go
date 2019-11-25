@@ -31,8 +31,6 @@ var mutex sync.RWMutex
 
 type Int2String map[int32]string
 
-const INTERNAL_TENANT = "internal tenant"
-
 // map from cloud vendor name to it's map relation relationship between internal tier to it's storage class name.
 var Int2ExtTierMap map[string]*Int2String
 
@@ -69,7 +67,7 @@ func doAction(acReq *datamover.LifecycleActionRequest) {
 		doExpirationAction(acReq)
 	// This is left until multipart upload is implemented.
 	case utils.AbortIncompleteMultipartUpload:
-	doAbortUpload(acReq)
+		doAbortUpload(acReq)
 	default:
 		log.Infof("unsupported action type: %d.\n", acType)
 	}

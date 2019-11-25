@@ -40,11 +40,8 @@ func GetCredentialFromCtx(ctx context.Context) (isAdmin bool, tenantId string, e
 		isAdmin = true
 	}
 
-	if tenantId, ok = md[common.CTX_KEY_TENANT_ID]; !ok {
-		log.Warn("get tenantid failed.")
-		err = ErrInternalError
-		return
-	}
+	tenantId, ok = md[common.CTX_KEY_TENANT_ID]
 
+	log.Debugf("isAdmin=%v, tenantId=%s\n", isAdmin, tenantId)
 	return
 }

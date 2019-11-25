@@ -20,7 +20,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -100,6 +99,14 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		return nil
 	}
 
+	_, _, err = CheckRights(ctx, bucket.TenantId)
+	if err != nil {
+		if err == ErrNoSuchKey {
+			err = ErrNoSuchBucket
+		}
+		return nil
+	}
+
 	out.BucketMeta = &pb.Bucket{
 		Id:              bucket.Id,
 		Name:            bucket.Name,
@@ -127,6 +134,13 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, false)
 	if err != nil {
 		log.Errorf("get bucket failed, err:%+v\n", err)
+		return nil
+	}
+	_, _, err = CheckRights(ctx, bucket.TenantId)
+	if err != nil {
+		if err == ErrNoSuchKey {
+			err = ErrNoSuchBucket
+		}
 		return nil
 	}
 
@@ -158,22 +172,20 @@ func (s *s3Service) PutBucketLifecycle(ctx context.Context, in *pb.PutBucketLife
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	_, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		log.Error("get tenant id failed.")
-		return nil
-	}
-
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.BucketName, true)
 	if err != nil {
 		log.Errorf("get bucket failed, err:%v\n", err)
 		return nil
 	}
-	if bucket.TenantId != tenantId {
-		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
-		err = ErrBucketAccessForbidden
+
+	_, _, err = CheckRights(ctx, bucket.TenantId)
+	if err != nil {
+		if err == ErrNoSuchKey {
+			err = ErrBucketAccessForbidden
+		}
 		return nil
 	}
+
 	bucket.LifecycleConfiguration = in.Lc
 	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
 	/* TODO: enable cache, see https://github.com/opensds/multi-cloud/issues/698
@@ -190,21 +202,17 @@ func (s *s3Service) GetBucketLifecycle(ctx context.Context, in *pb.BaseRequest, 
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	_, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		log.Error("get tenant id failed.")
-		return nil
-	}
-
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.Id, true)
 	if err != nil {
 		log.Errorf("get bucket failed, err:%v\n", err)
 		return nil
 	}
 
-	if bucket.TenantId != tenantId {
-		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
-		err = ErrBucketAccessForbidden
+	_, _, err = CheckRights(ctx, bucket.TenantId)
+	if err != nil {
+		if err == ErrNoSuchKey {
+			err = ErrBucketAccessForbidden
+		}
 		return nil
 	}
 
@@ -225,23 +233,19 @@ func (s *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.BaseReques
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	_, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		log.Error("get tenant id failed.")
-		return nil
-	}
-
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.Id, true)
 	if err != nil {
 		log.Errorf("get bucket err: %v\n", err)
 		return nil
 	}
-
-	if bucket.TenantId != tenantId {
-		log.Errorf("access forbidden, bucket.TenantId=%s, tenantId=%s\n", bucket.TenantId, tenantId)
-		err = ErrBucketAccessForbidden
+	_, _, err = CheckRights(ctx, bucket.TenantId)
+	if err != nil {
+		if err == ErrNoSuchKey {
+			err = ErrBucketAccessForbidden
+		}
 		return nil
 	}
+
 	bucket.LifecycleConfiguration = nil
 	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
 	if err != nil {

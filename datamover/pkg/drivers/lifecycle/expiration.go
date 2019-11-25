@@ -25,6 +25,7 @@ import (
 	"github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
@@ -44,10 +45,8 @@ func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
 	// call API of s3 service to delete object
 	delMetaReq := osdss3.DeleteObjectInput{Bucket: bucketName, Key: objKey, VersioId: versionId, ObjectId: objectId,
 		StorageMeta: storageMeta}
-	ctx := metadata.NewContext(context.Background(), map[string]string{
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
-		common.CTX_KEY_TENANT_ID: INTERNAL_TENANT,
-	})
+	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	_, err := s3client.DeleteObject(ctx, &delMetaReq)
 	if err != nil {
 		// if it is deleted failed this time, it will be delete again in the next schedule round

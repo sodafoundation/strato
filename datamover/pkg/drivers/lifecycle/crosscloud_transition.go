@@ -45,10 +45,7 @@ func copyObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 
 	// copy object
 	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
-	ctx = metadata.NewContext(ctx, map[string]string{
-		common.CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
-		common.CTX_KEY_TENANT_ID: INTERNAL_TENANT,
-	})
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	req := &osdss3.MoveObjectRequest{
 		SrcObject:      obj.ObjectKey,
 		SrcBucket:      obj.BucketName,
