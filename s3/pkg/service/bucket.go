@@ -86,15 +86,10 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	if in.Versioning != nil {
 		err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
 		if err != nil {
-			log.Error("Error creating version entry: ", err)
-			return err
-		} else {
 			// set default version to disabled
 			err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, "Disabled")
-			if err != nil {
-				log.Error("error creating versioning entry")
-				return err
-			}
+			log.Error("Error creating version entry: ", err)
+			return err
 		}
 	}
 	return nil
