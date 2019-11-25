@@ -128,6 +128,22 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 		userMd5 = val.(string)
 	}
 
+	// check and remove the old object if exists.
+	if obj.StorageMeta != "" && obj.ObjectId != "" {
+		storageMeta, err := ParseObjectMeta(obj.StorageMeta)
+		if err != nil {
+			log.Errorf("Put(%s, %s, %s) failed, failed to parse storage meta(%s), err: %v", obj.BucketName,
+				obj.ObjectKey, obj.ObjectId, obj.StorageMeta, err)
+			return result, err
+		}
+		err = yig.putObjToGc(storageMeta.Cluster, storageMeta.Pool, obj.ObjectId)
+		if err != nil {
+			log.Errorf("Put(%s, %s, %s) failed, failed to put old obj(%s) to gc, err: %v", obj.BucketName,
+				obj.ObjectKey, obj.ObjectId, obj.ObjectId, err)
+			return result, err
+		}
+	}
+
 	md5Writer := md5.New()
 
 	// Limit the reader to its provided size if specified.
@@ -345,6 +361,21 @@ func (yig *YigStorage) Copy(ctx context.Context, stream io.Reader, target *pb.Ob
 
 	log.Debugf("succeeded to copy object[%s] in bucket[%s] with oid[%s]", target.ObjectKey, target.BucketName, oid)
 	return result, nil
+}
+
+func (yig *YigStorage) putObjToGc(location, pool, objectId string) error {
+	gcObj := &types.GcObject{
+		Location: location,
+		Pool:     pool,
+		ObjectId: objectId,
+	}
+	err := yig.MetaStorage.PutGcObjects(gcObj)
+	if err != nil {
+		log.Errorf("Delete(%s, %s, %s) failed, failed to put gc object, err: %v", location,
+			pool, objectId, err)
+		return err
+	}
+	return nil
 }
 
 func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {

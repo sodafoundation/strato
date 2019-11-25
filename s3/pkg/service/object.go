@@ -135,6 +135,12 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.TenantId = tenantId
 	log.Infof("metadata of object is:%+v\n", obj)
 	log.Infof("*********bucket:%s,key:%s,size:%d\n", obj.BucketName, obj.ObjectKey, obj.Size)
+	oldObj, err := s.MetaStorage.GetObject(ctx, obj.BucketName, obj.ObjectKey, true)
+	if err != nil && oldObj != nil {
+		log.Info("got the object with same name(%s, %s, %s)", oldObj.BucketName, oldObj.ObjectKey, oldObj.ObjectId)
+		obj.StorageMeta = oldObj.StorageMeta
+		obj.ObjectId = oldObj.ObjectId
+	}
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, obj.BucketName, true)
 	if err != nil {
