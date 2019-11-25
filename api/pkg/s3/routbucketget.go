@@ -26,7 +26,7 @@ func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.
 	if IsQuery(request, "acl") {
 		//TODO
 	} else if IsQuery(request, "versioning") {
-		//TODO
+		s.BucketVersioningGet(request, response)
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {

@@ -46,4 +46,5 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/{bucketName}/?lifecycle").To(handler.RouteBucketDelete)).Doc("Delete lifecycle configuration from the bucket")
 
 	ws.Route(ws.PUT("/{bucketName}/?versioning").To(handler.RouteBucketPut)).Doc("Create Versioning configuration for the bucket")
+	ws.Route(ws.GET("/{bucketName}/?versioning").To(handler.RouteBucketGet)).Doc("Get Versioning configuration from the bucket")
 }
