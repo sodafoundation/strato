@@ -94,6 +94,12 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	return
 }
 
+func (t *TidbClient) UpdateObjectMeta(object *Object) error {
+	sql, args := object.GetUpdateMetaSql()
+	_, err := t.Client.Exec(sql, args...)
+	return err
+}
+
 func (t *TidbClient) PutObject(ctx context.Context, object *Object, tx interface{}) (err error) {
 	var sqlTx *sql.Tx
 	if tx == nil {

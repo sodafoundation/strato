@@ -374,12 +374,6 @@ func (s *s3Service) HeadObject(ctx context.Context, in *pb.BaseObjRequest, out *
 	return nil
 }
 
-func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, out *pb.CopyObjPartResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 

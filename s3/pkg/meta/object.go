@@ -83,6 +83,11 @@ func (m *Meta) PutObject(ctx context.Context, object *Object, multipart *Multipa
 	return nil
 }
 
+func (m *Meta) UpdateObjectMeta(object *Object) error {
+	err := m.Db.UpdateObjectMeta(object)
+	return err
+}
+
 func (m *Meta) DeleteObject(ctx context.Context, object *Object) error {
 	tx, err := m.Db.NewTrans()
 	defer func() {
