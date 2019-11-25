@@ -109,7 +109,6 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	}
 
 	log.Infof("get object[AWS S3] succeed, objectId:%s, numBytes:%d\n", objectId, numBytes)
-	log.Infof("writer.Bytes() is %v \n", writer.Bytes())
 	body := bytes.NewReader(writer.Bytes())
 	ioReaderClose := ioutil.NopCloser(body)
 

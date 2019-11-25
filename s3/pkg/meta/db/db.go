@@ -33,6 +33,7 @@ type DBAdapter interface {
 	PutObject(ctx context.Context, object *Object, tx interface{}) error
 	DeleteObject(ctx context.Context, object *Object, tx interface{}) error
 	SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error
+	UpdateObjectMeta(object *Object) error
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
