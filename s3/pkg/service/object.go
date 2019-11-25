@@ -287,10 +287,10 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 
 	var err error
 	getObjRes := &pb.GetObjectResponse{}
-	defer func ()  {
+	defer func() {
 		getObjRes.ErrorCode = GetErrCode(err)
 		stream.SendMsg(getObjRes)
-	} ()
+	}()
 
 	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, true)
 	if err != nil {
@@ -320,7 +320,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 	log.Infof("get object offset %v, length %v", offset, length)
-	reader, err := sd.Get(ctx, object.Object, offset, offset + length - 1)
+	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
 	if err != nil {
 		log.Errorln("failed to get data. err:", err)
 		return err
@@ -351,7 +351,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			break
 		}
 
-		err = stream.Send(&pb.GetObjectResponse{ErrorCode:int32(ErrNoErr), Data:buf[0:n]})
+		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break
@@ -360,6 +360,131 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	}
 
 	log.Infoln("get object successfully")
+	return nil
+}
+
+func (s *s3Service) UpdateObjectMeta(ctx context.Context, in *pb.Object, out *pb.PutObjectResponse) error {
+	log.Infoln("UpdateObjectMeta is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	err = s.MetaStorage.UpdateObjectMeta(&meta.Object{Object: in})
+	if err != nil {
+		log.Errorf("failed to update object meta storage, err:", err)
+		err = ErrInternalError
+		return err
+	}
+	out.LastModified = in.LastModified
+	out.Md5 = in.Etag
+	out.VersionId = in.GetVersionId()
+
+	return nil
+}
+
+func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, out *pb.CopyObjectResponse) error {
+	log.Infoln("CopyObject is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	srcBucketName := in.SrcBucketName
+	srcObjectName := in.SrcObjectName
+	targetBucketName := in.TargetBucketName
+	targetObjectName := in.TargetObjectName
+	srcBucket, err := s.MetaStorage.GetBucket(ctx, srcBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+	srcObject, err := s.MetaStorage.GetObject(ctx, srcBucketName, srcObjectName, true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	backendName := srcBucket.DefaultLocation
+	if srcObject.Location != "" {
+		backendName = srcObject.Location
+	}
+	srcBackend, err := getBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	srcSd, err := driver.CreateStorageDriver(srcBackend.Type, srcBackend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+	targetBackend, err := getBackend(ctx, s.backendClient, targetBucket.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	targetSd, err := driver.CreateStorageDriver(targetBackend.Type, targetBackend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
+	if err != nil {
+		log.Errorln("failed to put data. err:", err)
+		return err
+	}
+	limitedDataReader := io.LimitReader(reader, srcObject.Size)
+
+	targetObject := &pb.Object{
+		ObjectKey:  targetObjectName,
+		BucketName: targetBucketName,
+	}
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, srcObject.Size)
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, srcObject.Etag)
+	res, err := targetSd.Put(ctx, limitedDataReader, targetObject)
+	if err != nil {
+		log.Errorln("failed to put data. err:", err)
+		return err
+	}
+	if res.Written < srcObject.Size {
+		// TODO: delete incomplete object at backend
+		log.Warnf("write objects, already written(%d), total size(%d)\n", res.Written, srcObject.Size)
+		err = ErrIncompleteBody
+		return err
+	}
+
+	targetObject.Size = srcObject.Size
+	targetObject.Etag = res.Etag
+	targetObject.ObjectId = res.ObjectId
+	targetObject.LastModified = time.Now().UTC().Unix()
+	targetObject.Etag = res.Etag
+	targetObject.ContentType = srcObject.ContentType
+	targetObject.DeleteMarker = false
+	targetObject.CustomAttributes = srcObject.CustomAttributes
+	targetObject.Type = meta.ObjectTypeNormal
+	targetObject.StorageMeta = res.Meta
+
+	// TODO: delete old object
+
+	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, nil, nil, true)
+	if err != nil {
+		log.Errorln("failed to put object meta. err:", err)
+		// TODO: delete uncompleted object at backend
+		err = ErrDBError
+		return err
+	}
+
+	out.Md5 = res.Etag
+	out.LastModified = targetObject.LastModified
+
+	log.Infoln("Successfully copy object ", res.Written, " bytes.")
 	return nil
 }
 
