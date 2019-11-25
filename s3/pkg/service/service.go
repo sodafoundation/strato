@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	"github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
@@ -302,6 +302,14 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
+	//update versioning if not nil
+	if in.Versioning != nil {
+		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+		if err != nil {
+			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -389,11 +397,14 @@ func (s *s3Service) GetBucketVersioning(ctx context.Context, in *pb.BaseBucketRe
 	return nil
 }
 
-func (s *s3Service) PutBucketVersioning(ctx context.Context, in *pb.PutBucketVersioningRequest, out *pb.BaseResponse) error {
+//TODO Will check whether we need another interface for put bucket version
+/*func (s *s3Service) PutBucketVersioning(ctx context.Context, in *pb.PutBucketVersioningRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
 	return nil
 }
+
+*/
 
 func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")

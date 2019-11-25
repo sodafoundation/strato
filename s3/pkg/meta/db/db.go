@@ -47,4 +47,7 @@ type DBAdapter interface {
 	UpdateUsage(ctx context.Context, bucketName string, size int64, tx interface{}) error
 	UpdateUsages(ctx context.Context, usages map[string]int64, tx interface{}) error
 	ListBucketLifecycle(ctx context.Context) (bucket []*Bucket, err error)
+
+	UpdateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error
+	CreateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error
 }

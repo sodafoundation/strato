@@ -66,7 +66,7 @@ func (b *Bucket) String() (s string) {
 	s += "ACL: " + fmt.Sprintf("%+v", b.Acl) + "\n"
 	s += "LifeCycle: " + fmt.Sprintf("%+v", b.LifecycleConfiguration) + "\n"
 	s += "Policy: " + fmt.Sprintf("%+v", b.BucketPolicy) + "\n"
-	s += "Version: " + b.Versioning + "\n"
+	s += "Versioning: " + fmt.Sprintf("%+v", b.Versioning) + "\n"
 	s += "Usage: " + humanize.Bytes(uint64(b.Usages)) + "\n"
 	return
 }
@@ -95,7 +95,6 @@ func (b *Bucket) GetValues() (values map[string]map[string][]byte, err error) {
 			"CORS":       cors,
 			"LC":         lc,
 			"createTime": []byte(time.Unix(b.CreateTime, 0).Format(CREATE_TIME_LAYOUT)),
-			"versioning": []byte(b.Versioning),
 			"usage":      usage.Bytes(),
 		},
 		// TODO fancy ACL
