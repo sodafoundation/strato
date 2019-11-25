@@ -22,6 +22,18 @@ type DB interface {
 	// delete the parts
 	DeleteParts(uploadId uint64) error
 
+	// delete multipart uploaded part objects and put them into gc
+	PutPartsInGc(parts []*types.PartInfo) error
+
+	// delete objects
+	PutGcObjects(objects ...*types.GcObject) error
+
+	// get gc objects by marker and limit
+	GetGcObjects(marker int64, limit int) ([]*types.GcObject, error)
+
+	// delete gc objects meta.
+	DeleteGcObjects(objects ...*types.GcObject) error
+
 	// close this driver if it is not needed.
 	// Caution that this driver should be closed if the main process finishes.
 	Close()
