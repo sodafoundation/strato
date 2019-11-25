@@ -32,7 +32,7 @@ func RegisterRouter(ws *restful.WebService) {
 
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("Upload object")
 	ws.Route(ws.DELETE("/{bucketName}/{objectKey:*}").To(handler.RouteObjectDelete)).Doc("Delete object")
-	ws.Route(ws.GET("/{bucketName}/{objectKey:*}").To(handler.ObjectGet)).Doc("Download object")
+	ws.Route(ws.GET("/{bucketName}/{objectKey:*}").To(handler.RouteObjectGet)).Doc("Get object")
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("InitMultiPartUpload")
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("UploadPart")
 	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("CompleteMultipartUpload")

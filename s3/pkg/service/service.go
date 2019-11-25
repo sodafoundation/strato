@@ -365,12 +365,6 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 	return nil
 }
 
-func (s *s3Service) PutObjACL(ctx context.Context, in *pb.PutObjACLRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) GetObjACL(ctx context.Context, in *pb.BaseObjRequest, out *pb.ObjACL) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
@@ -390,12 +384,6 @@ func (s *s3Service) GetBucketVersioning(ctx context.Context, in *pb.BaseBucketRe
 }
 
 func (s *s3Service) PutBucketVersioning(ctx context.Context, in *pb.PutBucketVersioningRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
 	return nil

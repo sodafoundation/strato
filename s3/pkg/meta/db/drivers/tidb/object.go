@@ -170,3 +170,4 @@ func (t *TidbClient) SetObjectDeleteMarker(ctx context.Context, object *Object, 
 
 	return nil
 }
+
