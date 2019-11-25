@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
@@ -78,6 +79,35 @@ func (ys *YigSuite) TestPutObjectSucceed(c *C) {
 	c.Assert(n, Equals, len)
 	readRawMd5 := md5.Sum(readBuf)
 	c.Assert(rawMd5 == readRawMd5, Equals, true)
+
+	// delete the object
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId:    obj.ObjectId,
+		StorageMeta: obj.StorageMeta,
+	}
+	err = yig.Delete(ctx, objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	reader, err = yig.Get(ctx, obj, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	n, err = reader.Read(readBuf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
+	// delete the copied object
+	objDelInput = &pb.DeleteObjectInput{
+		ObjectId:    copyTarget.ObjectId,
+		StorageMeta: copyTarget.StorageMeta,
+	}
+	err = yig.Delete(ctx, objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	reader, err = yig.Get(ctx, copyTarget, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	n, err = reader.Read(readBuf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
 }
 
 type ReaderElem struct {
@@ -223,6 +253,19 @@ func (ys *YigSuite) TestMultipartUploadSucceed(c *C) {
 	n, err := objReader.Read(buf)
 	c.Assert(n, Equals, 0)
 	c.Assert(err, Equals, io.EOF)
+	// delete the multipart uploaded object.
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId: obj.ObjectId,
+	}
+	err = yig.Delete(context.Background(), objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	objReader, err = yig.Get(context.Background(), obj, 0, int64(1<<30))
+	c.Assert(err, Equals, nil)
+	c.Assert(objReader, Not(Equals), nil)
+	n, err = objReader.Read(buf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
 }
 
 func (ys *YigSuite) TestMultipartUploadSinglePartSucceed(c *C) {
@@ -288,4 +331,18 @@ func (ys *YigSuite) TestMultipartUploadSinglePartSucceed(c *C) {
 	c.Assert(err, Equals, io.EOF)
 	err = objReader.Close()
 	c.Assert(err, Equals, nil)
+
+	// delete the multipart uploaded object.
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId: obj.ObjectId,
+	}
+	err = yig.Delete(context.Background(), objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	objReader, err = yig.Get(context.Background(), obj, 0, int64(elem.Len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(objReader, Not(Equals), nil)
+	n, err = objReader.Read(buf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
 }
