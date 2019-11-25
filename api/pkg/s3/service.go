@@ -83,6 +83,16 @@ func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.B
 	return rsp.BucketMeta
 }
 
+func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName string) (*s3.Object, error) {
+	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.Object{BucketName: bucketName, ObjectKey: objectName})
+	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
+		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
+		return nil, err
+	}
+
+	return rsp.Object, nil
+}
+
 func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
 	flag := false
 
