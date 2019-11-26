@@ -19,6 +19,7 @@ package s3
 import (
 	"encoding/xml"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"time"
@@ -109,8 +110,8 @@ func GetLocation(r *http.Request) string {
 }
 
 // writeSuccessNoContent write success headers with http status 204
-func WriteSuccessNoContent(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNoContent)
+func WriteSuccessNoContent(response *restful.Response) {
+	response.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
 
 func WriteApiErrorResponse(response *restful.Response, request *restful.Request, status int, awsErrCode, message string) {
@@ -142,6 +143,25 @@ func GenerateCopyObjectResponse(etag string, lastModified time.Time) CopyObjectR
 	}
 }
 
+// GenerateInitiateMultipartUploadResponse
+func GenerateInitiateMultipartUploadResponse(bucket, key, uploadID string) InitiateMultipartUploadResponse {
+	return InitiateMultipartUploadResponse{
+		Bucket:   bucket,
+		Key:      key,
+		UploadID: uploadID,
+	}
+}
+
+// GenerateCompleteMultipartUploadResponse
+func GenerateCompleteMultpartUploadResponse(bucket, key, location, etag string) CompleteMultipartUploadResponse {
+	return CompleteMultipartUploadResponse{
+		Location: location,
+		Bucket:   bucket,
+		Key:      key,
+		ETag:     etag,
+	}
+}
+
 // APIErrorResponse - error response format
 type ApiErrorResponse struct {
 	XMLName      xml.Name `xml:"Error" json:"-"`
@@ -152,4 +172,26 @@ type ApiErrorResponse struct {
 	Resource     string
 	RequestId    string
 	HostId       string
+}
+
+// Parse bucket url queries for ?uploads
+func parseListUploadsQuery(query url.Values) (request ListUploadsRequest, err error) {
+	request.Delimiter = query.Get("delimiter")
+	request.EncodingType = query.Get("encoding-type")
+	if query.Get("max-uploads") == "" {
+		request.MaxUploads = MaxUploadsList
+	} else {
+		request.MaxUploads, err = strconv.Atoi(query.Get("max-uploads"))
+		if err != nil {
+			return
+		}
+		if request.MaxUploads > MaxUploadsList || request.MaxUploads < 1 {
+			err = ErrInvalidMaxUploads
+			return
+		}
+	}
+	request.KeyMarker = query.Get("key-marker")
+	request.Prefix = query.Get("prefix")
+	request.UploadIdMarker = query.Get("upload-id-marker")
+	return
 }

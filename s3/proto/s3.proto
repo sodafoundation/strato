@@ -9,7 +9,7 @@ service S3 {
 	rpc UpdateObjectMeta(Object) returns (PutObjectResponse) {}
 	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
-	rpc PutObject(stream PutObjectRequest) returns (PutObjectResponse) {}
+	rpc PutObject(stream PutDataStream) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
 	rpc GetObject(GetObjectInput) returns (stream GetObjectResponse) {}
 	rpc DeleteObject(DeleteObjectInput) returns (DeleteObjectOutput) {}
@@ -22,13 +22,13 @@ service S3 {
 	rpc GetBucketLifecycle(BaseRequest) returns (GetBucketLifecycleResponse) {}
 	rpc ListBucketLifecycle(BaseRequest) returns (ListBucketsResponse) {}
 	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
-	rpc ListBucketUploadRecords(ListBucketPartsRequest) returns (ListBucketPartsResponse) {}
+	rpc ListBucketUploadRecords(ListBucketUploadRequest) returns (ListBucketUploadResponse) {}
 
-	rpc InitMultipartUpload(BaseRequest) returns (BaseResponse) {}
-	rpc AbortMultipartUpload(BaseRequest) returns (BaseResponse) {}
-	rpc CompleteMultipartUpload(BaseRequest) returns (BaseResponse) {}
-	rpc UploadPart(BaseRequest) returns (BaseResponse) {}
-	rpc ListObjectParts(BaseRequest) returns (BaseResponse) {}
+	rpc InitMultipartUpload(InitMultiPartRequest) returns (InitMultiPartResponse) {}
+	rpc AbortMultipartUpload(AbortMultipartRequest) returns (BaseResponse) {}
+	rpc CompleteMultipartUpload(CompleteMultipartRequest) returns (CompleteMultipartResponse) {}
+	rpc UploadPart(stream PutDataStream) returns (UploadPartResponse) {}
+	rpc ListObjectParts(ListObjectPartsRequest) returns (ListObjectPartsResponse) {}
 	rpc AppendObject(BaseRequest) returns (BaseResponse) {}
 	rpc PostObject(BaseRequest) returns (BaseResponse) {}
 
@@ -53,6 +53,74 @@ service S3 {
 	rpc GetBucketPolicy(BaseRequest) returns (BaseResponse) {}
 	rpc DeleteBucketPolicy(BaseRequest) returns (BaseResponse) {}
 	rpc HeadBucket(BaseRequest) returns (Bucket) {}
+}
+
+message ListObjectPartsRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string encodingType = 3;
+	string uploadId = 4;
+	int32 maxParts = 5;
+	int32 partNumberMarker = 6;
+}
+
+message ListObjectPartsResponse {
+	int32 errorCode = 1;
+}
+
+message AbortMultipartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string uploadId = 3;
+}
+
+message CompletePart {
+	int64 partNumber = 1;
+	string eTag = 2;
+}
+
+message CompleteMultipartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string uploadId = 3;
+	repeated CompletePart completeParts = 4;
+}
+
+message CompleteMultipartResponse {
+	int32 errorCode = 1;
+	string uploadID = 2;
+	string eTag = 3;
+}
+
+message InitMultiPartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	Acl acl = 3;
+	uint32 storageClass = 4;
+	map<string, string> attrs = 5;
+}
+
+message InitMultiPartResponse {
+	int32 errorCode = 1;
+	string uploadID = 2;
+}
+
+message PutDataStream {
+	bytes data = 1;
+}
+
+message UploadPartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string uploadId = 3;
+	int32 partId = 4;
+	int64 size = 5;
+	string md5Hex = 6;
+}
+
+message UploadPartResponse {
+	int32 errorCode = 1;
+	string eTag = 2;
 }
 
 message CopyObjectRequest {
@@ -507,14 +575,39 @@ message MultipartUploadRecord {
 	string userId = 7;
 }
 
-message ListBucketPartsRequest {
-	string bucket = 1;
-	string prefix = 2;
-	int32  days = 3;
-	int32  limit = 4;
-	int32  offset = 5;
+message ListBucketUploadRequest {
+	string bucketName = 1;
+	string delimiter = 2;
+	string encodingType = 3;
+	int32 maxUploads = 4;
+	string keyMarker = 5;
+	string prefix = 6;
+	string uploadIdMarker = 7;
 }
 
-message ListBucketPartsResponse {
-	repeated MultipartUploadRecord records = 1;
+message Owner {
+	string id = 1;
+	string displayName = 2;
+}
+
+message Upload {
+	string key = 1;
+	string uploadId = 2;
+	Owner initiator = 3;
+	Owner owner = 4;
+	string storageClass = 5;
+	string initiated = 6;
+}
+
+message ListBucketUploadResult {
+	bool isTruncated = 1;
+	string nextKeyMarker = 2;
+	string nextUploadIdMarker = 3;
+	repeated string commonPrefix = 4;
+	repeated Upload uploads = 5;
+}
+
+message ListBucketUploadResponse {
+	int32 errorCode = 1;
+	ListBucketUploadResult result = 2;
 }

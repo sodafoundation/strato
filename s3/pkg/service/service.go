@@ -329,42 +329,6 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	return nil
 }
 
-func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBucketPartsRequest, out *pb.ListBucketPartsResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) UploadPart(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) ListObjectParts(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) AppendObject(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
