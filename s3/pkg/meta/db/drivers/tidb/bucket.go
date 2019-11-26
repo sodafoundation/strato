@@ -40,20 +40,9 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	var updateTime sql.NullString
 	var row *sql.Row
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
 	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
 		"update_time from buckets where bucketname=?;"
-	if !isAdmin {
-		sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
-			"update_time from buckets where bucketname=? and tenantid=?;"
-		row = t.Client.QueryRow(sqltext, bucketName, tenantId)
-	} else {
-		row = t.Client.QueryRow(sqltext, bucketName)
-	}
+	row = t.Client.QueryRow(sqltext, bucketName)
 
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
 	tmp.Versioning = &pb.BucketVersioning{}
@@ -127,6 +116,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	return
 }
 
+// For the request that list buckets, better to filter according to tenant.
 func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err error) {
 	log.Info("list buckets from tidb ...")
 

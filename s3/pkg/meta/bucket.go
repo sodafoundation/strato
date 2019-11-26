@@ -51,6 +51,7 @@ func (m *Meta) GetBucket(ctx context.Context, bucketName string, willNeed bool) 
 		} else if err != ErrDBError {
 			err = ErrInternalError
 		}
+		log.Errorf("get bucket failed:%v\n", err)
 		return
 	}
 	bucket, ok := b.(*Bucket)

@@ -115,6 +115,6 @@ func (b Bucket) GetCreateSql() (string, []interface{}) {
 	sql := "insert into buckets(bucketname,tenantid,userid,createtime,usages,location,acl,cors,lc,policy,versioning," +
 		"replication) values(?,?,?,?,?,?,?,?,?,?,?,?);"
 	args := []interface{}{b.Name, b.TenantId, b.UserId, createTime, b.Usages, b.DefaultLocation, acl, cors, lc,
-		bucket_policy, b.Versioning, replia}
+		bucket_policy, b.Versioning.Status, replia}
 	return sql, args
 }

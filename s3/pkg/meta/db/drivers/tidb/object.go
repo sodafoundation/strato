@@ -170,3 +170,37 @@ func (t *TidbClient) SetObjectDeleteMarker(ctx context.Context, object *Object, 
 
 	return nil
 }
+
+func (t *TidbClient) UpdateObject(ctx context.Context, old, new *Object, tx interface{}) (err error) {
+	var sqlTx *sql.Tx
+	if tx == nil {
+		tx, err = t.Client.Begin()
+		defer func() {
+			if err == nil {
+				err = sqlTx.Commit()
+			}
+			if err != nil {
+				sqlTx.Rollback()
+			}
+		}()
+	}
+	sqlTx, _ = tx.(*sql.Tx)
+
+	vidByte, _ := hex.DecodeString(old.VersionId)
+	decrByte := xxtea.Decrypt(vidByte, XXTEA_KEY)
+	reVersion, _ := strconv.ParseUint(string(decrByte), 10, 64)
+	oldversion := math.MaxUint64 - reVersion
+	newversion := math.MaxUint64 - uint64(new.LastModified)
+	lastModifiedTime := time.Unix(new.LastModified, 0).Format(TIME_LAYOUT_TIDB)
+
+	sqltext := "update objects set bucketname=?,name=?,version=?,location=?,tenantid=?,objectid=?,lastmodifiedtime=?," +
+		"tier=?,storageMeta=? where bucketname=? and name=? and version=?"
+	args := []interface{}{new.BucketName, new.ObjectKey, newversion, new.Location, new.TenantId, new.ObjectId,
+		lastModifiedTime, new.Tier, new.StorageMeta, old.BucketName, old.ObjectKey, oldversion}
+
+	log.Debugf("sqltext:%s, args:%+v\n", sqltext, args)
+	_, err = sqlTx.Exec(sqltext, args...)
+
+	log.Debugf("err:%v\n", err)
+	return err
+}

@@ -17,22 +17,23 @@ package gcp
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"crypto/md5"
+	"encoding/hex"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
-	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/webrtcn/s3client"
 	"github.com/webrtcn/s3client/models"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 type GcsAdapter struct {
@@ -49,45 +50,47 @@ type GcsAdapter struct {
 	return adap
 }*/
 
-func md5Content(data []byte) string {
-	md5Ctx := md5.New()
-	md5Ctx.Write(data)
-	cipherStr := md5Ctx.Sum(nil)
-	value := base64.StdEncoding.EncodeToString(cipherStr)
-	return value
-}
-
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucketName := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
 
-	bucket := ad.session.NewBucket()
 	result := dscommon.PutResult{}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
+
+	// Limit the reader to its provided size if specified.
+	var limitedDataReader io.Reader
+	if size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(stream, size)
+	} else {
+		limitedDataReader = stream
+	}
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+
+	bucket := ad.session.NewBucket()
 	GcpObject := bucket.NewObject(bucketName)
-
-	d, err := ioutil.ReadAll(stream)
-	data := []byte(d)
-	contentMD5 := md5Content(data)
-	length := int64(len(d))
-	body := ioutil.NopCloser(bytes.NewReader(data))
-
-	err = GcpObject.Create(objectId, contentMD5, "", length, body, models.Private)
+	body := ioutil.NopCloser(dataReader)
+	err := GcpObject.Create(objectId, userMd5, "", size, body, models.Private)
 	if err != nil {
 		log.Infof("put object[GCS] failed, object:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
-	//object.LastModifiedTime = time.Now().Unix()
+
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
+	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	// TODO: set ETAG
+	result.Etag = calculatedMd5
 	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
 }
 
 func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectId
 	log.Infof("get object[GCS], objectId:%s\n", objectId)
 	getObjectOption := GetObjectOption{}
 	if start != 0 || end != 0 {
@@ -129,6 +132,11 @@ func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 
 	log.Infof("delete object[GCS] succeed, objectId:%s.\n", objectId)
 	return nil
+}
+
+func (ad *GcsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	log.Errorf("change storage class[gcs] is not supported.")
+	return ErrInternalError
 }
 
 /*func (ad *GcsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
@@ -200,7 +208,7 @@ func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 		d, err := ioutil.ReadAll(stream)
 		data := []byte(d)
 		body := ioutil.NopCloser(bytes.NewReader(data))
-		contentMD5 := md5Content(data)
+		contentMD5 := utils.Md5Content(data)
 		//length := int64(len(data))
 		part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 
@@ -233,7 +241,7 @@ func (ad *GcsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	log.Infof("complete multipart upload[GCS], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
 
 	var completeParts []CompletePart
-	for _, p := range completeUpload.Part {
+	for _, p := range completeUpload.Parts {
 		completePart := CompletePart{
 			Etag:       p.ETag,
 			PartNumber: int(p.PartNumber),
@@ -314,4 +322,3 @@ func (ad *GcsAdapter) Close(ctx context.Context) error {
 	//TODO
 	return nil
 }
-
