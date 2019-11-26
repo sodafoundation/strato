@@ -135,7 +135,8 @@ services:
     container_name: mysql
     volumes:
       - ./s3/pkg/conf/tidb.sql:/s3.sql
-    command: mysql -h tidb  -P 4000 -u root -e "create database s3 character set utf8;use s3;source /s3.sql;"
+      - ./s3/pkg/datastore/yig/conf/yig.sql:/yig.sql
+    command: mysql -h tidb  -P 4000 -u root -e "create database s3 character set utf8;use s3;source /s3.sql;source /yig.sql;"
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     depends_on:
