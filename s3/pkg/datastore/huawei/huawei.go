@@ -21,12 +21,13 @@ import (
 
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
-	log "github.com/sirupsen/logrus"
-	//. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/error"
+	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 type OBSAdapter struct {
@@ -55,13 +56,28 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("put object[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
 
+	result := dscommon.PutResult{}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
+
+	if object.Tier == 0 {
+		// default
+		object.Tier = utils.Tier1
+	}
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_OBS)
+	if err != nil {
+		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		return result, ErrInternalError
+	}
+
 	input := &obs.PutObjectInput{}
 	input.Bucket = bucket
 	input.Key = objectId
 	input.Body = stream
-	input.StorageClass = obs.StorageClassStandard // Currently, only support standard.
+	input.ContentLength = size
+	input.ContentMD5 = userMd5
+	input.StorageClass = obs.StorageClassType(storClass)
 
-	result := dscommon.PutResult{}
 	log.Infof("upload object[OBS] begin, objectId:%s\n", objectId)
 	out, err := ad.client.PutObject(input)
 	log.Infof("upload object[OBS] end, objectId:%s\n", objectId)
@@ -72,15 +88,17 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 	result.ObjectId = objectId
 	result.UpdateTime = time.Now().Unix()
+	result.Etag = dscommon.TrimQuot(out.ETag)
+	result.Meta = out.VersionId
+	log.Info("### returnMd5:", result.Etag, "userMd5:", userMd5)
 	log.Infof("upload object[OBS] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
-	result.Etag = out.ETag
 
 	return result, nil
 }
 
 func (ad *OBSAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
 	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectId
 	log.Infof("get object[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
 
 	input := &obs.GetObjectInput{}
@@ -113,6 +131,35 @@ func (ad *OBSAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) 
 	}
 
 	log.Infof("delete object[OBS] succeed, objectId:%s.\n", objectId)
+	return nil
+}
+
+func (ad *OBSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	log.Infof("change storage class[OBS] of object[%s] to %s .\n", object.ObjectId, newClass)
+
+	input := &obs.CopyObjectInput{}
+	input.Bucket = ad.backend.BucketName
+	input.Key = object.ObjectId
+	input.CopySourceBucket = ad.backend.BucketName
+	input.CopySourceKey = object.ObjectId
+	input.MetadataDirective = obs.CopyMetadata
+	switch *newClass {
+	case "STANDARD_IA":
+		input.StorageClass = obs.StorageClassWarm
+	case "GLACIER":
+		input.StorageClass = obs.StorageClassCold
+	default:
+		log.Infof("[OBS] unspport storage class:%s", newClass)
+		return ErrInvalidStorageClass
+	}
+	_, err := ad.client.CopyObject(input)
+	if err != nil {
+		log.Errorf("[OBS] change storage class of object[%s] to %s failed: %v\n", object.ObjectId, newClass, err)
+		return ErrPutToBackendFailed
+	} else {
+		log.Infof("[OBS] change storage class of object[%s] to %s succeed.\n", object.ObjectId, newClass)
+	}
+
 	return nil
 }
 
