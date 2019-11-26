@@ -39,6 +39,7 @@ type S3Service interface {
 	DeleteBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*GetBucketResponse, error)
 	GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error)
+	UpdateObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*PutObjectResponse, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponse, error)
 	CountObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*CountObjectsResponse, error)
 	PutObject(ctx context.Context, opts ...client.CallOption) (S3_PutObjectService, error)
@@ -67,13 +68,13 @@ type S3Service interface {
 	AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error)
 	HeadObject(ctx context.Context, in *BaseObjRequest, opts ...client.CallOption) (*Object, error)
-	CopyObject(ctx context.Context, in *CopyObjectRequest, opts ...client.CallOption) (*BaseResponse, error)
+	MoveObject(ctx context.Context, in *MoveObjectRequest, opts ...client.CallOption) (*MoveObjectResponse, error)
+	CopyObject(ctx context.Context, in *CopyObjectRequest, opts ...client.CallOption) (*CopyObjectResponse, error)
 	CopyObjPart(ctx context.Context, in *CopyObjPartRequest, opts ...client.CallOption) (*CopyObjPartResponse, error)
 	PutObjACL(ctx context.Context, in *PutObjACLRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetObjACL(ctx context.Context, in *BaseObjRequest, opts ...client.CallOption) (*ObjACL, error)
 	GetBucketLocation(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, opts ...client.CallOption) (*BucketVersioning, error)
-	PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, opts ...client.CallOption) (*BaseResponse, error)
 	PutBucketACL(ctx context.Context, in *PutBucketACLRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucketACL(ctx context.Context, in *BaseBucketRequest, opts ...client.CallOption) (*BucketACL, error)
 	PutBucketCORS(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
@@ -146,6 +147,16 @@ func (c *s3Service) GetBucket(ctx context.Context, in *Bucket, opts ...client.Ca
 func (c *s3Service) GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error) {
 	req := c.c.NewRequest(c.name, "S3.GetObjectMeta", in)
 	out := new(GetObjectMetaResult)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) UpdateObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*PutObjectResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.UpdateObjectMeta", in)
+	out := new(PutObjectResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -483,9 +494,19 @@ func (c *s3Service) HeadObject(ctx context.Context, in *BaseObjRequest, opts ...
 	return out, nil
 }
 
-func (c *s3Service) CopyObject(ctx context.Context, in *CopyObjectRequest, opts ...client.CallOption) (*BaseResponse, error) {
+func (c *s3Service) MoveObject(ctx context.Context, in *MoveObjectRequest, opts ...client.CallOption) (*MoveObjectResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.MoveObject", in)
+	out := new(MoveObjectResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) CopyObject(ctx context.Context, in *CopyObjectRequest, opts ...client.CallOption) (*CopyObjectResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.CopyObject", in)
-	out := new(BaseResponse)
+	out := new(CopyObjectResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -536,16 +557,6 @@ func (c *s3Service) GetBucketLocation(ctx context.Context, in *BaseRequest, opts
 func (c *s3Service) GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, opts ...client.CallOption) (*BucketVersioning, error) {
 	req := c.c.NewRequest(c.name, "S3.GetBucketVersioning", in)
 	out := new(BucketVersioning)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *s3Service) PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, opts ...client.CallOption) (*BaseResponse, error) {
-	req := c.c.NewRequest(c.name, "S3.PutBucketVersioning", in)
-	out := new(BaseResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -651,6 +662,7 @@ type S3Handler interface {
 	DeleteBucket(context.Context, *Bucket, *BaseResponse) error
 	GetBucket(context.Context, *Bucket, *GetBucketResponse) error
 	GetObjectMeta(context.Context, *Object, *GetObjectMetaResult) error
+	UpdateObjectMeta(context.Context, *Object, *PutObjectResponse) error
 	ListObjects(context.Context, *ListObjectsRequest, *ListObjectsResponse) error
 	CountObjects(context.Context, *ListObjectsRequest, *CountObjectsResponse) error
 	PutObject(context.Context, S3_PutObjectStream) error
@@ -679,13 +691,13 @@ type S3Handler interface {
 	AddUploadRecord(context.Context, *MultipartUploadRecord, *BaseResponse) error
 	DeleteUploadRecord(context.Context, *MultipartUploadRecord, *BaseResponse) error
 	HeadObject(context.Context, *BaseObjRequest, *Object) error
-	CopyObject(context.Context, *CopyObjectRequest, *BaseResponse) error
+	MoveObject(context.Context, *MoveObjectRequest, *MoveObjectResponse) error
+	CopyObject(context.Context, *CopyObjectRequest, *CopyObjectResponse) error
 	CopyObjPart(context.Context, *CopyObjPartRequest, *CopyObjPartResponse) error
 	PutObjACL(context.Context, *PutObjACLRequest, *BaseResponse) error
 	GetObjACL(context.Context, *BaseObjRequest, *ObjACL) error
 	GetBucketLocation(context.Context, *BaseRequest, *BaseResponse) error
 	GetBucketVersioning(context.Context, *BaseBucketRequest, *BucketVersioning) error
-	PutBucketVersioning(context.Context, *PutBucketVersioningRequest, *BaseResponse) error
 	PutBucketACL(context.Context, *PutBucketACLRequest, *BaseResponse) error
 	GetBucketACL(context.Context, *BaseBucketRequest, *BucketACL) error
 	PutBucketCORS(context.Context, *BaseRequest, *BaseResponse) error
@@ -704,6 +716,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		DeleteBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		GetBucket(ctx context.Context, in *Bucket, out *GetBucketResponse) error
 		GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error
+		UpdateObjectMeta(ctx context.Context, in *Object, out *PutObjectResponse) error
 		ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error
 		CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error
 		PutObject(ctx context.Context, stream server.Stream) error
@@ -731,13 +744,13 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error
 		DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error
 		HeadObject(ctx context.Context, in *BaseObjRequest, out *Object) error
-		CopyObject(ctx context.Context, in *CopyObjectRequest, out *BaseResponse) error
+		MoveObject(ctx context.Context, in *MoveObjectRequest, out *MoveObjectResponse) error
+		CopyObject(ctx context.Context, in *CopyObjectRequest, out *CopyObjectResponse) error
 		CopyObjPart(ctx context.Context, in *CopyObjPartRequest, out *CopyObjPartResponse) error
 		PutObjACL(ctx context.Context, in *PutObjACLRequest, out *BaseResponse) error
 		GetObjACL(ctx context.Context, in *BaseObjRequest, out *ObjACL) error
 		GetBucketLocation(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, out *BucketVersioning) error
-		PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, out *BaseResponse) error
 		PutBucketACL(ctx context.Context, in *PutBucketACLRequest, out *BaseResponse) error
 		GetBucketACL(ctx context.Context, in *BaseBucketRequest, out *BucketACL) error
 		PutBucketCORS(ctx context.Context, in *BaseRequest, out *BaseResponse) error
@@ -777,6 +790,10 @@ func (h *s3Handler) GetBucket(ctx context.Context, in *Bucket, out *GetBucketRes
 
 func (h *s3Handler) GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error {
 	return h.S3Handler.GetObjectMeta(ctx, in, out)
+}
+
+func (h *s3Handler) UpdateObjectMeta(ctx context.Context, in *Object, out *PutObjectResponse) error {
+	return h.S3Handler.UpdateObjectMeta(ctx, in, out)
 }
 
 func (h *s3Handler) ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error {
@@ -949,7 +966,11 @@ func (h *s3Handler) HeadObject(ctx context.Context, in *BaseObjRequest, out *Obj
 	return h.S3Handler.HeadObject(ctx, in, out)
 }
 
-func (h *s3Handler) CopyObject(ctx context.Context, in *CopyObjectRequest, out *BaseResponse) error {
+func (h *s3Handler) MoveObject(ctx context.Context, in *MoveObjectRequest, out *MoveObjectResponse) error {
+	return h.S3Handler.MoveObject(ctx, in, out)
+}
+
+func (h *s3Handler) CopyObject(ctx context.Context, in *CopyObjectRequest, out *CopyObjectResponse) error {
 	return h.S3Handler.CopyObject(ctx, in, out)
 }
 
@@ -971,10 +992,6 @@ func (h *s3Handler) GetBucketLocation(ctx context.Context, in *BaseRequest, out 
 
 func (h *s3Handler) GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, out *BucketVersioning) error {
 	return h.S3Handler.GetBucketVersioning(ctx, in, out)
-}
-
-func (h *s3Handler) PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, out *BaseResponse) error {
-	return h.S3Handler.PutBucketVersioning(ctx, in, out)
 }
 
 func (h *s3Handler) PutBucketACL(ctx context.Context, in *PutBucketACLRequest, out *BaseResponse) error {

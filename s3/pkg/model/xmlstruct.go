@@ -33,6 +33,7 @@ type Bucket struct {
 	CreateTime         string `xml:"CreateTime"`
 	LocationConstraint string `xml:"LocationConstraint"`
 	SSEOpts            SSEConfiguration
+	VersionOpts        VersioningConfiguration
 }
 
 type ListAllMyBucketsResult struct {
@@ -140,4 +141,9 @@ type StorageClass struct {
 type ListStorageClasses struct {
 	Xmlns   string         `xml:"xmlns,attr"`
 	Classes []StorageClass `xml:"Class"`
+}
+
+type VersioningConfiguration struct {
+	XMLName xml.Name `xml:"VersioningConfiguration"`
+	Status  string   `xml:"Status"`
 }

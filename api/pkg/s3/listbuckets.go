@@ -16,6 +16,7 @@ package s3
 
 import (
 	"encoding/xml"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"time"
 
 	"github.com/emicklei/go-restful"
@@ -44,6 +45,14 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 				sseOpts.SSE.Enabled = "true"
 			}
 		}
+
+		versionOpts := model.VersioningConfiguration{}
+		if value.Versioning != nil{
+			if value.Versioning.Status == utils.VersioningEnabled{
+				versionOpts.Status = utils.VersioningEnabled
+			}
+		}
+
 		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation, SSEOpts: sseOpts}
 		buckets = append(buckets, bucket)
 	}

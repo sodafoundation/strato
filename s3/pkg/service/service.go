@@ -24,11 +24,13 @@ import (
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	"github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
+	"github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -62,8 +64,12 @@ func NewS3Service() pb.S3Handler {
 		CacheType: meta.CacheType(helper.CONFIG.MetaCacheType),
 		TidbInfo:  helper.CONFIG.TidbInfo,
 	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	metaStor := meta.New(cfg)
+	gc.Init(ctx, cancelFunc, metaStor)
 	return &s3Service{
-		MetaStorage:   meta.New(cfg),
+		MetaStorage:   metaStor,
 		backendClient: backend.NewBackendService("backend", client.DefaultClient),
 	}
 }
@@ -233,6 +239,16 @@ func loadDefaultTransition() error {
 	return nil
 }
 
+func validTier(tier int32) bool {
+	for _, v := range SupportedClasses {
+		if v.Tier == tier {
+			return true
+		}
+	}
+
+	return false
+}
+
 func loadUserDefinedTransition() error {
 	log.Info("user defined storage class is not supported now")
 	return fmt.Errorf("user defined storage class is not supported now")
@@ -311,6 +327,15 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			return err
 		}
 	}
+
+	//update versioning if not nil
+	if in.Versioning != nil {
+		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+		if err != nil {
+			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -368,12 +393,6 @@ func (s *s3Service) HeadObject(ctx context.Context, in *pb.BaseObjRequest, out *
 	return nil
 }
 
-func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, out *pb.CopyObjPartResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
@@ -404,11 +423,14 @@ func (s *s3Service) GetBucketVersioning(ctx context.Context, in *pb.BaseBucketRe
 	return nil
 }
 
-func (s *s3Service) PutBucketVersioning(ctx context.Context, in *pb.PutBucketVersioningRequest, out *pb.BaseResponse) error {
+//TODO Will check whether we need another interface for put bucket version
+/*func (s *s3Service) PutBucketVersioning(ctx context.Context, in *pb.PutBucketVersioningRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
 	return nil
 }
+
+*/
 
 func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
@@ -517,13 +539,12 @@ func (s *s3Service) DeleteUploadRecord(ctx context.Context, record *pb.Multipart
 func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *pb.CountObjectsResponse) error {
 	log.Info("Count objects is called in s3 service.")
 
-	countInfo := ObjsCountInfo{}
-	/*err := db.DbAdapter.CountObjects(in, &countInfo)
-	if err.Code != ERR_OK {
-		return err.Error()
-	}*/
-	out.Count = countInfo.Count
-	out.Size = countInfo.Size
+	rsp, err := s.MetaStorage.Db.CountObjects(ctx, in.Bucket, in.Prefix)
+	if err != nil {
+		return err
+	}
+	out.Count = rsp.Count
+	out.Size = rsp.Size
 
 	return nil
 }
@@ -541,4 +562,18 @@ func GetErrCode(err error) (errCode int32) {
 	}
 
 	return errCode
+}
+
+func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, error) {
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Errorf("get credential faied, err:%v\n", err)
+		return isAdmin, tenantId, ErrInternalError
+	}
+	if !isAdmin && tenantId != tenantId4Source {
+		log.Errorf("access forbidden, tenantId=%s, tenantId4Source=%s\n", tenantId, tenantId4Source)
+		return isAdmin, tenantId, ErrNoSuchKey
+	}
+
+	return isAdmin, tenantId, nil
 }

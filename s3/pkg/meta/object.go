@@ -82,6 +82,11 @@ func (m *Meta) PutObject(ctx context.Context, object *Object, multipart *Multipa
 	return nil
 }
 
+func (m *Meta) UpdateObjectMeta(object *Object) error {
+	err := m.Db.UpdateObjectMeta(object)
+	return err
+}
+
 func (m *Meta) DeleteObject(ctx context.Context, object *Object) error {
 	tx, err := m.Db.NewTrans()
 	defer func() {
@@ -107,4 +112,9 @@ func (m *Meta) DeleteObject(ctx context.Context, object *Object) error {
 
 func (m *Meta) MarkObjectAsDeleted(ctx context.Context, object *Object) error {
 	return m.Db.SetObjectDeleteMarker(ctx, object, true)
+}
+
+func (m *Meta) UpdateObject(ctx context.Context, old, new *Object) (err error) {
+	log.Infof("update object from %v to %v\n", *old, *new)
+	return m.Db.UpdateObject(ctx, old, new, nil)
 }

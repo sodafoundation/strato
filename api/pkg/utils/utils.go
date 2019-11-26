@@ -195,3 +195,9 @@ func RandSeq(n int, chs []rune) string {
 	}
 	return string(b)
 }
+
+const (
+	VersioningEnabled    = "Enabled"
+	VersioningDisabled  = "Disabled"
+	VersioningSuspended = "Suspended"
+)

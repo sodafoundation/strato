@@ -27,4 +27,7 @@ type StorageDriver interface {
 	AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error
 	// Close: cleanup when driver needs to be stopped.
 	Close() error
+
+	// change storage class
+	ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error
 }
