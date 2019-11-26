@@ -107,7 +107,6 @@ func (b Bucket) GetCreateSql() (string, []interface{}) {
 	cors, _ := json.Marshal(b.Cors)
 	lc, _ := json.Marshal(b.LifecycleConfiguration)
 	bucket_policy, _ := json.Marshal(b.BucketPolicy)
-	versioning, _ := json.Marshal(b.Versioning)
 	replia, _ := json.Marshal(b.ReplicationConfiguration)
 	//createTime := time.Unix(b.CreateTime, 0).Format(TIME_LAYOUT_TIDB)
 	createTime := time.Now().Format(TIME_LAYOUT_TIDB)
@@ -116,6 +115,6 @@ func (b Bucket) GetCreateSql() (string, []interface{}) {
 	sql := "insert into buckets(bucketname,tenantid,userid,createtime,usages,location,acl,cors,lc,policy,versioning," +
 		"replication) values(?,?,?,?,?,?,?,?,?,?,?,?);"
 	args := []interface{}{b.Name, b.TenantId, b.UserId, createTime, b.Usages, b.DefaultLocation, acl, cors, lc,
-		bucket_policy, versioning, replia}
+		bucket_policy, b.Versioning.Status, replia}
 	return sql, args
 }
