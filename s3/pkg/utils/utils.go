@@ -91,7 +91,7 @@ const (
 )
 
 const (
-	VersioningEabled    = "Enabled"
+	VersioningEnabled    = "Enabled"
 	VersioningDisabled  = "Disabled"
 	VersioningSuspended = "Suspended"
 )

@@ -47,6 +47,7 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 				Usages:          buckets[j].Usages,
 				Tier:            buckets[j].Tier,
 				DefaultLocation: buckets[j].DefaultLocation,
+				Versioning:      buckets[j].Versioning,
 			})
 		}
 	}
@@ -82,7 +83,15 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			err = ErrBucketAlreadyExists
 		}
 	}
-
+	if in.Versioning != nil {
+		err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+		if err != nil {
+			// set default version to disabled
+			err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, "Disabled")
+			log.Error("Error creating version entry: ", err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -118,6 +127,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		DefaultLocation: bucket.DefaultLocation,
 		Tier:            bucket.Tier,
 		Usages:          bucket.Usages,
+		Versioning:      bucket.Versioning,
 	}
 
 	return nil

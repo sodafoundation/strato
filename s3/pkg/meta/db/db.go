@@ -54,4 +54,7 @@ type DBAdapter interface {
 	PutGcobjRecord(ctx context.Context, object *Object, tx interface{}) error
 	DeleteGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error)
 	ListGcObjs(ctx context.Context, offset, limit int) ([]*Object, error)
+
+	UpdateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error
+	CreateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error
 }
