@@ -24,6 +24,7 @@ type LocationInfo struct {
 	Security   string
 	BakendName string
 	ClassName  string
+	Tier       int32
 }
 
 type BackendInfo struct {
@@ -46,7 +47,6 @@ type MoveWorker interface {
 	UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error
 	AbortMultipartUpload(objKey string, destLoca *LocationInfo) error
 	CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error
-	ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error
 }
 
 const (

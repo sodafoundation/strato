@@ -27,4 +27,7 @@ type StorageDriver interface {
 	ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error)
 	// Close: cleanup when driver needs to be stopped.
 	Close() error
+
+	// change storage class
+	ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error
 }

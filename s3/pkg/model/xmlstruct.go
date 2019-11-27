@@ -14,6 +14,8 @@
 
 package model
 
+import "encoding/xml"
+
 var Xmlns = "http://s3.amazonaws.com/doc/2006-03-01"
 
 type CreateBucketConfiguration struct {
@@ -30,6 +32,7 @@ type Bucket struct {
 	Name               string `xml:"Name"`
 	CreateTime         string `xml:"CreateTime"`
 	LocationConstraint string `xml:"LocationConstraint"`
+	VersionOpts        VersioningConfiguration
 }
 
 type ListAllMyBucketsResult struct {
@@ -124,4 +127,9 @@ type StorageClass struct {
 type ListStorageClasses struct {
 	Xmlns   string         `xml:"xmlns,attr"`
 	Classes []StorageClass `xml:"Class"`
+}
+
+type VersioningConfiguration struct {
+	XMLName xml.Name `xml:"VersioningConfiguration"`
+	Status  string   `xml:"Status"`
 }

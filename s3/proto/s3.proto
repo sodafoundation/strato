@@ -37,13 +37,13 @@ service S3 {
 	rpc DeleteUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 
 	rpc HeadObject(BaseObjRequest) returns (Object) {}
+	rpc MoveObject(MoveObjectRequest) returns (MoveObjectResponse) {}
 	rpc CopyObject(CopyObjectRequest) returns (CopyObjectResponse) {}
 	rpc CopyObjPart(CopyObjPartRequest) returns (CopyObjPartResponse) {}
 	rpc PutObjACL(PutObjACLRequest) returns (BaseResponse) {}
 	rpc GetObjACL(BaseObjRequest) returns (ObjACL) {}
 	rpc GetBucketLocation(BaseRequest) returns (BaseResponse) {}
 	rpc GetBucketVersioning(BaseBucketRequest) returns (BucketVersioning) {}
-	rpc PutBucketVersioning(PutBucketVersioningRequest) returns (BaseResponse) {}
 	rpc PutBucketACL(PutBucketACLRequest) returns (BaseResponse) {}
 	rpc GetBucketACL(BaseBucketRequest) returns (BucketACL) {}
 	rpc PutBucketCORS(BaseRequest) returns (BaseResponse) {}
@@ -71,6 +71,25 @@ message CopyObjectResponse {
 	string versionId = 4;
 }
 
+message MoveObjectRequest {
+	string srcObject = 1;
+	string targetObject = 2;
+	string srcBucket = 3;
+	string targetBucket = 4;
+	string targetLocation = 5;
+	int32  targetTier = 6;
+	int32  moveType = 7;
+	int32  sourceType = 8; // lifecyce service or migration service.
+}
+
+message MoveObjectResponse {
+    Object objMeta = 1;
+    string status = 2;
+    string md5 = 3;
+    string versionId = 4;
+    int64 lastModified = 5;
+}
+
 message PutObjectRequest {
 	bytes data = 1;
 }
@@ -92,10 +111,6 @@ message PutObjectResponse {
 	string md5 = 4;
 	string versionId = 5;
 	int64 lastModified = 6;
-}
-
-message PutBucketVersioningRequest {
-	string Status = 1;
 }
 
 message PutBucketACLRequest {
@@ -283,7 +298,7 @@ message Bucket {
 	string id = 6;
 	bool deleted = 7;
 	ServerSideEncryption serverSideEncryption = 8;
-	string versioning = 9;
+	BucketVersioning versioning = 9;
 	string defaultLocation = 10;	// Means backend
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;
@@ -418,8 +433,8 @@ message DeleteObjectInput {
 
 message DeleteObjectOutput {
     int32 errorCode = 1;
-    bool deleteMarker = 3;
-    string versionId = 4;
+    bool deleteMarker = 2;
+    string versionId = 3;
 }
 
 message GetObjectInput {

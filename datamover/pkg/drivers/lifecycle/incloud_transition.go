@@ -18,57 +18,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
 
-	log "github.com/sirupsen/logrus"
-	backend "github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
-	"github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
-	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	"sync"
+	log "github.com/sirupsen/logrus"
 )
-
-func changeStorageClass(objKey *string, newClass *string, virtBucket *string, bkend *BackendInfo) error {
-	log.Infof("Change storage class of object[%s] to %s.\n", *objKey, *newClass)
-	if *virtBucket == "" {
-		log.Infof("change storage class of object[%s] is failed: virtual bucket is null\n", objKey)
-		return errors.New(DMERR_InternalError)
-	}
-
-	key := *objKey
-	if *virtBucket != "" {
-		key = *virtBucket + "/" + *objKey
-	}
-
-	var err error
-	switch bkend.StorType {
-	case flowtype.STOR_TYPE_AWS_S3:
-		mover := s3mover.S3Mover{}
-		err = mover.ChangeStorageClass(&key, newClass, bkend)
-	case flowtype.STOR_TYPE_IBM_COS:
-		mover := ibmcosmover.IBMCOSMover{}
-		err = mover.ChangeStorageClass(&key, newClass, bkend)
-	case flowtype.STOR_TYPE_HW_OBS:
-		mover := obsmover.ObsMover{}
-		err = mover.ChangeStorageClass(&key, newClass, bkend)
-	case flowtype.STOR_TYPE_AZURE_BLOB:
-		mover := blobmover.BlobMover{}
-		err = mover.ChangeStorageClass(&key, newClass, bkend)
-	default:
-		log.Infof("change storage class of object[objkey:%s] failed: backend type is not support.\n", objKey)
-		err = errors.New(DMERR_UnSupportBackendType)
-	}
-
-	if err == nil {
-		log.Infof("Change storage class of object[%s] to %s successfully.\n", *objKey, *newClass)
-	}
-
-	return err
-}
 
 func loadStorageClassDefinition() error {
 	res, _ := s3client.GetTierMap(context.Background(), &osdss3.BaseRequest{})
@@ -90,93 +50,40 @@ func loadStorageClassDefinition() error {
 	return nil
 }
 
-func getStorageClassName(tier int32, storageType string) (string, error) {
-	log.Infof("Get storage class name of tier[%d].\n", tier)
-	var err error
-	var mutex sync.Mutex
-	mutex.Lock()
-	if len(Int2ExtTierMap) == 0 {
-		err = loadStorageClassDefinition()
-	} else {
-		err = nil
-	}
-	mutex.Unlock()
-
-	if err != nil {
-		return "", err
-	}
-
-	key := ""
-	switch storageType {
-	case flowtype.STOR_TYPE_AWS_S3:
-		key = backend.BackendTypeAws
-	case flowtype.STOR_TYPE_IBM_COS:
-		key = backend.BackendTypeIBMCos
-	case flowtype.STOR_TYPE_HW_OBS, flowtype.STOR_TYPE_HW_FUSIONSTORAGE, flowtype.STOR_TYPE_HW_FUSIONCLOUD:
-		key = backend.BackendTypeObs
-	case flowtype.STOR_TYPE_AZURE_BLOB:
-		key = backend.BackendTypeAzure
-	case flowtype.STOR_TYPE_CEPH_S3:
-		key = backend.BackendTypeCeph
-	case flowtype.STOR_TYPE_GCP_S3:
-		key = backend.BackendTypeGcs
-	default:
-		log.Info("map tier to storage class name failed: backend type is not support.")
-		return "", errors.New(DMERR_UnSupportBackendType)
-	}
-
-	className := ""
-	log.Infof("key:%s\n", key)
-	v1, _ := Int2ExtTierMap[key]
-	v2, ok := (*v1)[tier]
-	if !ok {
-		err = fmt.Errorf("tier[%d] is not support for %s", tier, storageType)
-	} else {
-		className = v2
-	}
-
-	log.Infof("Storage class name of tier[%d] is %s.\n", tier, className)
-	return className, err
-}
-
 func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	log.Infof("in-cloud transition action: transition %s from %d to %d of %s.\n",
 		acReq.ObjKey, acReq.SourceTier, acReq.TargetTier, acReq.SourceBackend)
 
-	loca, err := getBackendInfo(&acReq.SourceBackend, false)
-	if err != nil {
-		log.Errorf("in-cloud transition of %s failed because get location failed.\n", acReq.ObjKey)
-		return err
+	log.Infof("in-cloud transition of object[%s], bucket:%v, target tier:%d\n", acReq.ObjKey, acReq.BucketName,
+		acReq.TargetTier)
+	req := &osdss3.MoveObjectRequest{
+		SrcObject:  acReq.ObjKey,
+		SrcBucket:  acReq.BucketName,
+		TargetTier: acReq.TargetTier,
+		MoveType:   utils.MoveType_ChangeStorageTier,
+		SourceType: utils.MoveSourceType_Lifecycle,
 	}
 
-	className, err := getStorageClassName(acReq.TargetTier, loca.StorType)
-	if err != nil {
-		log.Errorf("in-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
-		return err
-	}
-	err = changeStorageClass(&acReq.ObjKey, &className, &acReq.BucketName, loca)
-	if err != nil && err.Error() == DMERR_NoPermission {
-		loca, err = getBackendInfo(&acReq.SourceBackend, true)
-		if err != nil {
-			return err
-		}
-		err = changeStorageClass(&acReq.ObjKey, &className, &acReq.BucketName, loca)
+	// add object to InProgressObjs
+	if _, ok := InProgressObjs[acReq.ObjKey]; !ok {
+		InProgressObjs[acReq.ObjKey] = struct{}{}
+	} else {
+		log.Infof("the transition of object[%s] is in-progress\n", acReq.ObjKey)
+		return errors.New(DMERR_TransitionInprogress)
 	}
 
+	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
+	_, err := s3client.MoveObject(ctx, req)
 	if err != nil {
-		log.Errorf("in-cloud transition of %s failed: %v.\n", acReq.ObjKey, err)
-		return err
+		// if failed, it will try again in the next round schedule
+		log.Errorf("in-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+	} else {
+		log.Infof("in-cloud transition of %s succeed.\n", acReq.ObjKey)
 	}
 
-	// update meta data.
-	setting := make(map[string]string)
-	setting[OBJMETA_TIER] = fmt.Sprintf("%d", acReq.TargetTier)
-	req := osdss3.UpdateObjMetaRequest{ObjKey: acReq.ObjKey, BucketName: acReq.BucketName, Setting: setting, LastModified: acReq.LastModified}
-	_, err = s3client.UpdateObjMeta(context.Background(), &req)
-	if err != nil {
-		// If update failed, it will be redo again in the next round of scheduling
-		log.Errorf("update tier of object[%s] to %d failed:%v.\n", acReq.ObjKey, acReq.TargetTier, err)
-	}
+	// remove object from InProgressObjs
+	delete(InProgressObjs, acReq.ObjKey)
 
 	return err
 }

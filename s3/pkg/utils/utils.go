@@ -14,6 +14,14 @@
 
 package utils
 
+import (
+	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"github.com/opensds/multi-cloud/backend/proto"
+	log "github.com/sirupsen/logrus"
+)
+
 type Database struct {
 	Credential string `conf:"credential,username:password@tcp(ip:port)/dbname"`
 	Driver     string `conf:"driver,mongodb"`
@@ -83,7 +91,7 @@ const (
 )
 
 const (
-	VersioningEabled    = "Enabled"
+	VersioningEnabled    = "Enabled"
 	VersioningDisabled  = "Disabled"
 	VersioningSuspended = "Suspended"
 )
@@ -92,4 +100,43 @@ type ListObjsAppendInfo struct {
 	Prefixes   []string
 	Truncated  bool
 	NextMarker string
+}
+
+const (
+	MoveType_Invalid = iota
+	MoveType_MoveCrossBuckets
+	MoveType_ChangeLocation
+	MoveType_ChangeStorageTier
+)
+
+const (
+	MoveSourceType_EndUser = iota
+	MoveSourceType_Lifecycle
+	MoveSourceType_Migration
+)
+
+func Md5Content(data []byte) string {
+	md5Ctx := md5.New()
+	md5Ctx.Write(data)
+	cipherStr := md5Ctx.Sum(nil)
+	//value := base64.StdEncoding.EncodeToString(cipherStr)
+	value := hex.EncodeToString(cipherStr)
+	return value
+}
+
+func GetBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,
+	error) {
+	log.Infof("backendName is %v:\n", backendName)
+	backendRep, backendErr := backedClient.ListBackend(ctx, &backend.ListBackendRequest{
+		Offset: 0,
+		Limit:  1,
+		Filter: map[string]string{"name": backendName}})
+	log.Infof("backendErr is %v:", backendErr)
+	if backendErr != nil {
+		log.Errorf("get backend %s failed.", backendName)
+		return nil, backendErr
+	}
+	log.Infof("backendRep is %v:", backendRep)
+	backend := backendRep.Backends[0]
+	return backend, nil
 }
