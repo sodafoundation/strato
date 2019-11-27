@@ -5,6 +5,7 @@ log_level=20
 [endpoint]
 url="default"
 machine_id=1
+gc_check_time=30
 
 [storage]
 ceph_dir="/etc/ceph/*.conf"

@@ -253,6 +253,17 @@ func (ys *YigSuite) TestMultipartUploadSucceed(c *C) {
 	n, err := objReader.Read(buf)
 	c.Assert(n, Equals, 0)
 	c.Assert(err, Equals, io.EOF)
+	// list the parts of multipart uploaded object.
+	listPartsReq := &pb.ListParts{
+		Bucket:   obj.BucketName,
+		Key:      obj.ObjectKey,
+		UploadId: mu.UploadId,
+	}
+
+	listPartsResp, err := yig.ListParts(context.Background(), listPartsReq)
+	c.Assert(err, Equals, nil)
+	c.Assert(listPartsResp, Not(Equals), nil)
+	c.Assert(len(listPartsResp.Parts), Equals, len(readerElems))
 	// delete the multipart uploaded object.
 	objDelInput := &pb.DeleteObjectInput{
 		ObjectId: obj.ObjectId,

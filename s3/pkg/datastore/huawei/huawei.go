@@ -35,22 +35,6 @@ type OBSAdapter struct {
 	client  *obs.ObsClient
 }
 
-/*func Init(backend *backendpb.BackendDetail) *OBSAdapter {
-	endpoint := backend.Endpoint
-	AccessKeyID := backend.Access
-	AccessKeySecret := backend.Security
-
-	client, err := obs.New(AccessKeyID, AccessKeySecret, endpoint)
-
-	if err != nil {
-		log.Infof("Access obs failed:%v", err)
-		return nil
-	}
-
-	adap := &OBSAdapter{backend: backend, client: client}
-	return adap
-}*/
-
 func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
@@ -274,7 +258,7 @@ func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 	return nil
 }
 
-/*func (ad *OBSAdapter) ListParts(listParts *pb.ListParts, context context.Context) (*model.ListPartsOutput, S3Error) {
+func (ad *OBSAdapter) ListParts(context context.Context, listParts *pb.ListParts) (*model.ListPartsOutput, error) {
 	bucket := ad.backend.BucketName
 	if context.Value("operation") == "listParts" {
 		input := &obs.ListPartsInput{}
@@ -299,14 +283,14 @@ func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 
 		if err != nil {
 			log.Infof("ListPartsListParts is nil:%v\n", err)
-			return nil, S3Error{Code: 500, Description: "AbortMultipartUploadInput failed"}
+			return nil, err
 		} else {
 			log.Infof("ListParts successfully")
-			return listParts, NoError
+			return listParts, nil
 		}
 	}
-	return nil, NoError
-}*/
+	return nil, nil
+}
 
 func (ad *OBSAdapter) Close() error {
 	//TODO

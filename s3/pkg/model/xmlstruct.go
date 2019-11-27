@@ -59,6 +59,7 @@ type UploadPartResult struct {
 type Part struct {
 	PartNumber int64  `xml:"PartNumber"`
 	ETag       string `xml:"ETag"`
+	Size       int64  `xml:"size"`
 }
 
 type CompleteMultipartUpload struct {
