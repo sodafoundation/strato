@@ -341,6 +341,8 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	object := &pb.Object{
 		BucketName:       bucketName,
 		ObjectKey:        objectKey,
+		TenantId:         multipart.Metadata.TenantId,
+		UserId:           multipart.Metadata.UserId,
 		ContentType:      contentType,
 		ObjectId:         multipart.ObjectId,
 		LastModified:     time.Now().UTC().Unix(),
@@ -349,6 +351,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		CustomAttributes: multipart.Metadata.Attrs,
 		Type:             ObjectTypeNormal,
 		Tier:             utils.Tier1,
+		//TODO: update size, but the size should be returned from backend
 	}
 
 	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, &multipart, nil, true)

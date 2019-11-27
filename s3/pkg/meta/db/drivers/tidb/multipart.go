@@ -127,31 +127,48 @@ func (t *TidbClient) ListMultipartUploads(input *pb.ListBucketUploadRequest) (ou
 		bucketName, keyMarker, uploadIdMarker, prefix, delimiter, maxUploads)
 
 	commonPrefixes := make(map[string]struct{})
-	first := true
-	objNum := make(map[string]int)
+	objectMap := make(map[string]struct{})
+	uploadIdMap := make(map[string]struct{})
 	currentMarker := keyMarker
-	for {
+	currentUploadIdMarker := uploadIdMarker
+	for !exit {
 		var loopnum int
-		if _, ok := objNum[currentMarker]; !ok {
-			objNum[currentMarker] = 0
-		}
 		var sqltext string
 		var rows *sql.Rows
-		if currentMarker == "" {
-			sqltext = "select objectname,uploadid,uploadtime,initiatorid,tenantid,userid " +
-				"from multiparts where bucketName=? order by bucketname,objectname,uploadid limit ?,?;"
-			rows, err = t.Client.Query(sqltext, bucketName, objNum[currentMarker], objNum[currentMarker]+maxUploads)
-		} else {
-			sqltext = "select objectname,uploadid,uploadtime,initiatorid,tenantid,userid " +
-				"from multiparts where bucketName=? and objectname>=? order by bucketname,objectname,uploadid limit ?,?;"
-			rows, err = t.Client.Query(sqltext, bucketName, currentMarker, objNum[currentMarker], objNum[currentMarker]+maxUploads)
+		args := make([]interface{}, 0)
+		sqltext = "select objectname,uploadid,uploadtime,initiatorid,tenantid,userid from multiparts where bucketName=?"
+		args = append(args, bucketName)
+		if prefix != "" {
+			sqltext += " and objectname like ?"
+			args = append(args, prefix+"%")
+			log.Infof("query prefix: %s", prefix)
 		}
+		if currentMarker != "" {
+			sqltext += " and objectname >= ?"
+			args = append(args, currentMarker)
+			log.Infof("query object name marker: %s", currentMarker)
+		}
+		if uploadIdMarker != "" {
+			sqltext += " and uploadid >= ?"
+			args = append(args, uploadIdMarker)
+			log.Infof("query uplaodid marker: %s", uploadIdMarker)
+		}
+		if delimiter == "" {
+			sqltext += " order by bucketname,objectname,uploadid limit ?"
+			args = append(args, maxUploads)
+		} else {
+			num := len(strings.Split(prefix, delimiter))
+			args = append(args, delimiter, num, maxUploads)
+			sqltext += " group by SUBSTRING_INDEX(name, ?, ?) order by bucketname,objectname,uploadid limit ?"
+		}
+		rows, err = t.Client.Query(sqltext, args...)
 		if err != nil {
+			err = handleDBError(err)
 			return
 		}
-		log.Infoln("objNum[currentMarker]:", objNum[currentMarker])
 		defer rows.Close()
 		for rows.Next() {
+			// loopnum is used to calculate the total number of the query result
 			loopnum += 1
 			var objName, uploadId, initiatorId, tenantId, uploadTime, userId string
 			err = rows.Scan(
@@ -163,54 +180,83 @@ func (t *TidbClient) ListMultipartUploads(input *pb.ListBucketUploadRequest) (ou
 				&userId,
 			)
 			if err != nil {
+				err = handleDBError(err)
 				log.Errorln("sql err:", err)
 				return
 			}
 			log.Infoln("objectName:", objName, " uploadId:", uploadId)
-			if _, ok := objNum[objName]; !ok {
-				objNum[objName] = 0
-			}
-			objNum[objName] += 1
+			// if update marker for next query
 			currentMarker = objName
-			//filte by uploadtime and key
-			if first {
-				if uploadIdMarker != "" {
-					if objName == currentMarker && uploadId < uploadIdMarker {
-						continue
-					}
-				}
+			currentUploadIdMarker = uploadId
+
+			// if the object name and upload id have not been processed, we use objectMap and uploadIdMap to flag them
+			var objExist, uploadIdExist bool
+			if _, objExist := objectMap[objName]; !objExist {
+				objectMap[objName] = struct{}{}
 			}
-			//filte by prefix
-			hasPrefix := strings.HasPrefix(objName, prefix)
-			if !hasPrefix {
+			if _, uploadIdExist := uploadIdMap[uploadId]; !uploadIdExist {
+				uploadIdMap[uploadId] = struct{}{}
+			}
+			// if the same record row is processed before, we should skip to next row
+			if objExist && uploadIdExist {
 				continue
 			}
-			//filte by delimiter
+
+			if currentMarker == keyMarker && currentUploadIdMarker == uploadIdMarker {
+				// because we search result from maker and the result should not include origin marker from client.
+				continue
+			}
+
+			// filter by delimiter
 			if len(delimiter) != 0 {
 				subStr := strings.TrimPrefix(objName, prefix)
 				n := strings.Index(subStr, delimiter)
 				if n != -1 {
-					prefixKey := string([]byte(subStr)[0:(n + 1)])
+					prefixKey := prefix + string([]byte(subStr)[0:(n+1)])
+					// the example is from https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
+					// some multipart object key as follows:
+					// photos/2006/January/sample.jpg
+					// photos/2006/February/sample.jpg
+					// photos/2006/March/sample.jpg
+					// videos/2006/March/sample.wmv
+					// sample.jpg
+					// we get "photos" as prefix, and "photos0" as marker for next query. The value of character '0' is
+					// next to the value of "/", and next query we should use it as marker
+					currentMarker = prefixKey[0:(len(prefixKey)-1)] + string(delimiter[len(delimiter)-1]+1)
+					if prefixKey == keyMarker {
+						// because we search result from maker and the result should not include origin marker from client.
+						continue
+					}
 					if _, ok := commonPrefixes[prefixKey]; !ok {
+						if count == maxUploads {
+							output.IsTruncated = true
+							exit = true
+							break
+						}
 						commonPrefixes[prefixKey] = struct{}{}
+						output.NextKeyMarker = objName
+						output.NextUploadIdMarker = uploadId
+						count += 1
 					}
 					continue
 				}
 			}
-			if count >= maxUploads {
-				output.IsTruncated = true
+			count += 1
+			if count == maxUploads {
 				output.NextKeyMarker = objName
 				output.NextUploadIdMarker = uploadId
+			}
+			if count > maxUploads {
+				output.IsTruncated = true
 				exit = true
 				break
 			}
+
 			var ct time.Time
 			ct, err = time.Parse(TIME_LAYOUT_TIDB, uploadTime)
 			if err != nil {
-				err = handleDBError(err)
 				return
 			}
-
 			output.Uploads = append(output.Uploads, &pb.Upload{
 				Key:objName,
 				UploadId:uploadId,
@@ -225,14 +271,11 @@ func (t *TidbClient) ListMultipartUploads(input *pb.ListBucketUploadRequest) (ou
 				Initiated: ct.Format(CREATE_TIME_LAYOUT),
 				StorageClass: "STANDARD",
 			})
-			count += 1
 		}
-		if loopnum == 0 {
+
+		// if the number of query result are less maxUploads, it must be no more result, and we can exit the loop
+		if loopnum < maxUploads {
 			exit = true
-		}
-		first = false
-		if exit {
-			break
 		}
 	}
 	output.CommonPrefix = helper.Keys(commonPrefixes)
