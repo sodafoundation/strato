@@ -86,21 +86,25 @@ func (yig *YigStorage) UploadPart(ctx context.Context, stream io.Reader, multipa
 		log.Errorf("failed to UploadPart(%s, %s, %s, %d), err: %v", multipartUpload.Bucket, multipartUpload.Key, multipartUpload.UploadId, partNumber, err)
 		return nil, err
 	}
-	// Should metadata update failed, add `maybeObjectToRecycle` to `RecycleQueue`,
+	// Should metadata update failed, put the object to gc,
 	// so the object in Ceph could be removed asynchronously
-	maybeObjectToRecycle := objectToRecycle{
-		location: cephCluster.Name,
-		pool:     poolName,
-		objectId: oid,
-	}
+	shouldGc := false
+	defer func() {
+		if shouldGc {
+			if err := yig.putObjToGc(cephCluster.Name, poolName, oid); err != nil {
+				log.Errorf("failed to put(%s, %s, %s) to gc, err: %v", cephCluster.Name, poolName, oid, err)
+			}
+		}
+	}()
+
 	if bytesWritten < upBytes {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		log.Errorf("failed to UploadPart(%s, %s, %s, %d), written: %d, total: %d", multipartUpload.Bucket, multipartUpload.Key, multipartUpload.UploadId, partNumber, bytesWritten, upBytes)
 		return nil, s3err.ErrIncompleteBody
 	}
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	if inputMd5 != "" && inputMd5 != calculatedMd5 {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		log.Errorf("failed to UploadPart(%s, %s, %s, %d), input md5: %s, calculated: %s", multipartUpload.Bucket, multipartUpload.Key, multipartUpload.UploadId, partNumber, inputMd5, calculatedMd5)
 		return nil, s3err.ErrBadDigest
 	}
@@ -116,6 +120,7 @@ func (yig *YigStorage) UploadPart(ctx context.Context, stream io.Reader, multipa
 	}
 	err = yig.MetaStorage.PutPart(partInfo)
 	if err != nil {
+		shouldGc = true
 		log.Errorf("failed to  put part for %s, %s, %s, %d, err: %v", multipartUpload.Bucket, multipartUpload.Key, multipartUpload.UploadId, partNumber, err)
 		return nil, err
 	}
@@ -223,10 +228,10 @@ func (yig *YigStorage) AbortMultipartUpload(ctx context.Context, multipartUpload
 
 	// remove all the parts from ceph cluster.
 	for _, p := range parts {
-		RecycleQueue <- objectToRecycle{
-			location: p.Location,
-			pool:     p.Pool,
-			objectId: p.ObjectId,
+		err = yig.putObjToGc(p.Location, p.Pool, p.ObjectId)
+		if err != nil {
+			log.Errorf("failed to put part(%s, %s, %s) to gc, err: %v", p.Location, p.Pool, p.ObjectId, err)
+			return err
 		}
 	}
 
