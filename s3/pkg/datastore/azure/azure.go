@@ -332,6 +332,10 @@ func (ad *AzureAdapter) AbortMultipartUpload(ctx context.Context, multipartUploa
 	return nil
 }
 
+func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+	return nil, ErrNotImplemented
+}
+
 func (ad *AzureAdapter) Close() error {
 	// TODO:
 	return nil
