@@ -44,6 +44,7 @@ func (s *APIService) ObjectAclPut(request *restful.Request, response *restful.Re
 			return
 		}
 	} else {
+		// because we only support canned acl, the body of request must be not too big, and 1024 is enough
 		aclBuffer, err := ioutil.ReadAll(io.LimitReader(request.Request.Body, 1024))
 		if err != nil {
 			log.Errorf("unable to read acls body, err:", err)
@@ -95,7 +96,7 @@ func (s *APIService) ObjectAclGet(request *restful.Request, response *restful.Re
 
 	owner := datatype.Owner{ID: object.TenantId, DisplayName: object.TenantId}
 	bucketOwner := datatype.Owner{}
-	policy, err := datatype.CreatePolicyFromCanned(owner, bucketOwner, datatype.Acl{CannedAcl:object.Acl.CannedAcl})
+	policy, err := datatype.CreatePolicyFromCanned(owner, bucketOwner, datatype.Acl{CannedAcl: object.Acl.CannedAcl})
 	if err != nil {
 		log.Error("failed to create policy. err:", err)
 		WriteErrorResponse(response, request, err)

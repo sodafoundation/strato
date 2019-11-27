@@ -43,6 +43,7 @@ func (s *APIService) BucketAclPut(request *restful.Request, response *restful.Re
 			return
 		}
 	} else {
+		// because we only support canned acl, the body of request must be not too big, and 1024 is enough
 		aclBuffer, err := ioutil.ReadAll(io.LimitReader(request.Request.Body, 1024))
 		if err != nil {
 			log.Errorf("unable to read acls body, err:", err)
