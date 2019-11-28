@@ -105,3 +105,7 @@
 [[constraint]]
   name = "gopkg.in/natefinch/lumberjack.v2"
   version = "2.1.0"
+
+[[constraint]]
+  name = "go.uber.org/automaxprocs"
+  version = "=1.2.0"

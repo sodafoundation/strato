@@ -199,6 +199,7 @@ func (yig *YigStorage) CompleteMultipartUpload(ctx context.Context, multipartUpl
 	}
 	result.ETag = hex.EncodeToString(md5Writer.Sum(nil))
 	result.ETag += "-" + strconv.Itoa(len(parts))
+	result.Size = int64(totalSize)
 	return result, nil
 }
 
