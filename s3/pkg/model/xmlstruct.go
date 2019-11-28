@@ -72,6 +72,7 @@ type CompleteMultipartUploadResult struct {
 	Location string `xml:"Location"`
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
+	Size     int64  `xml:"Size"`
 	ETag     string `xml:"ETag"`
 }
 
