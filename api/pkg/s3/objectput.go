@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"io"
 	"strconv"
 	"strings"
@@ -136,6 +137,8 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
+	// encrypt
+	key, _ := utils.GetRandom32BitKey()
 	for !eof {
 		n, err := limitedDataReader.Read(buf)
 		if err != nil && err != io.EOF {
@@ -146,7 +149,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 			log.Debugln("finished read")
 			eof = true
 		}
-		err = stream.Send(&s3.PutObjectRequest{Data: buf[:n]})
+		// encrypt if needed
+		if bucketMeta.ServerSideEncryption.SseType == "SSE"{
+			_, encbuf := utils.EncryptWithAES256RandomKey(buf, key)
+			err = stream.Send(&s3.PutObjectRequest{Data: encbuf[:n]})
+		}else{
+			err = stream.Send(&s3.PutObjectRequest{Data: buf[:n]})
+		}
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break
