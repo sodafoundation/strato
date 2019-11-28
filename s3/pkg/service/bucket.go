@@ -316,7 +316,7 @@ func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
-		return nil
+		return err
 	}
 
 	if isAdmin == false {
@@ -330,7 +330,7 @@ func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest
 	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
 	if err != nil {
 		log.Error("failed to put bucket, err:", err)
-		return nil
+		return err
 	}
 	log.Infoln("Put bucket acl successfully.")
 	return nil

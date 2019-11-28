@@ -98,6 +98,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	ctx := common.InitCtxWithAuthInfo(request)
 	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
 	if err != nil {
+		log.Errorln("failed to get bucket meta. err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
