@@ -31,12 +31,14 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		objectKey, bucketName)
 
 	if !isValidObjectName(objectKey) {
+		log.Errorf("object name is not valid.")
 		WriteErrorResponse(response, request, ErrInvalidObjectName)
 		return
 	}
 
 	acl, err := getAclFromHeader(request)
 	if err != nil {
+		log.Errorf("failed to get acl from http header, err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
@@ -46,6 +48,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	storageClass, err := getStorageClassFromHeader(request)
 	if err != nil {
+		log.Errorf("failed to get storage class from http header. err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}

@@ -32,7 +32,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 
 	var incomingMd5 string
 	// get Content-Md5 sent by client and verify if valid
-	md5Bytes, err := checkValidMD5(request.HeaderParameter("Content-Md5"))
+	md5Bytes, err := checkValidMD5(request.HeaderParameter(common.REQUEST_HEADER_CONTENT_MD5))
 	if err != nil {
 		incomingMd5 = ""
 	} else {
@@ -42,6 +42,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	size := request.Request.ContentLength
 	/// maximum Upload size for multipart objects in a single operation
 	if isMaxObjectSize(size) {
+		log.Errorf("the size of object to upload is too large.")
 		WriteErrorResponse(response, request, ErrEntityTooLarge)
 		return
 	}
@@ -51,11 +52,13 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partIDString := request.QueryParameter("partNumber")
 	partID, err := strconv.Atoi(partIDString)
 	if err != nil {
+		log.Errorf("failed to convert part id string to integer")
 		WriteErrorResponse(response, request, ErrInvalidPart)
 		return
 	}
 	// check partID with maximum part ID for multipart objects
 	if isMaxPartID(partID) {
+		log.Errorf("the part id is invalid.")
 		WriteErrorResponse(response, request, ErrInvalidMaxParts)
 		return
 	}
@@ -74,7 +77,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	}
 	err = stream.SendMsg(&uploadRequest)
 	if err != nil {
-		log.Errorln("failed send msg. err:", err)
+		log.Errorln("failed send upload request msg. err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}

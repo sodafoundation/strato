@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/journeymidnight/yig/helper"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -75,10 +74,10 @@ func (s *APIService) CompleteMultipartUpload(request *restful.Request, response 
 	// Get object location.
 	location := GetLocation(request.Request)
 	// Generate complete multipart response.
-	data := GenerateCompleteMultpartUploadResponse(bucketName, objectKey, location, result.ETag)
+	data := GenerateCompleteMultipartUploadResponse(bucketName, objectKey, location, result.ETag)
 	encodedSuccessResponse, err := xmlFormat(data)
 	if err != nil {
-		helper.ErrorIf(err, "Unable to parse CompleteMultipartUpload response")
+		log.Errorln("unable to parse CompleteMultipartUpload response, err:", err)
 		WriteErrorResponseNoHeader(response, request, ErrInternalError, request.Request.URL.Path)
 		return
 	}

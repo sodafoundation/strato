@@ -241,11 +241,13 @@ func (t *TidbClient) ListMultipartUploads(input *pb.ListBucketUploadRequest) (ou
 					continue
 				}
 			}
+			// now start to get out multipart upload records, and update nextmarker if necessary
 			count += 1
 			if count == maxUploads {
 				output.NextKeyMarker = objName
 				output.NextUploadIdMarker = uploadId
 			}
+			// if count are more than maxUploads, it means that we should exit the loop and set IsTruncated true
 			if count > maxUploads {
 				output.IsTruncated = true
 				exit = true

@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	MAX_PART_SIZE   = 5 << 30 // 5GB
-	MAX_PART_NUMBER = 10000
+	MAX_PART_SIZE   = 5 << 30 // 5GB, max object size in single upload
+	MAX_PART_NUMBER = 10000  // max upload part number in one multipart upload
 )
 
 func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBucketUploadRequest, out *pb.ListBucketUploadResponse) error {
@@ -199,6 +199,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	}
 
 	if size > MAX_PART_SIZE {
+		log.Errorf("object part size is too large. size:", size)
 		err = ErrEntityTooLarge
 		return err
 	}
@@ -282,6 +283,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
 	if err != nil {
+		log.Errorf("failed to get bucket from meta stoarge. err:", err)
 		return err
 	}
 
@@ -392,6 +394,7 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
 	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
 		return err
 	}
 

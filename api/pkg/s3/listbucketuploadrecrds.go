@@ -19,6 +19,7 @@ func (s *APIService) ListBucketUploadRecords(request *restful.Request, response 
 
 	parameters, err := parseListUploadsQuery(request.Request.URL.Query())
 	if err != nil {
+		log.Errorln("failed to parse list upload query parameter. err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}

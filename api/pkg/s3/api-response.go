@@ -153,7 +153,7 @@ func GenerateInitiateMultipartUploadResponse(bucket, key, uploadID string) Initi
 }
 
 // GenerateCompleteMultipartUploadResponse
-func GenerateCompleteMultpartUploadResponse(bucket, key, location, etag string) CompleteMultipartUploadResponse {
+func GenerateCompleteMultipartUploadResponse(bucket, key, location, etag string) CompleteMultipartUploadResponse {
 	return CompleteMultipartUploadResponse{
 		Location: location,
 		Bucket:   bucket,
