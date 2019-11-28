@@ -380,9 +380,8 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 	uploadId := in.UploadId
 
 	var err error
-	abortMultipartResponse := pb.BaseResponse{}
 	defer func() {
-		abortMultipartResponse.ErrorCode = GetErrCode(err)
+		out.ErrorCode = GetErrCode(err)
 	}()
 
 	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
