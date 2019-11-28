@@ -59,7 +59,7 @@ CREATE TABLE `multiparts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-DROP TABLE IF EXISTS `gc` 
+DROP TABLE IF EXISTS `gc`; 
 CREATE TABLE `gc` (
 	`id` bigint(20) PRIMARY KEY AUTO_INCREMENT,
 	`location` varchar(255) NOT NULL DEFAULT '',

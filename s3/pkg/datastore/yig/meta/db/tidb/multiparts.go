@@ -16,7 +16,7 @@ import (
 *
  */
 func (t *Tidb) ListParts(uploadId uint64) ([]*types.PartInfo, error) {
-	sqlText := "select upload_id, part_num, object_id, location, pool, offset, size, etag, flag, create_time, update_time from multiparts where upload_id = ?"
+	sqlText := "select upload_id, part_num, object_id, location, pool, offset, size, etag, flag, create_time, update_time from multiparts where upload_id = ? order by part_num"
 	var parts []*types.PartInfo
 	rows, err := t.DB.Query(sqlText, uploadId)
 	if err != nil {

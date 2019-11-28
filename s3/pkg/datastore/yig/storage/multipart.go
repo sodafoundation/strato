@@ -233,6 +233,47 @@ func (yig *YigStorage) AbortMultipartUpload(ctx context.Context, multipartUpload
 	return nil
 }
 
+func (yig *YigStorage) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+	uploadId, err := str2UploadId(multipartUpload.UploadId)
+	if err != nil {
+		log.Errorf("failed to ListParts for %s, it failed to parse uploadId, err: %v", multipartUpload.UploadId, err)
+		return nil, err
+	}
+	parts, err := yig.MetaStorage.ListParts(uploadId)
+	if err != nil {
+		log.Errorf("ListParts failed, failed to get parts for uploadId(%d), err: %v", uploadId, err)
+		return nil, err
+	}
+
+	var partList []model.Part
+
+	for i, part := range parts {
+		if multipartUpload.PartNumberMarker > 0 && int64(i) <= multipartUpload.PartNumberMarker {
+			continue
+		}
+		if multipartUpload.MaxParts > 0 && int64(i) > multipartUpload.MaxParts {
+			break
+		}
+		p := model.Part{
+			PartNumber: part.PartNum,
+			ETag:       part.Etag,
+			Size:       int64(part.Size),
+		}
+		partList = append(partList, p)
+	}
+
+	output := &model.ListPartsOutput{
+		Bucket:      multipartUpload.Bucket,
+		Key:         multipartUpload.Key,
+		UploadId:    multipartUpload.UploadId,
+		MaxParts:    int(multipartUpload.MaxParts),
+		IsTruncated: false,
+		Parts:       partList,
+	}
+
+	return output, nil
+}
+
 func uploadId2Str(id int64) string {
 	return strconv.FormatUint(uint64(id), 16)
 }

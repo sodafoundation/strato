@@ -17,6 +17,7 @@ package aws
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -58,30 +59,6 @@ func (myc *s3Cred) Retrieve() (credentials.Value, error) {
 func (myc *s3Cred) IsExpired() bool {
 	return false
 }
-
-/*func Init(backend *backendpb.BackendDetail) *AwsAdapter {
-	endpoint := backend.Endpoint
-	AccessKeyID := backend.Access
-	AccessKeySecret := backend.Security
-	region := backend.Region
-
-	s3aksk := s3Cred{ak: AccessKeyID, sk: AccessKeySecret}
-	creds := credentials.NewCredentials(&s3aksk)
-
-	disableSSL := true
-	sess, err := session.NewSession(&aws.Config{
-		Region:      &region,
-		Endpoint:    &endpoint,
-		Credentials: creds,
-		DisableSSL:  &disableSSL,
-	})
-	if err != nil {
-		return nil
-	}
-
-	adap := &AwsAdapter{backend: backend, session: sess}
-	return adap
-}*/
 
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := ad.backend.BucketName
@@ -220,40 +197,6 @@ func (ad *AwsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	return nil
 }
 
-/*
-func (ad *AwsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
-	bucket := ad.backend.BucketName
-	newKey := bucketName + "/" + key
-
-	input := &awss3.ListObjectsInput{
-		Bucket: &bucket,
-		Prefix: &newKey,
-	}
-
-	svc := awss3.New(ad.session)
-	output, err := svc.ListObjects(input)
-	if err != nil {
-		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
-		return nil, S3Error{Code: 500, Description: err.Error()}
-	}
-
-	for _, content := range output.Contents {
-		realKey := bucketName + "/" + key
-		if realKey != *content.Key {
-			break
-		}
-		obj := &pb.Object{
-			BucketName: bucketName,
-			ObjectKey:  key,
-			Size:       *content.Size,
-		}
-		return obj, NoError
-	}
-	log.Infof("Can not find spceified object(%s).\n", key)
-	return nil, NoSuchObject
-}
-*/
-
 func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
@@ -381,6 +324,10 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 
 	log.Infof("complete multipart upload[AWS S3] successfully, rsp:%v\n", rsp)
 	return nil
+}
+
+func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+	return nil, errors.New("not implemented yet.")
 }
 
 func (ad *AwsAdapter) Close() error {
