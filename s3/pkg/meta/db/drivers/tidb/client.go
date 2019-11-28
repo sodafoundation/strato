@@ -16,7 +16,9 @@ package tidbclient
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -24,7 +26,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
+	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	log "github.com/sirupsen/logrus"
+	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 const MAX_OPEN_CONNS = 1024
@@ -135,4 +139,13 @@ func buildSql(ctx context.Context, filter map[string]string, sqltxt string) (str
 	}
 
 	return sqltxt, args, nil
+}
+
+func VersionStr2UInt64(vers string) uint64 {
+	vidByte, _ := hex.DecodeString(vers)
+	decrByte := xxtea.Decrypt(vidByte, XXTEA_KEY)
+	reVersion, _ := strconv.ParseUint(string(decrByte), 10, 64)
+	version := math.MaxUint64 - reVersion
+
+	return version
 }

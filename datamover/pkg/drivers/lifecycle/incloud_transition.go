@@ -17,7 +17,6 @@ package lifecycle
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -30,26 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func loadStorageClassDefinition() error {
-	res, _ := s3client.GetTierMap(context.Background(), &osdss3.BaseRequest{})
-	if len(res.Tier2Name) == 0 {
-		log.Info("get tier definition failed")
-		return fmt.Errorf("get tier definition failed")
-	}
-
-	log.Infof("Load storage class definition from s3 service successfully, res.Tier2Name:%+v\n", res.Tier2Name)
-	Int2ExtTierMap = make(map[string]*Int2String)
-	for k, v := range res.Tier2Name {
-		val := make(Int2String)
-		for k1, v1 := range v.Lst {
-			val[k1] = v1
-		}
-		Int2ExtTierMap[k] = &val
-	}
-
-	return nil
-}
-
 func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	log.Infof("in-cloud transition action: transition %s from %d to %d of %s.\n",
 		acReq.ObjKey, acReq.SourceTier, acReq.TargetTier, acReq.SourceBackend)
@@ -57,18 +36,18 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	log.Infof("in-cloud transition of object[%s], bucket:%v, target tier:%d\n", acReq.ObjKey, acReq.BucketName,
 		acReq.TargetTier)
 	req := &osdss3.MoveObjectRequest{
-		SrcObject:  acReq.ObjKey,
-		SrcBucket:  acReq.BucketName,
-		TargetTier: acReq.TargetTier,
-		MoveType:   utils.MoveType_ChangeStorageTier,
-		SourceType: utils.MoveSourceType_Lifecycle,
+		SrcObject:        acReq.ObjKey,
+		SrcObjectVersion: acReq.VersionId,
+		SrcBucket:        acReq.BucketName,
+		TargetTier:       acReq.TargetTier,
+		MoveType:         utils.MoveType_ChangeStorageTier,
 	}
 
 	// add object to InProgressObjs
 	if _, ok := InProgressObjs[acReq.ObjKey]; !ok {
 		InProgressObjs[acReq.ObjKey] = struct{}{}
 	} else {
-		log.Infof("the transition of object[%s] is in-progress\n", acReq.ObjKey)
+		log.Warnf("the transition of object[%s] is in-progress\n", acReq.ObjKey)
 		return errors.New(DMERR_TransitionInprogress)
 	}
 

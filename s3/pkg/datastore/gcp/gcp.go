@@ -78,12 +78,16 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		return result, ErrPutToBackendFailed
 	}
 
-	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
-	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+	calculatedMd5 := "\"" + hex.EncodeToString(md5Writer.Sum(nil)) + "\""
+	if userMd5 != "" && userMd5 != calculatedMd5 {
+		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+		return result, ErrBadDigest
+	}
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
 	result.Etag = calculatedMd5
+	result.Written = size
 	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
