@@ -110,9 +110,8 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 
 	result := pb.UploadPartResponse{}
 	err = stream.RecvMsg(&result)
-	if err != nil || result.ErrorCode != int32(ErrNoErr) {
-		log.Errorln("unable to init multipart. err:", err)
-		WriteErrorResponse(response, request, GetFinalError(err, result.ErrorCode))
+	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+		log.Errorln("unable to recv message. err:%v, errcode:%v", err, result.ErrorCode)
 		return
 	}
 

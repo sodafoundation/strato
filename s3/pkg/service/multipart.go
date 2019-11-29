@@ -269,9 +269,8 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	uploadId := in.UploadId
 
 	var err error
-	completeMultipartResponse := pb.BaseResponse{}
 	defer func() {
-		completeMultipartResponse.ErrorCode = GetErrCode(err)
+		out.ErrorCode = GetErrCode(err)
 	}()
 
 	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
@@ -353,7 +352,8 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		CustomAttributes: multipart.Metadata.Attrs,
 		Type:             ObjectTypeNormal,
 		Tier:             utils.Tier1,
-		//TODO: update size, but the size should be returned from backend
+		Size:             result.Size,
+		Location:         multipart.Metadata.Location,
 	}
 
 	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, &multipart, nil, true)

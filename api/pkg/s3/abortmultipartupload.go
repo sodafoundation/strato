@@ -5,8 +5,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-
-	. "github.com/opensds/multi-cloud/s3/error"
 )
 
 func (s *APIService) AbortMultipartUpload(request *restful.Request, response *restful.Response) {
@@ -21,9 +19,8 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	result, err := s.s3Client.AbortMultipartUpload(ctx, &pb.AbortMultipartRequest{BucketName:bucketName,ObjectKey:objectKey,UploadId:uploadId})
-	if err != nil || result.ErrorCode != int32(ErrNoErr) {
-		log.Errorln("unable to init multipart. err:", err)
-		WriteErrorResponse(response, request, GetFinalError(err, result.ErrorCode))
+	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+		log.Errorf("unable to abort multipart. err:%v, errCode:%v", err, result.ErrorCode)
 		return
 	}
 
