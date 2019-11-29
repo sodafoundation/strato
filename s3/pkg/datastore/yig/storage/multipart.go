@@ -7,7 +7,6 @@ import (
 	"io"
 	"sort"
 	"strconv"
-	"time"
 
 	s3err "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/common"
