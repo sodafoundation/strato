@@ -28,12 +28,12 @@ import (
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
 	. "github.com/webrtcn/s3client"
 	"github.com/webrtcn/s3client/models"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 type GcsAdapter struct {
@@ -317,6 +317,10 @@ func (ad *GcsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 		return listPartsOutput, NoError
 	}
 }*/
+
+func (ad *GcpAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+	return nil, ErrNotImplemented
+}
 
 func (ad *GcsAdapter) Close(ctx context.Context) error {
 	//TODO
