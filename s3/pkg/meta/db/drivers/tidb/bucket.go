@@ -675,6 +675,11 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 			err = handleDBError(err)
 			return
 		}
+		rErr := rows.Err()
+		if rErr != nil {
+			rErr = handleDBError(rErr)
+			return
+		}
 		return tmp, nil
 	}
 	return

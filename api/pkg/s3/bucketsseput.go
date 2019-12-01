@@ -46,7 +46,7 @@ func (s *APIService) BucketSSEPut(request *restful.Request, response *restful.Re
 	}
 
 	body := ReadBody(request)
-	log.Infof("MD5 sum for body is %x", md5.Sum(body))
+	log.Infof("MD5 sum for request body is %x", md5.Sum(body))
 
 	if body != nil {
 		sseConf := model.SSEConfiguration{}

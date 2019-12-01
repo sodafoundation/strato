@@ -24,10 +24,11 @@ func EncryptWithAES256RandomKey(data []byte, key []byte) (error, []byte) {
 		log.Errorf("Encryption error, GCM not generated")
 		return gcmErr, nil
 	}
+	// NonceSize is default 12 bytes
 	nonce := make([]byte, aesgcm.NonceSize())
 	_, nonceErr := io.ReadFull(rand.Reader, nonce)
 	if nonceErr != nil {
-		log.Errorf("Encryption error, GCM nonce not createdf")
+		log.Errorf("Encryption error, GCM nonce not created")
 		return nonceErr, nil
 	}
 
