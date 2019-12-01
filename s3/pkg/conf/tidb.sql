@@ -260,6 +260,13 @@ CREATE TABLE IF NOT EXISTS `lifecycle` (
                        `status` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+CREATE TABLE `bucket_sseopts` (
+                                  `bucketname` varchar(255) NOT NULL,
+                                  `sse` varchar(255) DEFAULT NULL,
+                                  `sseserverkey` varchar(255) DEFAULT NULL,
+                                  PRIMARY KEY (`bucketname`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE IF NOT EXISTS `bucket_versionopts` (
                                   `bucketname` varchar(255) NOT NULL,
                                   `versionstatus` varchar(255) DEFAULT NULL,
