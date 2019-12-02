@@ -27,6 +27,6 @@ func (s *APIService) RouteObjectGet(request *restful.Request, response *restful.
 	if IsQuery(request, "acl") {
 		s.ObjectAclGet(request, response)
 	} else {
-		s.ObjectPut(request, response)
+		s.ObjectGet(request, response)
 	}
 }
