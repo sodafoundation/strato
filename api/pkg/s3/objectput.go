@@ -146,7 +146,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 			log.Debugln("finished read")
 			eof = true
 		}
-		err = stream.Send(&s3.PutObjectRequest{Data: buf[:n]})
+		err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break

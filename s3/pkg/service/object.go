@@ -50,10 +50,14 @@ func (s *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 	return nil
 }
 
+type DataStreamRecv interface {
+	Recv() (*pb.PutDataStream, error)
+}
+
 type StreamReader struct {
-	in   pb.S3_PutObjectStream
+	in   DataStreamRecv
+	req  *pb.PutDataStream
 	curr int
-	req  *pb.PutObjectRequest
 }
 
 func (dr *StreamReader) Read(p []byte) (n int, err error) {
