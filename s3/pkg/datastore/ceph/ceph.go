@@ -315,6 +315,10 @@ func (ad *CephAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload
 	}
 }*/
 
+func (ad *CephAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+	return nil, ErrNotImplemented
+}
+
 func (ad *CephAdapter) Close() error {
 	// TODO
 	return nil

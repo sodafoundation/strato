@@ -204,6 +204,7 @@ func (yig *YigStorage) CompleteMultipartUpload(ctx context.Context, multipartUpl
 	}
 	result.ETag = hex.EncodeToString(md5Writer.Sum(nil))
 	result.ETag += "-" + strconv.Itoa(len(parts))
+	result.Size = int64(totalSize)
 	return result, nil
 }
 
@@ -241,7 +242,7 @@ func (yig *YigStorage) AbortMultipartUpload(ctx context.Context, multipartUpload
 func (yig *YigStorage) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
 	uploadId, err := str2UploadId(multipartUpload.UploadId)
 	if err != nil {
-		log.Errorf("failed to ListParts for %s, it was fail to parse uploadId, err: %v", multipartUpload.UploadId, err)
+		log.Errorf("failed to ListParts for %s, it failed to parse uploadId, err: %v", multipartUpload.UploadId, err)
 		return nil, err
 	}
 	parts, err := yig.MetaStorage.ListParts(uploadId)
