@@ -110,6 +110,73 @@ func (ys *YigSuite) TestPutObjectSucceed(c *C) {
 	c.Assert(err, Not(Equals), nil)
 }
 
+func (ys *YigSuite) TestPutSameObjectTwice(c *C) {
+	detail := &backendpb.BackendDetail{
+		Endpoint: "default",
+	}
+
+	yig, err := driver.CreateStorageDriver(constants.BackendTypeYIGS3, detail)
+	c.Assert(err, Equals, nil)
+	c.Assert(yig, Not(Equals), nil)
+
+	// test small file put.
+	len := 64 * 1024
+	readBuf := make([]byte, len)
+	body := RandBytes(len)
+	bodyReader := bytes.NewReader(body)
+	rawMd5 := md5.Sum(body)
+	bodyMd5 := hex.EncodeToString(rawMd5[:])
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, int64(len))
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
+	obj := &pb.Object{
+		ObjectKey:  "t1",
+		BucketName: "b1",
+	}
+	result, err := yig.Put(ctx, bodyReader, obj)
+	c.Assert(err, Equals, nil)
+	c.Assert(result.Written, Equals, int64(len))
+	c.Assert(result.ObjectId != "", Equals, true)
+	c.Assert(result.Etag == bodyMd5, Equals, true)
+	obj.StorageMeta = result.Meta
+	obj.ObjectId = result.ObjectId
+	// put obj with the same object key in same bucket again.
+	bodyReader = bytes.NewReader(body)
+	obj2 := &pb.Object{
+		ObjectKey:  "t1",
+		BucketName: "b1",
+		// set the former storage meta and object id.
+		StorageMeta: result.Meta,
+		ObjectId:    result.ObjectId,
+	}
+	result2, err := yig.Put(ctx, bodyReader, obj2)
+	c.Assert(err, Equals, nil)
+	c.Assert(result2.Written, Equals, int64(len))
+	c.Assert(result2.ObjectId != "", Equals, true)
+	c.Assert(result2.Etag == bodyMd5, Equals, true)
+	obj2.ObjectId = result2.ObjectId
+	obj2.StorageMeta = result2.Meta
+
+	// Get the object put firstly.
+	time.Sleep(10 * time.Second)
+
+	reader, err := yig.Get(ctx, obj, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	n, err := reader.Read(readBuf[:])
+	c.Assert(err, Not(Equals), nil)
+	c.Assert(n, Equals, 0)
+	reader.Close()
+	// delete the second object
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId:    obj2.ObjectId,
+		StorageMeta: obj2.StorageMeta,
+	}
+	err = yig.Delete(ctx, objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+}
+
 type ReaderElem struct {
 	Len    int
 	Reader *bytes.Reader
