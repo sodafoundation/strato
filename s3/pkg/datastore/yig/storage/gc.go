@@ -49,7 +49,7 @@ func (gm *GcMgr) Start() {
 				log.Infof("GcMgr is stopping.")
 				gm.wg.Done()
 				return
-			case <-time.After(time.Second * time.Duration(gm.loopTime)):
+			case <-time.After(time.Second * time.Duration(6000)):
 			}
 			var chs []<-chan *GcObjectResult
 			// get all the gc objects for this loop
