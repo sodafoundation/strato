@@ -164,6 +164,7 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 	err = s.MetaStorage.Db.CreateMultipart(multipart)
 	if err != nil {
 		log.Errorln("failed to create multipart in meta. err:", err)
+		return err
 	}
 	out.UploadID = res.UploadId
 
