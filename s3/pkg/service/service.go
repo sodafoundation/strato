@@ -329,42 +329,6 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	return nil
 }
 
-func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBucketPartsRequest, out *pb.ListBucketPartsResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) UploadPart(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) ListObjectParts(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
 func (s *s3Service) AppendObject(ctx context.Context, in *pb.BaseRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
@@ -384,12 +348,6 @@ func (s *s3Service) HeadObject(ctx context.Context, in *pb.BaseObjRequest, out *
 }
 
 func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, out *pb.CopyObjPartResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
-
-func (s *s3Service) PutObjACL(ctx context.Context, in *pb.PutObjACLRequest, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
 	return nil
@@ -421,12 +379,6 @@ func (s *s3Service) GetBucketVersioning(ctx context.Context, in *pb.BaseBucketRe
 }
 
 */
-
-func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest, out *pb.BaseResponse) error {
-	log.Info("UpdateBucket is called in s3 service.")
-
-	return nil
-}
 
 func (s *s3Service) GetBucketACL(ctx context.Context, in *pb.BaseBucketRequest, out *pb.BucketACL) error {
 	log.Info("UpdateBucket is called in s3 service.")

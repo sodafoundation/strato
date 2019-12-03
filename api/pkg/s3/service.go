@@ -73,21 +73,21 @@ func ReadBody(r *restful.Request) []byte {
 	return b
 }
 
-func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.Bucket {
+func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.Bucket, error) {
 	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
 	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
 		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
-		return nil
+		return nil, GetFinalError(err, rsp.ErrorCode)
 	}
 
-	return rsp.BucketMeta
+	return rsp.BucketMeta, nil
 }
 
 func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName string) (*s3.Object, error) {
 	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.Object{BucketName: bucketName, ObjectKey: objectName})
 	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
 		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
-		return nil, err
+		return nil, GetFinalError(err, rsp.ErrorCode)
 	}
 
 	return rsp.Object, nil

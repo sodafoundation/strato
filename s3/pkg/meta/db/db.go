@@ -18,6 +18,7 @@ import (
 
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
 //DB Adapter Interface
@@ -35,6 +36,12 @@ type DBAdapter interface {
 	SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error
 	UpdateObject(ctx context.Context, old, new *Object, tx interface{}) error
 	UpdateObjectMeta(object *Object) error
+
+	//multipart
+	CreateMultipart(multipart Multipart) (err error)
+	GetMultipart(bucketName, objectName, uploadId string) (multipart Multipart, err error)
+	DeleteMultipart(multipart *Multipart, tx interface{}) (err error)
+	ListMultipartUploads(input *pb.ListBucketUploadRequest) (output *pb.ListBucketUploadResult, err error)
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)

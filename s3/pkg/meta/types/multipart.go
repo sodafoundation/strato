@@ -1,17 +1,15 @@
 package types
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	"github.com/xxtea/xxtea-go/xxtea"
 	"math"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
+	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 type Part struct {
@@ -27,80 +25,29 @@ type Part struct {
 	InitializationVector []byte
 }
 
-// For scenario only one part is needed to insert
-func (p *Part) GetValues() (values map[string]map[string][]byte, err error) {
-	marshaledPart, err := json.Marshal(p)
-	if err != nil {
-		return
-	}
-	values = map[string]map[string][]byte{
-		MULTIPART_COLUMN_FAMILY: map[string][]byte{
-			strconv.Itoa(p.PartNumber): marshaledPart,
-		},
-	}
-	return
-}
-
 type MultipartMetadata struct {
-	InitiatorId   string
-	OwnerId       string
+	InitiatorId   string              //TenantId
+	TenantId      string
+	UserId        string
 	ContentType   string
 	Location      string
 	Pool          string
-	//Acl           datatype.Acl
+	Acl           datatype.Acl
 	SseRequest    datatype.SseRequest
 	EncryptionKey []byte
 	CipherKey     []byte
 	Attrs         map[string]string
+	StorageClass  StorageClass
 }
 
 type Multipart struct {
 	BucketName  string
-	ObjectName  string
+	ObjectKey   string
 	InitialTime time.Time
 	UploadId    string // upload id cache
+	ObjectId    string
+	StorageMeta string
 	Metadata    MultipartMetadata
-	Parts       map[int]*Part
-}
-
-// Multipart table rowkey format:
-// BucketName +
-// bigEndian(uint16(count("/", ObjectName))) +
-// ObjectName +
-// bigEndian(unixNanoTimestamp)
-func (m *Multipart) GetRowkey() (string, error) {
-	var rowkey bytes.Buffer
-	rowkey.WriteString(m.BucketName)
-	err := binary.Write(&rowkey, binary.BigEndian, uint16(strings.Count(m.ObjectName, "/")))
-	if err != nil {
-		return "", err
-	}
-	rowkey.WriteString(m.ObjectName)
-	err = binary.Write(&rowkey, binary.BigEndian, uint64(m.InitialTime.UnixNano()))
-	if err != nil {
-		return "", err
-	}
-	return rowkey.String(), nil
-}
-
-func (m *Multipart) GetValues() (values map[string]map[string][]byte, err error) {
-	values = make(map[string]map[string][]byte)
-
-	values[MULTIPART_COLUMN_FAMILY], err = valuesForParts(m.Parts)
-	if err != nil {
-		return
-	}
-
-	var marshaledMeta []byte
-	marshaledMeta, err = json.Marshal(m.Metadata)
-	if err != nil {
-		return
-	}
-	if values[MULTIPART_COLUMN_FAMILY] == nil {
-		values[MULTIPART_COLUMN_FAMILY] = make(map[string][]byte)
-	}
-	values[MULTIPART_COLUMN_FAMILY]["0"] = marshaledMeta
-	return
 }
 
 func (m *Multipart) GetUploadId() (string, error) {
@@ -145,17 +92,3 @@ func valuesForParts(parts map[int]*Part) (values map[string][]byte, err error) {
 	return
 }
 
-/*
-func (p *Part) GetCreateSql(bucketname, objectname, version string) (string, []interface{}) {
-	sql := "insert into objectpart(partnumber,size,objectid,offset,etag,lastmodified,initializationvector,bucketname,objectname,version) " +
-		"values(?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{p.PartNumber, p.Size, p.ObjectId, p.Offset, p.Etag, p.LastModified, p.InitializationVector, bucketname, objectname, version}
-	return sql, args
-}
-
-func (p *Part) GetCreateGcSql(bucketname, objectname string, version uint64) (string, []interface{}) {
-	sql := "insert into gcpart(partnumber,size,objectid,offset,etag,lastmodified,initializationvector,bucketname,objectname,version) " +
-		"values(?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{p.PartNumber, p.Size, p.ObjectId, p.Offset, p.Etag, p.LastModified, p.InitializationVector, bucketname, objectname, version}
-	return sql, args
-}*/
