@@ -33,7 +33,7 @@ import (
 
 const (
 	MAX_PART_SIZE   = 5 << 30 // 5GB, max object size in single upload
-	MAX_PART_NUMBER = 10000  // max upload part number in one multipart upload
+	MAX_PART_NUMBER = 10000   // max upload part number in one multipart upload
 )
 
 func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBucketUploadRequest, out *pb.ListBucketUploadResponse) error {
@@ -444,8 +444,202 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 	return nil
 }
 
+func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, out *pb.CopyObjPartResponse) error {
+	log.Info("CopyObjPart is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	srcBucketName := in.SourceBucket
+	srcObjectName := in.SourceObject
+	targetBucketName := in.TargetBucket
+	targetObjectName := in.TargetObject
+	uploadId := in.UploadID
+	partId := in.PartID
+	size := in.ReadLength
+	offset := in.ReadOffset
+
+	srcBucket, err := s.MetaStorage.GetBucket(ctx, srcBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+	srcObject, err := s.MetaStorage.GetObject(ctx, srcBucketName, srcObjectName, "",true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	_, _, _, err = CheckRights(ctx, srcObject.TenantId)
+	if err != nil {
+		log.Errorf("no rights to access the source object[%s]\n", srcObject.ObjectKey)
+		return nil
+	}
+	backendName := srcBucket.DefaultLocation
+	if srcObject.Location != "" {
+		backendName = srcObject.Location
+	}
+	srcBackend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	srcSd, err := driver.CreateStorageDriver(srcBackend.Type, srcBackend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return err
+	}
+	if !isAdmin {
+		switch targetBucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if targetBucket.TenantId != tenantId {
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		} // TODO policy and fancy ACL
+	}
+
+	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBucket.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	targetSd, err := driver.CreateStorageDriver(targetBackend.Type, targetBackend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	reader, err := srcSd.Get(ctx, srcObject.Object, offset, offset + size - 1)
+	if err != nil {
+		log.Errorln("failed to get data reader. err:", err)
+		return err
+	}
+	limitedDataReader := io.LimitReader(reader, size)
+
+	multipart, err := s.MetaStorage.GetMultipart(targetBucketName, targetObjectName, uploadId)
+	if err != nil {
+		log.Infoln("failed to get multipart. err:", err)
+		return err
+	}
+	result, err := targetSd.UploadPart(ctx, limitedDataReader, &pb.MultipartUpload{
+		Bucket:   targetBucketName,
+		Key:      targetObjectName,
+		UploadId: uploadId,
+		ObjectId: multipart.ObjectId},
+		partId, size)
+	if err != nil {
+		log.Errorln("failed to upload part to backend. err:", err)
+		return err
+	}
+	out.Etag = result.ETag
+	out.LastModified = time.Now().UTC().Unix()
+
+	log.Infoln("copy object part successfully.")
+	return nil
+}
+
 func (s *s3Service) ListObjectParts(ctx context.Context, in *pb.ListObjectPartsRequest, out *pb.ListObjectPartsResponse) error {
 	log.Info("ListObjectParts is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
 
+	bucketName := in.BucketName
+	objectKey := in.ObjectKey
+	uploadId := in.UploadId
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+
+	multipart, err := s.MetaStorage.GetMultipart(bucketName, objectKey, uploadId)
+	if err != nil {
+		log.Errorln("failed to get multipart info. err:", err)
+		return err
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return err
+	}
+
+	if !isAdmin {
+		switch multipart.Metadata.Acl.CannedAcl {
+		case "public-read", "public-read-write":
+			break
+		case "authenticated-read":
+			if tenantId == "" {
+				err = ErrAccessDenied
+				return err
+			}
+		case "bucket-owner-read", "bucket-owner-full-controll":
+			if bucket.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		default:
+			if multipart.Metadata.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		}
+	}
+
+	backend, err := utils.GetBackend(ctx, s.backendClient, bucket.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	listPartResult, err := sd.ListParts(ctx, &pb.ListParts{
+		Bucket:           bucketName,
+		Key:              objectKey,
+		UploadId:         uploadId,
+		MaxParts:         in.MaxParts,
+		PartNumberMarker: in.PartNumberMarker,
+	})
+	if err != nil {
+		log.Errorln("failed to list parts for backend. err:", err)
+		return err
+	}
+
+	out.Initiator = &pb.Owner{Id: multipart.Metadata.InitiatorId, DisplayName: multipart.Metadata.InitiatorId}
+	out.Owner = &pb.Owner{Id: multipart.Metadata.TenantId, DisplayName: multipart.Metadata.TenantId}
+	out.MaxParts = int64(listPartResult.MaxParts)
+	out.IsTruncated = listPartResult.IsTruncated
+	out.Parts = make([]*pb.Part, 0)
+	for _, part := range listPartResult.Parts {
+		out.Parts = append(out.Parts, &pb.Part{
+			PartNumber:   part.PartNumber,
+			ETag:         part.ETag,
+			Size:         part.Size,
+			LastModified: time.Now().Format(CREATE_TIME_LAYOUT),  // TODO: the lastmodified time should be from backend.
+		})
+	}
+
+	log.Infof("list object part successfully. ")
 	return nil
 }

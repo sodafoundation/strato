@@ -20,12 +20,14 @@ import (
 )
 
 func (s *APIService) RouteObjectGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:put") {
+	if !policy.Authorize(request, response, "object:get") {
 		return
 	}
 
 	if IsQuery(request, "acl") {
 		s.ObjectAclGet(request, response)
+	} else if IsQuery(request, "uploadId") {
+		s.ListObjectParts(request, response)
 	} else {
 		s.ObjectGet(request, response)
 	}
