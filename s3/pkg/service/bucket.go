@@ -49,6 +49,7 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 				Tier:            buckets[j].Tier,
 				DefaultLocation: buckets[j].DefaultLocation,
 				Versioning:      buckets[j].Versioning,
+				ServerSideEncryption: buckets[j].ServerSideEncryption,
 			})
 		}
 	}
@@ -94,6 +95,22 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		}
 	}
 	return nil
+
+	if in.ServerSideEncryption != nil{
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType)
+		if err != nil {
+			log.Error("Error creating SSE entry: ", err)
+			return err
+		}
+	} else{
+		// set default SSE option to none
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE")
+		if err != nil {
+			log.Error("Error creating SSE entry: ", err)
+			return err
+		}
+	}
+	return err
 }
 
 func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBucketResponse) error {
@@ -129,6 +146,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		Tier:            bucket.Tier,
 		Usages:          bucket.Usages,
 		Versioning:      bucket.Versioning,
+		ServerSideEncryption: bucket.ServerSideEncryption,
 	}
 
 	return nil
