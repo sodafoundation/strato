@@ -83,7 +83,7 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 		} else {
 			copyLen = len(dr.req.Data) - dr.curr
 		}
-		log.Traceln("copy len:", copyLen)
+		log.Debugln("copy len:", copyLen)
 		copy(p[n:], dr.req.Data[dr.curr:(dr.curr+copyLen)])
 		dr.curr += copyLen
 		left -= copyLen
