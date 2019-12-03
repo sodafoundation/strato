@@ -66,9 +66,10 @@ func (a CompletedParts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a CompletedParts) Less(i, j int) bool { return a[i].PartNumber < a[j].PartNumber }
 
 type Part struct {
-	PartNumber int64  `xml:"PartNumber"`
-	ETag       string `xml:"ETag"`
-	Size       int64  `xml:"size"`
+	PartNumber     int64  `xml:"PartNumber"`
+	ETag           string `xml:"ETag"`
+	Size           int64  `xml:"Size"`
+	LastModifyTime int64  `xml:"LastModifyTime"`
 }
 
 type CompleteMultipartUpload struct {
