@@ -133,10 +133,6 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		WriteErrorResponse(response, request, err)
 		return
 	}
-	if storageClassFromHeader == types.ObjectStorageClassGlacier || storageClassFromHeader == types.ObjectStorageClassDeepArchive {
-		WriteErrorResponse(response, request, ErrInvalidCopySourceStorageClass)
-		return
-	}
 
 	// if source == dest and X-Amz-Metadata-Directive == REPLACE, only update the meta;
 	if isOnlyUpdateMetadata {
@@ -193,9 +189,8 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		SrcObjectName:    sourceObjectName,
 		TargetObjectName: targetObjectName,
 	})
-	if err != nil || result.ErrorCode != int32(ErrNoErr) {
-		log.Errorln("unable to copy object from ", sourceObjectName, " to ", targetObjectName, " err:", err)
-		WriteErrorResponse(response, request, GetFinalError(err, result.ErrorCode))
+	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+		log.Errorf("unable to copy object, err=%v, errCode=%v\n", err, result.ErrorCode)
 		return
 	}
 
