@@ -19,6 +19,8 @@ import (
 	"io"
 	"time"
 
+	"encoding/base64"
+	"encoding/hex"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -38,11 +40,10 @@ type OBSAdapter struct {
 func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
-	log.Infof("put object[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
-
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
+	log.Infof("put object[OBS], objectId:%s, bucket:%s, size=%d, userMd5=%s\n", objectId, bucket, size, userMd5)
 
 	if object.Tier == 0 {
 		// default
@@ -50,7 +51,7 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	}
 	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_OBS)
 	if err != nil {
-		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		log.Errorf("translate tier[%d] to aws storage class failed\n", object.Tier)
 		return result, ErrInternalError
 	}
 
@@ -59,8 +60,16 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	input.Key = objectId
 	input.Body = stream
 	input.ContentLength = size
-	input.ContentMD5 = userMd5
 	input.StorageClass = obs.StorageClassType(storClass)
+	if userMd5 != "" {
+		md5Bytes, err := hex.DecodeString(userMd5)
+		if err != nil {
+			log.Warnf("user input md5 is abandoned, cause decode md5 failed, err:%v\n", err)
+		} else {
+			input.ContentMD5 = base64.StdEncoding.EncodeToString(md5Bytes)
+			log.Debugf("input.ContentMD5=%s\n", input.ContentMD5)
+		}
+	}
 
 	log.Infof("upload object[OBS] begin, objectId:%s\n", objectId)
 	out, err := ad.client.PutObject(input)
@@ -70,11 +79,16 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		return result, ErrPutToBackendFailed
 	}
 
+	result.Etag = dscommon.TrimQuot(out.ETag)
+	if userMd5 != "" && userMd5 != result.Etag {
+		log.Error("### MD5 not match, result.Etag:", result.Etag, ", userMd5:", userMd5)
+		return result, ErrBadDigest
+	}
+
 	result.ObjectId = objectId
 	result.UpdateTime = time.Now().Unix()
-	result.Etag = dscommon.TrimQuot(out.ETag)
 	result.Meta = out.VersionId
-	log.Info("### returnMd5:", result.Etag, "userMd5:", userMd5)
+	result.Written = size
 	log.Infof("upload object[OBS] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil

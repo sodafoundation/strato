@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -64,10 +65,9 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	result := dscommon.PutResult{}
-	log.Infof("put object[AWS S3] begin, objKey:%s\n", objectId)
-
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
+	log.Infof("put object[OBS], objectId:%s, bucket:%s, size=%d, userMd5=%s\n", objectId, bucket, size, userMd5)
 
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
@@ -90,22 +90,32 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	}
 
 	uploader := s3manager.NewUploader(ad.session)
-	ret, err := uploader.Upload(&s3manager.UploadInput{
+	input := &s3manager.UploadInput{
 		Body:         dataReader,
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(objectId),
 		StorageClass: aws.String(storClass),
-		ContentMD5:   aws.String(userMd5),
-	})
+	}
+	if userMd5 != "" {
+		md5Bytes, err := hex.DecodeString(userMd5)
+		if err != nil {
+			log.Warnf("user input md5 is abandoned, cause decode md5 failed, err:%v\n", err)
+		} else {
+			input.ContentMD5 = aws.String(base64.StdEncoding.EncodeToString(md5Bytes))
+			log.Debugf("input.ContentMD5=%s\n", *input.ContentMD5)
+		}
+	}
+	ret, err := uploader.Upload(input)
 	if err != nil {
-		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v", objectId, err)
+		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v\n", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
-	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+	log.Debugf("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 	if userMd5 != "" && userMd5 != calculatedMd5 {
+		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 		return result, ErrBadDigest
 	}
 
@@ -115,7 +125,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
 	result.Etag = calculatedMd5
-	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+	result.Written = size
 	log.Infof("put object[AWS S3] successfully, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil

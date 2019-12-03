@@ -29,7 +29,7 @@ func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.
 	}
 
 	if IsQuery(request, "acl") {
-		//TODO
+		s.BucketAclPut(request, response)
 	} else if IsQuery(request, "versioning") {
 		s.BucketVersioningPut(request, response)
 	} else if IsQuery(request, "website") {

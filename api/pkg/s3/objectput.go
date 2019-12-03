@@ -97,9 +97,10 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	// check if specific bucket exist
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucketMeta := s.getBucketMeta(ctx, bucketName)
-	if bucketMeta == nil {
-		WriteErrorResponse(response, request, s3error.ErrGetBucketFailed)
+	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorln("failed to get bucket meta. err:", err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 	//log.Logf("bucket, acl:%f", bucketMeta.Acl.CannedAcl)
@@ -152,9 +153,9 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		// encrypt if needed
 		if bucketMeta.ServerSideEncryption.SseType == "SSE"{
 			_, encbuf := utils.EncryptWithAES256RandomKey(buf, key)
-			err = stream.Send(&s3.PutObjectRequest{Data: encbuf[:n]})
+			err = stream.Send(&s3.PutDataStream{Data: encbuf[:n]})
 		}else{
-			err = stream.Send(&s3.PutObjectRequest{Data: buf[:n]})
+			err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
 		}
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)

@@ -58,6 +58,13 @@ type UploadPartResult struct {
 	ETag       string `xml:"ETag"`
 }
 
+// completedParts - is a collection satisfying sort.Interface.
+type CompletedParts []Part
+
+func (a CompletedParts) Len() int           { return len(a) }
+func (a CompletedParts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a CompletedParts) Less(i, j int) bool { return a[i].PartNumber < a[j].PartNumber }
+
 type Part struct {
 	PartNumber int64  `xml:"PartNumber"`
 	ETag       string `xml:"ETag"`
@@ -74,6 +81,7 @@ type CompleteMultipartUploadResult struct {
 	Location string `xml:"Location"`
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
+	Size     int64  `xml:"Size"`
 	ETag     string `xml:"ETag"`
 }
 

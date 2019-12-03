@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"time"
 
+	"encoding/hex"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -82,14 +83,13 @@ func (ad *AzureAdapter) createContainerURL(endpoint string, acountName string, a
 func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	objectId := object.BucketName + "/" + object.ObjectKey
 	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
-	log.Infof("put object[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
-
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d\n", objectId, blobURL, userMd5, object.Size)
 
 	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
 	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
-	options.BlobHTTPHeaders.ContentMD5 = []byte(userMd5)
+
 	uploadResp, err := azblob.UploadStreamToBlockBlob(ctx, stream, blobURL, options)
 	log.Infof("put object[Azure Blob] end, objectId:%s\n", objectId)
 	if err != nil {
@@ -111,6 +111,18 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 		return result, ErrInternalError
 	}
 
+	resultMd5 := uploadResp.Response().Header.Get("Content-MD5")
+	resultMd5Bytes, err := base64.StdEncoding.DecodeString(resultMd5)
+	if err != nil {
+		log.Errorf("decode Content-MD5 failed, err:%v\n", err)
+		return result, ErrBadDigest
+	}
+	decodedMd5 := hex.EncodeToString(resultMd5Bytes)
+	if userMd5 != "" && userMd5 != decodedMd5 {
+		log.Error("### MD5 not match, resultMd5:", resultMd5, ", userMd5:", userMd5)
+		return result, ErrBadDigest
+	}
+
 	// Currently, only support Hot
 	_, err = blobURL.SetTier(ctx, azblob.AccessTierType(storClass), azblob.LeaseAccessConditions{})
 	if err != nil {
@@ -120,9 +132,9 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = dscommon.TrimQuot(string(uploadResp.ETag()))
+	result.Etag = decodedMd5
 	result.Meta = uploadResp.Version()
-	log.Info("### returnMd5:", result.Etag, "userMd5:", userMd5)
+	result.Written = object.Size
 	log.Infof("upload object[Azure Blob] succeed, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil

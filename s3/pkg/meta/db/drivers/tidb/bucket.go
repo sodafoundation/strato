@@ -245,7 +245,7 @@ func (t *TidbClient) PutBucket(ctx context.Context, bucket *Bucket) error {
 	lc, _ := json.Marshal(bucket.LifecycleConfiguration)
 	bucket_policy, _ := json.Marshal(bucket.BucketPolicy)
 	sql := "update buckets set bucketname=?,acl=?,policy=?,cors=?,lc=?,tenantid=?,versioning=? where bucketname=?"
-	args := []interface{}{bucket.Name, acl, bucket_policy, cors, lc, bucket.TenantId, bucket.Versioning, bucket.Name}
+	args := []interface{}{bucket.Name, acl, bucket_policy, cors, lc, bucket.TenantId, bucket.Versioning.Status, bucket.Name}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {

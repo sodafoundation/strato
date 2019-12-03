@@ -20,6 +20,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -124,7 +125,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
 		return nil
 	}
-
+	
 	_, _, err = CheckRights(ctx, bucket.TenantId)
 	if err != nil {
 		if err == ErrNoSuchKey {
@@ -313,5 +314,42 @@ func (s *s3Service) ListBucketLifecycle(ctx context.Context, in *pb.BaseRequest,
 	}
 
 	log.Info("list lifecycle successfully")
+	return nil
+}
+
+func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest, out *pb.BaseResponse) error {
+	log.Info("PutBucketACL is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.ACLConfig.BucketName, true)
+	if err != nil {
+		log.Errorf("failed to get bucket meta. err: %v\n", err)
+		return err
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return err
+	}
+
+	if isAdmin == false {
+		if bucket.TenantId != tenantId {
+			err = ErrBucketAccessForbidden
+			return err
+		}
+	}
+
+	bucket.Acl = &pb.Acl{CannedAcl: in.ACLConfig.CannedAcl}
+	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
+	if err != nil {
+		log.Error("failed to put bucket, err:", err)
+		return err
+	}
+	log.Infoln("Put bucket acl successfully.")
 	return nil
 }

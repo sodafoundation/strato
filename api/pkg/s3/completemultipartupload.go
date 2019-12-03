@@ -1,86 +1,89 @@
 package s3
 
 import (
-	//"context"
-	//"encoding/xml"
-	//"net/http"
-	//"time"
+	"encoding/xml"
+	"errors"
+	"io/ioutil"
+	"sort"
+	"strings"
 
 	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/s3/pkg/model"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	//c "github.com/opensds/multi-cloud/api/pkg/context"
-	//. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	//"github.com/opensds/multi-cloud/s3/pkg/model"
-	//s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	. "github.com/opensds/multi-cloud/s3/error"
 )
 
 func (s *APIService) CompleteMultipartUpload(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
-	UploadId := request.QueryParameter("uploadId")
+	uploadId := request.QueryParameter("uploadId")
 
-/*	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_MULTIPARTUPLOAD}
-	ctx := common.InitCtxWithVal(request, md)
-	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	//to insert object
-	object := s3.Object{}
-	object.BucketName = bucketName
-	object.ObjectKey = objectKey
-	multipartUpload := s3.MultipartUpload{}
+	multipartUpload := pb.MultipartUpload{}
 	multipartUpload.Bucket = bucketName
 	multipartUpload.Key = objectKey
-	multipartUpload.UploadId = UploadId
+	multipartUpload.UploadId = uploadId
 
-	body := ReadBody(request)
-
-	log.Infof("complete multipart upload body: %s", string(body))
-	completeUpload := &model.CompleteMultipartUpload{}
-	xml.Unmarshal(body, completeUpload)
-	var client datastore.DataStoreAdapter
-	if objectMD == nil {
-		log.Errorf("No such object err\n")
-		response.WriteError(http.StatusInternalServerError, NoSuchObject.Error())
-
-	}
-	client = getBackendByName(ctx, s, objectMD.Backend)
-	if client == nil {
-		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
-		return
-	}
-
-	resp, s3err := client.CompleteMultipartUpload(&multipartUpload, completeUpload, ctx)
-	log.Infof("resp is %v\n", resp)
-	if s3err != NoError {
-		response.WriteError(http.StatusInternalServerError, s3err.Error())
-		return
-	}
-
-	// delete multipart upload record, if delete failed, it will be cleaned by lifecycle management
-	record := s3.MultipartUploadRecord{ObjectKey: objectKey, Bucket: bucketName, UploadId: UploadId}
-	s.s3Client.DeleteUploadRecord(context.Background(), &record)
-
-	objectMD.Partions = nil
-	objectMD.LastModified = time.Now().Unix()
-	objectMD.InitFlag = "1"
-	//insert metadata
-	_, err := s.s3Client.CreateObject(ctx, objectMD)
+	completeMultipartBytes, err := ioutil.ReadAll(request.Request.Body)
 	if err != nil {
-		log.Errorf("err is %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		log.Errorln("unable to complete multipart upload when read request body. err:", err)
+		WriteErrorResponse(response, request, ErrInternalError)
+		return
 	}
-
-	xmlstring, err := xml.MarshalIndent(resp, "", "  ")
-	if err != nil {
-		log.Errorf("Parse ListBuckets error: %v", err)
-		response.WriteError(http.StatusInternalServerError, err)
+	complMultipartUpload := &model.CompleteMultipartUpload{}
+	if err = xml.Unmarshal(completeMultipartBytes, complMultipartUpload); err != nil {
+		log.Errorf("unable to parse complete multipart upload XML. data: %s, err: %v", string(completeMultipartBytes), err)
+		WriteErrorResponse(response, request, ErrMalformedXML)
 		return
 	}
 
-	xmlstring = []byte(xml.Header + string(xmlstring))
-	log.Infof("resp:\n%s", xmlstring)
-	response.Write(xmlstring)
-*/
+	if len(complMultipartUpload.Parts) == 0 {
+		log.Errorf("unable to complete multipart upload. err: %v", errors.New("len(complMultipartUpload.Parts) == 0"))
+		WriteErrorResponse(response, request, ErrMalformedXML)
+		return
+	}
+	if !sort.IsSorted(model.CompletedParts(complMultipartUpload.Parts)) {
+		log.Errorf("unable to complete multipart upload. data: %+v, err: %v", complMultipartUpload.Parts, errors.New("part not sorted."))
+		WriteErrorResponse(response, request, ErrInvalidPartOrder)
+		return
+	}
+
+	// Complete parts.
+	var completeParts []*pb.CompletePart
+	for _, part := range complMultipartUpload.Parts {
+		part.ETag = strings.TrimPrefix(part.ETag, "\"")
+		part.ETag = strings.TrimSuffix(part.ETag, "\"")
+		completeParts = append(completeParts, &pb.CompletePart{PartNumber: part.PartNumber, ETag: part.ETag})
+	}
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	result, err := s.s3Client.CompleteMultipartUpload(ctx, &pb.CompleteMultipartRequest{
+		BucketName:    bucketName,
+		ObjectKey:     objectKey,
+		UploadId:      uploadId,
+		CompleteParts: completeParts,
+	})
+	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+		log.Errorf("unable to complete multipart. err:%v, errCode:%v", err, result.ErrorCode)
+		return
+	}
+
+	// Get object location.
+	location := GetLocation(request.Request)
+	// Generate complete multipart response.
+	data := GenerateCompleteMultipartUploadResponse(bucketName, objectKey, location, result.ETag)
+	encodedSuccessResponse, err := xmlFormat(data)
+	if err != nil {
+		log.Errorln("unable to parse CompleteMultipartUpload response, err:", err)
+		WriteErrorResponseNoHeader(response, request, ErrInternalError, request.Request.URL.Path)
+		return
+	}
+
+	setXmlHeader(response, encodedSuccessResponse)
+	// write success response.
+	WriteSuccessResponse(response, encodedSuccessResponse)
 	log.Infof("Complete multipart upload[bucketName=%s, objectKey=%s, uploadId=%s] successfully.\n",
-		bucketName, objectKey, UploadId)
+		bucketName, objectKey, uploadId)
 }

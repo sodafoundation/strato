@@ -373,10 +373,9 @@
   revision = "609666b5113648e4b856d3bab8759a701e9d02ba"
 
 [[projects]]
-  digest = "1:dda6a73ea25e9552bbd55b14f67f8a52e7593c0db4fe9c9646de68a722dbd69c"
+  digest = "1:babaac20528b6f2d9e3a606810204627bb447d43cb3ffc9d4c8722ce616029af"
   name = "github.com/journeymidnight/yig"
   packages = [
-    "error",
     "helper",
     "log",
   ]
@@ -391,6 +390,14 @@
   pruneopts = "NUT"
   revision = "1624edc4454b8682399def8740d46db5e4362ba4"
   version = "v1.1.5"
+
+[[projects]]
+  digest = "1:58999a98719fddbac6303cb17e8d85b945f60b72f48e3a2df6b950b97fa926f1"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
 
 [[projects]]
   digest = "1:7b21c7fc5551b46d1308b4ffa9e9e49b66c7a8b0ba88c0130474b0e7a20d859f"
@@ -710,6 +717,19 @@
   revision = "35c4b17eecf6c3c2350f8cecaf1b3f9f7fafc242"
 
 [[projects]]
+  digest = "1:a86bc2e5f4d6f073a7ad30150667a2ca6ed34c2ef5eeb3387a783eec47608dfe"
+  name = "go.uber.org/automaxprocs"
+  packages = [
+    ".",
+    "internal/cgroups",
+    "internal/runtime",
+    "maxprocs",
+  ]
+  pruneopts = "NUT"
+  revision = "946a8391268aea0a60a86403988ff3ab4b604a83"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:b8fa1ff0fc20983395978b3f771bb10438accbfe19326b02e236c1d4bf1c91b2"
   name = "golang.org/x/crypto"
@@ -772,14 +792,6 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
-  name = "gopkg.in/natefinch/lumberjack.v2"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
-  version = "v2.1"
-  
-[[projects]]
   branch = "master"
   digest = "1:9fdc2b55e8e0fafe4b41884091e51e77344f7dc511c5acedcfd98200003bff90"
   name = "golang.org/x/time"
@@ -802,6 +814,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "788fd78401277ebd861206a03c884797c6ec5541"
+
+[[projects]]
+  digest = "1:80c34337e8a734e190f2d1b716cae774cca74db98315166f92074434e9af0227"
+  name = "gopkg.in/natefinch/lumberjack.v2"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
+  version = "v2.1"
 
 [[projects]]
   digest = "1:374eeb0db486b8f7e2c7bb8391f5336c71fe9482c97b180ae14a664eba8549cb"
@@ -832,6 +852,7 @@
     "github.com/BurntSushi/toml",
     "github.com/Shopify/sarama",
     "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/s3",
@@ -853,7 +874,6 @@
     "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
     "github.com/hashicorp/vault/api",
     "github.com/journeymidnight/radoshttpd/rados",
-    "github.com/journeymidnight/yig/error",
     "github.com/journeymidnight/yig/helper",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
@@ -869,6 +889,7 @@
     "github.com/webrtcn/s3client",
     "github.com/webrtcn/s3client/models",
     "github.com/xxtea/xxtea-go/xxtea",
+    "go.uber.org/automaxprocs",
     "golang.org/x/net/context",
     "gopkg.in/check.v1",
     "gopkg.in/natefinch/lumberjack.v2",
