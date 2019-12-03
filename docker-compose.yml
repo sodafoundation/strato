@@ -33,7 +33,7 @@ services:
     environment:
       - MICRO_SERVER_ADDRESS=:8089
       - MICRO_REGISTRY=mdns
-      - OS_AUTH_AUTHSTRATEGY=keystone
+      - OS_AUTH_AUTHSTRATEGY=noauth
       - OS_AUTH_URL=http://10.10.3.154/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
@@ -136,7 +136,7 @@ services:
     volumes:
       - ./s3/pkg/conf/tidb.sql:/s3.sql
       - ./s3/pkg/datastore/yig/conf/yig.sql:/yig.sql
-    command: mysql -h tidb  -P 4000 -u root -e "create database s3 character set utf8;use s3;source /s3.sql;source /yig.sql;"
+    command: mysql -h tidb  -P 4000 -u root -e "create database if not exists s3 character set utf8;use s3;source /s3.sql;create database if not exists yig character set utf8;use yig;source /yig.sql;"
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     depends_on:

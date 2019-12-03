@@ -40,7 +40,7 @@ func Stop() {
 func Run(mt *meta.Meta, bkservice bkd.BackendService) {
 	for {
 		select {
-		case <-time.After(60 * time.Second):
+		case <-time.After(6000 * time.Second):
 		case <-CTX.Done():
 			log.Infoln("gc exit...")
 			return

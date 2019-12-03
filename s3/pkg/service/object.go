@@ -51,10 +51,14 @@ func (s *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 	return nil
 }
 
+type DataStreamRecv interface {
+	Recv() (*pb.PutDataStream, error)
+}
+
 type StreamReader struct {
-	in   pb.S3_PutObjectStream
+	in   DataStreamRecv
+	req  *pb.PutDataStream
 	curr int
-	req  *pb.PutObjectRequest
 }
 
 func (dr *StreamReader) Read(p []byte) (n int, err error) {
@@ -118,6 +122,12 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.TenantId = tenantId
 	log.Infof("metadata of object is:%+v\n", obj)
 	log.Infof("*********bucket:%s,key:%s,size:%d\n", obj.BucketName, obj.ObjectKey, obj.Size)
+	oldObj, err := s.MetaStorage.GetObject(ctx, obj.BucketName, obj.ObjectKey, "", true)
+	if err != nil && oldObj != nil {
+		log.Info("got the object with same name(%s, %s, %s)", oldObj.BucketName, oldObj.ObjectKey, oldObj.ObjectId)
+		obj.StorageMeta = oldObj.StorageMeta
+		obj.ObjectId = oldObj.ObjectId
+	}
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, obj.BucketName, true)
 	if err != nil {
@@ -232,7 +242,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	//	err = yig.MetaStorage.PutObject(object, nil, nil, true)
 	//}
 
-	err = s.MetaStorage.PutObject(ctx, object, nil, true)
+	err = s.MetaStorage.PutObject(ctx, object, nil, nil, true)
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
 		//RecycleQueue <- maybeObjectToRecycle
@@ -295,6 +305,28 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	if err != nil {
 		log.Errorln("failed to get bucket from meta storage. err:", err)
 		return err
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	if isAdmin == false {
+		switch object.Acl.CannedAcl {
+		case "bucket-owner-full-control":
+			if bucket.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		default:
+			if object.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		}
 	}
 
 	backendName := bucket.DefaultLocation
@@ -481,7 +513,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 
 	// TODO: delete old object
 
-	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, nil, true)
+	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, nil, nil, true)
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
 		// TODO: delete uncompleted object at backend
@@ -982,4 +1014,57 @@ func (s *s3Service) cleanObject(ctx context.Context, object *Object, sd driver.S
 	}
 
 	return err
+}
+
+func (s *s3Service) PutObjACL(ctx context.Context, in *pb.PutObjACLRequest, out *pb.BaseResponse) error {
+	log.Info("PutObjACL is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.ACLConfig.BucketName, true)
+	if err != nil {
+		log.Errorf("failed to get bucket meta. err: %v\n", err)
+		return err
+	}
+
+	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	// administrator can get any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "bucket-owner-full-control":
+			if bucket.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		default:
+			if bucket.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		}
+		// TODO validate user policy and ACL
+	}
+
+	object, err := s.MetaStorage.GetObject(ctx, in.ACLConfig.BucketName, in.ACLConfig.ObjectKey, "", true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	object.Acl = &pb.Acl{CannedAcl: in.ACLConfig.CannedAcl}
+	err = s.MetaStorage.UpdateObjectMeta(object)
+	if err != nil {
+		log.Infoln("failed to update object meta. err:", err)
+		return err
+	}
+
+	log.Infoln("Put object acl successfully.")
+	return nil
 }

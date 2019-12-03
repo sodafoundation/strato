@@ -68,7 +68,7 @@ func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName stri
 	return object, nil
 }
 
-func (m *Meta) PutObject(ctx context.Context, object *Object, objMap *ObjMap, updateUsage bool) error {
+func (m *Meta) PutObject(ctx context.Context, object *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
 	tx, err := m.Db.NewTrans()
 	defer func() {
 		if err != nil {

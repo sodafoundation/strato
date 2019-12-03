@@ -19,28 +19,15 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
-func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:get") {
+func (s *APIService) RouteObjectPost(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "object:post") {
 		return
 	}
-	if IsQuery(request, "acl") {
-		s.BucketAclGet(request, response)
-	} else if IsQuery(request, "uploads") {
-		s.ListBucketUploadRecords(request, response)
-	} else if IsQuery(request, "versioning") {
-		//TODO
-	} else if IsQuery(request, "website") {
-		//TODO
-	} else if IsQuery(request, "cors") {
-		//TODO
+	// TODO
 
-	} else if IsQuery(request, "replication") {
-		//TODO
-
-	} else if IsQuery(request, "lifecycle") {
-		s.BucketLifecycleGet(request, response)
-
-	} else {
-		s.BucketGet(request, response)
+	if IsQuery(request, "uploads") {
+		s.MultiPartUploadInit(request, response)
+	}  else if IsQuery(request, "uploadId") {
+		s.CompleteMultipartUpload(request, response)
 	}
 }
