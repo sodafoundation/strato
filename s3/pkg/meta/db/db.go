@@ -34,7 +34,7 @@ type DBAdapter interface {
 	PutObject(ctx context.Context, object *Object, tx interface{}) error
 	DeleteObject(ctx context.Context, object *Object, tx interface{}) error
 	SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error
-	UpdateObject(ctx context.Context, old, new *Object, tx interface{}) error
+	UpdateObject4Lifecycle(ctx context.Context, old, new *Object, tx interface{}) error
 	UpdateObjectMeta(object *Object) error
 
 	//multipart

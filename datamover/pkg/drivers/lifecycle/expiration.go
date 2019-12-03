@@ -29,13 +29,10 @@ import (
 )
 
 func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
-	log.Infof("expiration action: delete %s.\n", acReq.ObjKey)
-
 	objKey := acReq.ObjKey
 	bucketName := acReq.BucketName
 	versionId := acReq.VersionId
-	objectId := acReq.ObjectId
-	storageMeta := acReq.StorageMeta
+	log.Infof("expiration action: objKey=%s, bucketName=%s, versionId=%s.\n", objKey, bucketName, versionId)
 
 	if bucketName == "" {
 		log.Infof("expiration of object[%s] is failed: virtual bucket is null.\n", objKey)
@@ -43,8 +40,7 @@ func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
 	}
 
 	// call API of s3 service to delete object
-	delMetaReq := osdss3.DeleteObjectInput{Bucket: bucketName, Key: objKey, VersioId: versionId, ObjectId: objectId,
-		StorageMeta: storageMeta}
+	delMetaReq := osdss3.DeleteObjectInput{Bucket: bucketName, Key: objKey, VersioId: versionId}
 	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	_, err := s3client.DeleteObject(ctx, &delMetaReq)

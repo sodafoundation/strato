@@ -147,7 +147,7 @@ message MoveObjectRequest {
 	string targetLocation = 5;
 	int32  targetTier = 6;
 	int32  moveType = 7;
-	int32  sourceType = 8; // lifecyce service or migration service.
+	string srcObjectVersion = 8;
 }
 
 message MoveObjectResponse {

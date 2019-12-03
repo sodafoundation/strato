@@ -22,6 +22,7 @@ import (
 
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -32,7 +33,7 @@ import (
 // If transition for an object is in-progress, then the next transition message will be abandoned.
 var InProgressObjs = make(map[string]struct{})
 
-func copyObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
+func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 	log.Infof("copy object[%s], size=%d\n", obj.ObjectKey, obj.Size)
 
 	// add object to InProgressObjs
@@ -47,12 +48,12 @@ func copyObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	req := &osdss3.MoveObjectRequest{
-		SrcObject:      obj.ObjectKey,
-		SrcBucket:      obj.BucketName,
-		TargetLocation: targetLoc.BakendName,
-		TargetTier:     targetLoc.Tier,
-		MoveType:       utils.MoveType_ChangeLocation,
-		SourceType:     utils.MoveSourceType_Lifecycle,
+		SrcObject:        obj.ObjectKey,
+		SrcObjectVersion: obj.VersionId,
+		SrcBucket:        obj.BucketName,
+		TargetLocation:   targetLoc.BakendName,
+		TargetTier:       targetLoc.Tier,
+		MoveType:         utils.MoveType_ChangeLocation,
 	}
 
 	_, err := s3client.MoveObject(ctx, req)
@@ -69,17 +70,30 @@ func copyObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 	return err
 }
 
+func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int64) error {
+	// This depend on multipart upload
+	log.Error("not implemented")
+	return errors.New("not implemented")
+}
+
 func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	log.Infof("cross-cloud transition action: transition %s from %d of %s to %d of %s.\n",
 		acReq.ObjKey, acReq.SourceTier, acReq.SourceBackend, acReq.TargetTier, acReq.TargetBackend)
 
-	src := &LocationInfo{BucketName: acReq.BucketName, BakendName: acReq.SourceBackend}
 	target := &LocationInfo{BucketName: acReq.BucketName, BakendName: acReq.TargetBackend, Tier: acReq.TargetTier}
 
-	log.Infof("transition object[%s] from [%+v] to [%+v]\n", acReq.ObjKey, src, target)
-	obj := osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName,
-		Tier: acReq.SourceTier}
-	err := copyObj(&obj, target)
+	log.Infof("transition object[%s] from [%+s] to [%+s]\n", acReq.ObjKey, acReq.SourceBackend, acReq.TargetBackend)
+	obj := &osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName,
+		Tier: acReq.SourceTier, VersionId: acReq.VersionId}
+
+	var err error
+	size := migration.GetMultipartSize()
+	if obj.Size <= size {
+		err = MoveObj(obj, target)
+	} else {
+		err = MultipartMoveObj(obj, target, size)
+	}
+
 	if err != nil {
 		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
 	} else {
