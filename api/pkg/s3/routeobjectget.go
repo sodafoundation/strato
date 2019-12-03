@@ -15,13 +15,18 @@
 package s3
 
 import (
-"github.com/emicklei/go-restful"
-"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
-func (s *APIService) RouteObjectPost(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:post") {
+func (s *APIService) RouteObjectGet(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "object:put") {
 		return
 	}
-	// TODO
+
+	if IsQuery(request, "acl") {
+		s.ObjectAclGet(request, response)
+	} else {
+		s.ObjectGet(request, response)
+	}
 }
