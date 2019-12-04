@@ -18,9 +18,11 @@ import (
 
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	"github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 )
 
 const (
@@ -28,14 +30,19 @@ const (
 )
 
 // Object will be updated to cache while willNeed is true
-func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName string, willNeed bool) (object *Object, err error) {
+func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName string, versionId string, willNeed bool) (object *Object, err error) {
 	getObject := func() (o helper.Serializable, err error) {
-		log.Info("GetObject CacheMiss. bucket:", bucketName, "object:", objectName)
-		object, err := m.Db.GetObject(ctx, bucketName, objectName, "")
+		log.Info("GetObject CacheMiss. bucket:", bucketName, ", object:", objectName)
+		version := ""
+		if versionId != "" {
+			version = strconv.FormatUint(tidbclient.VersionStr2UInt64(versionId), 10)
+		}
+		object, err := m.Db.GetObject(ctx, bucketName, objectName, version)
 		if err != nil {
+			log.Errorln("get object failed, err:", err)
 			return
 		}
-		log.Infoln("GetObject object.Name:", object.ObjectKey)
+		log.Infoln("GetObject object.Name:", objectName)
 		if object.ObjectKey != objectName {
 			err = ErrNoSuchKey
 			return
@@ -115,7 +122,7 @@ func (m *Meta) MarkObjectAsDeleted(ctx context.Context, object *Object) error {
 	return m.Db.SetObjectDeleteMarker(ctx, object, true)
 }
 
-func (m *Meta) UpdateObject(ctx context.Context, old, new *Object) (err error) {
+func (m *Meta) UpdateObject4Lifecycle(ctx context.Context, old, new *Object) (err error) {
 	log.Infof("update object from %v to %v\n", *old, *new)
-	return m.Db.UpdateObject(ctx, old, new, nil)
+	return m.Db.UpdateObject4Lifecycle(ctx, old, new, nil)
 }

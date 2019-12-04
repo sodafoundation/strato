@@ -21,6 +21,7 @@ var Xmlns = "http://s3.amazonaws.com/doc/2006-03-01"
 type CreateBucketConfiguration struct {
 	Xmlns              string `xml:"xmlns,attr"`
 	LocationConstraint string `xml:"LocationConstraint"`
+	SSEOpts            SSEConfiguration
 }
 
 type Owner struct {
@@ -33,6 +34,7 @@ type Bucket struct {
 	CreateTime         string `xml:"CreateTime"`
 	LocationConstraint string `xml:"LocationConstraint"`
 	VersionOpts        VersioningConfiguration
+	SSEOpts            SSEConfiguration
 }
 
 type ListAllMyBucketsResult struct {
@@ -64,9 +66,10 @@ func (a CompletedParts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a CompletedParts) Less(i, j int) bool { return a[i].PartNumber < a[j].PartNumber }
 
 type Part struct {
-	PartNumber int64  `xml:"PartNumber"`
-	ETag       string `xml:"ETag"`
-	Size       int64  `xml:"size"`
+	PartNumber     int64  `xml:"PartNumber"`
+	ETag           string `xml:"ETag"`
+	Size           int64  `xml:"Size"`
+	LastModifyTime int64  `xml:"LastModifyTime"`
 }
 
 type CompleteMultipartUpload struct {
@@ -96,6 +99,20 @@ type ListPartsOutput struct {
 
 type LifecycleConfiguration struct {
 	Rule []Rule `xml:"Rule"`
+}
+
+type SSEConfiguration struct {
+	XMLName xml.Name `xml:"SSEConfiguration"`
+	Text    string   `xml:",chardata"`
+	SSE     struct {
+		Text    string `xml:",chardata"`
+		Enabled string `xml:"enabled"`
+	} `xml:"SSE"`
+	SSEKMS struct {
+		Text                string `xml:",chardata"`
+		Enabled             string `xml:"enabled"`
+		DefaultKMSMasterKey string `xml:"DefaultKMSMasterKey"`
+	} `xml:"SSE-KMS"`
 }
 
 type Rule struct {

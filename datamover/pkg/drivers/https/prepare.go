@@ -9,16 +9,11 @@ import (
 	"time"
 
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/datamover/pkg/amazon/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/azure/blob"
-	"github.com/opensds/multi-cloud/datamover/pkg/ceph/s3"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	"github.com/opensds/multi-cloud/datamover/pkg/gcp/s3"
-	"github.com/opensds/multi-cloud/datamover/pkg/huawei/obs"
-	"github.com/opensds/multi-cloud/datamover/pkg/ibm/cos"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func getCtxTimeout() time.Duration {
@@ -200,92 +195,17 @@ func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, lim
 	return rsp.Objects, nil
 }
 
-func getIBMCosObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO(acorbellini): reuse getAWSS3Objs function
-	srcObjs := []*osdss3.Object{}
-	objs, err := ibmcosmover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
+func GetMultipartSize() int64 {
+	var size int64 = 16 * 1024 * 1024 // this is the default
+	userSetSize, err := strconv.ParseInt(os.Getenv("PARTSIZE"), 10, 64)
+	log.Infof("userSetSize=%d, err=%v.\n", userSetSize, err)
+	if err == nil {
+		//settedSize must be more than 5M and less than 100M
+		if userSetSize >= 5 && userSetSize <= 100 {
+			size = userSetSize * 1024 * 1024
+			log.Infof("Set size to be %d.\n", size)
+		}
 	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Location: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
 
-func getAwsS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO:need to support filter
-	srcObjs := []*osdss3.Object{}
-	objs, err := s3mover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Size, ObjectKey: *objs[i].Key, Location: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-func getHwObjs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	//TODO:need to support filter
-	srcObjs := []*osdss3.Object{}
-	objs, err := obsmover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-func getAzureBlobs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	srcObjs := []*osdss3.Object{}
-	objs, err := blobmover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: *objs[i].Properties.ContentLength, ObjectKey: objs[i].Name,
-			Location: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-//to get object details from ceph backend
-func getCephS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	srcObjs := []*osdss3.Object{}
-	objs, err := cephs3mover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
-}
-
-//to get object details from gcp backend
-func getGcpS3Objs(ctx context.Context, conn *pb.Connector, filt *pb.Filter,
-	defaultSrcLoca *LocationInfo) ([]*osdss3.Object, error) {
-	srcObjs := []*osdss3.Object{}
-	objs, err := Gcps3mover.ListObjs(defaultSrcLoca, filt)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(objs); i++ {
-		obj := osdss3.Object{Size: objs[i].Size, ObjectKey: objs[i].Key, Location: ""}
-		srcObjs = append(srcObjs, &obj)
-	}
-	return srcObjs, nil
+	return size
 }

@@ -261,9 +261,10 @@ func (yig *YigStorage) ListParts(ctx context.Context, multipartUpload *pb.ListPa
 			break
 		}
 		p := model.Part{
-			PartNumber: part.PartNum,
-			ETag:       part.Etag,
-			Size:       int64(part.Size),
+			PartNumber:     part.PartNum,
+			ETag:           part.Etag,
+			Size:           int64(part.Size),
+			LastModifyTime: part.UpdateTime.Unix(),
 		}
 		partList = append(partList, p)
 	}
