@@ -42,8 +42,6 @@ var JOB_RUN_TIME_MAX = 86400           //seconds, equals 1 day
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
 
-const WT_DOWLOAD = 48
-const WT_UPLOAD = 48
 const WT_MOVE = 96
 const WT_DELETE = 4
 const JobType = "migration"
@@ -266,7 +264,6 @@ func runjob(in *pb.RunJobRequest) error {
 		}
 
 		//Do migration for each object.
-		//go doMove(ctx, objs, capa, th, srcLoca, destLoca, in.RemainSource, &j)
 		go doMigrate(ctx, objs, capa, th, in, &j)
 
 		if num < int(limit) {
