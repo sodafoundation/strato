@@ -70,15 +70,16 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 		return result, ErrPutToBackendFailed
 	}
 
-	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
-	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+	calculatedMd5 := "\"" + hex.EncodeToString(md5Writer.Sum(nil)) + "\""
 	if userMd5 != "" && userMd5 != calculatedMd5 {
+		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 		return result, ErrBadDigest
 	}
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
 	result.Etag = calculatedMd5
+	result.Written = size
 	log.Infof("upload object[Ceph S3] succeed, objectId:%s, UpdateTime is:%v, etag:\n", objectId,
 		result.UpdateTime, result.Etag)
 

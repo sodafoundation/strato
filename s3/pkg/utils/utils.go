@@ -91,7 +91,7 @@ const (
 )
 
 const (
-	VersioningEnabled    = "Enabled"
+	VersioningEnabled   = "Enabled"
 	VersioningDisabled  = "Disabled"
 	VersioningSuspended = "Suspended"
 )
@@ -107,12 +107,6 @@ const (
 	MoveType_MoveCrossBuckets
 	MoveType_ChangeLocation
 	MoveType_ChangeStorageTier
-)
-
-const (
-	MoveSourceType_EndUser = iota
-	MoveSourceType_Lifecycle
-	MoveSourceType_Migration
 )
 
 func Md5Content(data []byte) string {

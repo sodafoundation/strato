@@ -16,6 +16,9 @@ func GetMd5FromCtx(ctx context.Context) (md5val string) {
 func TrimQuot(in string) string {
 	s := in
 	l := len(s)
+	if l <= 0 {
+		return ""
+	}
 	if s[l-1] == '"' {
 		s = s[:l-1]
 	}
