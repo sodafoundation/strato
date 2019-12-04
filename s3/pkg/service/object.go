@@ -24,7 +24,6 @@ import (
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -93,71 +92,76 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 	return
 }
 
+func (s *s3Service) removeObjectFromBackend(ctx context.Context, sd driver.StorageDriver, obj *pb.DeleteObjectInput) error {
+	if obj != nil {
+		err := sd.Delete(ctx, obj)
+		if err != nil {
+			log.Errorln("failed to delete written object. err:", err)
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) error {
 	log.Infoln("PutObject is called in s3 service.")
 
+	var err error
 	result := &pb.PutObjectResponse{}
-	defer in.SendMsg(result)
+	defer func() {
+		result.ErrorCode = GetErrCode(err)
+		in.SendMsg(result)
+	}()
 
-	var ok bool
-	var tenantId string
-	var md map[string]string
-	md, ok = metadata.FromContext(ctx)
-	if !ok {
-		log.Error("get metadata from ctx failed.")
-		return ErrInternalError
+	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Errorln("failed to get credential info. err:", err)
+		return nil
 	}
 
-	if tenantId, ok = md[common.CTX_KEY_TENANT_ID]; !ok {
-		log.Error("get tenantid failed.")
-		return ErrInternalError
-	}
-
-	obj := &pb.Object{}
-	err := in.RecvMsg(obj)
+	req := &pb.PutObjectRequest{}
+	err = in.RecvMsg(req)
 	if err != nil {
 		log.Errorln("failed to get msg with err:", err)
 		return ErrInternalError
 	}
-	obj.TenantId = tenantId
-	log.Infof("metadata of object is:%+v\n", obj)
-	log.Infof("*********bucket:%s,key:%s,size:%d\n", obj.BucketName, obj.ObjectKey, obj.Size)
-	oldObj, err := s.MetaStorage.GetObject(ctx, obj.BucketName, obj.ObjectKey, "", true)
-	if err != nil && oldObj != nil {
-		log.Info("got the object with same name(%s, %s, %s)", oldObj.BucketName, oldObj.ObjectKey, oldObj.ObjectId)
-		obj.StorageMeta = oldObj.StorageMeta
-		obj.ObjectId = oldObj.ObjectId
-	}
 
-	bucket, err := s.MetaStorage.GetBucket(ctx, obj.BucketName, true)
+	log.Infof("*********bucket:%s,key:%s,size:%d\n", req.BucketName, req.ObjectKey, req.Size)
+	bucket, err := s.MetaStorage.GetBucket(ctx, req.BucketName, true)
 	if err != nil {
 		log.Errorln("get bucket failed with err:", err)
 		return err
 	}
-	if bucket == nil {
-		log.Infoln("bucket is nil")
+
+	if !isAdmin {
+		switch bucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if bucket.TenantId != tenantId {
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		}
 	}
 
-	switch bucket.Acl.CannedAcl {
-	case "public-read-write":
-		break
-	default:
-		if bucket.TenantId != obj.TenantId {
-			return s3error.ErrBucketAccessForbidden
-		}
+	err = s.removeObject(ctx, bucket, req.ObjectKey)
+	if err != nil {
+		log.Errorln("failed to delete old object. err:", err)
+		return err
 	}
 
 	data := &StreamReader{in: in}
 	var limitedDataReader io.Reader
-	if obj.Size > 0 { // request.ContentLength is -1 if length is unknown
-		limitedDataReader = io.LimitReader(data, obj.Size)
+	if req.Size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(data, req.Size)
 	} else {
 		limitedDataReader = data
 	}
 
 	backendName := bucket.DefaultLocation
-	if obj.Location != "" {
-		backendName = obj.Location
+	if req.Location != "" {
+		backendName = req.Location
 	}
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
@@ -165,92 +169,53 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		return err
 	}
 
-	log.Infoln("bucket location:", obj.Location, " backendtype:", backend.Type,
-		" endpoint:", backend.Endpoint)
-	bodyMd5 := md["md5Sum"]
+	log.Infoln("bucket location:", req.Location, " backendtype:", backend.Type, " endpoint:", backend.Endpoint)
+	bodyMd5 := req.Attrs["md5Sum"]
 	ctx = context.Background()
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, obj.Size)
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, req.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
-		return nil
+		return err
 	}
-	res, err := sd.Put(ctx, limitedDataReader, obj)
+	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName:req.BucketName, ObjectKey:req.ObjectKey})
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
 	}
-	oid := res.ObjectId
-	bytesWritten := res.Written
+	var delObj *pb.DeleteObjectInput
+	defer s.removeObjectFromBackend(ctx, sd, delObj)
 
-	// Should metadata update failed, add `maybeObjectToRecycle` to `RecycleQueue`,
-	// so the object in Ceph could be removed asynchronously
-	//maybeObjectToRecycle := objectToRecycle{
-	//	location: cephCluster.Name,
-	//	pool:     poolName,
-	//	objectId: oid,
-	//}
-	if bytesWritten < obj.Size {
-		//RecycleQueue <- maybeObjectToRecycle
-		log.Warnf("write objects, already written(%d), total size(%d)\n", bytesWritten, obj.Size)
-	}
-	result.Md5 = res.Etag
-
-	/*if signVerifyReader, ok := data.(*signature.SignVerifyReader); ok {
-		credential, err = signVerifyReader.Verify()
-		if err != nil {
-			RecycleQueue <- maybeObjectToRecycle
-			return
-		}
-	}*/
-	// TODO validate bucket policy and fancy ACL
-	obj.ObjectId = oid
+	obj := &pb.Object{}
+	obj.BucketName = req.BucketName
+	obj.ObjectKey = req.ObjectKey
+	obj.Acl = req.Acl
+	obj.TenantId = tenantId
+	obj.UserId = userId
+	obj.ObjectId = res.ObjectId
 	obj.LastModified = time.Now().UTC().Unix()
 	obj.Etag = res.Etag
-	obj.ContentType = md["Content-Type"]
+	obj.ContentType = req.ContentType
 	obj.DeleteMarker = false
-	obj.CustomAttributes = md /* TODO: only reserve http header attr*/
+	obj.CustomAttributes = req.Attrs
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
+	obj.Size = req.Size
+	obj.Location = req.Location
 
 	object := &meta.Object{Object: obj}
 
+	result.Md5 = res.Etag
 	result.LastModified = object.LastModified
-	//var nullVerNum uint64
-	//nullVerNum, err = yig.checkOldObject(bucketName, objectName, bucket.Versioning)
-	//if err != nil {
-	//	RecycleQueue <- maybeObjectToRecycle
-	//	return
-	//}
-	//if bucket.Versioning == "Enabled" {
-	//	result.VersionId = object.GetVersionId()
-	//}
-	//// update null version number
-	//if bucket.Versioning == "Suspended" {
-	//	nullVerNum = uint64(object.LastModifiedTime.UnixNano())
-	//}
-	//
-	//if nullVerNum != 0 {
-	//	objMap := &meta.ObjMap{
-	//		Name:       objectName,
-	//		BucketName: bucketName,
-	//	}
-	//	err = yig.MetaStorage.PutObject(object, nil, objMap, true)
-	//} else {
-	//	err = yig.MetaStorage.PutObject(object, nil, nil, true)
-	//}
 
 	err = s.MetaStorage.PutObject(ctx, object, nil, nil, true)
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
-		//RecycleQueue <- maybeObjectToRecycle
+		// delete object that have been written
+		delObj = &pb.DeleteObjectInput{ObjectId:obj.ObjectId, StorageMeta:obj.StorageMeta}
 		return ErrDBError
-	}
-	if err == nil {
-		//b.MetaStorage.Cache.Remove(redis.ObjectTable, obj.OBJECT_CACHE_PREFIX, bucketName+":"+objectKey+":")
-		//b.DataCache.Remove(bucketName + ":" + objectKey + ":" + object.GetVersionId())
 	}
 
 	return nil
@@ -268,7 +233,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		return nil
 	}
 
-	_, _, err = CheckRights(ctx, object.TenantId)
+	_, _, _, err = CheckRights(ctx, object.TenantId)
 	if err != nil {
 		log.Errorln("check rights failed, err:", err)
 		return nil
@@ -298,8 +263,9 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
-	_, _, err = CheckRights(ctx, object.TenantId)
+	_, _, _, err = CheckRights(ctx, object.TenantId)
 	if err != nil {
+		log.Errorln("failed to check rights, err:", err)
 		return err
 	}
 
@@ -309,7 +275,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
@@ -402,8 +368,9 @@ func (s *s3Service) UpdateObjectMeta(ctx context.Context, in *pb.Object, out *pb
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
-	_, _, err = CheckRights(ctx, object.TenantId)
+	_, _, _, err = CheckRights(ctx, object.TenantId)
 	if err != nil {
+		log.Errorln("failed to check rights, err:", err)
 		return err
 	}
 
@@ -431,6 +398,30 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	srcObjectName := in.SrcObjectName
 	targetBucketName := in.TargetBucketName
 	targetObjectName := in.TargetObjectName
+	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Errorf("get credential faied, err:%v\n", err)
+		return err
+	}
+
+	if !isAdmin {
+		switch targetBucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if targetBucket.TenantId != tenantId {
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		}
+	}
+
 	srcBucket, err := s.MetaStorage.GetBucket(ctx, srcBucketName, true)
 	if err != nil {
 		log.Errorln("get bucket failed with err:", err)
@@ -440,11 +431,6 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
-	}
-	_, tenantid, err := CheckRights(ctx, srcObject.TenantId)
-	if err != nil {
-		log.Errorf("no rights to access the source object[%s]\n", srcObject.ObjectKey)
-		return nil
 	}
 
 	backendName := srcBucket.DefaultLocation
@@ -462,11 +448,6 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return err
 	}
 
-	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
-	if err != nil {
-		log.Errorln("get bucket failed with err:", err)
-		return err
-	}
 	targetBackendName := targetBucket.DefaultLocation
 	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
@@ -514,7 +495,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.Type = meta.ObjectTypeNormal
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
-	targetObject.TenantId = tenantid
+	targetObject.TenantId = tenantId
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	// TODO: delete old object
@@ -790,7 +771,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
-	isAdmin, tenantId, err := CheckRights(ctx, object.TenantId)
+	isAdmin, tenantId, _, err := CheckRights(ctx, object.TenantId)
 	if err != nil {
 		log.Errorf("no rights to access the object[%s]\n", object.ObjectKey)
 		return nil
@@ -896,7 +877,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		return nil
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
@@ -1035,7 +1016,7 @@ func (s *s3Service) PutObjACL(ctx context.Context, in *pb.PutObjACLRequest, out 
 		return err
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError

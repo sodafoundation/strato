@@ -46,7 +46,7 @@ func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBuck
 		return err
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
@@ -92,7 +92,7 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
@@ -205,7 +205,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 		return err
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
@@ -274,7 +274,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
@@ -385,7 +385,7 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
