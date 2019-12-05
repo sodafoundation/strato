@@ -513,6 +513,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantid
+	// we only support copy data with sse but not support copy data without sse right now
+	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	// TODO: delete old object
 
 	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, nil, nil, true)
