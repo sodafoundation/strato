@@ -103,10 +103,13 @@ services:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      #PARTSIZE for multi-part migration, should not be less than 5(MB) or more than 100(MB)
+      # PARTSIZE for multi-part migration, should not be less than 5(MB) or more than 100(MB)
       - PARTSIZE=16
-      #JOB_MAX_RUN_TIME for each migration job, should not be less than 60(second) or more than 2592000(second)
+      # JOB_MAX_RUN_TIME for each migration job, should not be less than 60(seconds) or more than 2592000(seconds)
       - JOB_MAX_RUN_TIME=86400
+      # For lifecycle, if object need to be moved from one place to another, how long this moving can continue, should
+      # not be less than 60(seconds) or more than 2592000(seconds).
+      - OBJECT_MOVE_TIME=3600
     depends_on:
       - zookeeper
       - kafka

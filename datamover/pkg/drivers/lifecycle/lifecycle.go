@@ -29,13 +29,14 @@ var s3client osdss3.S3Service
 var bkendclient backend.BackendService
 var mutex sync.RWMutex
 
+const SECONDS_ONE_MINUTE = 60
+const SECONDS_30_DAYS = 2592000
+const SECONDS_ONE_HOUR = 3600
+
 type Int2String map[int32]string
 
 // map from cloud vendor name to it's map relation relationship between internal tier to it's storage class name.
 var Int2ExtTierMap map[string]*Int2String
-
-// TODO: do more test to choose the best value
-const CLOUD_OPR_TIMEOUT = 86400 // seconds
 
 func Init() {
 	log.Infof("Lifecycle datamover init.")
