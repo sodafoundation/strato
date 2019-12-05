@@ -40,6 +40,11 @@ func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBuck
 	log.Info("ListBucketUploadRecords is called in s3 service.")
 	bucketName := in.BucketName
 
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
 	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
 	if err != nil {
 		log.Errorln("failed to get bucket meta. err:", err)

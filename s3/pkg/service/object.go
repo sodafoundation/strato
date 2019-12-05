@@ -203,7 +203,11 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
 	obj.Size = req.Size
-	obj.Location = req.Location
+	if req.Location == "" {
+		obj.Location = bucket.DefaultLocation
+	} else {
+		obj.Location = req.Location
+	}
 
 	object := &meta.Object{Object: obj}
 
@@ -221,22 +225,60 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	return nil
 }
 
+func (s *s3Service) checkGetObjectRights(ctx context.Context, isAdmin bool, tenantId string, bucket *pb.Bucket, object *pb.Object) (err error) {
+	if !isAdmin {
+		switch object.Acl.CannedAcl {
+		case "public-read", "public-read-write":
+			break
+		case "authenticated-read":
+			if tenantId == "" {
+				err = ErrAccessDenied
+				return
+			}
+		case "bucket-owner-read", "bucket-owner-full-control":
+			if bucket.TenantId != tenantId {
+				err = ErrAccessDenied
+				return
+			}
+		default:
+			if object.TenantId != tenantId {
+				err = ErrAccessDenied
+				return
+			}
+		}
+	}
+	return
+}
+
 func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.GetObjectMetaResult) error {
 	var err error
 	defer func() {
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, in.VersionId, true)
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.BucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return nil
 	}
 
-	_, _, _, err = CheckRights(ctx, object.TenantId)
-	if err != nil {
-		log.Errorln("check rights failed, err:", err)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
 		return nil
+	}
+
+	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
+	if err != nil {
+		log.Errorln("failed to check source object rights. err:", err)
+		return err
 	}
 
 	out.Object = object.Object
@@ -263,11 +305,6 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
-	_, _, _, err = CheckRights(ctx, object.TenantId)
-	if err != nil {
-		log.Errorln("failed to check rights, err:", err)
-		return err
-	}
 
 	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
 	if err != nil {
@@ -282,19 +319,10 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return nil
 	}
 
-	if isAdmin == false {
-		switch object.Acl.CannedAcl {
-		case "bucket-owner-full-control":
-			if bucket.TenantId != tenantId {
-				err = ErrAccessDenied
-				return err
-			}
-		default:
-			if object.TenantId != tenantId {
-				err = ErrAccessDenied
-				return err
-			}
-		}
+	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
+	if err != nil {
+		log.Errorln("failed to check source object rights. err:", err)
+		return err
 	}
 
 	backendName := bucket.DefaultLocation
@@ -430,6 +458,12 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	srcObject, err := s.MetaStorage.GetObject(ctx, srcBucketName, srcObjectName, "", true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+
+	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, srcBucket.Bucket, srcObject.Object)
+	if err != nil {
+		log.Errorln("failed to check source object rights. err:", err)
 		return err
 	}
 
