@@ -37,8 +37,9 @@ type GcMgr struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	yig        *YigStorage
-	loopTime   int64
-	wg         sync.WaitGroup
+	// the interval time of performing gc.
+	loopTime int64
+	wg       sync.WaitGroup
 }
 
 func (gm *GcMgr) Start() {
@@ -46,9 +47,14 @@ func (gm *GcMgr) Start() {
 	threadNum := runtime.GOMAXPROCS(0)
 	gm.wg.Add(1)
 	go func() {
+		// loopCount is the number of loops for performing gc.
 		loopCount := int(1)
+		// default interval time of performing gc, which is equal to the loopTime set from configuration file.
 		defaultIntervalTime := (time.Duration(gm.loopTime) * time.Second).Nanoseconds()
+		// the maximum interval time of performing gc.
 		maxIntervalTime := (time.Duration(GC_MAX_INTERVAL_TIME) * time.Second).Nanoseconds()
+		// the current in-used interval time of performing gc. intervalTime is roughly equal or more than the time for performing a gc.
+		// intervalTime = backoffCount * gc_time_duration. Below loop will calculate the backoffCount for each server.
 		intervalTime := defaultIntervalTime
 		for {
 			// it is enough to use math/rand package to get the rough random for interval time of gc.
@@ -61,6 +67,7 @@ func (gm *GcMgr) Start() {
 			}
 			var chs []<-chan *GcObjectResult
 			// get all the gc objects for this loop
+			// gcEnd-gcBegin will track the total time consumed by performing gc in this time.
 			gcBegin := time.Now()
 			gcChan := gm.QueryGcObjectStream()
 			// by default, we will start the go routines with the number of available cpus.
@@ -84,6 +91,8 @@ func (gm *GcMgr) Start() {
 			if gcDuration > defaultIntervalTime {
 				intervalTime = gcDuration
 			}
+			// below will calculate the backoffCount.
+			// backOffCount is used to avoid concurrent gc at the same time made by different servers.
 			count := (2 << uint(loopCount)) - 1
 			rd := rand.New(rand.NewSource(time.Now().UnixNano()))
 			backoffCount := rd.Intn(count + 1)
