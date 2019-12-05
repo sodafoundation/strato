@@ -16,21 +16,17 @@ package tidbclient
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
-	"math"
-	"strconv"
 	"time"
 
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, version string) (object *Object, err error) {
 	var sqltext, ibucketname, iname, customattributes, acl, lastModified string
-	var iversion uint64
+	//var iversion uint64
 	var row *sql.Row
 	if version == "" {
 		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
@@ -48,7 +44,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	err = row.Scan(
 		&ibucketname,
 		&iname,
-		&iversion,
+		&object.VersionId,
 		&object.Location,
 		&object.TenantId,
 		&object.UserId,
@@ -88,9 +84,9 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		return
 	}
 	// TODO: getting multi-parts
-	timestamp := math.MaxUint64 - iversion
+	/*timestamp := math.MaxUint64 - iversion
 	timeData := []byte(strconv.FormatUint(timestamp, 10))
-	object.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
+	object.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))*/
 	return
 }
 

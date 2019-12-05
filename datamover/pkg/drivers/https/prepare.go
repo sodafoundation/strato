@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	"os"
 	"strconv"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -55,7 +55,7 @@ func getLocationInfo(ctx context.Context, j *flowtype.Job, in *pb.RunJobRequest)
 	return srcLoca, destLoca, err
 }
 
-func refreshSrcLocation(ctx context.Context, obj *osdss3.Object, srcLoca *LocationInfo, destLoca *LocationInfo,
+func refreshSrcLocation(ctx context.Context, obj *s3.Object, srcLoca *LocationInfo, destLoca *LocationInfo,
 	locMap map[string]*LocationInfo) (newSrcLoca *LocationInfo, err error) {
 	if obj.Location != srcLoca.BakendName && obj.Location != "" {
 		//If oject does not use the default backend
@@ -99,7 +99,7 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 	switch conn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
 		virtBkname := conn.GetBucketName()
-		rspbk, err := s3client.GetBucket(ctx, &osdss3.Bucket{Name: virtBkname})
+		rspbk, err := s3client.GetBucket(ctx, &s3.Bucket{Name: virtBkname})
 		if err != nil {
 			logger.Printf("get bucket[%s] information failed when refresh connector location, err:%v\n", virtBkname, err)
 			return nil, errors.New("get bucket information failed")
@@ -133,10 +133,10 @@ func getConnLocation(ctx context.Context, conn *pb.Connector) (*LocationInfo, er
 	return nil, errors.New("unsupport type")
 }
 
-func getObjs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*osdss3.Object, error) {
+func getObjs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*s3.Object, error) {
 	switch in.SourceConn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
-		return getOsdsS3Objs(ctx, in, marker, limit)
+		return gets3Objs(ctx, in, marker, limit)
 	default:
 		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
 	}
@@ -144,10 +144,10 @@ func getObjs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int
 	return nil, errors.New(DMERR_InternalError)
 }
 
-func countOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, err error) {
+func counts3Objs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, err error) {
 	logger.Printf("count objects of bucket[%s].\n", in.SourceConn.BucketName)
 
-	req := osdss3.ListObjectsRequest{Bucket: in.SourceConn.BucketName}
+	req := s3.ListObjectsRequest{Bucket: in.SourceConn.BucketName}
 	if in.GetFilt() != nil && len(in.Filt.Prefix) > 0 {
 		req.Prefix = in.Filt.Prefix
 	}
@@ -165,7 +165,7 @@ func countOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest) (count, size int
 func countObjs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, err error) {
 	switch in.SourceConn.Type {
 	case flowtype.STOR_TYPE_OPENSDS:
-		return countOsdsS3Objs(ctx, in)
+		return counts3Objs(ctx, in)
 	default:
 		logger.Printf("unsupport storage type:%v\n", in.SourceConn.Type)
 	}
@@ -173,10 +173,10 @@ func countObjs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, er
 	return 0, 0, errors.New(DMERR_UnSupportBackendType)
 }
 
-func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*osdss3.Object, error) {
+func gets3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*s3.Object, error) {
 	logger.Println("get osds objects begin")
 
-	req := osdss3.ListObjectsRequest{
+	req := s3.ListObjectsRequest{
 		Bucket:  in.SourceConn.BucketName,
 		Marker:  marker,
 		MaxKeys: limit,
@@ -192,7 +192,13 @@ func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, lim
 	}
 
 	logger.Println("get osds objects successfully")
-	return rsp.Objects, nil
+	retObjArr := make([]*s3.Object,0)
+	for _,objArrPtr := range rsp.ListOfListOfObjects{
+		for _, obj := range objArrPtr.Objects{
+			retObjArr = append(retObjArr, obj)
+		}
+	}
+	return retObjArr, nil
 }
 
 func GetMultipartSize() int64 {

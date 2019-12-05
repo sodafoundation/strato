@@ -209,6 +209,7 @@ type Object struct {
 
 	Location string
 	Tier     int32
+	Version  string
 }
 
 type VersionedObject struct {
