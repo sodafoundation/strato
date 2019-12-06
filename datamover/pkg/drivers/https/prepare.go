@@ -93,7 +93,13 @@ func getOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest, marker string, lim
 	}
 
 	log.Debugf("get osds objects successfully")
-	return rsp.Objects, nil
+	retObjArr := make([]*osdss3.Object,0)
+	for _,objArrPtr := range rsp.ListOfListOfObjects{
+		for _, obj := range objArrPtr.Objects{
+			retObjArr = append(retObjArr, obj)
+		}
+	}
+	return retObjArr, nil
 }
 
 func GetMultipartSize() int64 {
