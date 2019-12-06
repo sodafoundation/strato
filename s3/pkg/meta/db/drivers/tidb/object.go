@@ -145,11 +145,7 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 	if err != nil {
 		return err
 	}
-	sqltext = "delete from objectpart where objectname=? and bucketname=? and version=?;"
-	_, err = sqlTx.Exec(sqltext, object.ObjectKey, object.BucketName, version)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 

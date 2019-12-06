@@ -22,6 +22,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -40,8 +41,8 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	for _, value := range list.Buckets {
 		ctime := time.Unix(value.CreateTime, 0).Format(time.RFC3339)
 		versionOpts := model.VersioningConfiguration{}
-		if value.Versioning != nil{
-			if value.Versioning.Status == utils.VersioningEnabled{
+		if value.Versioning != nil {
+			if value.Versioning.Status == utils.VersioningEnabled {
 				versionOpts.Status = utils.VersioningEnabled
 			}
 		}
@@ -73,8 +74,14 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
-	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
-		log.Errorf("list bucket failed, err=%v, errCode=%d\n", err, rsp.ErrorCode)
+	if err == nil {
+		if rsp.ErrorCode != int32(s3error.ErrNoErr) {
+			err = s3error.S3ErrorCode(rsp.ErrorCode)
+		}
+	}
+	if err != nil {
+		log.Infof("list buckets failed, err=%v\n", err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 
