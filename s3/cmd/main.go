@@ -28,6 +28,7 @@ import (
 	handler "github.com/opensds/multi-cloud/s3/pkg/service"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
