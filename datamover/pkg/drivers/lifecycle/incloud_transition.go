@@ -18,10 +18,10 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"time"
 
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -51,7 +51,10 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 		return errors.New(DMERR_TransitionInprogress)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
+	// min is 1 minute, max is 30 days, default is 1 hour, user defined value should not less than min and not more than
+	// max, otherwise default will be used
+	tmout := migration.GetCtxTimeout("OBJECT_MOVE_TIME", SECONDS_ONE_MINUTE, SECONDS_30_DAYS, SECONDS_ONE_HOUR)
+	ctx, _ := context.WithTimeout(context.Background(), tmout)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	_, err := s3client.MoveObject(ctx, req)
 	if err != nil {
