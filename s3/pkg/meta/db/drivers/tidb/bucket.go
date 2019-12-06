@@ -656,7 +656,6 @@ func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sse
 
 func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOptsPtr *pb.ServerSideEncryption, err error) {
 	log.Info("list bucket SSE info from tidb ...")
-	sseOptsPtr = &pb.ServerSideEncryption{}
 
 	var rows *sql.Rows
 	sqltext := "select sse from bucket_sseopts where bucketname=?;"
@@ -673,8 +672,9 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 	defer rows.Close()
 
 	for rows.Next() {
+		tmp := &pb.ServerSideEncryption{}
 		err = rows.Scan(
-			&sseOptsPtr.SseType)
+			&tmp.SseType)
 		if err != nil {
 			err = handleDBError(err)
 			return
@@ -684,7 +684,7 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 			rErr = handleDBError(rErr)
 			return
 		}
-		return sseOptsPtr, nil
+		return tmp, nil
 	}
 	return
 }
