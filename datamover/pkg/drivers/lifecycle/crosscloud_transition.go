@@ -33,7 +33,7 @@ import (
 // If transition for an object is in-progress, then the next transition message will be abandoned.
 var InProgressObjs = make(map[string]struct{})
 
-func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
+func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) error {
 	log.Infof("copy object[%s], size=%d\n", obj.ObjectKey, obj.Size)
 
 	// add object to InProgressObjs
@@ -45,7 +45,7 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 	}
 
 	// copy object
-	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), tmout)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	req := &osdss3.MoveObjectRequest{
 		SrcObject:        obj.ObjectKey,
@@ -70,7 +70,7 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo) error {
 	return err
 }
 
-func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int64) error {
+func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int64, tmout time.Duration) error {
 	// This depend on multipart upload
 	log.Error("not implemented")
 	return errors.New("not implemented")
@@ -88,10 +88,13 @@ func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 
 	var err error
 	size := migration.GetMultipartSize()
+	// min is 1 minute, max is 30 days, default is 1 hour, user defined value should not less than min and not more than
+	// max, otherwise default will be used
+	tmout := migration.GetCtxTimeout("OBJECT_MOVE_TIME", SECONDS_ONE_MINUTE, SECONDS_30_DAYS, SECONDS_ONE_HOUR)
 	if obj.Size <= size {
-		err = MoveObj(obj, target)
+		err = MoveObj(obj, target, tmout)
 	} else {
-		err = MultipartMoveObj(obj, target, size)
+		err = MultipartMoveObj(obj, target, size, tmout)
 	}
 
 	if err != nil {
