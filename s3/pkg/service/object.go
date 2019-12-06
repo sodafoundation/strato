@@ -439,7 +439,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
-	_, _, err = CheckRights(ctx, srcObject.TenantId)
+	_, tenantid, err := CheckRights(ctx, srcObject.TenantId)
 	if err != nil {
 		log.Errorf("no rights to access the source object[%s]\n", srcObject.ObjectKey)
 		return nil
@@ -465,7 +465,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("get bucket failed with err:", err)
 		return err
 	}
-	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBucket.DefaultLocation)
+	targetBackendName := targetBucket.DefaultLocation
+	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -510,7 +511,10 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.CustomAttributes = srcObject.CustomAttributes
 	targetObject.Type = meta.ObjectTypeNormal
 	targetObject.StorageMeta = res.Meta
-
+	targetObject.Location = targetBackendName
+	targetObject.TenantId = tenantid
+	// we only support copy data with sse but not support copy data without sse right now
+	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	// TODO: delete old object
 
 	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, nil, nil, true)
@@ -945,7 +949,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		}
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
-		log.Infof("object:%+v\n", object)
+		log.Debugf("object:%+v\n", object)
 	}
 	out.Objects = objects
 	out.Prefixes = appendInfo.Prefixes

@@ -41,7 +41,8 @@ func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
 
 	// call API of s3 service to delete object
 	delMetaReq := osdss3.DeleteObjectInput{Bucket: bucketName, Key: objKey, VersioId: versionId}
-	ctx, _ := context.WithTimeout(context.Background(), CLOUD_OPR_TIMEOUT*time.Second)
+	// as expiration does not need to move data, so it's timeout time is not need to be too large.
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	_, err := s3client.DeleteObject(ctx, &delMetaReq)
 	if err != nil {
