@@ -180,15 +180,18 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 		log.Errorf("failed to put(%s, %s), err: %v", poolName, oid, err)
 		return
 	}
-	// Should metadata update failed, add `maybeObjectToRecycle` to `RecycleQueue`,
+	// Should metadata update failed, put the oid to gc,
 	// so the object in Ceph could be removed asynchronously
-	maybeObjectToRecycle := objectToRecycle{
-		location: cephCluster.Name,
-		pool:     poolName,
-		objectId: oid,
-	}
+	shouldGc := false
+	defer func() {
+		if shouldGc {
+			if err := yig.putObjToGc(cephCluster.Name, poolName, oid); err != nil {
+				log.Errorf("failed to put (%s, %s, %s) to gc, err: %v", cephCluster.Name, poolName, oid, err)
+			}
+		}
+	}()
 	if bytesWritten < size {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		log.Errorf("failed to write objects, already written(%d), total size(%d)", bytesWritten, size)
 		return result, ErrIncompleteBody
 	}
@@ -196,12 +199,12 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 	if userMd5 != "" && userMd5 != calculatedMd5 {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return result, ErrBadDigest
 	}
 
 	if err != nil {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return
 	}
 
@@ -338,21 +341,25 @@ func (yig *YigStorage) Copy(ctx context.Context, stream io.Reader, target *pb.Ob
 		log.Errorf("failed to write oid[%s] for obj[%s] in bucket[%s] with err: %v", oid, target.ObjectKey, target.BucketName, err)
 		return result, err
 	}
-	// Should metadata update failed, add `maybeObjectToRecycle` to `RecycleQueue`,
+	// Should metadata update failed, put the object to gc,
 	// so the object in Ceph could be removed asynchronously
-	maybeObjectToRecycle := objectToRecycle{
-		location: cephCluster.Name,
-		pool:     poolName,
-		objectId: oid,
-	}
+	shouldGc := false
+	defer func() {
+		if shouldGc {
+			if err := yig.putObjToGc(cephCluster.Name, poolName, oid); err != nil {
+				log.Errorf("failed to put(%s, %s, %s) to gc, err: %v", cephCluster.Name, poolName, oid, err)
+			}
+		}
+	}()
+
 	if bytesWritten < target.Size {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return result, ErrIncompleteBody
 	}
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	if calculatedMd5 != target.Etag {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return result, ErrBadDigest
 	}
 

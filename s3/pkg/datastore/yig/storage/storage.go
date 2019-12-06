@@ -21,7 +21,6 @@ import (
 	"errors"
 	"io"
 	"path/filepath"
-	"sync"
 
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
@@ -47,7 +46,6 @@ type YigStorage struct {
 	MetaStorage *meta.Meta
 	KMS         crypto.KMS
 	Stopping    bool
-	WaitGroup   *sync.WaitGroup
 	idGen       *utils.GlobalIdGen
 	gcMgr       *GcMgr
 }
@@ -72,7 +70,6 @@ func New(cfg *config.Config) (*YigStorage, error) {
 		MetaStorage: metaStorage,
 		KMS:         kms,
 		Stopping:    false,
-		WaitGroup:   new(sync.WaitGroup),
 		idGen:       idGen,
 	}
 	CephConfigPattern := cfg.StorageCfg.CephPath
@@ -103,8 +100,6 @@ func New(cfg *config.Config) (*YigStorage, error) {
 	yig.gcMgr = NewGcMgr(RootContext, &yig, cfg.Endpoint.GcCheckTime)
 	// start gc
 	yig.gcMgr.Start()
-	// start recycler
-	initializeRecycler(&yig)
 	return &yig, nil
 }
 
@@ -112,7 +107,6 @@ func (y *YigStorage) Close() error {
 	y.Stopping = true
 	log.Info("Stopping storage...")
 	y.gcMgr.Stop()
-	y.WaitGroup.Wait()
 	log.Info("done")
 	log.Info("Stopping MetaStorage...")
 	y.MetaStorage.Close()

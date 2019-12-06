@@ -133,7 +133,7 @@ func handleBucketLifecyle(bucket string, rules []*s3.LifecycleRule) error {
 	// Make sure unlock before return
 	defer db.DbAdapter.UnlockBucketLifecycleSched(bucket)
 
-	var inRules InterRules
+	var inRules, abortRules InterRules
 	for _, rule := range rules {
 		if rule.Status == RuleStatusDisabled {
 			continue
@@ -158,7 +158,14 @@ func handleBucketLifecyle(bucket string, rules []*s3.LifecycleRule) error {
 			inRules = append(inRules, &v)
 		}
 
-		// TODO: Incomplete multipart upload data will be cleaned if multipart upload provided
+		if rule.AbortIncompleteMultipartUpload.DaysAfterInitiation > 0 {
+			// abort incomplete multipart uploads
+			abortRule := InternalLifecycleRule{Bucket: bucket, Days: rule.AbortIncompleteMultipartUpload.DaysAfterInitiation, ActionType: AbortIncompleteMultipartUpload}
+			if rule.GetFilter() != nil {
+				abortRule.Filter = InternalLifecycleFilter{Prefix: rule.Filter.Prefix}
+			}
+			abortRules = append(abortRules, &abortRule)
+		}
 	}
 
 	// Sort rules, in case different actions exist for an object at the same time, for example, expiration after 30 days
@@ -167,10 +174,18 @@ func handleBucketLifecyle(bucket string, rules []*s3.LifecycleRule) error {
 	sort.Stable(inRules)
 	// Begin: Log for debug
 	for _, v := range inRules {
-		log.Infof("action rule: %+v\n", *v)
+		log.Debugf("action rule: %+v\n", *v)
 	}
 	// End: Log for debug
 	schedSortedActionsRules(&inRules)
+
+	sort.Stable(abortRules)
+	// Begin: Log for debug
+	for _, v := range abortRules {
+		log.Debugf("abort rule: %+v\n", *v)
+	}
+	// End: Log for debug
+	schedSortedAbortRules(&abortRules)
 
 	return nil
 }
@@ -221,6 +236,45 @@ func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*s3.Obj
 		}
 	}
 	return retObjArr, nil
+}
+
+func schedSortedAbortRules(inRules *InterRules) {
+	log.Debugln("schedSortedAbortRules begin ...")
+	ctx := metadata.NewContext(context.Background(), map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
+	for _, r := range *inRules {
+		var uploadIdMarker = ""
+		for {
+			log.Debugf("list upload reqest, bucket:%s, UploadIdMarker:%s\n", r.Bucket, uploadIdMarker)
+			req := osdss3.ListBucketUploadRequest{BucketName: r.Bucket, MaxUploads: 1000, UploadIdMarker: uploadIdMarker}
+			s3rsp, err := s3client.ListBucketUploadRecords(ctx, &req)
+			if err != nil {
+				log.Errorf("schedule for rule[id=%s,bucket=%s] failed, err:%v\n", r.Id, r.Bucket, err)
+				break
+			}
+			records := s3rsp.Result.Uploads
+			if len(records) == 0 {
+				log.Debugln("break because no upload record exist")
+				break
+			}
+			for _, rc := range records {
+				log.Debugf("abort upload part, ObjKey=%s, UploadId=%s\n", rc.Key, rc.UploadId)
+				req := datamover.LifecycleActionRequest{
+					ObjKey:     rc.Key,
+					BucketName: r.Bucket,
+					UploadId:   rc.UploadId,
+					Action:     AbortIncompleteMultipartUpload,
+				}
+				// If send failed, then ignore it, because it will be re-sent in the next schedule round.
+				sendActionRequest(&req)
+			}
+			if s3rsp.Result.IsTruncated == false {
+				log.Debugln("break because result is truncated")
+				break
+			}
+			uploadIdMarker = s3rsp.Result.NextUploadIdMarker
+		}
+	}
+	log.Debugln("schedSortedAbortRules end ...")
 }
 
 func schedSortedActionsRules(inRules *InterRules) {
