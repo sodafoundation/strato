@@ -245,7 +245,7 @@ func schedSortedAbortRules(inRules *InterRules) {
 		var uploadIdMarker = ""
 		for {
 			log.Debugf("list upload reqest, bucket:%s, UploadIdMarker:%s\n", r.Bucket, uploadIdMarker)
-			req := osdss3.ListBucketUploadRequest{BucketName: r.Bucket, MaxUploads: 1000, UploadIdMarker: uploadIdMarker}
+			req := s3.ListBucketUploadRequest{BucketName: r.Bucket, MaxUploads: 1000, UploadIdMarker: uploadIdMarker}
 			s3rsp, err := s3client.ListBucketUploadRecords(ctx, &req)
 			if err != nil {
 				log.Errorf("schedule for rule[id=%s,bucket=%s] failed, err:%v\n", r.Id, r.Bucket, err)
