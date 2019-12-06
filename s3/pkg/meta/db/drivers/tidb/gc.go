@@ -19,12 +19,9 @@ import (
 	"math"
 	"time"
 
-	"encoding/hex"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/xxtea/xxtea-go/xxtea"
-	"strconv"
 )
 
 func (t *TidbClient) PutGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error) {
@@ -94,21 +91,20 @@ func (t *TidbClient) ListGcObjs(ctx context.Context, offset, limit int) (objs []
 	}
 	defer rows.Close()
 
-	var iversion uint64
 	for rows.Next() {
 		obj := &Object{Object: &pb.Object{}}
 
 		err = rows.Scan(
 			&obj.BucketName,
 			&obj.ObjectKey,
-			&iversion,
+			&obj.VersionId,
 			&obj.Location,
 			&obj.ObjectId,
 			&obj.StorageMeta,
 		)
-		timestamp := math.MaxUint64 - iversion
+		/*timestamp := math.MaxUint64 - iversion
 		timeData := []byte(strconv.FormatUint(timestamp, 10))
-		obj.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
+		obj.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))*/
 		objs = append(objs, obj)
 	}
 

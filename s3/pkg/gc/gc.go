@@ -101,7 +101,7 @@ func CleanFromBackend(obj *types.Object, bkservice bkd.BackendService) error {
 	}
 
 	// delete object data in backend
-	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: obj.BucketName, Key: obj.ObjectKey, VersioId: obj.VersionId,
+	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: obj.BucketName, Key: obj.ObjectKey, VersioId: strconv.FormatUint(obj.VersionId,10),
 		StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
 	if err != nil {
 		log.Errorf("failed to delete obejct[%s] from backend storage, err:", obj.ObjectKey, err)

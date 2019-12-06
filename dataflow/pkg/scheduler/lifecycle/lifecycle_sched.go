@@ -340,7 +340,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 						SourceBackend: obj.Location,
 						TargetBackend: r.Backend,
 						ObjSize:       obj.Size,
-						VersionId:     obj.VersionId,
+						VersionId:     strconv.FormatUint(obj.VersionId,10),
 						StorageMeta:   obj.StorageMeta,
 						ObjectId:      obj.ObjectId,
 					}

@@ -49,7 +49,7 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	req := &osdss3.MoveObjectRequest{
 		SrcObject:        obj.ObjectKey,
-		SrcObjectVersion: obj.VersionId,
+		SrcObjectVersion: strconv.FormatUint(obj.VersionId,10),
 		SrcBucket:        obj.BucketName,
 		TargetLocation:   targetLoc.BakendName,
 		TargetTier:       targetLoc.Tier,
@@ -83,8 +83,9 @@ func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	target := &LocationInfo{BucketName: acReq.BucketName, BakendName: acReq.TargetBackend, Tier: acReq.TargetTier}
 
 	log.Infof("transition object[%s] from [%+s] to [%+s]\n", acReq.ObjKey, acReq.SourceBackend, acReq.TargetBackend)
+	versionId, _ := strconv.ParseUint(acReq.VersionId,10, 64)
 	obj := &osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName,
-		Tier: acReq.SourceTier, VersionId: acReq.VersionId}
+		Tier: acReq.SourceTier, VersionId: versionId}
 
 	var err error
 	size := migration.GetMultipartSize()

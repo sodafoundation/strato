@@ -399,7 +399,7 @@ message Object {
 	string bucketName = 2;
 	string tenantId = 3;
 	string userId = 4;
-	string versionId = 5;
+	uint64 versionId = 5;
 	string objectId = 6;
 	string contentType = 7;
 	string contentMd5 = 8;

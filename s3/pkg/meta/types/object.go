@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +17,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 type Object struct {
@@ -76,7 +74,7 @@ func (o *Object) String() (s string) {
 	//s += "Pool: " + o.Pool + "\n"
 	s += "Object ID: " + o.ObjectId + "\n"
 	s += "Last Modified Time: " + time.Unix(o.LastModified, 0).Format(CREATE_TIME_LAYOUT) + "\n"
-	s += "Version: " + o.VersionId + "\n"
+	s += "Version: " + strconv.FormatUint(o.VersionId,10) + "\n"
 	s += "Type: " + o.ObjectTypeToString() + "\n"
 	s += "Tier: " + fmt.Sprintf("%d", o.Tier) + "\n"
 	// TODO: multi-part handle
@@ -85,7 +83,7 @@ func (o *Object) String() (s string) {
 }
 
 func (o *Object) GetVersionNumber() (uint64, error) {
-	decrypted, err := util.Decrypt(o.VersionId)
+	decrypted, err := util.Decrypt(strconv.FormatUint(o.VersionId,10))
 	if err != nil {
 		return 0, err
 	}
@@ -186,7 +184,7 @@ func (o *Object) encryptSseKey() (err error) {
 	return nil
 }
 
-func (o *Object) GetVersionId() string {
+/*func (o *Object) GetVersionId() string {
 	if o.NullVersion {
 		return "null"
 	}
@@ -196,12 +194,11 @@ func (o *Object) GetVersionId() string {
 	timeData := []byte(strconv.FormatUint(uint64(o.LastModified), 10))
 	o.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
 	return o.VersionId
-}
+}*/
 
 //Tidb related function
 
 func (o *Object) GetCreateSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModified)
 	customAttributes, _ := json.Marshal(o.CustomAttributes)
 	acl, _ := json.Marshal(o.Acl)
 	var sseType string
@@ -217,7 +214,7 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 		" lastmodifiedtime, etag, contenttype, customattributes, acl, nullversion, deletemarker, ssetype, " +
 		" encryptionkey, initializationvector, type, tier, storageMeta) " +
 		"values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
+	args := []interface{}{o.BucketName, o.ObjectKey, o.VersionId, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
 		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker, sseType,
 		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta}
 

@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/journeymidnight/yig/helper"
@@ -164,6 +165,18 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to get backend client with err:", err)
 		return err
 	}
+	// TODO Prakash(rhsakarpos@gmail.com) once Neelam checks in the GET versioning on bucket code, add it here
+	isBucketVersioned := true
+	if isBucketVersioned{
+		versionId, now := utils.GetVersionId()
+		obj.VersionId = versionId
+		obj.LastModified = now
+		// update the cloud backend object name here
+		obj.ObjectKey = obj.ObjectKey + "_" + strconv.FormatUint(obj.VersionId,10)
+	}else{
+		obj.VersionId = utils.GetSingleVersionId()
+		obj.LastModified = time.Now().UTC().Unix()
+	}
 
 	log.Infoln("bucket location:", obj.Location, " backendtype:", backend.Type,
 		" endpoint:", backend.Endpoint)
@@ -206,7 +219,6 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}*/
 	// TODO validate bucket policy and fancy ACL
 	obj.ObjectId = oid
-	obj.LastModified = time.Now().UTC().Unix()
 	obj.Etag = res.Etag
 	obj.ContentType = md["Content-Type"]
 	obj.DeleteMarker = false
@@ -413,7 +425,7 @@ func (s *s3Service) UpdateObjectMeta(ctx context.Context, in *pb.Object, out *pb
 	}
 	out.LastModified = in.LastModified
 	out.Md5 = in.Etag
-	out.VersionId = in.GetVersionId()
+	out.VersionId = strconv.FormatUint(in.GetVersionId(),10)
 
 	return nil
 }
@@ -861,7 +873,7 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objec
 	}
 
 	// delete object data in backend
-	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: obj.VersionId,
+	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: strconv.FormatUint(obj.VersionId,10),
 		ETag: obj.Etag, StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
 	if err != nil {
 		log.Errorf("failed to delete obejct[%s] from backend storage, err:%v\n", objectKey, err)
@@ -1005,7 +1017,7 @@ func (s *s3Service) ListObjectsInternal(ctx context.Context, request *pb.ListObj
 func (s *s3Service) cleanObject(ctx context.Context, object *Object, sd driver.StorageDriver) error {
 	delInput := &pb.DeleteObjectInput{
 		Bucket: object.BucketName, Key: object.ObjectKey, ObjectId: object.ObjectId,
-		VersioId: object.VersionId, StorageMeta: object.StorageMeta,
+		VersioId: strconv.FormatUint(object.VersionId,10), StorageMeta: object.StorageMeta,
 	}
 
 	err := sd.Delete(ctx, delInput)
