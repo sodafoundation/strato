@@ -230,16 +230,6 @@ func (s *s3Service) checkGetObjectRights(ctx context.Context, isAdmin bool, tena
 		switch object.Acl.CannedAcl {
 		case "public-read", "public-read-write":
 			break
-		case "authenticated-read":
-			if tenantId == "" {
-				err = ErrAccessDenied
-				return
-			}
-		case "bucket-owner-read", "bucket-owner-full-control":
-			if bucket.TenantId != tenantId {
-				err = ErrAccessDenied
-				return
-			}
 		default:
 			if object.TenantId != tenantId {
 				err = ErrAccessDenied
@@ -923,12 +913,6 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		switch bucket.Acl.CannedAcl {
 		case "public-read", "public-read-write":
 			break
-		case "authenticated-read":
-			if tenantId == "" {
-				log.Error("no tenant id provided")
-				err = ErrBucketAccessForbidden
-				return nil
-			}
 		default:
 			if bucket.TenantId != tenantId {
 				log.Errorf("tenantId(%s) does not much bucket.TenantId(%s)", tenantId, bucket.TenantId)

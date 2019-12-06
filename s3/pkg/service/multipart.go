@@ -62,11 +62,6 @@ func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBuck
 		switch bucket.Acl.CannedAcl {
 		case "public-read", "public-read-write":
 			break
-		case "authenticated-read":
-			if tenantId == "" {
-				err = ErrBucketAccessForbidden
-				return err
-			}
 		default:
 			if bucket.TenantId != tenantId {
 				log.Errorln("bucket owner is not equal to request owner.")
