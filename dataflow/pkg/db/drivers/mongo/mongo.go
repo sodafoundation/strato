@@ -335,7 +335,7 @@ func (ad *adapter) ListPolicy(ctx context.Context) ([]Policy, error) {
 	}
 	err = ss.DB(DataBaseName).C(CollPolicy).Find(m).All(&pols)
 	if err == mgo.ErrNotFound || len(pols) == 0 {
-		log.Error("no policy found.")
+		log.Info("no policy found.")
 		return nil, nil
 	} else if err != nil {
 		log.Errorf("list policy from database failed, err:%v\n", err)
@@ -619,7 +619,7 @@ func (ad *adapter) doListPlan(ctx context.Context, limit int, offset int, filter
 	plans := []Plan{}
 	err = ss.DB(DataBaseName).C(CollPlan).Find(filter).Skip(offset).Limit(limit).All(&plans)
 	if err == mgo.ErrNotFound || len(plans) == 0 {
-		log.Error("no plan found.")
+		log.Info("no plan found.")
 		return nil, nil
 	} else if err != nil {
 		log.Errorf("get plan from database failed,err:%v.\n", err)
@@ -700,7 +700,7 @@ func (ad *adapter) CreateJob(ctx context.Context, job *Job) (*Job, error) {
 		break
 	}
 	if i == 3 {
-		log.Info("add job to database failed too much times.")
+		log.Error("add job to database failed too much times.")
 	}
 
 	return job, err
@@ -738,7 +738,7 @@ func (ad *adapter) ListJob(ctx context.Context, limit int, offset int, query int
 	jobs := []Job{}
 	err = ss.DB(DataBaseName).C(CollJob).Find(m).Skip(offset).Limit(limit).All(&jobs)
 	if err == mgo.ErrNotFound || len(jobs) == 0 {
-		log.Error("no jobs found.")
+		log.Info("no jobs found.")
 		return nil, nil
 	} else if err != nil {
 		log.Errorf("get jobs from database failed,err:%v.\n", err)

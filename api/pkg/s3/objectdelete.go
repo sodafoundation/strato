@@ -15,48 +15,54 @@
 package s3
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Response) {
 	url := request.Request.URL
-	log.Infof("URL is %v", request.Request.URL.String())
-
 	bucketName := request.PathParameter("bucketName")
-	objectKey := request.PathParameter("objectKey")
-	if strings.HasSuffix(url.String(), "/") {
-		objectKey = objectKey + "/"
+	objectName := request.PathParameter("objectKey")
+	version := url.Query().Get("versionId")
+	if strings.HasSuffix(url.String(), "/") { // This is for folder.
+		objectName = objectName + "/"
 	}
-	deleteInput := s3.DeleteObjectInput{Key: objectKey, Bucket: bucketName}
 
+	if len(bucketName) == 0 {
+		log.Errorf("invalid input, bucket=%s\n", bucketName)
+		WriteErrorResponse(response, request, ErrInvalidBucketName)
+		return
+	}
+	if len(objectName) == 0 {
+		log.Errorf("invalid input, object=%s\n", objectName)
+		WriteErrorResponse(response, request, ErrInvalidObjectName)
+	}
+
+	input := s3.DeleteObjectInput{Bucket: bucketName, Key: objectName}
+	if len(version) > 0 {
+		input.VersioId = version
+	}
 	ctx := common.InitCtxWithAuthInfo(request)
-	objectInput := s3.GetObjectInput{Bucket: bucketName, Key: objectKey}
-	objectMD, _ := s.s3Client.GetObject(ctx, &objectInput)
-	if objectMD != nil {
-		client := getBackendByName(ctx, s, objectMD.Backend)
-		s3err := client.DELETE(&deleteInput, ctx)
-		if s3err.Code != ERR_OK {
-			response.WriteError(http.StatusInternalServerError, s3err.Error())
-			return
-		}
-		res, err := s.s3Client.DeleteObject(ctx, &deleteInput)
-		if err != nil {
-			log.Errorf("err is %v\n", err)
-			response.WriteError(http.StatusInternalServerError, err)
-			return
-		}
-		log.Infof("Delete object %s successfully.", objectKey)
-		response.WriteEntity(res)
-	} else {
-		log.Errorf("No such object")
+	rsp, err := s.s3Client.DeleteObject(ctx, &input)
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("delete object[%s] failed, err=%v, errCode=%d\n", objectName, err, rsp.ErrorCode)
 		return
 	}
 
+	if rsp.DeleteMarker {
+		response.Header().Set("x-amz-delete-marker", "true")
+	} else {
+		response.Header().Set("x-amz-delete-marker", "false")
+	}
+	if rsp.VersionId != "" {
+		response.Header().Set("x-amz-version-id", rsp.VersionId)
+	}
+
+	log.Infof("delete object[%s] from bucket[%s] succeed.", objectName, bucketName)
+	WriteSuccessNoContent(response)
 }

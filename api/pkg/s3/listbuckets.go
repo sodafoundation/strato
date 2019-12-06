@@ -16,15 +16,15 @@ package s3
 
 import (
 	"encoding/xml"
-	"net/http"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"time"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) []byte {
@@ -38,8 +38,20 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	temp.Xmlns = model.Xmlns
 	buckets := []model.Bucket{}
 	for _, value := range list.Buckets {
-		creationDate := time.Unix(value.CreationDate, 0).Format(time.RFC3339)
-		bucket := model.Bucket{Name: value.Name, CreationDate: creationDate, LocationConstraint: value.Backend}
+		ctime := time.Unix(value.CreateTime, 0).Format(time.RFC3339)
+		versionOpts := model.VersioningConfiguration{}
+		if value.Versioning != nil{
+			if value.Versioning.Status == utils.VersioningEnabled{
+				versionOpts.Status = utils.VersioningEnabled
+			}
+		}
+		sseOpts := model.SSEConfiguration{}
+		if value.ServerSideEncryption != nil {
+			if value.ServerSideEncryption.SseType == "SSE" {
+				sseOpts.SSE.Enabled = "true"
+			}
+		}
+		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation, SSEOpts: sseOpts}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
@@ -60,13 +72,13 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	log.Infof("Received request for all buckets")
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
+	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("list bucket failed, err=%v, errCode=%d\n", err, rsp.ErrorCode)
 		return
 	}
 
-	realRes := parseListBuckets(res)
+	realRes := parseListBuckets(rsp)
 
 	log.Infof("Get List of buckets successfully:%v\n", string(realRes))
 	response.Write(realRes)

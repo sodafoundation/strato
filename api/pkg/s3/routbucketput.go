@@ -15,18 +15,23 @@
 package s3
 
 import (
+	"errors"
+
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"net/http"
 )
 
 func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "bucket:put") {
+		response.WriteError(http.StatusMethodNotAllowed, errors.New("authorize failed"))
 		return
 	}
+
 	if IsQuery(request, "acl") {
-		//TODO
+		s.BucketAclPut(request, response)
 	} else if IsQuery(request, "versioning") {
-		//TODO
+		s.BucketVersioningPut(request, response)
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {
@@ -37,7 +42,8 @@ func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.
 
 	} else if IsQuery(request, "lifecycle") {
 		s.BucketLifecyclePut(request, response)
-
+	}  else if IsQuery(request, "DefaultEncryption") {
+		s.BucketSSEPut(request, response)
 	} else {
 		s.BucketPut(request, response)
 	}

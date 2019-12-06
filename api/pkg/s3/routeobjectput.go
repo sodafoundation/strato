@@ -25,7 +25,7 @@ func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.
 	}
 
 	if IsQuery(request, "acl") {
-		//TODO
+		s.ObjectAclPut(request, response)
 	} else if IsQuery(request, "tagging") {
 		//TODO
 	} else if IsQuery(request, "uploads") {
@@ -35,9 +35,8 @@ func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.
 	} else if IsQuery(request, "uploadId") {
 		s.CompleteMultipartUpload(request, response)
 	} else if HasHeader(request, "x-amz-copy-source") {
-
+		s.ObjectCopy(request, response)
 	} else {
 		s.ObjectPut(request, response)
 	}
-
 }

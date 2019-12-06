@@ -16,10 +16,6 @@ package mongo
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
-	"time"
-
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
@@ -28,86 +24,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 )
-
-func (ad *adapter) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, out *[]pb.Object) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
-	c := ss.DB(DataBaseName).C(in.Bucket)
-
-	log.Info("Find objects from database...... \n")
-
-	filter := []bson.M{}
-	if in.Filter != nil {
-		if in.Filter[common.KObjKey] != "" {
-			filter = append(filter, bson.M{"objectkey": bson.M{"$regex": in.Filter[common.KObjKey]}})
-		}
-		if in.Filter[common.KLastModified] != "" {
-			var tmFilter map[string]string
-			err := json.Unmarshal([]byte(in.Filter[common.KLastModified]), &tmFilter)
-			if err != nil {
-				log.Errorf("unmarshal lastmodified value failed:%s\n", err)
-				return InvalidQueryParameter
-			}
-			for k, v := range tmFilter {
-				ts, _ := strconv.Atoi(v)
-				secs := time.Now().Unix() - int64(ts*24*60*60)
-				var op string
-				switch k {
-				case "lt":
-					op = "$gt"
-				case "gt":
-					op = "$lt"
-				case "lte":
-					op = "$gte"
-				case "gte":
-					op = "$lte"
-				default:
-					log.Infof("unsupport filter action:%s\n", k)
-					return InvalidQueryParameter
-				}
-				filter = append(filter, bson.M{"lastmodified": bson.M{op: secs}})
-			}
-		}
-		if in.Filter[common.KStorageTier] != "" {
-			tier, err := strconv.Atoi(in.Filter[common.KStorageTier])
-			if err != nil {
-				log.Errorf("invalid storage class:%s\n", in.Filter[common.KStorageTier])
-				return InvalidQueryParameter
-			}
-			filter = append(filter, bson.M{"tier": bson.M{"$lte": tier}})
-		}
-	}
-
-	filter = append(filter, bson.M{utils.DBKEY_INITFLAG: bson.M{"$ne": "0"}})
-	filter = append(filter, bson.M{utils.DBKEY_DELETEMARKER: bson.M{"$ne": "1"}})
-
-	m := bson.M{}
-	err := UpdateContextFilter(ctx, m)
-	if err != nil {
-		return InternalError
-	}
-	filter = append(filter, m)
-
-	log.Infof("filter:%+v\n", filter)
-	offset := int(in.Offset)
-	limit := int(in.Limit)
-	if limit == 0 {
-		// as default
-		limit = 1000
-	}
-	if len(filter) > 0 {
-		err = c.Find(bson.M{"$and": filter}).Skip(offset).Limit(limit).All(out)
-	} else {
-		err = c.Find(bson.M{}).Skip(offset).Limit(limit).All(out)
-	}
-
-	if err != nil {
-		log.Errorf("find objects from database failed, err:%v\n", err)
-		return InternalError
-	}
-
-	return NoError
-}
 
 func (ad *adapter) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
 	ss := ad.s.Copy()

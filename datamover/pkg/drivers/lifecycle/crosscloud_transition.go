@@ -17,65 +17,52 @@ package lifecycle
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"os"
 	"strconv"
-	"sync"
+	"time"
 
-	log "github.com/sirupsen/logrus"
-	mover "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
-//The max object size that can be moved directly, default is 16M.
-var PART_SIZE int64 = 16 * 1024 * 1024
-
 // If transition for an object is in-progress, then the next transition message will be abandoned.
-var InProgressObjs map[string]struct{}
+var InProgressObjs = make(map[string]struct{})
 
-func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *BackendInfo, className *string) error {
-	// move object
-	part_size, err := strconv.ParseInt(os.Getenv("PARTSIZE"), 10, 64)
-	log.Infof("part_size=%d, err=%v.\n", part_size, err)
-	if err == nil {
-		// part_size must be more than 5M and less than 100M
-		if part_size >= 5 && part_size <= 100 {
-			PART_SIZE = part_size * 1024 * 1024
-			log.Infof("Set PART_SIZE to be %d.\n", PART_SIZE)
-		}
-	}
-
-	srcLoc := &LocationInfo{StorType: src.StorType, Region: src.Region, EndPoint: src.EndPoint, BucketName: src.BucketName,
-		Access: src.Access, Security: src.Security, BakendName: src.BakendName, VirBucket: obj.BucketName}
-	targetLoc := &LocationInfo{StorType: dest.StorType, Region: dest.Region, EndPoint: dest.EndPoint, BucketName: dest.BucketName,
-		Access: dest.Access, Security: dest.Security, BakendName: dest.BakendName, ClassName: *className, VirBucket: obj.BucketName}
+func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) error {
+	log.Infof("copy object[%s], size=%d\n", obj.ObjectKey, obj.Size)
 
 	// add object to InProgressObjs
-	if InProgressObjs == nil {
-		var mutex sync.Mutex
-		mutex.Lock()
-		if InProgressObjs == nil {
-			InProgressObjs = make(map[string]struct{})
-		}
-		mutex.Unlock()
-	}
 	if _, ok := InProgressObjs[obj.ObjectKey]; !ok {
 		InProgressObjs[obj.ObjectKey] = struct{}{}
 	} else {
 		log.Infof("the transition of object[%s] is in-progress\n", obj.ObjectKey)
 		return errors.New(DMERR_TransitionInprogress)
 	}
-	var job *model.Job
-	if obj.Size <= PART_SIZE {
-		err = mover.MoveObj(obj, srcLoc, targetLoc, job)
-	} else {
-		err = mover.MultipartMoveObj(obj, srcLoc, targetLoc, job)
+
+	// copy object
+	ctx, _ := context.WithTimeout(context.Background(), tmout)
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
+	req := &osdss3.MoveObjectRequest{
+		SrcObject:        obj.ObjectKey,
+		SrcObjectVersion: obj.VersionId,
+		SrcBucket:        obj.BucketName,
+		TargetLocation:   targetLoc.BakendName,
+		TargetTier:       targetLoc.Tier,
+		MoveType:         utils.MoveType_ChangeLocation,
 	}
 
-	// TODO: Need to confirm the integrity by comparing Etags.
+	_, err := s3client.MoveObject(ctx, req)
+	if err != nil {
+		// if failed, it will try again in the next round schedule
+		log.Errorf("copy object[%s] failed, err:%\v", obj.ObjectKey, err)
+	} else {
+		log.Infof("copy object[%s] succeed\v", obj.ObjectKey)
+	}
 
 	// remove object from InProgressObjs
 	delete(InProgressObjs, obj.ObjectKey)
@@ -83,64 +70,38 @@ func copyObj(ctx context.Context, obj *osdss3.Object, src *BackendInfo, dest *Ba
 	return err
 }
 
+func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int64, tmout time.Duration) error {
+	// This depend on multipart upload
+	log.Error("not implemented")
+	return errors.New("not implemented")
+}
+
 func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	log.Infof("cross-cloud transition action: transition %s from %d of %s to %d of %s.\n",
 		acReq.ObjKey, acReq.SourceTier, acReq.SourceBackend, acReq.TargetTier, acReq.TargetBackend)
 
-	src, err := getBackendInfo(&acReq.SourceBackend, false)
-	if err != nil {
-		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
-		return err
-	}
-	target, err := getBackendInfo(&acReq.TargetBackend, false)
-	if err != nil {
-		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
-		return err
-	}
+	target := &LocationInfo{BucketName: acReq.BucketName, BakendName: acReq.TargetBackend, Tier: acReq.TargetTier}
 
-	className, err := getStorageClassName(acReq.TargetTier, target.StorType)
-	if err != nil {
-		log.Errorf("cross-cloud transition of %s failed because target tier is not supported.\n", acReq.ObjKey)
-		return err
-	}
+	log.Infof("transition object[%s] from [%+s] to [%+s]\n", acReq.ObjKey, acReq.SourceBackend, acReq.TargetBackend)
+	obj := &osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName,
+		Tier: acReq.SourceTier, VersionId: acReq.VersionId}
 
-	log.Infof("transition object[%s] from [%+v] to [%+v]\n", acReq.ObjKey, src, target)
-	obj := osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName}
-	err = copyObj(context.Background(), &obj, src, target, &className)
-	if err != nil && err.Error() == DMERR_NoPermission {
-		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
-		// In case credentials is changed.
-		src, _ = getBackendInfo(&acReq.SourceBackend, true)
-		target, _ = getBackendInfo(&acReq.TargetBackend, true)
-		err = copyObj(context.Background(), &obj, src, target, &className)
-	}
-	if err != nil && err.Error() == "in-progress" {
-		log.Errorf("transition of object[%s] is in-progress\n", acReq.ObjKey)
-		return nil
-	} else if err != nil {
-		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
-		return err
-	}
-
-	// update meta data.
-	setting := make(map[string]string)
-	setting[OBJMETA_TIER] = fmt.Sprintf("%d", acReq.TargetTier)
-	setting[OBJMETA_BACKEND] = acReq.TargetBackend
-	req := osdss3.UpdateObjMetaRequest{ObjKey: acReq.ObjKey, BucketName: acReq.BucketName, Setting: setting, LastModified: acReq.LastModified}
-	_, err = s3client.UpdateObjMeta(context.Background(), &req)
-	var loca *LocationInfo
-	if err != nil {
-		// if update metadata failed, then delete object from target storage backend.
-		loca = &LocationInfo{StorType: target.StorType, Region: target.Region, EndPoint: target.EndPoint, BucketName: target.BucketName,
-			Access: target.Access, Security: target.Security, BakendName: target.BakendName, VirBucket: obj.BucketName}
+	var err error
+	size := migration.GetMultipartSize()
+	// min is 1 minute, max is 30 days, default is 1 hour, user defined value should not less than min and not more than
+	// max, otherwise default will be used
+	tmout := migration.GetCtxTimeout("OBJECT_MOVE_TIME", SECONDS_ONE_MINUTE, SECONDS_30_DAYS, SECONDS_ONE_HOUR)
+	if obj.Size <= size {
+		err = MoveObj(obj, target, tmout)
 	} else {
-		// if update metadata successfully, then delete object from source storage backend.
-		loca = &LocationInfo{StorType: src.StorType, Region: src.Region, EndPoint: src.EndPoint, BucketName: src.BucketName,
-			Access: src.Access, Security: src.Security, BakendName: src.BakendName, VirBucket: obj.BucketName}
+		err = MultipartMoveObj(obj, target, size, tmout)
 	}
 
-	// delete object from the storage backend.
-	deleteObjFromBackend(acReq.ObjKey, loca)
+	if err != nil {
+		log.Errorf("cross-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
+	} else {
+		log.Infof("cross-cloud transition of %s succeed.\n", acReq.ObjKey)
+	}
 
-	return nil
+	return err
 }

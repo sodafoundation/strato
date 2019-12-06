@@ -14,11 +14,14 @@
 
 package model
 
+import "encoding/xml"
+
 var Xmlns = "http://s3.amazonaws.com/doc/2006-03-01"
 
 type CreateBucketConfiguration struct {
 	Xmlns              string `xml:"xmlns,attr"`
 	LocationConstraint string `xml:"LocationConstraint"`
+	SSEOpts            SSEConfiguration
 }
 
 type Owner struct {
@@ -28,8 +31,10 @@ type Owner struct {
 
 type Bucket struct {
 	Name               string `xml:"Name"`
-	CreationDate       string `xml:"CreationDate"`
+	CreateTime         string `xml:"CreateTime"`
 	LocationConstraint string `xml:"LocationConstraint"`
+	VersionOpts        VersioningConfiguration
+	SSEOpts            SSEConfiguration
 }
 
 type ListAllMyBucketsResult struct {
@@ -45,20 +50,31 @@ type InitiateMultipartUploadResult struct {
 	UploadId string `xml:"UploadId"`
 }
 
+//PartNumber should be between 1 and 10000.
+//Please refer to https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/dev/qfacts.html
 type UploadPartResult struct {
 	Xmlns      string `xml:"xmlns,attr"`
 	PartNumber int64  `xml:"PartNumber"`
 	ETag       string `xml:"ETag"`
 }
 
+// completedParts - is a collection satisfying sort.Interface.
+type CompletedParts []Part
+
+func (a CompletedParts) Len() int           { return len(a) }
+func (a CompletedParts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a CompletedParts) Less(i, j int) bool { return a[i].PartNumber < a[j].PartNumber }
+
 type Part struct {
-	PartNumber int64  `xml:"PartNumber"`
-	ETag       string `xml:"ETag"`
+	PartNumber     int64  `xml:"PartNumber"`
+	ETag           string `xml:"ETag"`
+	Size           int64  `xml:"Size"`
+	LastModifyTime int64  `xml:"LastModifyTime"`
 }
 
 type CompleteMultipartUpload struct {
 	Xmlns string `xml:"xmlns,attr"`
-	Part  []Part `xml:"Part"`
+	Parts []Part `xml:"Part"`
 }
 
 type CompleteMultipartUploadResult struct {
@@ -66,6 +82,7 @@ type CompleteMultipartUploadResult struct {
 	Location string `xml:"Location"`
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
+	Size     int64  `xml:"Size"`
 	ETag     string `xml:"ETag"`
 }
 
@@ -82,6 +99,20 @@ type ListPartsOutput struct {
 
 type LifecycleConfiguration struct {
 	Rule []Rule `xml:"Rule"`
+}
+
+type SSEConfiguration struct {
+	XMLName xml.Name `xml:"SSEConfiguration"`
+	Text    string   `xml:",chardata"`
+	SSE     struct {
+		Text    string `xml:",chardata"`
+		Enabled string `xml:"enabled"`
+	} `xml:"SSE"`
+	SSEKMS struct {
+		Text                string `xml:",chardata"`
+		Enabled             string `xml:"enabled"`
+		DefaultKMSMasterKey string `xml:"DefaultKMSMasterKey"`
+	} `xml:"SSE-KMS"`
 }
 
 type Rule struct {
@@ -114,11 +145,16 @@ type AbortIncompleteMultipartUpload struct {
 }
 
 type StorageClass struct {
-	Name               string `xml:"Name"`
-	Tier               int32 `xml:"Tier"`
+	Name string `xml:"Name"`
+	Tier int32  `xml:"Tier"`
 }
 
 type ListStorageClasses struct {
-	Xmlns       string `xml:"xmlns,attr"`
-	Classes     []StorageClass `xml:"Class"`
+	Xmlns   string         `xml:"xmlns,attr"`
+	Classes []StorageClass `xml:"Class"`
+}
+
+type VersioningConfiguration struct {
+	XMLName xml.Name `xml:"VersioningConfiguration"`
+	Status  string   `xml:"Status"`
 }
