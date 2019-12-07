@@ -15,8 +15,11 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"time"
 
@@ -153,6 +156,15 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = io.LimitReader(data, obj.Size)
 	} else {
 		limitedDataReader = data
+	}
+
+	// encrypt if needed
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		byteArr, _ := ioutil.ReadAll(limitedDataReader)
+		key, _ := utils.GetRandom32BitKey()
+		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, key)
+		reader := bytes.NewReader(encBuf)
+		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
 	}
 
 	backendName := bucket.DefaultLocation
