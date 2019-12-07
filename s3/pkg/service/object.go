@@ -69,7 +69,7 @@ func (dr *StreamReader) Read(p []byte) (n int, err error) {
 				log.Errorln("failed to recv data with err:", err)
 				return
 			}
-			if len(dr.req.Data) == 0 {
+			if dr.req == nil || len(dr.req.Data) == 0 {
 				log.Errorln("no data left to read.")
 				err = io.EOF
 				return
