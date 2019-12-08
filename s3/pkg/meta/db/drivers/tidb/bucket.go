@@ -118,7 +118,12 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		return
 	}
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-	tmp.ServerSideEncryption.SseType = sseOpts.SseType
+	if sseOpts != nil {
+		tmp.ServerSideEncryption.SseType = sseOpts.SseType
+		tmp.ServerSideEncryption.EncryptionKey = sseOpts.EncryptionKey
+	} else {
+		tmp.ServerSideEncryption.SseType = "NONE"
+	}
 
 	bucket = tmp
 	return
@@ -193,15 +198,16 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 		}
 
 		// get SSE info for this bucket
+		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
 		sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
 		if sseErr != nil {
 			return
 		}
 		sseType := "NONE"
-		if sseOpts != nil{
+		if sseOpts != nil {
 			sseType = sseOpts.SseType
+			tmp.ServerSideEncryption.EncryptionKey = sseOpts.EncryptionKey
 		}
-		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
 		tmp.ServerSideEncryption.SseType = sseType
 
 		var ctime time.Time
@@ -640,11 +646,11 @@ func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string)
 	return
 }
 
-func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string) error {
+func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error {
 	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
-	sql := "insert into bucket_sseopts(bucketname, sse) values(?,?);"
-	args := []interface{}{bucketName, sseType}
+	sql := "insert into bucket_sseopts(bucketname, sse, sseserverkey) values(?,?,?);"
+	args := []interface{}{bucketName, sseType, sseKey}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {
@@ -658,7 +664,7 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 	log.Info("list bucket SSE info from tidb ...")
 
 	var rows *sql.Rows
-	sqltext := "select sse from bucket_sseopts where bucketname=?;"
+	sqltext := "select sse,sseserverkey from bucket_sseopts where bucketname=?;"
 
 	rows, err = t.Client.Query(sqltext, bucketName)
 
@@ -673,8 +679,10 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 
 	for rows.Next() {
 		tmp := &pb.ServerSideEncryption{}
+
 		err = rows.Scan(
-			&tmp.SseType)
+			&tmp.SseType,
+			&tmp.EncryptionKey)
 		if err != nil {
 			err = handleDBError(err)
 			return
@@ -689,11 +697,11 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 	return
 }
 
-func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string) error {
+func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error {
 	log.Infof("put bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
-	sql := "update bucket_sseopts set sse=? where bucketname=?"
-	args := []interface{}{sseType, bucketName}
+	sql := "update bucket_sseopts set sse=?,sseserverkey=? where bucketname=?"
+	args := []interface{}{sseType, sseKey, bucketName}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {

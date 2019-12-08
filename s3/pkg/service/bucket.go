@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -97,14 +98,19 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	return nil
 
 	if in.ServerSideEncryption != nil{
-		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType)
+		byteArr, keyErr := utils.GetRandom32BitKey()
+		if keyErr != nil {
+			log.Error("Error generating SSE key", keyErr)
+			return keyErr
+		}
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, byteArr)
 		if err != nil {
 			log.Error("Error creating SSE entry: ", err)
 			return err
 		}
 	} else{
 		// set default SSE option to none
-		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE")
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE", []byte("NONE"))
 		if err != nil {
 			log.Error("Error creating SSE entry: ", err)
 			return err

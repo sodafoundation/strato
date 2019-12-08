@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -161,10 +162,10 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 		byteArr, _ := ioutil.ReadAll(limitedDataReader)
-		key, _ := utils.GetRandom32BitKey()
-		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, key)
+		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
 		reader := bytes.NewReader(encBuf)
 		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
+		obj.Size = int64(binary.Size(encBuf))
 	}
 
 	backendName := bucket.DefaultLocation
@@ -386,6 +387,20 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		if n == 0 {
 			log.Infoln("reader return zero bytes.")
 			break
+		}
+
+		if bucket.ServerSideEncryption.SseType == "SSE" {
+			// decrypt and write
+			fmt.Println("from cloud")
+			fmt.Println(buf[0:n])
+			decErr, decBytes := utils.DecryptWithAES256(buf[0:n], bucket.ServerSideEncryption.EncryptionKey)
+			if decErr != nil {
+				log.Errorln("failed to decrypt data. err:", decErr)
+				return decErr
+			}
+			fmt.Println("successfully decrypted data")
+			buf = decBytes
+			n = int(binary.Size(decBytes))
 		}
 
 		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
