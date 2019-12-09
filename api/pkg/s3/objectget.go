@@ -55,13 +55,12 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	log.Infof("%v\n", rangestr)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	objMetaRes, err := s.s3Client.GetObjectMeta(ctx, &pb.Object{BucketName: bucketName, ObjectKey: objectKey})
+	object, err := s.getObjectMeta(ctx, bucketName, objectKey, "")
 	if err != nil {
 		log.Errorln("get object meta failed. err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
-	object := objMetaRes.Object
 
 	// Get request range.
 	var hrange *HttpRange
@@ -102,7 +101,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		startOffset = hrange.OffsetBegin
 		length = hrange.GetLength()
 	}
-	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket:bucketName, Key:objectKey, Offset: startOffset, Length: length,})
+	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket: bucketName, Key: objectKey, Offset: startOffset, Length: length})
 	if err != nil {
 		log.Errorln("get object failed, err:%v", err)
 		WriteErrorResponse(response, request, err)
@@ -113,7 +112,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	// Indicates if any data was written to the http.ResponseWriter
 	dataWritten := false
 	// io.Writer type which keeps track if any data was written.
-	writer := func(p []byte)(int, error) {
+	writer := func(p []byte) (int, error) {
 		if !dataWritten {
 			// Set headers on the first write.
 			// Set standard object headers.
@@ -169,4 +168,67 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	}
 
 	log.Info("Get object successfully.")
+}
+
+func (s *APIService) HeadObject(request *restful.Request, response *restful.Response) {
+	bucketName := request.PathParameter("bucketName")
+	objectKey := request.PathParameter("objectKey")
+	versionId := request.Request.URL.Query().Get("versionId")
+	log.Infof("Received request for head object: bucket=%s, objectkey=%s, version=%s\n", bucketName, objectKey, versionId)
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	object, err := s.getObjectMeta(ctx, bucketName, objectKey, versionId)
+	if err != nil {
+		log.Errorf("head object[bucketname=%s, key=%s] failed, err=%v\n", bucketName, objectKey, err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	if object.DeleteMarker {
+		response.Header().Set("x-amz-delete-marker", "true")
+		log.Errorf("object[bucketname=%s, key=%s] is marked as deleted\n", bucketName, objectKey)
+		WriteErrorResponse(response, request, s3error.ErrNoSuchKey)
+		return
+	}
+
+	// Get request range.
+	rangeHeader := request.Request.Header.Get("Range")
+	if rangeHeader != "" {
+		if _, err = ParseRequestRange(rangeHeader, object.Size); err != nil {
+			// Handle only ErrorInvalidRange
+			// Ignore other parse error and treat it as regular Get request like Amazon S3.
+			if err == ErrorInvalidRange {
+				WriteErrorResponse(response, request, s3error.ErrInvalidRange)
+				log.Errorf("invalid request range: %s\n", rangeHeader)
+				return
+			}
+		}
+	}
+
+	// Validate pre-conditions if any.
+	if err = checkPreconditions(request.Request.Header, object); err != nil {
+		// set object-related metadata headers
+		response.Header().Set("Last-Modified", time.Unix(object.LastModified, 0).Format(http.TimeFormat))
+
+		if object.Etag != "" {
+			response.Header()["ETag"] = []string{"\"" + object.Etag + "\""}
+		}
+		if err == s3error.ContentNotModified { // write only header if is a 304
+			log.Infof("content not modifed")
+			WriteErrorResponseHeaders(response, err)
+		} else {
+			log.Errorln("head object failed, err:", err)
+			WriteErrorResponse(response, request, err)
+		}
+		return
+	}
+
+	// TODO: add sse header to response
+
+	log.Debugf("object:%+v\n", object)
+	// Set standard object headers.
+	SetObjectHeaders(response, object, nil)
+
+	// Successful response.
+	response.WriteHeader(http.StatusOK)
 }
