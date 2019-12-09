@@ -87,7 +87,7 @@ func (s *APIService) ObjectAclGet(request *restful.Request, response *restful.Re
 	log.Infof("received request: GET bucket[name=%s] object[name=%s] acl\n", bucketName, objectKey)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	object, err := s.getObjectMeta(ctx, bucketName, objectKey)
+	object, err := s.getObjectMeta(ctx, bucketName, objectKey, "")
 	if err != nil {
 		log.Error("failed to get object[%s] meta", objectKey)
 		WriteErrorResponse(response, request, err)

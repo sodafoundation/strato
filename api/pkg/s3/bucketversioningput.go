@@ -31,9 +31,10 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 	log.Infof("received request for creating versioning of bucket: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if HandleS3Error(response, request, err, bucket.ErrorCode) != nil {
-		log.Errorf("get bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, bucket.ErrorCode)
+	bucket, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		log.Errorf("get bucket[%s] failed, err=%v\n", bucketName, err)
 		return
 	}
 
@@ -59,15 +60,15 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 		XXX_sizecache:        0,
 	}
 
-	if versionConf.Status == utils.VersioningEnabled{
+	if versionConf.Status == utils.VersioningEnabled {
 		s3version.Status = utils.VersioningEnabled
-	} else{
+	} else {
 		s3version.Status = utils.VersioningDisabled
 	}
 
-	bucket.BucketMeta.Versioning = s3version
+	bucket.Versioning = s3version
 
-	_, err = s.s3Client.UpdateBucket(ctx, bucket.BucketMeta)
+	_, err = s.s3Client.UpdateBucket(ctx, bucket)
 	if err != nil {
 		log.Errorf("versioning configuration failed, errCode=%d\n", bucketName, err)
 		return

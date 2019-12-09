@@ -262,18 +262,20 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, in.VersionId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
+		return nil
 	}
 
 	_, _, err = CheckRights(ctx, object.TenantId)
 	if err != nil {
+		log.Errorln("check rights failed, err:", err)
 		return nil
 	}
 
 	out.Object = object.Object
+	object.StorageClass, _ = GetNameFromTier(object.Tier, utils.OSTYPE_OPENSDS)
 	return nil
 }
 
@@ -385,7 +387,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	}
 
 	log.Infoln("get object successfully")
-	return nil
+	return err
 }
 
 func (s *s3Service) UpdateObjectMeta(ctx context.Context, in *pb.Object, out *pb.PutObjectResponse) error {
@@ -873,7 +875,7 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objec
 	// delete object meta data from database
 	err = s.MetaStorage.DeleteObject(ctx, obj)
 	if err != nil {
-		log.Errorf("failed to delete obejct[%s] metadata, err:", objectKey, err)
+		log.Errorf("failed to delete obejct[%s] metadata, err:%v", objectKey, err)
 	} else {
 		log.Infof("delete obejct[%s] metadata successfully.", objectKey)
 	}

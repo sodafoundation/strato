@@ -514,7 +514,7 @@ func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, err
 	}
 	if !isAdmin && tenantId != tenantId4Source {
 		log.Errorf("access forbidden, tenantId=%s, tenantId4Source=%s\n", tenantId, tenantId4Source)
-		return isAdmin, tenantId, ErrNoSuchKey
+		return isAdmin, tenantId, ErrAccessDenied
 	}
 
 	return isAdmin, tenantId, nil
