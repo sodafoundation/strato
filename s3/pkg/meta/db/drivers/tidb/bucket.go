@@ -118,7 +118,9 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		return
 	}
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-	tmp.ServerSideEncryption.SseType = sseOpts.SseType
+	if sseOpts != nil {
+		tmp.ServerSideEncryption.SseType = sseOpts.SseType
+	}
 
 	bucket = tmp
 	return
@@ -198,7 +200,7 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			return
 		}
 		sseType := "NONE"
-		if sseOpts != nil{
+		if sseOpts != nil {
 			sseType = sseOpts.SseType
 		}
 		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
