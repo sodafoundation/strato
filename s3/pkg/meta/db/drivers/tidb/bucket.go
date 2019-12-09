@@ -118,7 +118,11 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		return
 	}
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-	tmp.ServerSideEncryption.SseType = sseOpts.SseType
+	if sseOpts!=nil{
+		tmp.ServerSideEncryption.SseType = sseOpts.SseType
+	} else{
+		tmp.ServerSideEncryption.SseType = "NONE"
+	}
 
 	bucket = tmp
 	return
@@ -197,12 +201,13 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 		if sseErr != nil {
 			return
 		}
-		sseType := "NONE"
-		if sseOpts != nil{
-			sseType = sseOpts.SseType
-		}
 		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-		tmp.ServerSideEncryption.SseType = sseType
+		if sseOpts!=nil{
+			tmp.ServerSideEncryption.SseType = sseOpts.SseType
+		} else{
+			tmp.ServerSideEncryption.SseType = "NONE"
+		}
+
 
 		var ctime time.Time
 		ctime, err = time.ParseInLocation(TIME_LAYOUT_TIDB, createTime, time.Local)
@@ -310,7 +315,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		var rows *sql.Rows
 		args := make([]interface{}, 0)
 		// only select index column here to avoid slow query
-		sqltext = "select bucketname,name,version from objects where bucketName=? and deletemarker=0"
+		sqltext = "select bucketname,name,version from objects where bucketName=? and deletemarker=0 and version in (select max(version) from yig.objects group by name)"
 		args = append(args, bucketName)
 		var inargs []interface{}
 		sqltext, inargs, err = buildSql(ctx, filter, sqltext)
