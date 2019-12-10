@@ -190,3 +190,21 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 
 	return
 }
+
+func (s *APIService) HeadBucket(request *restful.Request, response *restful.Response) {
+	bucketName := request.PathParameter("bucketName")
+	log.Infof("Received request for head bucket: %s\n", bucketName)
+
+	var err error
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	_, err = s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorf("get bucket[%s] failed, err=%v\n", bucketName, err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	log.Debugln("head bucket succeed")
+	WriteSuccessResponse(response, nil)
+}
