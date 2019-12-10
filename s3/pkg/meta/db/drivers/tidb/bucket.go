@@ -118,9 +118,9 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		return
 	}
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-	if sseOpts!=nil{
+	if sseOpts != nil {
 		tmp.ServerSideEncryption.SseType = sseOpts.SseType
-	} else{
+	} else {
 		tmp.ServerSideEncryption.SseType = "NONE"
 	}
 
@@ -202,12 +202,11 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			return
 		}
 		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-		if sseOpts!=nil{
+		if sseOpts != nil {
 			tmp.ServerSideEncryption.SseType = sseOpts.SseType
-		} else{
+		} else {
 			tmp.ServerSideEncryption.SseType = "NONE"
 		}
-
 
 		var ctime time.Time
 		ctime, err = time.ParseInLocation(TIME_LAYOUT_TIDB, createTime, time.Local)
@@ -453,11 +452,11 @@ func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string
 	rsp := utils.ObjsCountInfo{}
 	var err error
 	if prefix == "" {
-		sqltext = "select count(*),sum(size) from objects where bucketname=?;"
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and version in (select max(version) from yig.objects group by name);"
 		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &rsp.Size)
 	} else {
 		filt := prefix + "%"
-		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ?;"
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ? and version in (select max(version) from yig.objects group by name);"
 		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &rsp.Size)
 	}
 
