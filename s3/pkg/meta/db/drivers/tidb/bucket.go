@@ -132,7 +132,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err error) {
 	log.Info("list buckets from tidb ...")
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		return nil, ErrInternalError
 	}

@@ -506,16 +506,16 @@ func GetErrCode(err error) (errCode int32) {
 	return errCode
 }
 
-func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, error) {
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, string, error) {
+	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		log.Errorf("get credential faied, err:%v\n", err)
-		return isAdmin, tenantId, ErrInternalError
+		return isAdmin, tenantId, userId, ErrInternalError
 	}
 	if !isAdmin && tenantId != tenantId4Source {
 		log.Errorf("access forbidden, tenantId=%s, tenantId4Source=%s\n", tenantId, tenantId4Source)
-		return isAdmin, tenantId, ErrAccessDenied
+		return isAdmin, tenantId, userId, ErrAccessDenied
 	}
 
-	return isAdmin, tenantId, nil
+	return isAdmin, tenantId, userId, nil
 }
