@@ -71,7 +71,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		return
 	}
 	// If source object is empty, reply back error.
-	if sourceBucketName == "" || sourceObjectName == ""{
+	if sourceBucketName == "" || sourceObjectName == "" {
 		WriteErrorResponse(response, request, ErrInvalidCopySource)
 		return
 	}
@@ -114,7 +114,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 	log.Infoln("sourceBucketName:", sourceBucketName, " sourceObjectName:", sourceObjectName, " sourceVersion:", sourceVersion)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	sourceObject, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName)
+	sourceObject, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName, "")
 	if err != nil {
 		log.Errorln("unable to fetch object info. err:", err)
 		WriteErrorResponse(response, request, err)

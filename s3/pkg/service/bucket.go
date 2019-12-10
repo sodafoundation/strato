@@ -42,13 +42,13 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 	for j := 0; j < len(buckets); j++ {
 		if buckets[j].Deleted != true {
 			out.Buckets = append(out.Buckets, &pb.Bucket{
-				Name:            buckets[j].Name,
-				TenantId:        buckets[j].TenantId,
-				CreateTime:      buckets[j].CreateTime,
-				Usages:          buckets[j].Usages,
-				Tier:            buckets[j].Tier,
-				DefaultLocation: buckets[j].DefaultLocation,
-				Versioning:      buckets[j].Versioning,
+				Name:                 buckets[j].Name,
+				TenantId:             buckets[j].TenantId,
+				CreateTime:           buckets[j].CreateTime,
+				Usages:               buckets[j].Usages,
+				Tier:                 buckets[j].Tier,
+				DefaultLocation:      buckets[j].DefaultLocation,
+				Versioning:           buckets[j].Versioning,
 				ServerSideEncryption: buckets[j].ServerSideEncryption,
 			})
 		}
@@ -96,13 +96,13 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 	return nil
 
-	if in.ServerSideEncryption != nil{
+	if in.ServerSideEncryption != nil {
 		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType)
 		if err != nil {
 			log.Error("Error creating SSE entry: ", err)
 			return err
 		}
-	} else{
+	} else {
 		// set default SSE option to none
 		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE")
 		if err != nil {
@@ -123,29 +123,39 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.Name, false)
 	if err != nil {
 		log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
-		return nil
-	}
-	
-	_, _, err = CheckRights(ctx, bucket.TenantId)
-	if err != nil {
-		if err == ErrNoSuchKey {
-			err = ErrNoSuchBucket
-		}
+		// return nil, otherwise api cannot get error code
 		return nil
 	}
 
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Errorf("get credential faied, err:%v\n", err)
+		return err
+	}
+	if !isAdmin {
+		if tenantId != bucket.TenantId {
+			switch bucket.Acl.CannedAcl {
+			case "public-read", "public-read-write":
+				break
+			default:
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		}
+	}
+
 	out.BucketMeta = &pb.Bucket{
-		Id:              bucket.Id,
-		Name:            bucket.Name,
-		TenantId:        bucket.TenantId,
-		UserId:          bucket.UserId,
-		Acl:             bucket.Acl,
-		CreateTime:      bucket.CreateTime,
-		Deleted:         bucket.Deleted,
-		DefaultLocation: bucket.DefaultLocation,
-		Tier:            bucket.Tier,
-		Usages:          bucket.Usages,
-		Versioning:      bucket.Versioning,
+		Id:                   bucket.Id,
+		Name:                 bucket.Name,
+		TenantId:             bucket.TenantId,
+		UserId:               bucket.UserId,
+		Acl:                  bucket.Acl,
+		CreateTime:           bucket.CreateTime,
+		Deleted:              bucket.Deleted,
+		DefaultLocation:      bucket.DefaultLocation,
+		Tier:                 bucket.Tier,
+		Usages:               bucket.Usages,
+		Versioning:           bucket.Versioning,
 		ServerSideEncryption: bucket.ServerSideEncryption,
 	}
 
@@ -165,11 +175,9 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		log.Errorf("get bucket failed, err:%+v\n", err)
 		return nil
 	}
-	_, _, err = CheckRights(ctx, bucket.TenantId)
+	_, _, _, err = CheckRights(ctx, bucket.TenantId)
 	if err != nil {
-		if err == ErrNoSuchKey {
-			err = ErrNoSuchBucket
-		}
+		log.Errorln("failed to check rights, err:", err)
 		return nil
 	}
 
@@ -207,9 +215,9 @@ func (s *s3Service) PutBucketLifecycle(ctx context.Context, in *pb.PutBucketLife
 		return nil
 	}
 
-	_, _, err = CheckRights(ctx, bucket.TenantId)
+	_, _, _, err = CheckRights(ctx, bucket.TenantId)
 	if err != nil {
-		if err == ErrNoSuchKey {
+		if err == ErrAccessDenied {
 			err = ErrBucketAccessForbidden
 		}
 		return nil
@@ -237,9 +245,9 @@ func (s *s3Service) GetBucketLifecycle(ctx context.Context, in *pb.BaseRequest, 
 		return nil
 	}
 
-	_, _, err = CheckRights(ctx, bucket.TenantId)
+	_, _, _, err = CheckRights(ctx, bucket.TenantId)
 	if err != nil {
-		if err == ErrNoSuchKey {
+		if err == ErrAccessDenied {
 			err = ErrBucketAccessForbidden
 		}
 		return nil
@@ -267,9 +275,9 @@ func (s *s3Service) DeleteBucketLifecycle(ctx context.Context, in *pb.BaseReques
 		log.Errorf("get bucket err: %v\n", err)
 		return nil
 	}
-	_, _, err = CheckRights(ctx, bucket.TenantId)
+	_, _, _, err = CheckRights(ctx, bucket.TenantId)
 	if err != nil {
-		if err == ErrNoSuchKey {
+		if err == ErrAccessDenied {
 			err = ErrBucketAccessForbidden
 		}
 		return nil
@@ -330,18 +338,10 @@ func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest
 		return err
 	}
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
-		log.Error("get tenant id failed")
-		err = ErrInternalError
-		return err
-	}
-
-	if isAdmin == false {
-		if bucket.TenantId != tenantId {
-			err = ErrBucketAccessForbidden
-			return err
-		}
+	_, _, _, err = CheckRights(ctx, bucket.TenantId)
+	if err != nil {
+		log.Errorln("failed to check rights, err:", err)
+		return nil
 	}
 
 	bucket.Acl = &pb.Acl{CannedAcl: in.ACLConfig.CannedAcl}
