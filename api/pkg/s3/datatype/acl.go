@@ -11,10 +11,6 @@ var ValidCannedAcl = []string{
 	"private",
 	"public-read",
 	"public-read-write",
-	"aws-exec-read",
-	"authenticated-read",
-	"bucket-owner-read",
-	"bucket-owner-full-controll",
 }
 
 const (
@@ -217,21 +213,6 @@ func CreatePolicyFromCanned(owner Owner, bucketOwner Owner, acl Acl) (
 			return policy, err
 		}
 		policy.AccessControlList = append(policy.AccessControlList, rGrant, wGrant)
-	case "authenticated-read":
-		owner := Owner{}
-		grant, err := createGrant(ACL_TYPE_GROUP, owner, ACL_PERM_READ, ACL_GROUP_TYPE_AUTHENTICATED_USERS)
-		if err != nil {
-			return policy, err
-		}
-		policy.AccessControlList = append(policy.AccessControlList, grant)
-	case "bucket-owner-read":
-		grant, err := createGrant(ACL_TYPE_CANON_USER, bucketOwner, ACL_PERM_READ, "")
-		if err != nil {
-			return policy, err
-		}
-		if bucketOwner.ID != owner.ID {
-			policy.AccessControlList = append(policy.AccessControlList, grant)
-		}
 	case "bucket-owner-full-control":
 		grant, err := createGrant(ACL_TYPE_CANON_USER, bucketOwner, ACL_PERM_FULL_CONTROL, "")
 		if err != nil {
