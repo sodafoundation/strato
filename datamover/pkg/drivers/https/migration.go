@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/looplab/fsm"
 	"math"
 	"strconv"
 	"time"
@@ -41,14 +43,32 @@ var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved d
 var JOB_RUN_TIME_MAX = 86400           //seconds, equals 1 day
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
+var jobstate = make(map[string]string)
 
-const WT_MOVE = 96
-const WT_DELETE = 4
-const JobType = "migration"
+var (
+	PENDING   = "pending"
+	STARTED   = "started"
+	RUNNING   = "running"
+	FAILED    = "failed"
+	ABORTED   = "aborted"
+	COMPLETED = "completed"
+	CANCELLED = "cancelled"
+)
+
+const (
+	WT_MOVE     = 96
+	WT_COMPLETE = 4
+	JobType     = "migration"
+)
 
 type Migration interface {
 	Init()
 	HandleMsg(msg string)
+}
+
+type JobFSM struct {
+	To  string
+	FSM *fsm.FSM
 }
 
 func Init() {
@@ -64,6 +84,9 @@ func HandleMsg(msgData []byte) error {
 		log.Infof("unmarshal failed, err:%v\n", err)
 		return err
 	}
+	jobFSM := NewJobFSM(job.Id)
+	jobstate[job.Id] = jobFSM.FSM.Current()
+	// by default job status is Pending so no need to define job state
 
 	//Check the status of job, and run it if needed
 	status := db.DbAdapter.GetJobStatus(job.Id)
@@ -73,13 +96,21 @@ func HandleMsg(msgData []byte) error {
 	}
 
 	log.Infof("HandleMsg:job=%+v\n", job)
-	go runjob(&job)
+	go runjob(&job, jobFSM)
 	return nil
 }
 
 func doMigrate(ctx context.Context, objs []*osdss3.Object, capa chan int64, th chan int, req *pb.RunJobRequest,
-	job *flowtype.Job) {
+	job *flowtype.Job, jobFSM *JobFSM) {
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return
+	}
 	for i := 0; i < len(objs); i++ {
+		checkFSM(job.Id, jobFSM)
+		if jobFSM.FSM.Is(ABORTED) {
+			break
+		}
 		if objs[i].Tier == s3utils.Tier999 {
 			// archived object cannot be moved currently
 			log.Warnf("Object(key:%s) is archived, cannot be migrated.\n", objs[i].ObjectKey)
@@ -88,7 +119,7 @@ func doMigrate(ctx context.Context, objs []*osdss3.Object, capa chan int64, th c
 		log.Infof("************Begin to move obj(key:%s)\n", objs[i].ObjectKey)
 
 		//Create one routine
-		go migrate(ctx, objs[i], capa, th, req, job)
+		go migrate(ctx, objs[i], capa, th, req, job, jobFSM)
 		th <- 1
 		log.Infof("doMigrate: produce 1 routine, len(th):%d.\n", len(th))
 	}
@@ -139,7 +170,7 @@ func deleteObj(ctx context.Context, obj *osdss3.Object) error {
 	return err
 }
 
-func migrate(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, req *pb.RunJobRequest, job *flowtype.Job) {
+func migrate(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan int, req *pb.RunJobRequest, job *flowtype.Job, jobFSM *JobFSM) {
 	log.Infof("Move obj[%s] from bucket[%s] to bucket[%s].\n",
 		obj.ObjectKey, job.SourceLocation, job.DestLocation)
 
@@ -149,6 +180,11 @@ func migrate(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan i
 	var err error
 	PART_SIZE = GetMultipartSize()
 	destLoc := &LocationInfo{BucketName: req.DestConn.BucketName}
+	checkFSM(job.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		<-th
+		return
+	}
 	if obj.Size <= PART_SIZE {
 		err = CopyObj(ctx, obj, destLoc, job)
 	} else {
@@ -169,7 +205,7 @@ func migrate(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan i
 		log.Infof("  migrate object[key=%s,versionid=%s] succeed.", obj.ObjectKey, obj.VersionId)
 		capa <- obj.Size
 		if job.Type == "migration" {
-			progress(job, obj.Size, WT_DELETE)
+			progress(job, obj.Size, WT_COMPLETE)
 		}
 	} else {
 		log.Infof("  migrate object[key=%s,versionid=%s] failed.", obj.ObjectKey, obj.VersionId)
@@ -219,7 +255,7 @@ func initJob(ctx context.Context, in *pb.RunJobRequest, j *flowtype.Job) error {
 	return nil
 }
 
-func runjob(in *pb.RunJobRequest) error {
+func runjob(in *pb.RunJobRequest, jobFSM *JobFSM) error {
 	log.Infoln("Runjob is called in datamover service.")
 	log.Infof("Request: %+v\n", in)
 
@@ -235,11 +271,40 @@ func runjob(in *pb.RunJobRequest) error {
 		ctx, _ = context.WithTimeout(ctx, dur)
 	}
 
+	if jobstate[in.Id] == CANCELLED {
+		err := jobFSM.FSM.Event("cancel")
+		if err != nil {
+			log.Errorf("fsm failed to change state, err:%v\n", err)
+			return err
+		}
+		err = db.DbAdapter.UpdateStatus(in.Id, flowtype.JOB_STATUS_CANCELLED)
+		if err != nil {
+			return err
+		}
+		return errors.New("job cancelled")
+	}
+	err := jobFSM.FSM.Event("start")
+	if err != nil {
+		log.Errorf("fsm failed to change state, err:%v\n", err)
+		return err
+	}
+	// updating FSM state into jobstate
+	jobstate[in.Id] = jobFSM.FSM.Current()
 	// init job
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
-	err := initJob(ctx, in, &j)
+	err = initJob(ctx, in, &j)
 	if err != nil {
 		return err
+	}
+
+	checkFSM(j.Id, jobFSM)
+	if jobFSM.FSM.Is(ABORTED) {
+		return nil
+	}
+
+	err = jobFSM.FSM.Event("run")
+	if err != nil {
+		log.Errorf("fsm failed to change state, err:%v\n", err)
 	}
 
 	// used to transfer capacity(size) of objects
@@ -254,6 +319,10 @@ func runjob(in *pb.RunJobRequest) error {
 			//update database
 			j.Status = flowtype.JOB_STATUS_FAILED
 			j.EndTime = time.Now()
+			err2 := jobFSM.FSM.Event("fail")
+			if err2 != nil {
+				log.Errorf("fsm failed to change state, err:%v\n", err)
+			}
 			db.DbAdapter.UpdateJob(&j)
 			return err
 		}
@@ -264,7 +333,7 @@ func runjob(in *pb.RunJobRequest) error {
 		}
 
 		//Do migration for each object.
-		go doMigrate(ctx, objs, capa, th, in, &j)
+		go doMigrate(ctx, objs, capa, th, in, &j, jobFSM)
 
 		if num < int(limit) {
 			break
@@ -296,6 +365,12 @@ func runjob(in *pb.RunJobRequest) error {
 				log.Warnln("Timout.")
 			}
 		}
+		if len(th) == 0 {
+			log.Infof("break, capacity=%d, timout=%v, count=%d, passed count=%d\n", capacity, tmout, count, passedCount)
+			close(capa)
+			close(th)
+			break
+		}
 		if count >= totalObjs || tmout {
 			log.Infof("break, capacity=%d, timout=%v, count=%d, passed count=%d\n", capacity, tmout, count, passedCount)
 			close(capa)
@@ -308,9 +383,15 @@ func runjob(in *pb.RunJobRequest) error {
 	j.PassedCount = int64(passedCount)
 	if passedCount < totalObjs {
 		errmsg := strconv.FormatInt(totalObjs, 10) + " objects, passed " + strconv.FormatInt(passedCount, 10)
-		log.Infof("run job failed: %s\n", errmsg)
 		ret = errors.New("failed")
-		j.Status = flowtype.JOB_STATUS_FAILED
+		if jobstate[in.Id] == ABORTED {
+			log.Infof("run job aborted: %s\n", errmsg)
+			j.Status = flowtype.JOB_STATUS_ABORTED
+		} else {
+			log.Infof("run job failed: %s\n", errmsg)
+			j.Status = flowtype.JOB_STATUS_FAILED
+		}
+
 	} else {
 		j.Status = flowtype.JOB_STATUS_SUCCEED
 	}
@@ -342,61 +423,59 @@ func progress(job *flowtype.Job, size int64, wt float64) {
 
 func AbortMigration(msgData []byte) error {
 
-// 	var job pb.AbortJobRequest
-// 	err := json.Unmarshal(msgData, &job)
-// 	if err != nil {
-// 		logger.Printf("unmarshal failed, err:%v\n", err)
-// 		return err
-// 	}
-// 	if jobstate[job.Id] != PENDING {
-// 		jobstate[job.Id] = ABORTED
-// 	} else {
-// 		jobstate[job.Id] = CANCELLED
-// 	}
-
-// 	logger.Printf("job aborted %v", job.Id)
+	var job pb.AbortJobRequest
+	err := json.Unmarshal(msgData, &job)
+	if err != nil {
+		log.Infof("unmarshal failed, err:%v\n", err)
+		return err
+	}
+	if jobstate[job.Id] != PENDING {
+		jobstate[job.Id] = ABORTED
+	} else {
+		jobstate[job.Id] = CANCELLED
+	}
+	log.Infof("job aborted %v", job.Id)
 	return nil
 }
 
 // Create FSM
-// func NewJobFSM(to string) *JobFSM {
-// 	d := &JobFSM{
-// 		To: to,
-// 	}
+func NewJobFSM(to string) *JobFSM {
+	d := &JobFSM{
+		To: to,
+	}
 
-// 	d.FSM = fsm.NewFSM(
-// 		"pending",
-// 		fsm.Events{
-// 			{Name: "start", Src: []string{PENDING}, Dst: STARTED},
-// 			{Name: "validate", Src: []string{STARTED}, Dst: VALIDATING},
-// 			{Name: "run", Src: []string{VALIDATING}, Dst: RUNNING},
-// 			{Name: "complete", Src: []string{RUNNING}, Dst: COMPLETED},
-// 			{Name: "fail", Src: []string{STARTED, VALIDATING, RUNNING}, Dst: FAILED},
-// 			{Name: "abort", Src: []string{STARTED, VALIDATING, RUNNING}, Dst: ABORTED},
-// 			{Name: "cancel", Src: []string{PENDING}, Dst: CANCELLED},
-// 		},
-// 		fsm.Callbacks{
-// 			"enter_state": func(e *fsm.Event) { d.enterState(e) },
-// 		},
-// 	)
+	d.FSM = fsm.NewFSM(
+		"pending",
+		fsm.Events{
+			{Name: "start", Src: []string{PENDING}, Dst: STARTED},
+			{Name: "run", Src: []string{STARTED}, Dst: RUNNING},
+			{Name: "complete", Src: []string{RUNNING}, Dst: COMPLETED},
+			{Name: "fail", Src: []string{STARTED, RUNNING}, Dst: FAILED},
+			{Name: "abort", Src: []string{STARTED, RUNNING}, Dst: ABORTED},
+			{Name: "cancel", Src: []string{PENDING}, Dst: CANCELLED},
+		},
+		fsm.Callbacks{
+			"enter_state": func(e *fsm.Event) { d.enterState(e) },
+		},
+	)
 
-// 	return d
-// }
+	return d
+}
 
-// func (d *JobFSM) enterState(e *fsm.Event) {
-// 	logger.Printf("The job %s is %s\n", d.To, e.Dst)
-// }
+func (d *JobFSM) enterState(e *fsm.Event) {
+	log.Infof("job state changed from %s to %s state\n", d.To, e.Dst)
+}
 
-// func checkFSM(jobId bson.ObjectId, jobFSM *JobFSM) error {
-// 	Id := fmt.Sprintf("%x", string(jobId))
-// 	if jobstate[Id] == ABORTED {
-// 		if !jobFSM.FSM.Is(ABORTED) {
-// 			db.DbAdapter.UpdateStatus(Id, flowtype.JOB_STATUS_ABORTED)
-// 			err := jobFSM.FSM.Event("abort")
-// 			if err != nil {
-// 				logger.Print(err)
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
+func checkFSM(jobId bson.ObjectId, jobFSM *JobFSM) error {
+	Id := fmt.Sprintf("%x", string(jobId))
+	if jobstate[Id] == ABORTED {
+		if !jobFSM.FSM.Is(ABORTED) {
+			db.DbAdapter.UpdateStatus(Id, flowtype.JOB_STATUS_ABORTED)
+			err := jobFSM.FSM.Event("abort")
+			if err != nil {
+				log.Errorf("fsm failed to change state, err:%v\n", err)
+			}
+		}
+	}
+	return nil
+}
