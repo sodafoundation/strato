@@ -20,13 +20,15 @@ import (
 	"github.com/micro/go-micro"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore"
-	handler "github.com/opensds/multi-cloud/s3/pkg/service"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
+	gc "github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
+	handler "github.com/opensds/multi-cloud/s3/pkg/service"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
@@ -37,6 +39,7 @@ func main() {
 	obs.InitLogs()
 	service.Init(micro.AfterStop(func() error {
 		driver.FreeCloser()
+		gc.Stop()
 		return nil
 	}))
 

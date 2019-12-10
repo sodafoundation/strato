@@ -23,5 +23,6 @@ func (s *APIService) RouteObjectHead(request *restful.Request, response *restful
 	if !policy.Authorize(request, response, "object:delete") {
 		return
 	}
-	// TODO
+
+	s.HeadObject(request, response)
 }

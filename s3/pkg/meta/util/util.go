@@ -24,7 +24,7 @@ func Encrypt(value string) string {
 	return hex.EncodeToString(xxtea.Encrypt([]byte(value), XXTEA_KEY))
 }
 
-func GetCredentialFromCtx(ctx context.Context) (isAdmin bool, tenantId string, err error) {
+func GetCredentialFromCtx(ctx context.Context) (isAdmin bool, tenantId string, userId string, err error) {
 	var ok bool
 	var md map[string]string
 	md, ok = metadata.FromContext(ctx)
@@ -40,11 +40,9 @@ func GetCredentialFromCtx(ctx context.Context) (isAdmin bool, tenantId string, e
 		isAdmin = true
 	}
 
-	if tenantId, ok = md[common.CTX_KEY_TENANT_ID]; !ok {
-		log.Warn("get tenantid failed.")
-		err = ErrInternalError
-		return
-	}
+	tenantId, ok = md[common.CTX_KEY_TENANT_ID]
+	userId, ok = md[common.CTX_KEY_USER_ID]
 
+	log.Debugf("isAdmin=%v, tenantId=%s, userId=%s, err=%v\n", isAdmin, tenantId, userId, err)
 	return
 }

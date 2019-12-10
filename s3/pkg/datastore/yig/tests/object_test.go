@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
@@ -78,6 +79,102 @@ func (ys *YigSuite) TestPutObjectSucceed(c *C) {
 	c.Assert(n, Equals, len)
 	readRawMd5 := md5.Sum(readBuf)
 	c.Assert(rawMd5 == readRawMd5, Equals, true)
+
+	// delete the object
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId:    obj.ObjectId,
+		StorageMeta: obj.StorageMeta,
+	}
+	err = yig.Delete(ctx, objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	reader, err = yig.Get(ctx, obj, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	n, err = reader.Read(readBuf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
+	// delete the copied object
+	objDelInput = &pb.DeleteObjectInput{
+		ObjectId:    copyTarget.ObjectId,
+		StorageMeta: copyTarget.StorageMeta,
+	}
+	err = yig.Delete(ctx, objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	reader, err = yig.Get(ctx, copyTarget, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	n, err = reader.Read(readBuf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
+}
+
+func (ys *YigSuite) TestPutSameObjectTwice(c *C) {
+	detail := &backendpb.BackendDetail{
+		Endpoint: "default",
+	}
+
+	yig, err := driver.CreateStorageDriver(constants.BackendTypeYIGS3, detail)
+	c.Assert(err, Equals, nil)
+	c.Assert(yig, Not(Equals), nil)
+
+	// test small file put.
+	len := 64 * 1024
+	readBuf := make([]byte, len)
+	body := RandBytes(len)
+	bodyReader := bytes.NewReader(body)
+	rawMd5 := md5.Sum(body)
+	bodyMd5 := hex.EncodeToString(rawMd5[:])
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, int64(len))
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
+	obj := &pb.Object{
+		ObjectKey:  "t1",
+		BucketName: "b1",
+	}
+	result, err := yig.Put(ctx, bodyReader, obj)
+	c.Assert(err, Equals, nil)
+	c.Assert(result.Written, Equals, int64(len))
+	c.Assert(result.ObjectId != "", Equals, true)
+	c.Assert(result.Etag == bodyMd5, Equals, true)
+	obj.StorageMeta = result.Meta
+	obj.ObjectId = result.ObjectId
+	// put obj with the same object key in same bucket again.
+	bodyReader = bytes.NewReader(body)
+	obj2 := &pb.Object{
+		ObjectKey:  "t1",
+		BucketName: "b1",
+		// set the former storage meta and object id.
+		StorageMeta: result.Meta,
+		ObjectId:    result.ObjectId,
+	}
+	result2, err := yig.Put(ctx, bodyReader, obj2)
+	c.Assert(err, Equals, nil)
+	c.Assert(result2.Written, Equals, int64(len))
+	c.Assert(result2.ObjectId != "", Equals, true)
+	c.Assert(result2.Etag == bodyMd5, Equals, true)
+	obj2.ObjectId = result2.ObjectId
+	obj2.StorageMeta = result2.Meta
+
+	// Get the object put firstly.
+	time.Sleep(10 * time.Second)
+
+	reader, err := yig.Get(ctx, obj, 0, int64(len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(reader, Not(Equals), nil)
+	n, err := reader.Read(readBuf[:])
+	c.Assert(err, Not(Equals), nil)
+	c.Assert(n, Equals, 0)
+	reader.Close()
+	// delete the second object
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId:    obj2.ObjectId,
+		StorageMeta: obj2.StorageMeta,
+	}
+	err = yig.Delete(ctx, objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
 }
 
 type ReaderElem struct {
@@ -223,6 +320,30 @@ func (ys *YigSuite) TestMultipartUploadSucceed(c *C) {
 	n, err := objReader.Read(buf)
 	c.Assert(n, Equals, 0)
 	c.Assert(err, Equals, io.EOF)
+	// list the parts of multipart uploaded object.
+	listPartsReq := &pb.ListParts{
+		Bucket:   obj.BucketName,
+		Key:      obj.ObjectKey,
+		UploadId: mu.UploadId,
+	}
+
+	listPartsResp, err := yig.ListParts(context.Background(), listPartsReq)
+	c.Assert(err, Equals, nil)
+	c.Assert(listPartsResp, Not(Equals), nil)
+	c.Assert(len(listPartsResp.Parts), Equals, len(readerElems))
+	// delete the multipart uploaded object.
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId: obj.ObjectId,
+	}
+	err = yig.Delete(context.Background(), objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	objReader, err = yig.Get(context.Background(), obj, 0, int64(1<<30))
+	c.Assert(err, Equals, nil)
+	c.Assert(objReader, Not(Equals), nil)
+	n, err = objReader.Read(buf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
 }
 
 func (ys *YigSuite) TestMultipartUploadSinglePartSucceed(c *C) {
@@ -288,4 +409,18 @@ func (ys *YigSuite) TestMultipartUploadSinglePartSucceed(c *C) {
 	c.Assert(err, Equals, io.EOF)
 	err = objReader.Close()
 	c.Assert(err, Equals, nil)
+
+	// delete the multipart uploaded object.
+	objDelInput := &pb.DeleteObjectInput{
+		ObjectId: obj.ObjectId,
+	}
+	err = yig.Delete(context.Background(), objDelInput)
+	c.Assert(err, Equals, nil)
+	time.Sleep(10 * time.Second)
+	objReader, err = yig.Get(context.Background(), obj, 0, int64(elem.Len-1))
+	c.Assert(err, Equals, nil)
+	c.Assert(objReader, Not(Equals), nil)
+	n, err = objReader.Read(buf[:])
+	c.Assert(n, Equals, 0)
+	c.Assert(err, Not(Equals), nil)
 }

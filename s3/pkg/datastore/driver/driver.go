@@ -21,10 +21,13 @@ type StorageDriver interface {
 	InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error)
 	UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 		partNumber int64, upBytes int64) (*model.UploadPartResult, error)
-	// TODO CopyPart
 	CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 		completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error)
 	AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error
+	ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error)
 	// Close: cleanup when driver needs to be stopped.
 	Close() error
+
+	// change storage class
+	ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error
 }

@@ -30,18 +30,20 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/{bucketName}").To(handler.RouteBucketDelete)).Doc("Delete bucket")
 	ws.Route(ws.HEAD("/{bucketName}").To(handler.RouteBucketHead)).Doc("Head bucket")
 
-	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("Upload object")
+	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("Put object")
 	ws.Route(ws.DELETE("/{bucketName}/{objectKey:*}").To(handler.RouteObjectDelete)).Doc("Delete object")
-	ws.Route(ws.GET("/{bucketName}/{objectKey:*}").To(handler.ObjectGet)).Doc("Download object")
-	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("InitMultiPartUpload")
-	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("UploadPart")
-	ws.Route(ws.PUT("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPut)).Doc("CompleteMultipartUpload")
+	ws.Route(ws.GET("/{bucketName}/{objectKey:*}").To(handler.RouteObjectGet)).Doc("Download object")
 	ws.Route(ws.DELETE("/{bucketName}/{objectKey:*}").To(handler.RouteObjectDelete)).Doc("AbortMultipartUpload")
 	ws.Route(ws.HEAD("/{bucketName}/{objectKey:*}").To(handler.RouteObjectHead)).Doc("Head object")
-	ws.Route(ws.POST("/{bucketName}/{objectKey:*}").To(handler.RouteObjectHead)).Doc("Post object")
+	ws.Route(ws.POST("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPost)).Doc("Post object")
 
 	//Router for PUT and GET bucket lifecycle
 	ws.Route(ws.PUT("/{bucketName}/?lifecycle").To(handler.RouteBucketPut)).Doc("Create lifecycle configuration for the bucket")
 	ws.Route(ws.GET("/{bucketName}/?lifecycle").To(handler.RouteBucketGet)).Doc("Get lifecycle configuration from the bucket")
 	ws.Route(ws.DELETE("/{bucketName}/?lifecycle").To(handler.RouteBucketDelete)).Doc("Delete lifecycle configuration from the bucket")
+
+	ws.Route(ws.PUT("/{bucketName}/?versioning").To(handler.RouteBucketPut)).Doc("Create Versioning configuration for the bucket")
+
+	// router for SSE
+	ws.Route(ws.PUT("/{bucketName}/?DefaultEncryption").To(handler.RouteBucketPut)).Doc("Set default encryption on bucket")
 }

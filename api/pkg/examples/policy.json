@@ -29,6 +29,7 @@
   "object:get": "",
   "object:put": "",
   "object:delete": "",
+  "object:post":"",
   "routbucket:put": "",
   "routobject:put": "",
   "storageclass:get":"",

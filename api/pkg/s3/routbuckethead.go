@@ -23,5 +23,6 @@ func (s *APIService) RouteBucketHead(request *restful.Request, response *restful
 	if !policy.Authorize(request, response, "bucket:get") {
 		return
 	}
-	// TODO
+
+	s.HeadBucket(request, response)
 }

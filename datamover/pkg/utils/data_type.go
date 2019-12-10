@@ -15,15 +15,10 @@
 package utils
 
 type LocationInfo struct {
-	StorType   string //aws-s3,azure-blob,hw-obs,ceph-s3 etc.
-	Region     string
-	EndPoint   string
-	BucketName string //remote bucket name
-	VirBucket  string //local bucket name
-	Access     string
-	Security   string
+	BucketName string // bucket name
 	BakendName string
 	ClassName  string
+	Tier       int32
 }
 
 type BackendInfo struct {
@@ -46,7 +41,6 @@ type MoveWorker interface {
 	UploadPart(objKey string, destLoca *LocationInfo, upBytes int64, buf []byte, partNumber int64, offset int64) error
 	AbortMultipartUpload(objKey string, destLoca *LocationInfo) error
 	CompleteMultipartUpload(objKey string, destLoca *LocationInfo) error
-	ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error
 }
 
 const (

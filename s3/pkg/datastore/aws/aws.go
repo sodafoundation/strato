@@ -17,11 +17,15 @@ package aws
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"time"
 
+	"crypto/md5"
+	"encoding/base64"
+	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -32,6 +36,8 @@ import (
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,53 +61,71 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
-/*func Init(backend *backendpb.BackendDetail) *AwsAdapter {
-	endpoint := backend.Endpoint
-	AccessKeyID := backend.Access
-	AccessKeySecret := backend.Security
-	region := backend.Region
-
-	s3aksk := s3Cred{ak: AccessKeyID, sk: AccessKeySecret}
-	creds := credentials.NewCredentials(&s3aksk)
-
-	disableSSL := true
-	sess, err := session.NewSession(&aws.Config{
-		Region:      &region,
-		Endpoint:    &endpoint,
-		Credentials: creds,
-		DisableSSL:  &disableSSL,
-	})
-	if err != nil {
-		return nil
-	}
-
-	adap := &AwsAdapter{backend: backend, session: sess}
-	return adap
-}*/
-
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	result := dscommon.PutResult{}
+	userMd5 := dscommon.GetMd5FromCtx(ctx)
+	size := object.Size
+	log.Infof("put object[OBS], objectId:%s, bucket:%s, size=%d, userMd5=%s\n", objectId, bucket, size, userMd5)
 
-	uploader := s3manager.NewUploader(ad.session)
-	log.Infof("put object[AWS S3] begin, objectId:%s\n", objectId)
-	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: &bucket,
-		Key:    &objectId,
-		Body:   stream,
-		// Currently, only support STANDARD for PUT.
-		StorageClass: aws.String(constants.StorageClassAWSStandard),
-	})
-	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
+	// Limit the reader to its provided size if specified.
+	var limitedDataReader io.Reader
+	if size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(stream, size)
+	} else {
+		limitedDataReader = stream
+	}
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+
+	if object.Tier == 0 {
+		// default
+		object.Tier = utils.Tier1
+	}
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
 	if err != nil {
-		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v", objectId, err)
-		return result, ErrPutToBackendFailed
+		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		return result, ErrInternalError
 	}
 
+	uploader := s3manager.NewUploader(ad.session)
+	input := &s3manager.UploadInput{
+		Body:         dataReader,
+		Bucket:       aws.String(bucket),
+		Key:          aws.String(objectId),
+		StorageClass: aws.String(storClass),
+	}
+	if userMd5 != "" {
+		md5Bytes, err := hex.DecodeString(userMd5)
+		if err != nil {
+			log.Warnf("user input md5 is abandoned, cause decode md5 failed, err:%v\n", err)
+		} else {
+			input.ContentMD5 = aws.String(base64.StdEncoding.EncodeToString(md5Bytes))
+			log.Debugf("input.ContentMD5=%s\n", *input.ContentMD5)
+		}
+	}
+	ret, err := uploader.Upload(input)
+	if err != nil {
+		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v\n", objectId, err)
+		return result, ErrPutToBackendFailed
+	}
+	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
+
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
+	log.Debugf("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
+	if userMd5 != "" && userMd5 != calculatedMd5 {
+		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
+		return result, ErrBadDigest
+	}
+
+	if ret.VersionID != nil {
+		result.Meta = *ret.VersionID
+	}
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	// TODO: set ETAG
+	result.Etag = calculatedMd5
+	result.Written = size
 	log.Infof("put object[AWS S3] successfully, objectId:%s, UpdateTime is:%v\n", objectId, result.UpdateTime)
 
 	return result, nil
@@ -111,7 +135,7 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	bucket := ad.backend.BucketName
 	var buf []byte
 	writer := aws.NewWriteAtBuffer(buf)
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &objectId,
@@ -157,42 +181,31 @@ func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 }
 
 func (ad *AwsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	log.Errorf("copy[AWS S3] is not supported.")
+	err = ErrInternalError
 	return
 }
 
-/*
-func (ad *AwsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
-	bucket := ad.backend.BucketName
-	newKey := bucketName + "/" + key
-
-	input := &awss3.ListObjectsInput{
-		Bucket: &bucket,
-		Prefix: &newKey,
-	}
+func (ad *AwsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
+	objectId := object.ObjectId
+	log.Infof("change storage class[AWS S3] of object[%s] to %s .\n", objectId, *newClass)
 
 	svc := awss3.New(ad.session)
-	output, err := svc.ListObjects(input)
+	input := &awss3.CopyObjectInput{
+		Bucket:     aws.String(ad.backend.BucketName),
+		Key:        aws.String(objectId),
+		CopySource: aws.String(ad.backend.BucketName + "/" + objectId),
+	}
+	input.StorageClass = aws.String(*newClass)
+	_, err := svc.CopyObject(input)
 	if err != nil {
-		log.Fatalf("Init s3 multipart upload failed, err:%v\n", err)
-		return nil, S3Error{Code: 500, Description: err.Error()}
+		log.Errorf("change storage class[AWS S3] of object[%s] to %s failed: %v.\n", objectId, *newClass, err)
+		return ErrPutToBackendFailed
 	}
 
-	for _, content := range output.Contents {
-		realKey := bucketName + "/" + key
-		if realKey != *content.Key {
-			break
-		}
-		obj := &pb.Object{
-			BucketName: bucketName,
-			ObjectKey:  key,
-			Size:       *content.Size,
-		}
-		return obj, NoError
-	}
-	log.Infof("Can not find spceified object(%s).\n", key)
-	return nil, NoSuchObject
+	log.Infof("change storage class[AWS S3] of object[%s] to %s succeed.\n", objectId, *newClass)
+	return nil
 }
-*/
 
 func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.backend.BucketName
@@ -321,6 +334,10 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 
 	log.Infof("complete multipart upload[AWS S3] successfully, rsp:%v\n", rsp)
 	return nil
+}
+
+func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+	return nil, errors.New("not implemented yet.")
 }
 
 func (ad *AwsAdapter) Close() error {

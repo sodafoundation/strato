@@ -97,26 +97,6 @@ CREATE TABLE IF NOT EXISTS `gcpart` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `multipartpart`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `multipartpart` (
-  `partnumber` int(11) DEFAULT NULL,
-  `size` bigint(20) DEFAULT NULL,
-  `objectid` varchar(255) DEFAULT NULL,
-  `offset` bigint(20) DEFAULT NULL,
-  `etag` varchar(255) DEFAULT NULL,
-  `lastmodified` datetime DEFAULT NULL,
-  `initializationvector` blob DEFAULT NULL,
-  `bucketname` varchar(255) DEFAULT NULL,
-  `objectname` varchar(255) DEFAULT NULL,
-  `uploadtime` bigint(20) UNSIGNED DEFAULT NULL,
-   KEY `rowkey` (`bucketname`,`objectname`,`uploadtime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `multiparts`
@@ -127,40 +107,19 @@ CREATE TABLE IF NOT EXISTS `multipartpart` (
 CREATE TABLE IF NOT EXISTS `multiparts` (
   `bucketname` varchar(255) DEFAULT NULL,
   `objectname` varchar(255) DEFAULT NULL,
-  `uploadtime` bigint(20) UNSIGNED DEFAULT NULL,
+  `uploadid` varchar(255) DEFAULT NULL,
+  `uploadtime` datetime DEFAULT NULL,
   `initiatorid` varchar(255) DEFAULT NULL,
-  `ownerid` varchar(255) DEFAULT NULL,
+  `tenantid` varchar(255) DEFAULT NULL,
+  `userid` varchar(255) DEFAULT NULL,
   `contenttype` varchar(255) DEFAULT NULL,
   `location` varchar(255) DEFAULT NULL,
-  `pool` varchar(255) DEFAULT NULL,
   `acl` JSON DEFAULT NULL,
-  `sserequest` JSON DEFAULT NULL,
-  `encryption` blob DEFAULT NULL,
   `attrs` JSON DEFAULT NULL,
+  `objectid` varchar(255) NOT NULL DEFAULT "",
+  `storageMeta` varchar(255) NOT NULL DEFAULT "",
   `storageclass` tinyint(1) DEFAULT 0,
-  UNIQUE KEY `rowkey` (`bucketname`,`objectname`,`uploadtime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `objectpart`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `objectpart` (
-  `partnumber` int(11) DEFAULT NULL,
-  `size` bigint(20) DEFAULT NULL,
-  `objectid` varchar(255) DEFAULT NULL,
-  `offset` bigint(20) DEFAULT NULL,
-  `etag` varchar(255) DEFAULT NULL,
-  `lastmodified` datetime DEFAULT NULL,
-  `initializationvector` blob DEFAULT NULL,
-  `bucketname` varchar(255) DEFAULT NULL,
-  `objectname` varchar(255) DEFAULT NULL,
-  `version` varchar(255) DEFAULT NULL,
-   KEY `rowkey` (`bucketname`,`objectname`,`version`)
-
+  UNIQUE KEY `rowkey` (`bucketname`,`objectname`,`uploadid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -178,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `objects` (
   `tenantid` varchar(255) DEFAULT NULL,
   `userid` varchar(255) DEFAULT NULL,
   `size` bigint(20) DEFAULT NULL,
-  `objectid` varchar(255) DEFAULT NULL,
+  `objectid` varchar(255) NOT NULL DEFAULT "",
   `lastmodifiedtime` datetime DEFAULT NULL,
   `etag` varchar(255) DEFAULT NULL,
   `contenttype` varchar(255) DEFAULT NULL,
@@ -191,6 +150,27 @@ CREATE TABLE IF NOT EXISTS `objects` (
   `initializationvector` blob DEFAULT NULL,
   `type` tinyint(1) DEFAULT 0,
   `tier` int(11) DEFAULT 1,
+  `storageMeta` varchar(255) NOT NULL DEFAULT "",
+   UNIQUE KEY `rowkey` (`bucketname`,`name`,`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+--
+-- Table structure for table `gcobjs`
+--
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `gcobjs` (
+  `bucketname` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `version` bigint(20) UNSIGNED DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `tenantid` varchar(255) DEFAULT NULL,
+  `userid` varchar(255) DEFAULT NULL,
+  `size` bigint(20) DEFAULT NULL,
+  `objectid` varchar(255) DEFAULT NULL,
+  `lastmodifiedtime` datetime DEFAULT NULL,
   `storageMeta` varchar(255) DEFAULT NULL,
    UNIQUE KEY `rowkey` (`bucketname`,`name`,`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
@@ -239,3 +219,15 @@ CREATE TABLE IF NOT EXISTS `lifecycle` (
                        `status` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+CREATE TABLE `bucket_sseopts` (
+                                  `bucketname` varchar(255) NOT NULL,
+                                  `sse` varchar(255) DEFAULT NULL,
+                                  `sseserverkey` varchar(255) DEFAULT NULL,
+                                  PRIMARY KEY (`bucketname`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `bucket_versionopts` (
+                                  `bucketname` varchar(255) NOT NULL,
+                                  `versionstatus` varchar(255) DEFAULT NULL,
+                                  PRIMARY KEY (`bucketname`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

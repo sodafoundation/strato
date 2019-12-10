@@ -1,3 +1,5 @@
+// Copyright 2019 The OpenSDS Authors.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,10 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ibmcos
+package s3
 
 import (
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore/aws"
+	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
-var Init = aws.Init
+func (s *APIService) RouteObjectGet(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "object:put") {
+		return
+	}
+
+	if IsQuery(request, "acl") {
+		s.ObjectAclGet(request, response)
+	} else {
+		s.ObjectGet(request, response)
+	}
+}

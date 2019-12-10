@@ -116,9 +116,10 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	log.Infof("received request for creating lifecycle of bucket: %s", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
-		log.Errorf("get bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
+	_, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorf("get bucket[%s] failed, err=%v\n", bucketName, err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 

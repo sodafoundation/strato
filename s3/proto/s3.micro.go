@@ -55,25 +55,25 @@ type S3Service interface {
 	GetBucketLifecycle(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*GetBucketLifecycleResponse, error)
 	ListBucketLifecycle(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*ListBucketsResponse, error)
 	UpdateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
-	ListBucketUploadRecords(ctx context.Context, in *ListBucketPartsRequest, opts ...client.CallOption) (*ListBucketPartsResponse, error)
-	InitMultipartUpload(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
-	AbortMultipartUpload(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
-	CompleteMultipartUpload(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
-	UploadPart(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
-	ListObjectParts(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
+	ListBucketUploadRecords(ctx context.Context, in *ListBucketUploadRequest, opts ...client.CallOption) (*ListBucketUploadResponse, error)
+	InitMultipartUpload(ctx context.Context, in *InitMultiPartRequest, opts ...client.CallOption) (*InitMultiPartResponse, error)
+	AbortMultipartUpload(ctx context.Context, in *AbortMultipartRequest, opts ...client.CallOption) (*BaseResponse, error)
+	CompleteMultipartUpload(ctx context.Context, in *CompleteMultipartRequest, opts ...client.CallOption) (*CompleteMultipartResponse, error)
+	UploadPart(ctx context.Context, opts ...client.CallOption) (S3_UploadPartService, error)
+	ListObjectParts(ctx context.Context, in *ListObjectPartsRequest, opts ...client.CallOption) (*ListObjectPartsResponse, error)
 	AppendObject(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	PostObject(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	// For lifecycle, may need some change.
 	AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, opts ...client.CallOption) (*BaseResponse, error)
 	HeadObject(ctx context.Context, in *BaseObjRequest, opts ...client.CallOption) (*Object, error)
+	MoveObject(ctx context.Context, in *MoveObjectRequest, opts ...client.CallOption) (*MoveObjectResponse, error)
 	CopyObject(ctx context.Context, in *CopyObjectRequest, opts ...client.CallOption) (*CopyObjectResponse, error)
 	CopyObjPart(ctx context.Context, in *CopyObjPartRequest, opts ...client.CallOption) (*CopyObjPartResponse, error)
 	PutObjACL(ctx context.Context, in *PutObjACLRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetObjACL(ctx context.Context, in *BaseObjRequest, opts ...client.CallOption) (*ObjACL, error)
 	GetBucketLocation(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, opts ...client.CallOption) (*BucketVersioning, error)
-	PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, opts ...client.CallOption) (*BaseResponse, error)
 	PutBucketACL(ctx context.Context, in *PutBucketACLRequest, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucketACL(ctx context.Context, in *BaseBucketRequest, opts ...client.CallOption) (*BucketACL, error)
 	PutBucketCORS(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
@@ -184,7 +184,7 @@ func (c *s3Service) CountObjects(ctx context.Context, in *ListObjectsRequest, op
 }
 
 func (c *s3Service) PutObject(ctx context.Context, opts ...client.CallOption) (S3_PutObjectService, error) {
-	req := c.c.NewRequest(c.name, "S3.PutObject", &PutObjectRequest{})
+	req := c.c.NewRequest(c.name, "S3.PutObject", &PutDataStream{})
 	stream, err := c.c.Stream(ctx, req, opts...)
 	if err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ type S3_PutObjectService interface {
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
-	Send(*PutObjectRequest) error
+	Send(*PutDataStream) error
 }
 
 type s3ServicePutObject struct {
@@ -215,7 +215,7 @@ func (x *s3ServicePutObject) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *s3ServicePutObject) Send(m *PutObjectRequest) error {
+func (x *s3ServicePutObject) Send(m *PutDataStream) error {
 	return x.stream.Send(m)
 }
 
@@ -373,9 +373,9 @@ func (c *s3Service) UpdateBucket(ctx context.Context, in *Bucket, opts ...client
 	return out, nil
 }
 
-func (c *s3Service) ListBucketUploadRecords(ctx context.Context, in *ListBucketPartsRequest, opts ...client.CallOption) (*ListBucketPartsResponse, error) {
+func (c *s3Service) ListBucketUploadRecords(ctx context.Context, in *ListBucketUploadRequest, opts ...client.CallOption) (*ListBucketUploadResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.ListBucketUploadRecords", in)
-	out := new(ListBucketPartsResponse)
+	out := new(ListBucketUploadResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -383,9 +383,9 @@ func (c *s3Service) ListBucketUploadRecords(ctx context.Context, in *ListBucketP
 	return out, nil
 }
 
-func (c *s3Service) InitMultipartUpload(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
+func (c *s3Service) InitMultipartUpload(ctx context.Context, in *InitMultiPartRequest, opts ...client.CallOption) (*InitMultiPartResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.InitMultipartUpload", in)
-	out := new(BaseResponse)
+	out := new(InitMultiPartResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -393,7 +393,7 @@ func (c *s3Service) InitMultipartUpload(ctx context.Context, in *BaseRequest, op
 	return out, nil
 }
 
-func (c *s3Service) AbortMultipartUpload(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
+func (c *s3Service) AbortMultipartUpload(ctx context.Context, in *AbortMultipartRequest, opts ...client.CallOption) (*BaseResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.AbortMultipartUpload", in)
 	out := new(BaseResponse)
 	err := c.c.Call(ctx, req, out, opts...)
@@ -403,9 +403,9 @@ func (c *s3Service) AbortMultipartUpload(ctx context.Context, in *BaseRequest, o
 	return out, nil
 }
 
-func (c *s3Service) CompleteMultipartUpload(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
+func (c *s3Service) CompleteMultipartUpload(ctx context.Context, in *CompleteMultipartRequest, opts ...client.CallOption) (*CompleteMultipartResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.CompleteMultipartUpload", in)
-	out := new(BaseResponse)
+	out := new(CompleteMultipartResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -413,19 +413,45 @@ func (c *s3Service) CompleteMultipartUpload(ctx context.Context, in *BaseRequest
 	return out, nil
 }
 
-func (c *s3Service) UploadPart(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
-	req := c.c.NewRequest(c.name, "S3.UploadPart", in)
-	out := new(BaseResponse)
-	err := c.c.Call(ctx, req, out, opts...)
+func (c *s3Service) UploadPart(ctx context.Context, opts ...client.CallOption) (S3_UploadPartService, error) {
+	req := c.c.NewRequest(c.name, "S3.UploadPart", &PutDataStream{})
+	stream, err := c.c.Stream(ctx, req, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return &s3ServiceUploadPart{stream}, nil
 }
 
-func (c *s3Service) ListObjectParts(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error) {
+type S3_UploadPartService interface {
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Send(*PutDataStream) error
+}
+
+type s3ServiceUploadPart struct {
+	stream client.Stream
+}
+
+func (x *s3ServiceUploadPart) Close() error {
+	return x.stream.Close()
+}
+
+func (x *s3ServiceUploadPart) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *s3ServiceUploadPart) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *s3ServiceUploadPart) Send(m *PutDataStream) error {
+	return x.stream.Send(m)
+}
+
+func (c *s3Service) ListObjectParts(ctx context.Context, in *ListObjectPartsRequest, opts ...client.CallOption) (*ListObjectPartsResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.ListObjectParts", in)
-	out := new(BaseResponse)
+	out := new(ListObjectPartsResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -476,6 +502,16 @@ func (c *s3Service) DeleteUploadRecord(ctx context.Context, in *MultipartUploadR
 func (c *s3Service) HeadObject(ctx context.Context, in *BaseObjRequest, opts ...client.CallOption) (*Object, error) {
 	req := c.c.NewRequest(c.name, "S3.HeadObject", in)
 	out := new(Object)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) MoveObject(ctx context.Context, in *MoveObjectRequest, opts ...client.CallOption) (*MoveObjectResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.MoveObject", in)
+	out := new(MoveObjectResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -536,16 +572,6 @@ func (c *s3Service) GetBucketLocation(ctx context.Context, in *BaseRequest, opts
 func (c *s3Service) GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, opts ...client.CallOption) (*BucketVersioning, error) {
 	req := c.c.NewRequest(c.name, "S3.GetBucketVersioning", in)
 	out := new(BucketVersioning)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *s3Service) PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, opts ...client.CallOption) (*BaseResponse, error) {
-	req := c.c.NewRequest(c.name, "S3.PutBucketVersioning", in)
-	out := new(BaseResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -667,25 +693,25 @@ type S3Handler interface {
 	GetBucketLifecycle(context.Context, *BaseRequest, *GetBucketLifecycleResponse) error
 	ListBucketLifecycle(context.Context, *BaseRequest, *ListBucketsResponse) error
 	UpdateBucket(context.Context, *Bucket, *BaseResponse) error
-	ListBucketUploadRecords(context.Context, *ListBucketPartsRequest, *ListBucketPartsResponse) error
-	InitMultipartUpload(context.Context, *BaseRequest, *BaseResponse) error
-	AbortMultipartUpload(context.Context, *BaseRequest, *BaseResponse) error
-	CompleteMultipartUpload(context.Context, *BaseRequest, *BaseResponse) error
-	UploadPart(context.Context, *BaseRequest, *BaseResponse) error
-	ListObjectParts(context.Context, *BaseRequest, *BaseResponse) error
+	ListBucketUploadRecords(context.Context, *ListBucketUploadRequest, *ListBucketUploadResponse) error
+	InitMultipartUpload(context.Context, *InitMultiPartRequest, *InitMultiPartResponse) error
+	AbortMultipartUpload(context.Context, *AbortMultipartRequest, *BaseResponse) error
+	CompleteMultipartUpload(context.Context, *CompleteMultipartRequest, *CompleteMultipartResponse) error
+	UploadPart(context.Context, S3_UploadPartStream) error
+	ListObjectParts(context.Context, *ListObjectPartsRequest, *ListObjectPartsResponse) error
 	AppendObject(context.Context, *BaseRequest, *BaseResponse) error
 	PostObject(context.Context, *BaseRequest, *BaseResponse) error
 	// For lifecycle, may need some change.
 	AddUploadRecord(context.Context, *MultipartUploadRecord, *BaseResponse) error
 	DeleteUploadRecord(context.Context, *MultipartUploadRecord, *BaseResponse) error
 	HeadObject(context.Context, *BaseObjRequest, *Object) error
+	MoveObject(context.Context, *MoveObjectRequest, *MoveObjectResponse) error
 	CopyObject(context.Context, *CopyObjectRequest, *CopyObjectResponse) error
 	CopyObjPart(context.Context, *CopyObjPartRequest, *CopyObjPartResponse) error
 	PutObjACL(context.Context, *PutObjACLRequest, *BaseResponse) error
 	GetObjACL(context.Context, *BaseObjRequest, *ObjACL) error
 	GetBucketLocation(context.Context, *BaseRequest, *BaseResponse) error
 	GetBucketVersioning(context.Context, *BaseBucketRequest, *BucketVersioning) error
-	PutBucketVersioning(context.Context, *PutBucketVersioningRequest, *BaseResponse) error
 	PutBucketACL(context.Context, *PutBucketACLRequest, *BaseResponse) error
 	GetBucketACL(context.Context, *BaseBucketRequest, *BucketACL) error
 	PutBucketCORS(context.Context, *BaseRequest, *BaseResponse) error
@@ -720,24 +746,24 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		GetBucketLifecycle(ctx context.Context, in *BaseRequest, out *GetBucketLifecycleResponse) error
 		ListBucketLifecycle(ctx context.Context, in *BaseRequest, out *ListBucketsResponse) error
 		UpdateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
-		ListBucketUploadRecords(ctx context.Context, in *ListBucketPartsRequest, out *ListBucketPartsResponse) error
-		InitMultipartUpload(ctx context.Context, in *BaseRequest, out *BaseResponse) error
-		AbortMultipartUpload(ctx context.Context, in *BaseRequest, out *BaseResponse) error
-		CompleteMultipartUpload(ctx context.Context, in *BaseRequest, out *BaseResponse) error
-		UploadPart(ctx context.Context, in *BaseRequest, out *BaseResponse) error
-		ListObjectParts(ctx context.Context, in *BaseRequest, out *BaseResponse) error
+		ListBucketUploadRecords(ctx context.Context, in *ListBucketUploadRequest, out *ListBucketUploadResponse) error
+		InitMultipartUpload(ctx context.Context, in *InitMultiPartRequest, out *InitMultiPartResponse) error
+		AbortMultipartUpload(ctx context.Context, in *AbortMultipartRequest, out *BaseResponse) error
+		CompleteMultipartUpload(ctx context.Context, in *CompleteMultipartRequest, out *CompleteMultipartResponse) error
+		UploadPart(ctx context.Context, stream server.Stream) error
+		ListObjectParts(ctx context.Context, in *ListObjectPartsRequest, out *ListObjectPartsResponse) error
 		AppendObject(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		PostObject(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		AddUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error
 		DeleteUploadRecord(ctx context.Context, in *MultipartUploadRecord, out *BaseResponse) error
 		HeadObject(ctx context.Context, in *BaseObjRequest, out *Object) error
+		MoveObject(ctx context.Context, in *MoveObjectRequest, out *MoveObjectResponse) error
 		CopyObject(ctx context.Context, in *CopyObjectRequest, out *CopyObjectResponse) error
 		CopyObjPart(ctx context.Context, in *CopyObjPartRequest, out *CopyObjPartResponse) error
 		PutObjACL(ctx context.Context, in *PutObjACLRequest, out *BaseResponse) error
 		GetObjACL(ctx context.Context, in *BaseObjRequest, out *ObjACL) error
 		GetBucketLocation(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, out *BucketVersioning) error
-		PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, out *BaseResponse) error
 		PutBucketACL(ctx context.Context, in *PutBucketACLRequest, out *BaseResponse) error
 		GetBucketACL(ctx context.Context, in *BaseBucketRequest, out *BucketACL) error
 		PutBucketCORS(ctx context.Context, in *BaseRequest, out *BaseResponse) error
@@ -799,7 +825,7 @@ type S3_PutObjectStream interface {
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
-	Recv() (*PutObjectRequest, error)
+	Recv() (*PutDataStream, error)
 }
 
 type s3PutObjectStream struct {
@@ -818,8 +844,8 @@ func (x *s3PutObjectStream) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *s3PutObjectStream) Recv() (*PutObjectRequest, error) {
-	m := new(PutObjectRequest)
+func (x *s3PutObjectStream) Recv() (*PutDataStream, error) {
+	m := new(PutDataStream)
 	if err := x.stream.Recv(m); err != nil {
 		return nil, err
 	}
@@ -905,27 +931,58 @@ func (h *s3Handler) UpdateBucket(ctx context.Context, in *Bucket, out *BaseRespo
 	return h.S3Handler.UpdateBucket(ctx, in, out)
 }
 
-func (h *s3Handler) ListBucketUploadRecords(ctx context.Context, in *ListBucketPartsRequest, out *ListBucketPartsResponse) error {
+func (h *s3Handler) ListBucketUploadRecords(ctx context.Context, in *ListBucketUploadRequest, out *ListBucketUploadResponse) error {
 	return h.S3Handler.ListBucketUploadRecords(ctx, in, out)
 }
 
-func (h *s3Handler) InitMultipartUpload(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
+func (h *s3Handler) InitMultipartUpload(ctx context.Context, in *InitMultiPartRequest, out *InitMultiPartResponse) error {
 	return h.S3Handler.InitMultipartUpload(ctx, in, out)
 }
 
-func (h *s3Handler) AbortMultipartUpload(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
+func (h *s3Handler) AbortMultipartUpload(ctx context.Context, in *AbortMultipartRequest, out *BaseResponse) error {
 	return h.S3Handler.AbortMultipartUpload(ctx, in, out)
 }
 
-func (h *s3Handler) CompleteMultipartUpload(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
+func (h *s3Handler) CompleteMultipartUpload(ctx context.Context, in *CompleteMultipartRequest, out *CompleteMultipartResponse) error {
 	return h.S3Handler.CompleteMultipartUpload(ctx, in, out)
 }
 
-func (h *s3Handler) UploadPart(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
-	return h.S3Handler.UploadPart(ctx, in, out)
+func (h *s3Handler) UploadPart(ctx context.Context, stream server.Stream) error {
+	return h.S3Handler.UploadPart(ctx, &s3UploadPartStream{stream})
 }
 
-func (h *s3Handler) ListObjectParts(ctx context.Context, in *BaseRequest, out *BaseResponse) error {
+type S3_UploadPartStream interface {
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Recv() (*PutDataStream, error)
+}
+
+type s3UploadPartStream struct {
+	stream server.Stream
+}
+
+func (x *s3UploadPartStream) Close() error {
+	return x.stream.Close()
+}
+
+func (x *s3UploadPartStream) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *s3UploadPartStream) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *s3UploadPartStream) Recv() (*PutDataStream, error) {
+	m := new(PutDataStream)
+	if err := x.stream.Recv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (h *s3Handler) ListObjectParts(ctx context.Context, in *ListObjectPartsRequest, out *ListObjectPartsResponse) error {
 	return h.S3Handler.ListObjectParts(ctx, in, out)
 }
 
@@ -947,6 +1004,10 @@ func (h *s3Handler) DeleteUploadRecord(ctx context.Context, in *MultipartUploadR
 
 func (h *s3Handler) HeadObject(ctx context.Context, in *BaseObjRequest, out *Object) error {
 	return h.S3Handler.HeadObject(ctx, in, out)
+}
+
+func (h *s3Handler) MoveObject(ctx context.Context, in *MoveObjectRequest, out *MoveObjectResponse) error {
+	return h.S3Handler.MoveObject(ctx, in, out)
 }
 
 func (h *s3Handler) CopyObject(ctx context.Context, in *CopyObjectRequest, out *CopyObjectResponse) error {
@@ -971,10 +1032,6 @@ func (h *s3Handler) GetBucketLocation(ctx context.Context, in *BaseRequest, out 
 
 func (h *s3Handler) GetBucketVersioning(ctx context.Context, in *BaseBucketRequest, out *BucketVersioning) error {
 	return h.S3Handler.GetBucketVersioning(ctx, in, out)
-}
-
-func (h *s3Handler) PutBucketVersioning(ctx context.Context, in *PutBucketVersioningRequest, out *BaseResponse) error {
-	return h.S3Handler.PutBucketVersioning(ctx, in, out)
 }
 
 func (h *s3Handler) PutBucketACL(ctx context.Context, in *PutBucketACLRequest, out *BaseResponse) error {

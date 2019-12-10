@@ -18,6 +18,7 @@ import (
 
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
 //DB Adapter Interface
@@ -33,18 +34,36 @@ type DBAdapter interface {
 	PutObject(ctx context.Context, object *Object, tx interface{}) error
 	DeleteObject(ctx context.Context, object *Object, tx interface{}) error
 	SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error
+	UpdateObject4Lifecycle(ctx context.Context, old, new *Object, tx interface{}) error
 	UpdateObjectMeta(object *Object) error
+
+	//multipart
+	CreateMultipart(multipart Multipart) (err error)
+	GetMultipart(bucketName, objectName, uploadId string) (multipart Multipart, err error)
+	DeleteMultipart(multipart *Multipart, tx interface{}) (err error)
+	ListMultipartUploads(input *pb.ListBucketUploadRequest) (output *pb.ListBucketUploadResult, err error)
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
 	GetBuckets(ctx context.Context) (buckets []*Bucket, err error)
 	PutBucket(ctx context.Context, bucket *Bucket) error
+	UpdateBucketSSE(ctx context.Context, bucketName string, sseType string) error
+	CreateBucketSSE(ctx context.Context, bucketName string, sseType string) error
 	CheckAndPutBucket(ctx context.Context, bucket *Bucket) (bool, error)
 	DeleteBucket(ctx context.Context, bucket *Bucket) error
 	ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int, filter map[string]string) (
 		retObjects []*Object, appendInfo utils.ListObjsAppendInfo, err error)
 
+	CountObjects(ctx context.Context, bucketName, prefix string) (rsp *utils.ObjsCountInfo, err error)
 	UpdateUsage(ctx context.Context, bucketName string, size int64, tx interface{}) error
 	UpdateUsages(ctx context.Context, usages map[string]int64, tx interface{}) error
 	ListBucketLifecycle(ctx context.Context) (bucket []*Bucket, err error)
+
+	//gc
+	PutGcobjRecord(ctx context.Context, object *Object, tx interface{}) error
+	DeleteGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error)
+	ListGcObjs(ctx context.Context, offset, limit int) ([]*Object, error)
+
+	UpdateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error
+	CreateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error
 }

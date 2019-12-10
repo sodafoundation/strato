@@ -29,9 +29,9 @@ func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.
 	}
 
 	if IsQuery(request, "acl") {
-		//TODO
+		s.BucketAclPut(request, response)
 	} else if IsQuery(request, "versioning") {
-		//TODO
+		s.BucketVersioningPut(request, response)
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {
@@ -42,6 +42,8 @@ func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.
 
 	} else if IsQuery(request, "lifecycle") {
 		s.BucketLifecyclePut(request, response)
+	}  else if IsQuery(request, "DefaultEncryption") {
+		s.BucketSSEPut(request, response)
 	} else {
 		s.BucketPut(request, response)
 	}

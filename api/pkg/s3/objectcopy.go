@@ -71,7 +71,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		return
 	}
 	// If source object is empty, reply back error.
-	if sourceBucketName == "" || sourceObjectName == ""{
+	if sourceBucketName == "" || sourceObjectName == "" {
 		WriteErrorResponse(response, request, ErrInvalidCopySource)
 		return
 	}
@@ -114,7 +114,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 	log.Infoln("sourceBucketName:", sourceBucketName, " sourceObjectName:", sourceObjectName, " sourceVersion:", sourceVersion)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	sourceObject, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName)
+	sourceObject, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName, "")
 	if err != nil {
 		log.Errorln("unable to fetch object info. err:", err)
 		WriteErrorResponse(response, request, err)
@@ -131,10 +131,6 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 	storageClassFromHeader, err := getStorageClassFromHeader(request)
 	if err != nil {
 		WriteErrorResponse(response, request, err)
-		return
-	}
-	if storageClassFromHeader == types.ObjectStorageClassGlacier || storageClassFromHeader == types.ObjectStorageClassDeepArchive {
-		WriteErrorResponse(response, request, ErrInvalidCopySourceStorageClass)
 		return
 	}
 
@@ -193,9 +189,8 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		SrcObjectName:    sourceObjectName,
 		TargetObjectName: targetObjectName,
 	})
-	if err != nil || result.ErrorCode != int32(ErrNoErr) {
-		log.Errorln("unable to copy object from ", sourceObjectName, " to ", targetObjectName, " err:", err)
-		WriteErrorResponse(response, request, GetFinalError(err, result.ErrorCode))
+	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+		log.Errorf("unable to copy object, err=%v, errCode=%v\n", err, result.ErrorCode)
 		return
 	}
 

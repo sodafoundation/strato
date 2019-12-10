@@ -40,22 +40,12 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	var updateTime sql.NullString
 	var row *sql.Row
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
 	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
 		"update_time from buckets where bucketname=?;"
-	if !isAdmin {
-		sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
-			"update_time from buckets where bucketname=? and tenantid=?;"
-		row = t.Client.QueryRow(sqltext, bucketName, tenantId)
-	} else {
-		row = t.Client.QueryRow(sqltext, bucketName)
-	}
+	row = t.Client.QueryRow(sqltext, bucketName)
 
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
+	tmp.Versioning = &pb.BucketVersioning{}
 	err = row.Scan(
 		&tmp.Name,
 		&tmp.TenantId,
@@ -66,7 +56,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		&cors,
 		&lc,
 		&policy,
-		&tmp.Versioning,
+		&tmp.Versioning.Status,
 		&replication,
 		&updateTime,
 	)
@@ -110,15 +100,35 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		err = handleDBError(err)
 		return
 	}
+	//get versioning for the bucket
+	versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
+	if versionErr != nil {
+		log.Error("error in getting versioning information, err:%v\n", versionErr)
+		err = handleDBError(versionErr)
+		return
+	}
+	tmp.Versioning = &pb.BucketVersioning{}
+	if versionOpts != nil {
+		tmp.Versioning.Status = versionOpts.Status
+	}
+
+	// get SSE info for this bucket
+	sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
+	if sseErr != nil {
+		return
+	}
+	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
+	tmp.ServerSideEncryption.SseType = sseOpts.SseType
 
 	bucket = tmp
 	return
 }
 
+// For the request that list buckets, better to filter according to tenant.
 func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err error) {
 	log.Info("list buckets from tidb ...")
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -146,6 +156,8 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 
 	for rows.Next() {
 		tmp := Bucket{Bucket: &pb.Bucket{}}
+		bucketVer := pb.BucketVersioning{}
+		tmp.Versioning = &bucketVer
 		var acl, cors, lc, policy, createTime, replication string
 		var updateTime sql.NullString
 		err = rows.Scan(
@@ -160,13 +172,38 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			&cors,
 			&lc,
 			&policy,
-			&tmp.Versioning,
+			&tmp.Versioning.Status,
 			&replication,
 			&updateTime)
 		if err != nil {
 			err = handleDBError(err)
 			return
 		}
+
+		//get versioning for the bucket
+		versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
+		if versionErr != nil {
+			log.Error("error in getting versioning information, err:%v\n", versionErr)
+			err = handleDBError(versionErr)
+			return
+		}
+		tmp.Versioning = &pb.BucketVersioning{}
+		if versionOpts != nil {
+			tmp.Versioning.Status = versionOpts.Status
+		}
+
+		// get SSE info for this bucket
+		sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
+		if sseErr != nil {
+			return
+		}
+		sseType := "NONE"
+		if sseOpts != nil{
+			sseType = sseOpts.SseType
+		}
+		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
+		tmp.ServerSideEncryption.SseType = sseType
+
 		var ctime time.Time
 		ctime, err = time.ParseInLocation(TIME_LAYOUT_TIDB, createTime, time.Local)
 		if err != nil {
@@ -212,7 +249,7 @@ func (t *TidbClient) PutBucket(ctx context.Context, bucket *Bucket) error {
 	lc, _ := json.Marshal(bucket.LifecycleConfiguration)
 	bucket_policy, _ := json.Marshal(bucket.BucketPolicy)
 	sql := "update buckets set bucketname=?,acl=?,policy=?,cors=?,lc=?,tenantid=?,versioning=? where bucketname=?"
-	args := []interface{}{bucket.Name, acl, bucket_policy, cors, lc, bucket.TenantId, bucket.Versioning, bucket.Name}
+	args := []interface{}{bucket.Name, acl, bucket_policy, cors, lc, bucket.TenantId, bucket.Versioning.Status, bucket.Name}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {
@@ -239,6 +276,7 @@ func (t *TidbClient) CheckAndPutBucket(ctx context.Context, bucket *Bucket) (boo
 	_, err = t.Client.Exec(sql, args...)
 	if err != nil {
 		err = handleDBError(err)
+
 	}
 	return processed, err
 }
@@ -534,4 +572,133 @@ func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket
 	}
 
 	return
+}
+
+func (t *TidbClient) UpdateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error {
+	log.Infof("put bucket[%s] Version info[%s] into tidb ...\n", bucketName, versionStatus)
+
+	sql := "update bucket_versionopts set versionstatus=? where bucketname=?"
+	args := []interface{}{versionStatus, bucketName}
+
+	_, err := t.Client.Exec(sql, args...)
+	if err != nil {
+		log.Error("error in updating versioning information, err:%v\n", err)
+		return handleDBError(err)
+	}
+
+	return nil
+}
+
+func (t *TidbClient) CreateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error {
+	log.Infof("create bucket[%s] Version info[%s] into tidb ...\n", bucketName, versionStatus)
+
+	sql := "insert into bucket_versionopts(bucketname, versionstatus) values(?,?);"
+	args := []interface{}{bucketName, versionStatus}
+
+	_, err := t.Client.Exec(sql, args...)
+	if err != nil {
+		log.Error("error in creating versioning information, err:%v\n", err)
+		return handleDBError(err)
+	}
+
+	return nil
+}
+
+func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string) (versionOptsPtr *pb.BucketVersioning, err error) {
+	log.Info("list bucket Versions info from tidb ...")
+	/*m := bson.M{}
+	err = UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, ErrInternalError
+	}*/
+
+	var rows *sql.Rows
+	sqltext := "select versionstatus from bucket_versionopts where bucketname=?;"
+
+	rows, err = t.Client.Query(sqltext, bucketName)
+
+	if err == sql.ErrNoRows {
+		err = nil
+		return
+	} else if err != nil {
+		log.Error("error in getting bucket versioning configuration, err:%v\n", err)
+		err = handleDBError(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		tmp := &pb.BucketVersioning{}
+		err = rows.Scan(
+			&tmp.Status)
+		if err != nil {
+			err = handleDBError(err)
+			return
+		}
+		return tmp, nil
+	}
+	return
+}
+
+func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string) error {
+	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
+
+	sql := "insert into bucket_sseopts(bucketname, sse) values(?,?);"
+	args := []interface{}{bucketName, sseType}
+
+	_, err := t.Client.Exec(sql, args...)
+	if err != nil {
+		return handleDBError(err)
+	}
+
+	return nil
+}
+
+func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOptsPtr *pb.ServerSideEncryption, err error) {
+	log.Info("list bucket SSE info from tidb ...")
+
+	var rows *sql.Rows
+	sqltext := "select sse from bucket_sseopts where bucketname=?;"
+
+	rows, err = t.Client.Query(sqltext, bucketName)
+
+	if err == sql.ErrNoRows {
+		err = nil
+		return
+	} else if err != nil {
+		err = handleDBError(err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		tmp := &pb.ServerSideEncryption{}
+		err = rows.Scan(
+			&tmp.SseType)
+		if err != nil {
+			err = handleDBError(err)
+			return
+		}
+		rErr := rows.Err()
+		if rErr != nil {
+			rErr = handleDBError(rErr)
+			return
+		}
+		return tmp, nil
+	}
+	return
+}
+
+func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string) error {
+	log.Infof("put bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
+
+	sql := "update bucket_sseopts set sse=? where bucketname=?"
+	args := []interface{}{sseType, bucketName}
+
+	_, err := t.Client.Exec(sql, args...)
+	if err != nil {
+		return handleDBError(err)
+	}
+
+	return nil
 }

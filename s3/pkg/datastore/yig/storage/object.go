@@ -12,6 +12,7 @@ import (
 
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -127,6 +128,22 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 		userMd5 = val.(string)
 	}
 
+	// check and remove the old object if exists.
+	if obj.StorageMeta != "" && obj.ObjectId != "" {
+		storageMeta, err := ParseObjectMeta(obj.StorageMeta)
+		if err != nil {
+			log.Errorf("Put(%s, %s, %s) failed, failed to parse storage meta(%s), err: %v", obj.BucketName,
+				obj.ObjectKey, obj.ObjectId, obj.StorageMeta, err)
+			return result, err
+		}
+		err = yig.putObjToGc(storageMeta.Cluster, storageMeta.Pool, obj.ObjectId)
+		if err != nil {
+			log.Errorf("Put(%s, %s, %s) failed, failed to put old obj(%s) to gc, err: %v", obj.BucketName,
+				obj.ObjectKey, obj.ObjectId, obj.ObjectId, err)
+			return result, err
+		}
+	}
+
 	md5Writer := md5.New()
 
 	// Limit the reader to its provided size if specified.
@@ -163,15 +180,18 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 		log.Errorf("failed to put(%s, %s), err: %v", poolName, oid, err)
 		return
 	}
-	// Should metadata update failed, add `maybeObjectToRecycle` to `RecycleQueue`,
+	// Should metadata update failed, put the oid to gc,
 	// so the object in Ceph could be removed asynchronously
-	maybeObjectToRecycle := objectToRecycle{
-		location: cephCluster.Name,
-		pool:     poolName,
-		objectId: oid,
-	}
+	shouldGc := false
+	defer func() {
+		if shouldGc {
+			if err := yig.putObjToGc(cephCluster.Name, poolName, oid); err != nil {
+				log.Errorf("failed to put (%s, %s, %s) to gc, err: %v", cephCluster.Name, poolName, oid, err)
+			}
+		}
+	}()
 	if bytesWritten < size {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		log.Errorf("failed to write objects, already written(%d), total size(%d)", bytesWritten, size)
 		return result, ErrIncompleteBody
 	}
@@ -179,12 +199,12 @@ func (yig *YigStorage) Put(ctx context.Context, stream io.Reader, obj *pb.Object
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	log.Info("### calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 	if userMd5 != "" && userMd5 != calculatedMd5 {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return result, ErrBadDigest
 	}
 
 	if err != nil {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return
 	}
 
@@ -209,9 +229,7 @@ func (yig *YigStorage) Get(ctx context.Context, object *pb.Object, start int64, 
 		return reader, nil
 	}
 	// get the cluster name and pool name from meta data of object
-	objMeta := ObjectMetaInfo{}
-
-	err := json.Unmarshal([]byte(object.StorageMeta), &objMeta)
+	objMeta, err := ParseObjectMeta(object.StorageMeta)
 	if err != nil {
 		log.Errorf("failed to unmarshal storage meta (%s) for (%s, %s), err: %v", object.StorageMeta, object.BucketName, object.ObjectKey, err)
 		return nil, ErrUnmarshalFailed
@@ -233,7 +251,63 @@ func (yig *YigStorage) Get(ctx context.Context, object *pb.Object, start int64, 
 	return reader, nil
 }
 
+/*
+* @objectId: input object id which will be deleted.
+* Below is the process logic:
+* 1. check whether objectId is multipart uploaded, if so
+* retrieve all the object ids from multiparts and put them into gc.
+* or else, put it into gc.
+*
+ */
 func (yig *YigStorage) Delete(ctx context.Context, object *pb.DeleteObjectInput) error {
+	// For multipart uploaded objects, no storage metas are returned to caller,
+	// so, when delete these objects, the meta will be empty.
+	// we need to perform check for multipart uploaded objects.
+	if object.StorageMeta == "" {
+		uploadId, err := str2UploadId(object.ObjectId)
+		if err != nil {
+			log.Errorf("Delete(%s, %s, %s) failed, failed to parse uploadId(%s), err: %v", object.Bucket,
+				object.Key, object.ObjectId, object.ObjectId, err)
+			return err
+		}
+		parts, err := yig.MetaStorage.ListParts(uploadId)
+		if err != nil {
+			log.Errorf("Delete(%s, %s, %s) failed, cannot listParts(%d), err: %v", object.Bucket,
+				object.Key, object.ObjectId, uploadId, err)
+			return err
+		}
+		err = yig.MetaStorage.PutPartsInGc(parts)
+		if err != nil {
+			log.Errorf("Delete(%s, %s, %s) failed, failed to put parts in gc, err: %v", object.Bucket,
+				object.Key, object.ObjectId, err)
+			return err
+		}
+
+		return nil
+	}
+
+	// put the normal object into gc.
+	objMeta, err := ParseObjectMeta(object.StorageMeta)
+	if err != nil {
+		log.Errorf("Delete(%s, %s, %s) failed, cannot parse meta(%s), err: %v", object.Bucket,
+			object.Key, object.ObjectId, object.StorageMeta, err)
+		return err
+	}
+	gcObj := &types.GcObject{
+		Location: objMeta.Cluster,
+		Pool:     objMeta.Pool,
+		ObjectId: object.ObjectId,
+	}
+	err = yig.MetaStorage.PutGcObjects(gcObj)
+	if err != nil {
+		log.Errorf("Delete(%s, %s, %s) failed, failed to put gc object, err: %v", object.Bucket,
+			object.Key, object.ObjectId, err)
+		return err
+	}
+	return nil
+}
+
+func (yig *YigStorage) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	return errors.New("not implemented.")
 }
 
@@ -267,21 +341,25 @@ func (yig *YigStorage) Copy(ctx context.Context, stream io.Reader, target *pb.Ob
 		log.Errorf("failed to write oid[%s] for obj[%s] in bucket[%s] with err: %v", oid, target.ObjectKey, target.BucketName, err)
 		return result, err
 	}
-	// Should metadata update failed, add `maybeObjectToRecycle` to `RecycleQueue`,
+	// Should metadata update failed, put the object to gc,
 	// so the object in Ceph could be removed asynchronously
-	maybeObjectToRecycle := objectToRecycle{
-		location: cephCluster.Name,
-		pool:     poolName,
-		objectId: oid,
-	}
+	shouldGc := false
+	defer func() {
+		if shouldGc {
+			if err := yig.putObjToGc(cephCluster.Name, poolName, oid); err != nil {
+				log.Errorf("failed to put(%s, %s, %s) to gc, err: %v", cephCluster.Name, poolName, oid, err)
+			}
+		}
+	}()
+
 	if bytesWritten < target.Size {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return result, ErrIncompleteBody
 	}
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	if calculatedMd5 != target.Etag {
-		RecycleQueue <- maybeObjectToRecycle
+		shouldGc = true
 		return result, ErrBadDigest
 	}
 
@@ -294,4 +372,30 @@ func (yig *YigStorage) Copy(ctx context.Context, stream io.Reader, target *pb.Ob
 
 	log.Debugf("succeeded to copy object[%s] in bucket[%s] with oid[%s]", target.ObjectKey, target.BucketName, oid)
 	return result, nil
+}
+
+func (yig *YigStorage) putObjToGc(location, pool, objectId string) error {
+	gcObj := &types.GcObject{
+		Location: location,
+		Pool:     pool,
+		ObjectId: objectId,
+	}
+	err := yig.MetaStorage.PutGcObjects(gcObj)
+	if err != nil {
+		log.Errorf("Delete(%s, %s, %s) failed, failed to put gc object, err: %v", location,
+			pool, objectId, err)
+		return err
+	}
+	return nil
+}
+
+func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {
+	objMeta := ObjectMetaInfo{}
+
+	err := json.Unmarshal([]byte(meta), &objMeta)
+	if err != nil {
+		return objMeta, err
+	}
+
+	return objMeta, nil
 }

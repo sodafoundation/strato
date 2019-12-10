@@ -43,7 +43,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 			" from objects where bucketname=? and name=? and version=?;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName, version)
 	}
-	log.Infof("sqltext:%s, version:%s\n", sqltext, version)
+	log.Infof("sqltext:%s, bucketName=%s, objectName=%s, version:%s\n", sqltext, bucketName, objectName, version)
 	object = &Object{Object: &pb.Object{ServerSideEncryption: &pb.ServerSideEncryption{}}}
 	err = row.Scan(
 		&ibucketname,
@@ -136,10 +136,7 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 	}
 	sqlTx, _ = tx.(*sql.Tx)
 
-	vidByte, _ := hex.DecodeString(object.VersionId)
-	decrByte := xxtea.Decrypt(vidByte, XXTEA_KEY)
-	reVersion, _ := strconv.ParseUint(string(decrByte), 10, 64)
-	version := math.MaxUint64 - reVersion
+	version := VersionStr2UInt64(object.VersionId)
 	log.Infof("delete from objects where name=%s and bucketname=%s and version=%d;\n",
 		object.ObjectKey, object.BucketName, version)
 
@@ -148,19 +145,12 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 	if err != nil {
 		return err
 	}
-	sqltext = "delete from objectpart where objectname=? and bucketname=? and version=?;"
-	_, err = sqlTx.Exec(sqltext, object.ObjectKey, object.BucketName, version)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
 func (t *TidbClient) SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error {
-	vidByte, _ := hex.DecodeString(object.VersionId)
-	decrByte := xxtea.Decrypt(vidByte, XXTEA_KEY)
-	reVersion, _ := strconv.ParseUint(string(decrByte), 10, 64)
-	version := math.MaxUint64 - reVersion
+	version := VersionStr2UInt64(object.VersionId)
 
 	sqltext := "update objects set deletemarker=? where bucketname=? and name=? and version=?;"
 	_, err := t.Client.Exec(sqltext, deleteMarker, object.BucketName, object.ObjectKey, version)
@@ -169,4 +159,31 @@ func (t *TidbClient) SetObjectDeleteMarker(ctx context.Context, object *Object, 
 	}
 
 	return nil
+}
+
+func (t *TidbClient) UpdateObject4Lifecycle(ctx context.Context, old, new *Object, tx interface{}) (err error) {
+	var sqlTx *sql.Tx
+	if tx == nil {
+		tx, err = t.Client.Begin()
+		defer func() {
+			if err == nil {
+				err = sqlTx.Commit()
+			}
+			if err != nil {
+				sqlTx.Rollback()
+			}
+		}()
+	}
+	sqlTx, _ = tx.(*sql.Tx)
+
+	oldversion := VersionStr2UInt64(old.VersionId)
+
+	sqltext := "update objects set location=?,objectid=?,tier=?,storageMeta=? where bucketname=? and name=? and version=?"
+	args := []interface{}{new.Location, new.ObjectId, new.Tier, new.StorageMeta, old.BucketName, old.ObjectKey, oldversion}
+
+	log.Debugf("sqltext:%s, args:%+v\n", sqltext, args)
+	_, err = sqlTx.Exec(sqltext, args...)
+
+	log.Debugf("err:%v\n", err)
+	return err
 }

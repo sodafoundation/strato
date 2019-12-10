@@ -73,20 +73,36 @@ func ReadBody(r *restful.Request) []byte {
 	return b
 }
 
-func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) *s3.Bucket {
+func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.Bucket, error) {
 	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
-		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
-		return nil
+	// according to gRPC framework work mechanism, if gRPC return error, then no response package can be received by
+	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
+	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
+	if err == nil {
+		if rsp.ErrorCode != int32(ErrNoErr) {
+			err = S3ErrorCode(rsp.ErrorCode)
+		}
+	}
+	if err != nil {
+		log.Infof("get bucket meta data[bucket=%s] failed, err=%v\n", bucketName, err)
+		return nil, err
 	}
 
-	return rsp.BucketMeta
+	return rsp.BucketMeta, nil
 }
 
-func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName string) (*s3.Object, error) {
-	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.Object{BucketName: bucketName, ObjectKey: objectName})
-	if err != nil || rsp.ErrorCode != int32(ErrNoErr) {
-		log.Infof("get bucket[name=%s] failed, err=%v, rsp.ErrorCode=%d\n", bucketName, err, rsp.ErrorCode)
+func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, versiongId string) (*s3.Object, error) {
+	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.Object{BucketName: bucketName, ObjectKey: objectName, VersionId: versiongId})
+	// according to gRPC framework work mechanism, if gRPC return error, then no response package can be received by
+	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
+	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
+	if err == nil {
+		if rsp.ErrorCode != int32(ErrNoErr) {
+			err = S3ErrorCode(rsp.ErrorCode)
+		}
+	}
+	if err != nil {
+		log.Infof("get object meta data[bucket=%s,key=%s] failed, err=%v\n", bucketName, objectName, err)
 		return nil, err
 	}
 

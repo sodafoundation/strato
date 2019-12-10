@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"io"
 	"strconv"
 	"strings"
@@ -96,9 +97,10 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	// check if specific bucket exist
 	ctx := common.InitCtxWithAuthInfo(request)
-	bucketMeta := s.getBucketMeta(ctx, bucketName)
-	if bucketMeta == nil {
-		WriteErrorResponse(response, request, s3error.ErrGetBucketFailed)
+	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorln("failed to get bucket meta. err:", err)
+		WriteErrorResponse(response, request, err)
 		return
 	}
 	//log.Logf("bucket, acl:%f", bucketMeta.Acl.CannedAcl)
@@ -123,19 +125,21 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	eof := false
 	stream, err := s.s3Client.PutObject(ctx)
 	defer stream.Close()
-	obj := pb.Object{
+	obj := pb.PutObjectRequest{
 		BucketName: bucketName,
-		ObjectKey: objectKey,
-		Acl: &pb.Acl{CannedAcl: acl.CannedAcl},
-		CustomAttributes:metadata,
-		Location: location,
-		Size: size,
+		ObjectKey:  objectKey,
+		Acl:        &pb.Acl{CannedAcl: acl.CannedAcl},
+		Attrs:      metadata,
+		Location:   location,
+		Size:       size,
 	}
 	err = stream.SendMsg(&obj)
 	if err != nil {
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
+	// encrypt
+	key, _ := utils.GetRandom32BitKey()
 	for !eof {
 		n, err := limitedDataReader.Read(buf)
 		if err != nil && err != io.EOF {
@@ -146,7 +150,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 			log.Debugln("finished read")
 			eof = true
 		}
-		err = stream.Send(&s3.PutObjectRequest{Data: buf[:n]})
+		// encrypt if needed
+		if bucketMeta.ServerSideEncryption.SseType == "SSE"{
+			_, encbuf := utils.EncryptWithAES256RandomKey(buf, key)
+			err = stream.Send(&s3.PutDataStream{Data: encbuf[:n]})
+		}else{
+			err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
+		}
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break
@@ -194,4 +204,3 @@ func getSize(request *restful.Request, response *restful.Response) (int64, error
 
 	return size, nil
 }
-
