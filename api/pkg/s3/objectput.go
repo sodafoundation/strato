@@ -124,13 +124,13 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	eof := false
 	stream, err := s.s3Client.PutObject(ctx)
 	defer stream.Close()
-	obj := pb.Object{
-		BucketName:       bucketName,
-		ObjectKey:        objectKey,
-		Acl:              &pb.Acl{CannedAcl: acl.CannedAcl},
-		CustomAttributes: metadata,
-		Location:         location,
-		Size:             size,
+	obj := pb.PutObjectRequest{
+		BucketName: bucketName,
+		ObjectKey:  objectKey,
+		Acl:        &pb.Acl{CannedAcl: acl.CannedAcl},
+		Attrs:      metadata,
+		Location:   location,
+		Size:       size,
 	}
 	err = stream.SendMsg(&obj)
 	if err != nil {
