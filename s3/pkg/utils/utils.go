@@ -109,6 +109,10 @@ const (
 	MoveType_ChangeStorageTier
 )
 
+const (
+	RequestType_Lifecycle = "lifecycle"
+)
+
 func Md5Content(data []byte) string {
 	md5Ctx := md5.New()
 	md5Ctx.Write(data)

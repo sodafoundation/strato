@@ -198,7 +198,7 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			return
 		}
 		sseType := "NONE"
-		if sseOpts != nil{
+		if sseOpts != nil {
 			sseType = sseOpts.SseType
 		}
 		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
@@ -447,17 +447,28 @@ func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string
 	var sqltext string
 	rsp := utils.ObjsCountInfo{}
 	var err error
+	var sizeStr sql.NullString
 	if prefix == "" {
 		sqltext = "select count(*),sum(size) from objects where bucketname=?;"
-		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &rsp.Size)
+		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &sizeStr)
 	} else {
 		filt := prefix + "%"
 		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ?;"
-		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &rsp.Size)
+		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &sizeStr)
 	}
 
 	if err != nil {
 		log.Errorf("db error:%v\n", err)
+		return nil, err
+	}
+
+	if sizeStr.Valid {
+		size, err := strconv.ParseInt(sizeStr.String, 10, 64)
+		if err != nil {
+			log.Errorf("error:%v\n", err)
+		} else {
+			rsp.Size = size
+		}
 	}
 
 	return &rsp, err

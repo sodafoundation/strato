@@ -199,30 +199,22 @@ func (ad *CephAdapter) UploadPart(ctx context.Context, stream io.Reader, multipa
 
 	cephObject := bucket.NewObject(ad.backend.BucketName)
 	uploader := cephObject.NewUploads(multipartUpload.ObjectId)
-	tries := 1
-	for tries <= 3 {
-		d, err := ioutil.ReadAll(stream)
-		data := []byte(d)
-		body := ioutil.NopCloser(bytes.NewReader(data))
-		contentMD5 := utils.Md5Content(data)
-		//length := int64(len(data))
-		part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 
-		if err != nil {
-			if tries == 3 {
-				log.Infof("upload part[Ceph S3] failed, err:%v\n", err)
-				return nil, ErrPutToBackendFailed
-			}
-			log.Infof("retrying to upload[Ceph S3] part#%d ,err:%s\n", partNumber, err)
-			tries++
-		} else {
-			log.Infof("uploaded part[Ceph S3] #%d successfully, ETag:%s\n", partNumber, part.Etag)
-			result := &model.UploadPartResult{
-				Xmlns:      model.Xmlns,
-				ETag:       part.Etag,
-				PartNumber: partNumber}
-			return result, nil
-		}
+	d, err := ioutil.ReadAll(stream)
+	data := []byte(d)
+	body := ioutil.NopCloser(bytes.NewReader(data))
+	contentMD5 := utils.Md5Content(data)
+	part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
+	if err != nil {
+		log.Errorf("upload part[Ceph S3] failed, err:%v\n", err)
+		return nil, ErrPutToBackendFailed
+	} else {
+		log.Infof("uploaded part[Ceph S3] #%d successfully, ETag:%s\n", partNumber, part.Etag)
+		result := &model.UploadPartResult{
+			Xmlns:      model.Xmlns,
+			ETag:       part.Etag,
+			PartNumber: partNumber}
+		return result, nil
 	}
 
 	log.Error("upload part[Ceph S3]: should not be here.")
@@ -256,6 +248,14 @@ func (ad *CephAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpl
 		Key:      multipartUpload.Key,
 		ETag:     resp.Etag,
 	}
+
+	// get size
+	out, err := cephObject.GetHeader(multipartUpload.ObjectId, nil)
+	if err != nil {
+		log.Errorf("head object[Ceph S3] failed, err:%v\n", err)
+		return nil, ErrBackendCompleteMultipartFailed
+	}
+	result.Size = out.ContentLength
 
 	log.Infof("complete multipart upload[Ceph S3] succeed, objectId:%s, resp:%v\n", multipartUpload.ObjectId, resp)
 	return result, nil

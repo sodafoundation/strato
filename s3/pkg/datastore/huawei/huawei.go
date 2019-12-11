@@ -75,7 +75,7 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	out, err := ad.client.PutObject(input)
 	log.Infof("upload object[OBS] end, objectId:%s\n", objectId)
 	if err != nil {
-		log.Infof("upload object[OBS] failed, objectId:%s, err:%v", objectId, err)
+		log.Errorf("upload object[OBS] failed, objectId:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 
@@ -106,6 +106,7 @@ func (ad *OBSAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		input.RangeStart = start
 		input.RangeEnd = end
 	}
+	log.Debugf("get object[OBS], start:%d, end:%d\n", start, end)
 
 	out, err := ad.client.GetObject(input)
 	if err != nil {
@@ -113,7 +114,7 @@ func (ad *OBSAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		return nil, ErrGetFromBackendFailed
 	}
 
-	log.Infof("get object[OBS] suceed, objectId:%s\n", objectId)
+	log.Infof("get object[OBS] succeed, objectId:%s\n", objectId)
 	return out.Body, nil
 }
 
@@ -178,7 +179,13 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	input := &obs.InitiateMultipartUploadInput{}
 	input.Bucket = bucket
 	input.Key = objectId
-	input.StorageClass = obs.StorageClassStandard // Currently, only support standard.
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_OBS)
+	if err != nil {
+		log.Errorf("translate tier[%d] to aws storage class failed\n", object.Tier)
+		return nil, ErrInternalError
+	}
+	input.StorageClass = obs.StorageClassType(storClass)
+
 	out, err := ad.client.InitiateMultipartUpload(input)
 	if err != nil {
 		log.Infof("init multipart upload[OBS] failed, objectId:%s, err:%v", objectId, err)
@@ -237,6 +244,10 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 		input.Parts = append(input.Parts, part)
 	}
 	resp, err := ad.client.CompleteMultipartUpload(input)
+	if err != nil {
+		log.Errorf("complete multipart upload[OBS] failed, objectid:%s, err:%v\n", objectId, err)
+		return nil, ErrBackendCompleteMultipartFailed
+	}
 	result := &model.CompleteMultipartUploadResult{
 		Xmlns:    model.Xmlns,
 		Location: resp.Location,
@@ -244,10 +255,19 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 		Key:      resp.Key,
 		ETag:     resp.ETag,
 	}
+
+	// get size
+	out, err := ad.client.GetObjectMetadata(&obs.GetObjectMetadataInput{
+		Bucket:    bucket,
+		Key:       objectId,
+		VersionId: resp.VersionId,
+	})
+	log.Debugf("out.ETag:%s\n", out.ETag)
 	if err != nil {
-		log.Infof("complete multipart upload[OBS] failed, objectid:%s, err:%v", objectId, err)
+		log.Infof("get obejct metadata[OBS] failed, objectid:%s, err:%v", objectId, err)
 		return nil, ErrBackendCompleteMultipartFailed
 	}
+	result.Size = out.ContentLength
 
 	log.Infof("complete multipart upload[OBS] succeed, objectId:%s\n", objectId)
 	return result, nil

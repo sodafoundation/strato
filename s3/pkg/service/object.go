@@ -179,7 +179,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName:req.BucketName, ObjectKey:req.ObjectKey})
+	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey})
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -218,7 +218,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
 		// delete object that have been written
-		delObj = &pb.DeleteObjectInput{ObjectId:obj.ObjectId, StorageMeta:obj.StorageMeta}
+		delObj = &pb.DeleteObjectInput{ObjectId: obj.ObjectId, StorageMeta: obj.StorageMeta}
 		return ErrDBError
 	}
 
@@ -259,7 +259,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	}
 
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
+	if err != nil {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
 		return nil
@@ -484,7 +484,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return err
 	}
 
-	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
+	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -497,7 +497,6 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		Size:       srcObject.Size,
 	}
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, srcObject.Size)
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, srcObject.Etag)
 	res, err := targetSd.Put(ctx, limitedDataReader, targetObject)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
@@ -520,6 +519,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
+	// this is the default acl setting
+	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	// TODO: delete old object
@@ -934,14 +935,18 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	objects := make([]*pb.Object, 0, len(retObjects))
 	for _, obj := range retObjects {
 		object := pb.Object{
-			LastModified: obj.LastModified,
-			Etag:         obj.Etag,
-			Size:         obj.Size,
-			Tier:         obj.Tier,
-			Location:     obj.Location,
-			TenantId:     obj.TenantId,
-			BucketName:   obj.BucketName,
-			VersionId:    obj.VersionId,
+			LastModified:     obj.LastModified,
+			Etag:             obj.Etag,
+			Size:             obj.Size,
+			Tier:             obj.Tier,
+			Location:         obj.Location,
+			TenantId:         obj.TenantId,
+			BucketName:       obj.BucketName,
+			VersionId:        obj.VersionId,
+			Acl:              obj.Acl,
+			CustomAttributes: obj.CustomAttributes,
+			ContentType:      obj.ContentType,
+			StorageMeta:      obj.StorageMeta,
 		}
 		if in.EncodingType != "" { // only support "url" encoding for now
 			object.ObjectKey = url.QueryEscape(obj.ObjectKey)

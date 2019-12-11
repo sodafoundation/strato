@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"github.com/xxtea/xxtea-go/xxtea"
 )
 
@@ -26,18 +27,18 @@ type Part struct {
 }
 
 type MultipartMetadata struct {
-	InitiatorId   string              //TenantId
+	InitiatorId   string //TenantId
 	TenantId      string
 	UserId        string
 	ContentType   string
 	Location      string
 	Pool          string
-	Acl           datatype.Acl
+	Acl           s3.Acl
 	SseRequest    datatype.SseRequest
 	EncryptionKey []byte
 	CipherKey     []byte
 	Attrs         map[string]string
-	StorageClass  StorageClass
+	Tier          int32
 }
 
 type Multipart struct {
@@ -91,4 +92,3 @@ func valuesForParts(parts map[int]*Part) (values map[string][]byte, err error) {
 	}
 	return
 }
-
