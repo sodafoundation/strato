@@ -55,7 +55,8 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 				sseOpts.SSE.Enabled = "false"
 			}
 		}
-		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation, VersionOpts:versionOpts, SSEOpts: sseOpts}
+		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation,
+			VersionOpts: versionOpts, SSEOpts: sseOpts}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
