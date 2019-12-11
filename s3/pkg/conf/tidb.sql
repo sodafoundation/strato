@@ -124,6 +124,25 @@ CREATE TABLE IF NOT EXISTS `multiparts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `objectparts`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `objectparts` (
+  `bucketname` varchar(255) DEFAULT NULL,
+  `objectname` varchar(255) DEFAULT NULL,
+  `uploadid` varchar(255) DEFAULT NULL,
+  `partnumber` int(11) DEFAULT NULL,
+  `size` bigint(20) DEFAULT NULL,
+  `objectid` varchar(255) DEFAULT NULL,
+  `offset` bigint(20) DEFAULT NULL,
+  `etag` varchar(255) DEFAULT NULL,
+  `lastmodified` datetime DEFAULT NULL,
+   KEY `rowkey` (`bucketname`,`objectname`,`uploadid`,`partnumber`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+--
 -- Table structure for table `objects`
 --
 
