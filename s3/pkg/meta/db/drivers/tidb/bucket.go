@@ -117,12 +117,12 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	if sseErr != nil {
 		return
 	}
-	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-	if sseOpts != nil {
-		tmp.ServerSideEncryption.SseType = sseOpts.SseType
-	} else {
-		tmp.ServerSideEncryption.SseType = "NONE"
+	sseType := "NONE"
+	if sseOpts != nil{
+		sseType = sseOpts.SseType
 	}
+	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
+	tmp.ServerSideEncryption.SseType = sseType
 
 	bucket = tmp
 	return
@@ -132,7 +132,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err error) {
 	log.Info("list buckets from tidb ...")
 
-	isAdmin, tenantId, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -201,12 +201,12 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 		if sseErr != nil {
 			return
 		}
-		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
-		if sseOpts != nil {
-			tmp.ServerSideEncryption.SseType = sseOpts.SseType
-		} else {
-			tmp.ServerSideEncryption.SseType = "NONE"
+		sseType := "NONE"
+		if sseOpts != nil{
+			sseType = sseOpts.SseType
 		}
+		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
+		tmp.ServerSideEncryption.SseType = sseType
 
 		var ctime time.Time
 		ctime, err = time.ParseInLocation(TIME_LAYOUT_TIDB, createTime, time.Local)
@@ -314,7 +314,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		var rows *sql.Rows
 		args := make([]interface{}, 0)
 		// only select index column here to avoid slow query
-		sqltext = "select bucketname,name,version from objects where bucketName=? and deletemarker=0 and version in (select max(version) from yig.objects group by name)"
+		sqltext = "select bucketname,name,version from objects where bucketName=? and deletemarker=0"
 		args = append(args, bucketName)
 		var inargs []interface{}
 		sqltext, inargs, err = buildSql(ctx, filter, sqltext)
@@ -452,11 +452,11 @@ func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string
 	rsp := utils.ObjsCountInfo{}
 	var err error
 	if prefix == "" {
-		sqltext = "select count(*),sum(size) from objects where bucketname=? and version in (select max(version) from yig.objects group by name);"
+		sqltext = "select count(*),sum(size) from objects where bucketname=?;"
 		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &rsp.Size)
 	} else {
 		filt := prefix + "%"
-		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ? and version in (select max(version) from yig.objects group by name);"
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ?;"
 		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &rsp.Size)
 	}
 
