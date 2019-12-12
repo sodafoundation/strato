@@ -22,7 +22,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-log"
+	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
@@ -66,7 +66,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	// if context is admin, no need filter by tenantId.
 	md, ok := metadata.FromContext(ctx)
 	if !ok {
-		log.Log("get context failed")
+		log.Error("get context failed")
 		return errors.New("get context failed")
 	}
 
@@ -74,7 +74,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	if isAdmin != common.CTX_VAL_TRUE {
 		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
 		if !ok {
-			log.Log("get tenantid failed")
+			log.Error("get tenantid failed")
 			return errors.New("get tenantid failed")
 		}
 		m["tenantId"] = tenantId
@@ -167,7 +167,7 @@ func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 	if err != nil {
 		return nil, err
 	}
-	log.Logf("ListBackend, limit=%d, offset=%d\n", limit, offset)
+	log.Infof("ListBackend, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
 
 	err = session.DB(defaultDBName).C(defaultCollection).Find(m).Skip(offset).Limit(limit).All(&backends)
 	if err != nil {

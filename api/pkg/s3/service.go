@@ -21,12 +21,12 @@ import (
 	"math"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-	backend "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -73,41 +73,73 @@ func ReadBody(r *restful.Request) []byte {
 	return b
 }
 
-func getBackendClient(ctx context.Context, s *APIService, bucketName string) datastore.DataStoreAdapter {
-	log.Infof("bucketName is %v:\n", bucketName)
-	bucket, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.Bucket, error) {
+	rsp, err := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
+	// according to gRPC framework work mechanism, if gRPC return error, then no response package can be received by
+	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
+	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
+	if err == nil {
+		if rsp.ErrorCode != int32(ErrNoErr) {
+			err = S3ErrorCode(rsp.ErrorCode)
+		}
+	}
 	if err != nil {
-		return nil
+		log.Infof("get bucket meta data[bucket=%s] failed, err=%v\n", bucketName, err)
+		return nil, err
 	}
 
-	log.Infof("bucketName is %v\n", bucketName)
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
-		Offset: 0,
-		Limit:  math.MaxInt32,
-		Filter: map[string]string{"name": bucket.Backend}})
-	log.Infof("backendErr is %v:", backendErr)
-	if backendErr != nil {
-		log.Errorf("get backend %s failed.", bucket.Backend)
-		return nil
-	}
-	log.Infof("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	client, _ := datastore.Init(backend)
-	return client
+	return rsp.BucketMeta, nil
 }
 
-func getBackendByName(ctx context.Context, s *APIService, backendName string) datastore.DataStoreAdapter {
+func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, versiongId string) (*s3.Object, error) {
+	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.Object{BucketName: bucketName, ObjectKey: objectName, VersionId: versiongId})
+	// according to gRPC framework work mechanism, if gRPC return error, then no response package can be received by
+	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
+	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
+	if err == nil {
+		if rsp.ErrorCode != int32(ErrNoErr) {
+			err = S3ErrorCode(rsp.ErrorCode)
+		}
+	}
+	if err != nil {
+		log.Infof("get object meta data[bucket=%s,key=%s] failed, err=%v\n", bucketName, objectName, err)
+		return nil, err
+	}
+
+	return rsp.Object, nil
+}
+
+func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
+	flag := false
+
 	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
 		Offset: 0,
 		Limit:  math.MaxInt32,
 		Filter: map[string]string{"name": backendName}})
 	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
-		log.Errorf("get backend %s failed.", backendName)
-		return nil
+		log.Infof("Get backend[name=%s] failed.", backendName)
+	} else {
+		log.Infof("backendRep=%+v\n", backendRep)
+		if len(backendRep.Backends) > 0 {
+			log.Infof("backend[name=%s] exist.", backendName)
+			flag = true
+		}
 	}
-	log.Infof("backendRep is %v:", backendRep)
-	backend := backendRep.Backends[0]
-	client, _ := datastore.Init(backend)
-	return client
+
+	return flag
+}
+
+func HandleS3Error(response *restful.Response, request *restful.Request, err error, errCode int32) error {
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return err
+	}
+	if errCode != int32(ErrNoErr) {
+		err := S3ErrorCode(errCode)
+		WriteErrorResponse(response, request, err)
+		return err
+	}
+
+	return nil
 }

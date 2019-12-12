@@ -15,92 +15,184 @@
 package s3
 
 import (
-	"net/http"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datastore"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/proto"
+	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
+
+var ChunkSize int = 2048
 
 //ObjectPut -
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
+	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
+	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
+	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
 	url := request.Request.URL
-	log.Infof("URL is %v", request.Request.URL.String())
-
-	bucketName := request.PathParameter("bucketName")
-	objectKey := request.PathParameter("objectKey")
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
+	log.Infof("received request: PUT object, objectkey=%s, bucketName=%s\n:",
+		objectKey, bucketName)
 
-	contentLenght := request.HeaderParameter("content-length")
+	//var authType = signature.GetRequestAuthType(r)
+	var err error
+	if !isValidObjectName(objectKey) {
+		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
+		return
+	}
+
+	// get size
+	size, err := getSize(request, response)
+	if err != nil {
+		return
+	}
+	if size == -1 {
+		WriteErrorResponse(response, request, s3error.ErrMissingContentLength)
+		return
+	}
+
+	// maximum Upload size for objects in a single operation
+	if isMaxObjectSize(size) {
+		WriteErrorResponse(response, request, s3error.ErrEntityTooLarge)
+		return
+	}
+
+	// Save metadata.
+	metadata := extractMetadataFromHeader(request)
+	// Get Content-Md5 sent by client and verify if valid
+	if _, ok := request.Request.Header["Content-Md5"]; !ok {
+		metadata["md5Sum"] = ""
+	} else {
+		if len(request.Request.Header.Get("Content-Md5")) == 0 {
+			log.Infoln("Content Md5 is null!")
+			WriteErrorResponse(response, request, s3error.ErrInvalidDigest)
+			return
+		}
+		md5Bytes, err := checkValidMD5(request.Request.Header.Get("Content-Md5"))
+		if err != nil {
+			log.Infoln("Content Md5 is invalid!")
+			WriteErrorResponse(response, request, s3error.ErrInvalidDigest)
+			return
+		} else {
+			metadata["md5Sum"] = hex.EncodeToString(md5Bytes)
+		}
+	}
+
+	acl, err := getAclFromHeader(request)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	// check if specific bucket exist
+	ctx := common.InitCtxWithAuthInfo(request)
+	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorln("failed to get bucket meta. err:", err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+	//log.Logf("bucket, acl:%f", bucketMeta.Acl.CannedAcl)
+	location := bucketMeta.DefaultLocation
+	if backendName != "" {
+		// check if backend exist
+		if s.isBackendExist(ctx, backendName) == false {
+			WriteErrorResponse(response, request, s3error.ErrGetBackendFailed)
+			return
+		}
+		location = backendName
+	}
+
+	var limitedDataReader io.Reader
+	if size > 0 { // request.ContentLength is -1 if length is unknown
+		limitedDataReader = io.LimitReader(request.Request.Body, size)
+	} else {
+		limitedDataReader = request.Request.Body
+	}
+
+	buf := make([]byte, ChunkSize)
+	eof := false
+	stream, err := s.s3Client.PutObject(ctx)
+	defer stream.Close()
+	obj := pb.PutObjectRequest{
+		BucketName: bucketName,
+		ObjectKey:  objectKey,
+		Acl:        &pb.Acl{CannedAcl: acl.CannedAcl},
+		Attrs:      metadata,
+		Location:   location,
+		Size:       size,
+	}
+	err = stream.SendMsg(&obj)
+	if err != nil {
+		WriteErrorResponse(response, request, s3error.ErrInternalError)
+		return
+	}
+	for !eof {
+		n, err := limitedDataReader.Read(buf)
+		if err != nil && err != io.EOF {
+			log.Errorf("read error:%v\n", err)
+			break
+		}
+		if err == io.EOF {
+			log.Debugln("finished read")
+			eof = true
+		}
+		err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
+
+		if err != nil {
+			log.Infof("stream send error: %v\n", err)
+			break
+		}
+	}
+
+	// if read or send data failed, then close stream and return error
+	if !eof {
+		WriteErrorResponse(response, request, s3error.ErrInternalError)
+		return
+	}
+
+	// TODO: is this the right way to get response?
+	rsp := &s3.PutObjectResponse{}
+	err = stream.RecvMsg(rsp)
+	if err != nil {
+		log.Infof("stream receive message failed:%v\n", err)
+		WriteErrorResponse(response, request, s3error.ErrInternalError)
+	}
+
+	log.Info("PUT object successfully.")
+	WriteSuccessResponse(response, nil)
+}
+
+func getSize(request *restful.Request, response *restful.Response) (int64, error) {
+	// get content-length
+	contentLenght := request.HeaderParameter(common.REQUEST_HEADER_CONTENT_LENGTH)
 	size, err := strconv.ParseInt(contentLenght, 10, 64)
 	if err != nil {
-		log.Errorf("get content length failed, err: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, InvalidContentLength.Error())
-		return
-	}
-	backendName := request.HeaderParameter("x-amz-storage-class")
-	log.Infof("object.size is %v, objectKey is %s, backend name is%s\n", size, objectKey, backendName)
-
-	// Currently, only support tier1 as default
-	tier := int32(utils.Tier1)
-
-	object := s3.Object{}
-	object.BucketName = bucketName
-	object.ObjectKey = objectKey
-	object.Size = size
-	object.IsDeleteMarker = ""
-	object.InitFlag = ""
-	object.LastModified = time.Now().Unix()
-	object.Tier = tier
-	// standard as default
-	object.StorageClass = constants.StorageClassOpenSDSStandard
-
-	md := map[string]string{common.REST_KEY_OPERATION: common.REST_VAL_UPLOAD}
-	ctx := common.InitCtxWithVal(request, md)
-	actx := request.Attribute(c.KContext).(*c.Context)
-	object.UserId = actx.UserId
-	object.TenantId = actx.TenantId
-
-	var client datastore.DataStoreAdapter
-	if backendName != "" {
-		object.Backend = backendName
-		client = getBackendByName(ctx, s, backendName)
-	} else {
-		bucket, _ := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: bucketName})
-		object.Backend = bucket.Backend
-		client = getBackendClient(ctx, s, bucketName)
+		log.Infof("parse contentLenght[%s] failed, err:%v\n", contentLenght, err)
+		WriteErrorResponse(response, request, s3error.ErrMissingContentLength)
+		return 0, err
 	}
 
-	if client == nil {
-		response.WriteError(http.StatusInternalServerError, NoSuchBackend.Error())
-		return
-	}
-	log.Infof("enter the PUT method")
-	s3err := client.PUT(request.Request.Body, &object, ctx)
-	log.Infof("LastModified is %v\n", object.LastModified)
-	if s3err != NoError {
-		response.WriteError(http.StatusInternalServerError, s3err.Error())
-		return
+	log.Infof("object size is %v\n", size)
+
+	if size > common.MaxObjectSize {
+		log.Infof("invalid contentLenght:%s\n", contentLenght)
+		errMsg := fmt.Sprintf("invalid contentLenght[%s], it should be less than %d and more than 0",
+			contentLenght, common.MaxObjectSize)
+		err := errors.New(errMsg)
+		WriteErrorResponse(response, request, err)
+		return size, err
 	}
 
-	res, err := s.s3Client.CreateObject(ctx, &object)
-	if err != nil {
-		log.Errorf("err is %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-	log.Infof("object.size2  = %v \n", object.Size)
-	log.Info("Upload object successfully.")
-	response.WriteEntity(res)
+	return size, nil
 }

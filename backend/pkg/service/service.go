@@ -124,7 +124,7 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 	out.Backends = backends
 	out.Next = in.Offset + int32(len(res))
 
-	log.Info("Get backend successfully, #num=%d\n", len(backends))
+	log.Infof("Get backend successfully, #num=%d, backends:%+v\n", len(backends), backends)
 	return nil
 }
 
@@ -192,7 +192,7 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Description: "Ceph Object Storage",
 		},
 		{
-			Name:        constants.BackendTypeGcp,
+			Name:        constants.BackendTypeGcs,
 			Description: "GCP Storage",
 		},
 		{
@@ -202,6 +202,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 		{
 			Name:        constants.BackendTypeIBMCos,
 			Description: "IBM Cloud Object Storage",
+		},
+		{
+			Name:        constants.BackendTypeYIGS3,
+			Description: "YIG Storage",
 		},
 	}
 
@@ -229,5 +233,6 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 
 	out.Types = types[start:end]
 	out.Next = in.Offset + int32(len(out.Types))
+	log.Infof("Types:%+v\n", out.Types)
 	return nil
 }

@@ -36,7 +36,7 @@ backend: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/backend github.com/opensds/multi-cloud/backend/cmd
 
 s3: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/s3 github.com/opensds/multi-cloud/s3/cmd
+	CGO_ENABLED=1 GOOS=linux go build -ldflags '-w -s -extldflags "-dynamic"' -o $(BUILD_DIR)/s3 github.com/opensds/multi-cloud/s3/cmd
 
 dataflow: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/dataflow github.com/opensds/multi-cloud/dataflow/cmd

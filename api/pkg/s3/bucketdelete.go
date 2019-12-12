@@ -15,35 +15,22 @@
 package s3
 
 import (
-	"net/http"
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
-	log.Infof("Received request for bucket details: %s", bucketName)
+	log.Infof("Received request for deleting bucket[name=%s].\n", bucketName)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	res, err := s.s3Client.ListObjects(ctx, &s3.ListObjectsRequest{Bucket: bucketName})
-
-	if err != nil {
-		response.WriteError(http.StatusInternalServerError, err)
+	rsp, err := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
+	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+		log.Errorf("delete bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return
 	}
-	if len(res.ListObjects) == 0 {
-		res1, err1 := s.s3Client.DeleteBucket(ctx, &s3.Bucket{Name: bucketName})
-		if err1 != nil {
-			response.WriteError(http.StatusInternalServerError, err1)
-			return
-		}
-		log.Info("Delete bucket successfully.")
-		response.WriteEntity(res1)
-	} else {
-		log.Info("The bucket can not be deleted. please delete objects first.\n")
-		response.WriteError(http.StatusInternalServerError, BucketDeleteError.Error())
-	}
+
+	log.Infof("delete bucket[%s] successfully\n", bucketName)
 }

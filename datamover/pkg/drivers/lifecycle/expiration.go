@@ -17,61 +17,41 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"strconv"
 
-	log "github.com/sirupsen/logrus"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/datamover/pkg/utils"
+	"github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
+	"time"
 )
 
-func deleteObj(objKey string, lastmodifed int64, virtBucket string, bkend *BackendInfo) error {
-	log.Infof("object expiration: objKey=%s, virtBucket=%s, bkend:%+v\n", objKey, virtBucket, *bkend)
-	if virtBucket == "" {
-		log.Infof("expiration of object[%s] is failed: virtual bucket is null.\n", objKey)
-		return errors.New(DMERR_InternalError)
-	}
-
-	loca := &LocationInfo{StorType: bkend.StorType, Region: bkend.Region, EndPoint: bkend.EndPoint, BucketName: bkend.BucketName,
-		Access: bkend.Access, Security: bkend.Security, BakendName: bkend.BakendName, VirBucket: virtBucket}
-	err := deleteObjFromBackend(objKey, loca)
-	if err != nil {
-		return err
-	}
-
-	// delete metadata
-	delMetaReq := osdss3.DeleteObjectInput{Bucket: virtBucket, Key: objKey, Lastmodified: lastmodifed}
-	ctx := context.Background()
-	_, err = s3client.DeleteObject(ctx, &delMetaReq)
-	if err != nil {
-		// if it is deleted failed, it will be delete again in the next schedule round
-		log.Errorf("delete object metadata of obj[bucket:%s,objKey:%s] failed, err:%v\n",
-			virtBucket, objKey, err)
-		return err
-	} else {
-		log.Infof("delete object metadata of obj[bucket:%s,objKey:%s] successfully.\n",
-			virtBucket, objKey)
-	}
-
-	return err
-}
-
 func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {
-	log.Infof("delete action: delete %s.\n", acReq.ObjKey)
+	objKey := acReq.ObjKey
+	bucketName := acReq.BucketName
+	versionId := acReq.VersionId
+	log.Infof("expiration action: objKey=%s, bucketName=%s, versionId=%s.\n", objKey, bucketName, versionId)
 
-	loc, err := getBackendInfo(&acReq.SourceBackend, false)
-	if err != nil {
-		log.Errorf("expiration of %s failed because get location failed\n", acReq.ObjKey)
-		return err
+	if bucketName == "" {
+		log.Infof("expiration of object[%s] is failed: virtual bucket is null.\n", objKey)
+		return errors.New(utils.DMERR_InternalError)
 	}
 
-	err = deleteObj(acReq.ObjKey, acReq.LastModified, acReq.BucketName, loc)
-	if err != nil && err.Error() == DMERR_NoPermission {
-		// if permission denied, then flash backend information and try again
-		loc, err = getBackendInfo(&acReq.SourceBackend, true)
-		if err != nil {
-			return err
-		}
-		err = deleteObj(acReq.ObjKey, acReq.LastModified, acReq.BucketName, loc)
+	// call API of s3 service to delete object
+	delMetaReq := osdss3.DeleteObjectInput{Bucket: bucketName, Key: objKey, VersioId: versionId}
+	// as expiration does not need to move data, so it's timeout time is not need to be too large.
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
+	_, err := s3client.DeleteObject(ctx, &delMetaReq)
+	if err != nil {
+		// if it is deleted failed this time, it will be delete again in the next schedule round
+		log.Errorf("delete object [bucket:%s,objKey:%s] failed, err:%v\n",
+			bucketName, objKey, err)
+	} else {
+		log.Infof("delete object [bucket:%s,objKey:%s] successfully.\n",
+			bucketName, objKey)
 	}
 
 	return err

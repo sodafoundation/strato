@@ -4,34 +4,243 @@ service S3 {
 	rpc ListBuckets(BaseRequest) returns (ListBucketsResponse) {}
 	rpc CreateBucket(Bucket) returns (BaseResponse) {}
 	rpc DeleteBucket(Bucket) returns (BaseResponse) {}
-	rpc GetBucket(Bucket) returns (Bucket) {}
-	rpc ListObjects(ListObjectsRequest) returns (ListObjectResponse) {}
+	rpc GetBucket(Bucket) returns (GetBucketResponse) {}
+	rpc GetObjectMeta(Object) returns (GetObjectMetaResult) {}
+	rpc UpdateObjectMeta(Object) returns (PutObjectResponse) {}
+	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
-	rpc CreateObject(Object) returns (BaseResponse) {}
+	rpc PutObject(stream PutDataStream) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
-	rpc GetObject(GetObjectInput) returns (Object) {}
-	rpc DeleteObject(DeleteObjectInput) returns (BaseResponse) {}
+	rpc GetObject(GetObjectInput) returns (stream GetObjectResponse) {}
+	rpc DeleteObject(DeleteObjectInput) returns (DeleteObjectOutput) {}
 	rpc GetTierMap(BaseRequest) returns (GetTierMapResponse) {}
 	rpc UpdateObjMeta(UpdateObjMetaRequest) returns (BaseResponse) {}
 	rpc GetStorageClasses(BaseRequest) returns (GetStorageClassesResponse) {}
 	rpc GetBackendTypeByTier(GetBackendTypeByTierRequest) returns (GetBackendTypeByTierResponse) {}
-	rpc DeleteBucketLifecycle(DeleteLifecycleInput) returns (BaseResponse) {}
+	rpc DeleteBucketLifecycle(BaseRequest) returns (BaseResponse) {}
+	rpc PutBucketLifecycle(PutBucketLifecycleRequest) returns (BaseResponse) {}
+	rpc GetBucketLifecycle(BaseRequest) returns (GetBucketLifecycleResponse) {}
+	rpc ListBucketLifecycle(BaseRequest) returns (ListBucketsResponse) {}
 	rpc UpdateBucket(Bucket) returns (BaseResponse) {}
+	rpc ListBucketUploadRecords(ListBucketUploadRequest) returns (ListBucketUploadResponse) {}
+
+	rpc InitMultipartUpload(InitMultiPartRequest) returns (InitMultiPartResponse) {}
+	rpc AbortMultipartUpload(AbortMultipartRequest) returns (BaseResponse) {}
+	rpc CompleteMultipartUpload(CompleteMultipartRequest) returns (CompleteMultipartResponse) {}
+	rpc UploadPart(stream PutDataStream) returns (UploadPartResponse) {}
+	rpc ListObjectParts(ListObjectPartsRequest) returns (ListObjectPartsResponse) {}
+	rpc AppendObject(BaseRequest) returns (BaseResponse) {}
+	rpc PostObject(BaseRequest) returns (BaseResponse) {}
+
+	// For lifecycle, may need some change.
 	rpc AddUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
 	rpc DeleteUploadRecord(MultipartUploadRecord) returns (BaseResponse) {}
-	rpc ListUploadRecord(ListMultipartUploadRequest) returns (ListMultipartUploadResponse) {}
+
+	rpc HeadObject(BaseObjRequest) returns (Object) {}
+	rpc MoveObject(MoveObjectRequest) returns (MoveObjectResponse) {}
+	rpc CopyObject(CopyObjectRequest) returns (CopyObjectResponse) {}
+	rpc CopyObjPart(CopyObjPartRequest) returns (CopyObjPartResponse) {}
+	rpc PutObjACL(PutObjACLRequest) returns (BaseResponse) {}
+	rpc GetObjACL(BaseObjRequest) returns (ObjACL) {}
+	rpc GetBucketLocation(BaseRequest) returns (BaseResponse) {}
+	rpc GetBucketVersioning(BaseBucketRequest) returns (BucketVersioning) {}
+	rpc PutBucketACL(PutBucketACLRequest) returns (BaseResponse) {}
+	rpc GetBucketACL(BaseBucketRequest) returns (BucketACL) {}
+	rpc PutBucketCORS(BaseRequest) returns (BaseResponse) {}
+	rpc GetBucketCORS(BaseRequest) returns (BaseResponse) {}
+	rpc DeleteBucketCORS(BaseRequest) returns (BaseResponse) {}
+	rpc PutBucketPolicy(BaseRequest) returns (BaseResponse) {}
+	rpc GetBucketPolicy(BaseRequest) returns (BaseResponse) {}
+	rpc DeleteBucketPolicy(BaseRequest) returns (BaseResponse) {}
+	rpc HeadBucket(BaseRequest) returns (Bucket) {}
+}
+
+message ListObjectPartsRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string encodingType = 3;
+	string uploadId = 4;
+	int32 maxParts = 5;
+	int32 partNumberMarker = 6;
+}
+
+message ListObjectPartsResponse {
+	int32 errorCode = 1;
+}
+
+message AbortMultipartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string uploadId = 3;
+}
+
+message CompletePart {
+	int64 partNumber = 1;
+	string eTag = 2;
+}
+
+message CompleteMultipartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string uploadId = 3;
+	repeated CompletePart completeParts = 4;
+}
+
+message CompleteMultipartResponse {
+	int32 errorCode = 1;
+	string uploadID = 2;
+	string eTag = 3;
+}
+
+message InitMultiPartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	Acl acl = 3;
+	uint32 storageClass = 4;
+	map<string, string> attrs = 5;
+}
+
+message InitMultiPartResponse {
+	int32 errorCode = 1;
+	string uploadID = 2;
+}
+
+message PutDataStream {
+	bytes data = 1;
+}
+
+message UploadPartRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string uploadId = 3;
+	int32 partId = 4;
+	int64 size = 5;
+	string md5Hex = 6;
+}
+
+message UploadPartResponse {
+	int32 errorCode = 1;
+	string eTag = 2;
+}
+
+message CopyObjectRequest {
+	string srcBucketName = 1;
+	string targetBucketName = 2;
+	string srcObjectName = 3;
+	string targetObjectName = 4;
+	string targetBackend = 5;
+	int32  targetTier = 6;
+}
+
+message CopyObjectResponse {
+	int32 errorCode = 1;
+	string md5 = 2;
+	int64 lastModified = 3;
+	string versionId = 4;
+}
+
+message MoveObjectRequest {
+	string srcObject = 1;
+	string targetObject = 2;
+	string srcBucket = 3;
+	string targetBucket = 4;
+	string targetLocation = 5;
+	int32  targetTier = 6;
+	int32  moveType = 7;
+	string srcObjectVersion = 8;
+}
+
+message MoveObjectResponse {
+    Object objMeta = 1;
+    string status = 2;
+    string md5 = 3;
+    string versionId = 4;
+    int64 lastModified = 5;
+}
+
+message PutObjectRequest {
+	string BucketName = 1;
+	string ObjectKey = 2;
+	Acl Acl = 3;
+	map<string, string> attrs = 4;
+	string location = 5;
+	int64 size = 6;
+	string contentType = 7;
+}
+
+message GetObjectResponse {
+	int32 errorCode = 1;
+	bytes data = 2;
+}
+
+message GetObjectMetaResult {
+	int32 errorCode = 1;
+	Object object = 2;
+}
+
+message PutObjectResponse {
+	int32 errorCode = 1;
+	Object objMeta = 2;
+	string status = 3;
+	string md5 = 4;
+	string versionId = 5;
+	int64 lastModified = 6;
+}
+
+message PutBucketACLRequest {
+	BucketACL ACLConfig = 1;
+}
+
+message BucketACL {
+	string BucketName = 1;
+	string CannedAcl = 2;
+}
+
+message BucketVersioning {
+	string Status = 1;
+}
+
+message ObjACL {
+	string BucketName = 1;
+	string ObjectKey = 2;
+	string CannedAcl = 3;
+}
+
+message PutObjACLRequest {
+	string Context = 1;
+	ObjACL ACLConfig = 2;
+}
+
+message BaseBucketRequest {
+	string Context = 1;
+	string BucketName = 2;
+}
+
+message BaseObjRequest {
+	string Context = 1;
+	string BucketName = 2;
+	string ObjectKey = 3;
+}
+
+message CopyObjPartRequest {
+	string SourceBucket = 1;
+	string SourceObj = 2;
+	string TargetBucket = 3;
+	string TargetObject = 4;
+	string UploadID = 5;
+	string PartID = 6;
+	// TODO: Add more parameters
+}
+
+message CopyObjPartResponse {
+	string LastModified = 1;
+	string Etag = 2;
 }
 
 message ServerSideEncryption {
-	string cryptScheme = 1;
-	string algorithm = 2;
-	string masterKeyId = 3;
-	bool mandtory = 4;
-}
-
-message VersioningConfiguration {
-	string Status = 1;
-	string MfaDelete = 2;
+    string sseType = 1;
+    bytes encryptionKey = 2;
+    bytes initilizationVector = 3;
 }
 
 message RedirectAllRequestsTo {
@@ -129,33 +338,55 @@ message LifecycleRule {
 	AbortMultipartUpload abortIncompleteMultipartUpload = 5;
 }
 
+message PutBucketLifecycleRequest {
+	string bucketName = 1;
+	repeated LifecycleRule lc = 2;
+}
+
+message GetBucketLifecycleResponse {
+	int32 errorCode = 1;
+	repeated LifecycleRule lc = 2;
+}
+
 message ReplicationInfo {
 	string status = 1;
 	string backend = 2;
 	string storageClass = 3;
 }
 
+message Acl {
+	string cannedAcl = 1;
+}
+
+message GetBucketResponse {
+	int32 errorCode = 1;
+	Bucket bucketMeta = 2;
+}
+
 message Bucket {
 	string name = 1;
 	string tenantId = 2;
 	string userId = 3;
-	string acl = 4;
-    int64 creationDate = 5;
-	bool transient = 6;
+	Acl acl = 4;
+	int64 createTime = 5;
+	string id = 6;
 	bool deleted = 7;
 	ServerSideEncryption serverSideEncryption = 8;
-	VersioningConfiguration versioningConfiguration = 9;
-	string backend = 10;
+	BucketVersioning versioning = 9;
+	string defaultLocation = 10;	// Means backend
 	WebsiteConfiguration websiteConfiguration = 11;
 	CORSConfiguration cors = 12;
 	ReplicationConfiguration replicationConfiguration = 13;
 	repeated LifecycleRule lifecycleConfiguration = 14;
 	string bucketPolicy = 15;
+	int64 usages = 16;
+	int32 tier = 17;
+	repeated ReplicationInfo replicationInfo = 18;
 }
 
 message Partion {
 	string key = 1;
-	string partNumber = 2;
+	int64 partNumber = 2;
 	int64 size = 3;
 	string etag = 4;
 	int64 lastModified = 5;
@@ -174,37 +405,36 @@ message Object {
 	string bucketName = 2;
 	string tenantId = 3;
 	string userId = 4;
-	string cacheControl = 5;
-	string contentDisposition = 6;
-	string contentEncoding = 7;
-	string expires = 8;
-	string contentLength = 9;
-	string contentType = 10;
-	string contentMd5 = 11;
-	repeated Version versions = 12;
-	string storageClass = 13;
-	ServerSideEncryption serverSideEncryption = 14;
-	string websiteRedirectLocation = 15;
-	string acl = 16;
-	string backend = 17;
-	string isNull = 18;
-	string isDeleteMarker = 19;
-	repeated ReplicationInfo replicationInfo = 20;
-	int64 size = 21;
-	repeated Partion partions = 22;
-	repeated Tag tags = 23;
-	int64 lastModified = 24;
-	string initFlag = 25;
-	string ETag = 26;
-	int32 tier = 27;
+	string versionId = 5;
+	string objectId = 6;
+	string contentType = 7;
+	string contentMd5 = 8;
+	repeated Version versions = 9;
+	string storageClass = 10;
+	ServerSideEncryption serverSideEncryption = 11;
+	string websiteRedirectLocation = 12;
+	Acl acl = 13;
+	string location = 14;
+	bool isNull = 15;
+	bool deleteMarker = 16;
+	int64 size = 17;
+	repeated Tag tags = 18;
+	int64 lastModified = 19;
+	string etag = 20;
+	int32 tier = 21;
+	int32 type = 22;
+	bool nullVersion = 23;
+	map<string, string> customAttributes = 24;
+	string storageMeta = 25; // append info used by storage driver
 }
 
 message ListBucketsResponse {
-	repeated Bucket buckets = 1;
+	int32 errorCode = 1;
+	repeated Bucket buckets = 2;
 }
 
 message BaseResponse {
-	string errorCode = 1;
+	int32 errorCode = 1;
 	string msg = 2;
 }
 
@@ -213,17 +443,52 @@ message BaseRequest {
 }
 
 message ListObjectsRequest {
-    // Bucket is a required field
-    string Bucket = 1;
-    string Delimiter = 2;
-    string Owner = 3;
-	map<string, string> Filter = 4;
-	int32  offset = 5;
-	int32  limit = 6;
+	string bucket = 1;
+	bool versioned = 2; // should return versioned objects?
+	int32 version = 3;  // Currently 1 or 2
+	string delimiter = 4;
+	string encodingType = 5;
+	int32 maxKeys = 6;
+	string prefix = 7;
+
+	// v1 specific
+	string marker = 8;
+
+	// v2 specific
+	string continuationToken = 9;
+	string startAfter = 10;
+	bool fetchOwner = 11;
+
+	// versioned specific
+	string keyMarker = 12;
+	string versionIdMarker = 13;
+
+    // for internal use, for example, lifecycle management may need to filter objects by tier, or create time.
+    map<string, string> filter = 14;
 }
 
-message ListObjectResponse {
-	repeated Object ListObjects = 1;
+message ListObjectsResponse {
+	int32 errorCode = 1;
+
+	// Indicates whether the returned list objects response is truncated. A
+	// value of true indicates that the list was truncated. The list can be truncated
+	// if the number of objects exceeds the limit allowed or specified
+	// by max keys.
+	bool isTruncated = 2;
+
+	// When response is truncated (the IsTruncated element value in the response
+	// is true), you can use the key name in this field as marker in the subsequent
+	// request to get next set of objects.
+	//
+	// NOTE: This element is returned only if you have delimiter request parameter
+	// specified.
+	string nextMarker = 3;
+
+	// List of prefixes for this request.
+	repeated string Prefixes = 4;
+
+	// List of objects info for this request.
+	repeated Object objects = 5;
 }
 
 message CountObjectsResponse {
@@ -232,22 +497,33 @@ message CountObjectsResponse {
 }
 
 message DeleteObjectInput {
-    string Bucket = 1;
-    string Key = 2;
-    string Versionid = 3;
-    int64  Lastmodified = 4;
+    string bucket = 1;
+    string key = 2;
+    string versioId = 3;
+    string storageMeta = 4;
+    string eTag = 5;
+    string objectId = 6;
+}
+
+message DeleteObjectOutput {
+    int32 errorCode = 1;
+    bool deleteMarker = 2;
+    string versionId = 3;
 }
 
 message GetObjectInput {
     string Bucket = 1;
     string Key = 2;
-    string Versionid = 3;
+    string VersionId = 3;
+    int64  Offset = 4;
+    int64  Length = 5;
 }
 
 message MultipartUpload {
-    string Bucket = 1;
-    string Key = 2;
+    string bucket = 1;
+    string key = 2;
     string uploadId = 3;
+    string objectId = 4;  // id used in backend
 }
 
 message ListParts {
@@ -295,11 +571,6 @@ message GetBackendTypeByTierResponse {
 	repeated string Types = 1;
 }
 
-message DeleteLifecycleInput {
-	string bucket = 1;
-	string ruleID = 2;
-}
-
 message MultipartUploadRecord {
 	string ObjectKey = 1;
 	string Bucket	= 2;
@@ -310,14 +581,39 @@ message MultipartUploadRecord {
 	string userId = 7;
 }
 
-message ListMultipartUploadRequest {
-	string Bucket = 1;
-	string Prefix = 2;
-	int32  Days = 3;
-	int32  limit = 4;
-	int32  offset = 5;
+message ListBucketUploadRequest {
+	string bucketName = 1;
+	string delimiter = 2;
+	string encodingType = 3;
+	int32 maxUploads = 4;
+	string keyMarker = 5;
+	string prefix = 6;
+	string uploadIdMarker = 7;
 }
 
-message ListMultipartUploadResponse {
-	repeated MultipartUploadRecord records = 1;
+message Owner {
+	string id = 1;
+	string displayName = 2;
+}
+
+message Upload {
+	string key = 1;
+	string uploadId = 2;
+	Owner initiator = 3;
+	Owner owner = 4;
+	string storageClass = 5;
+	string initiated = 6;
+}
+
+message ListBucketUploadResult {
+	bool isTruncated = 1;
+	string nextKeyMarker = 2;
+	string nextUploadIdMarker = 3;
+	repeated string commonPrefix = 4;
+	repeated Upload uploads = 5;
+}
+
+message ListBucketUploadResponse {
+	int32 errorCode = 1;
+	ListBucketUploadResult result = 2;
 }
