@@ -544,6 +544,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
+	// this is the default acl setting
+	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	// TODO: delete old object
