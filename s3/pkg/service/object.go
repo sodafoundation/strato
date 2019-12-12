@@ -521,7 +521,6 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		Size:       srcObject.Size,
 	}
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, srcObject.Size)
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, srcObject.Etag)
 	res, err := targetSd.Put(ctx, limitedDataReader, targetObject)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
