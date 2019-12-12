@@ -54,7 +54,6 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		&tmp.DefaultLocation,
 		&acl,
 		&cors,
-		&cors,
 		&lc,
 		&policy,
 		&tmp.Versioning.Status,
