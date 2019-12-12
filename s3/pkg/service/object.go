@@ -191,7 +191,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName:req.BucketName, ObjectKey:req.ObjectKey})
+	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey})
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -230,7 +230,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
 		// delete object that have been written
-		delObj = &pb.DeleteObjectInput{ObjectId:obj.ObjectId, StorageMeta:obj.StorageMeta}
+		delObj = &pb.DeleteObjectInput{ObjectId: obj.ObjectId, StorageMeta: obj.StorageMeta}
 		return ErrDBError
 	}
 
@@ -508,7 +508,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return err
 	}
 
-	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
+	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -724,7 +724,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 
 func (s *s3Service) copyData(ctx context.Context, srcSd, targetSd driver.StorageDriver, srcObj, targetObj *pb.Object) error {
 	log.Infof("copy object data")
-	reader, err := srcSd.Get(ctx, srcObj, 0, srcObj.Size)
+	reader, err := srcSd.Get(ctx, srcObj, 0, srcObj.Size-1)
 	if err != nil {
 		log.Errorln("failed to get data. err:", err)
 		return err
