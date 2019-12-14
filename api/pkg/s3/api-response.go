@@ -144,6 +144,13 @@ func GenerateCopyObjectResponse(etag string, lastModified time.Time) CopyObjectR
 	}
 }
 
+func GenerateCopyObjectPartResponse(etag string, lastModified int64) CopyObjectPartResponse {
+	return CopyObjectPartResponse{
+		LastModified: time.Unix(lastModified, 0).UTC().Format(timeFormatAMZ),
+		ETag:         "\"" + etag + "\"",
+	}
+}
+
 // GenerateInitiateMultipartUploadResponse
 func GenerateInitiateMultipartUploadResponse(bucket, key, uploadID string) InitiateMultipartUploadResponse {
 	return InitiateMultipartUploadResponse{
