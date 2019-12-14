@@ -41,6 +41,7 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 	for _, value := range list.Buckets {
 		ctime := time.Unix(value.CreateTime, 0).Format(time.RFC3339)
 		versionOpts := model.VersioningConfiguration{}
+		versionOpts.Status = utils.VersioningDisabled
 		if value.Versioning != nil {
 			if value.Versioning.Status == utils.VersioningEnabled {
 				versionOpts.Status = utils.VersioningEnabled
@@ -50,9 +51,12 @@ func parseListBuckets(list *s3.ListBucketsResponse) []byte {
 		if value.ServerSideEncryption != nil {
 			if value.ServerSideEncryption.SseType == "SSE" {
 				sseOpts.SSE.Enabled = "true"
+			} else {
+				sseOpts.SSE.Enabled = "false"
 			}
 		}
-		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation, SSEOpts: sseOpts}
+		bucket := model.Bucket{Name: value.Name, CreateTime: ctime, LocationConstraint: value.DefaultLocation,
+			VersionOpts: versionOpts, SSEOpts: sseOpts}
 		buckets = append(buckets, bucket)
 	}
 	temp.Buckets = buckets
@@ -75,7 +79,7 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	errCode := int32(0)
-	if rsp != nil && rsp.ErrorCode != int32(ErrNoErr){
+	if rsp != nil && rsp.ErrorCode != int32(ErrNoErr) {
 		errCode = rsp.ErrorCode
 	}
 	if HandleS3Error(response, request, err, errCode) != nil {
