@@ -189,7 +189,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		SrcObjectName:    sourceObjectName,
 		TargetObjectName: targetObjectName,
 	})
-	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorf("unable to copy object, err=%v, errCode=%v\n", err, result.ErrorCode)
 		return
 	}

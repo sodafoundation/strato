@@ -16,15 +16,14 @@ package s3
 
 import (
 	"encoding/xml"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -78,12 +77,8 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
-	errCode := int32(0)
-	if rsp != nil && rsp.ErrorCode != int32(ErrNoErr) {
-		errCode = rsp.ErrorCode
-	}
-	if HandleS3Error(response, request, err, errCode) != nil {
-		log.Errorf("list bucket failed, err=%v, errCode=%d\n", err, errCode)
+	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
+		log.Errorf("list bucket failed, err=%v, errCode=%d\n", err, rsp.GetErrorCode())
 		return
 	}
 
