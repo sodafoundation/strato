@@ -15,8 +15,11 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"time"
 
@@ -159,6 +162,15 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = data
 	}
 
+	// encrypt if needed
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		byteArr, _ := ioutil.ReadAll(limitedDataReader)
+		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
+		reader := bytes.NewReader(encBuf)
+		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
+		req.Size = int64(binary.Size(encBuf))
+	}
+
 	backendName := bucket.DefaultLocation
 	if req.Location != "" {
 		backendName = req.Location
@@ -179,7 +191,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName:req.BucketName, ObjectKey:req.ObjectKey})
+	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey})
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -218,7 +230,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if err != nil {
 		log.Errorln("failed to put object meta. err:", err)
 		// delete object that have been written
-		delObj = &pb.DeleteObjectInput{ObjectId:obj.ObjectId, StorageMeta:obj.StorageMeta}
+		delObj = &pb.DeleteObjectInput{ObjectId: obj.ObjectId, StorageMeta: obj.StorageMeta}
 		return ErrDBError
 	}
 
@@ -362,6 +374,18 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			break
 		}
 
+		if bucket.ServerSideEncryption.SseType == "SSE" {
+			// decrypt and write
+			decErr, decBytes := utils.DecryptWithAES256(buf[0:n], bucket.ServerSideEncryption.EncryptionKey)
+			if decErr != nil {
+				log.Errorln("failed to decrypt data. err:", decErr)
+				return decErr
+			}
+			log.Infoln("successfully decrypted")
+			buf = decBytes
+			n = int(binary.Size(decBytes))
+		}
+
 		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
@@ -484,7 +508,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return err
 	}
 
-	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
+	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -520,6 +544,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
+	// this is the default acl setting
+	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	// TODO: delete old object
@@ -698,7 +724,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 
 func (s *s3Service) copyData(ctx context.Context, srcSd, targetSd driver.StorageDriver, srcObj, targetObj *pb.Object) error {
 	log.Infof("copy object data")
-	reader, err := srcSd.Get(ctx, srcObj, 0, srcObj.Size)
+	reader, err := srcSd.Get(ctx, srcObj, 0, srcObj.Size-1)
 	if err != nil {
 		log.Errorln("failed to get data. err:", err)
 		return err
