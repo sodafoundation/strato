@@ -33,7 +33,7 @@ import (
 
 const (
 	MAX_PART_SIZE   = 5 << 30 // 5GB, max object size in single upload
-	MAX_PART_NUMBER = 10000  // max upload part number in one multipart upload
+	MAX_PART_NUMBER = 10000   // max upload part number in one multipart upload
 )
 
 func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBucketUploadRequest, out *pb.ListBucketUploadResponse) error {
@@ -338,6 +338,14 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		return err
 	}
 
+	// get old object meta if it exist, this is not needed if versioning is enabled
+	oldObj, err := s.MetaStorage.GetObject(ctx, bucketName, objectKey, "", false)
+	if err != nil && err != ErrNoSuchKey {
+		log.Errorf("get object[%s] failed, err:%v\n", objectKey, err)
+		return ErrInternalError
+	}
+	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
+
 	// Add to objects table
 	contentType := multipart.Metadata.ContentType
 	object := &pb.Object{
@@ -356,11 +364,14 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Size:             result.Size,
 		Location:         multipart.Metadata.Location,
 	}
-
-	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, &multipart, nil, true)
+	var deleteObj *Object
+	if oldObj != nil && oldObj.Location != object.Location {
+		deleteObj = oldObj
+	}
+	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, deleteObj, &multipart, nil, true)
 	if err != nil {
-		log.Errorln("failed to put object meta. err:", err)
-		// TODO:  delete object
+		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
+		// TODO: consistent check & clean
 		return ErrDBError
 	}
 

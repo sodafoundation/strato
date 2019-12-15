@@ -17,14 +17,12 @@ import (
 	"context"
 	"database/sql"
 	"math"
+	"strconv"
 	"time"
 
-	"encoding/hex"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/xxtea/xxtea-go/xxtea"
-	"strconv"
 )
 
 func (t *TidbClient) PutGcobjRecord(ctx context.Context, o *Object, tx interface{}) (err error) {
@@ -70,9 +68,12 @@ func (t *TidbClient) DeleteGcobjRecord(ctx context.Context, o *Object, tx interf
 	}
 	sqlTx, _ = tx.(*sql.Tx)
 
-	version := math.MaxUint64 - uint64(o.LastModified)
-
 	sqltext := "delete from gcobjs where bucketname=? and name=? and version=?"
+	version, err := strconv.ParseUint(o.VersionId, 10, 64)
+	if err != nil {
+		log.Error("delete gc failed, err: ", err)
+		return err
+	}
 	args := []interface{}{o.BucketName, o.ObjectKey, version}
 	log.Debugf("sqltext:%s, args:%v\n", sqltext, args)
 	_, err = sqlTx.Exec(sqltext, args...)
@@ -106,9 +107,7 @@ func (t *TidbClient) ListGcObjs(ctx context.Context, offset, limit int) (objs []
 			&obj.ObjectId,
 			&obj.StorageMeta,
 		)
-		timestamp := math.MaxUint64 - iversion
-		timeData := []byte(strconv.FormatUint(timestamp, 10))
-		obj.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
+		obj.VersionId = strconv.FormatUint(iversion, 10)
 		objs = append(objs, obj)
 	}
 
