@@ -595,6 +595,11 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
 	}
+	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
 
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
@@ -602,8 +607,9 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 		err = ErrInternalError
 		return err
 	}
-	//check source object acl
+
 	if !isAdmin {
+		//check source object acl
 		switch srcObject.Acl.CannedAcl {
 		case "public-read", "public-read-write":
 			break
@@ -613,13 +619,18 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 				return err
 			}
 		}
+		//check target acl
+		switch targetBucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if targetBucket.TenantId != tenantId {
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		} // TODO policy and fancy ACL
 	}
 
-	_, _, _, err = CheckRights(ctx, srcObject.TenantId)
-	if err != nil {
-		log.Errorf("no rights to access the source object[%s]\n", srcObject.ObjectKey)
-		return nil
-	}
 	backendName := srcBucket.DefaultLocation
 	if srcObject.Location != "" {
 		backendName = srcObject.Location
@@ -633,23 +644,6 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 	if err != nil {
 		log.Errorln("failed to create storage driver. err:", err)
 		return err
-	}
-	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
-	if err != nil {
-		log.Errorln("get bucket failed with err:", err)
-		return err
-	}
-	//check target acl
-	if !isAdmin {
-		switch targetBucket.Acl.CannedAcl {
-		case "public-read-write":
-			break
-		default:
-			if targetBucket.TenantId != tenantId {
-				err = ErrBucketAccessForbidden
-				return err
-			}
-		} // TODO policy and fancy ACL
 	}
 
 	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBucket.DefaultLocation)
@@ -668,13 +662,15 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 		return err
 	}
 	limitedDataReader := io.LimitReader(reader, size)
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
 
 	multipart, err := s.MetaStorage.GetMultipart(targetBucketName, targetObjectName, uploadId)
 	if err != nil {
 		log.Infoln("failed to get multipart. err:", err)
 		return err
 	}
-	result, err := targetSd.UploadPart(ctx, limitedDataReader, &pb.MultipartUpload{
+	_, err = targetSd.UploadPart(ctx, dataReader, &pb.MultipartUpload{
 		Bucket:   targetBucketName,
 		Key:      targetObjectName,
 		UploadId: uploadId,
@@ -684,11 +680,12 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 		log.Errorln("failed to upload part to backend. err:", err)
 		return err
 	}
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	part := Part{
 		PartNumber:   int(partId),
 		Size:         size,
 		ObjectId:     multipart.ObjectId,
-		Etag:         result.ETag,
+		Etag:         calculatedMd5,
 		LastModified: time.Now().UTC().Format(CREATE_TIME_LAYOUT),
 	}
 
@@ -699,7 +696,7 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 		return err
 	}
 
-	out.Etag = result.ETag
+	out.Etag = calculatedMd5
 	out.LastModified = time.Now().UTC().Unix()
 
 	log.Infoln("copy object part successfully.")
