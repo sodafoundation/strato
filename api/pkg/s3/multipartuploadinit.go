@@ -56,7 +56,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	ctx := common.InitCtxWithAuthInfo(request)
 	result, err := s.s3Client.InitMultipartUpload(ctx, &pb.InitMultiPartRequest{
 		BucketName: bucketName, ObjectKey: objectKey, Acl: &pb.Acl{CannedAcl: acl.CannedAcl}, StorageClass: uint32(storageClass), Attrs: attr})
-	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorln("unable to init multipart. err:%v, errcode:%v", err, result.ErrorCode)
 		return
 	}
