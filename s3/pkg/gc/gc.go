@@ -66,7 +66,7 @@ func Run(mt *meta.Meta, bkservice bkd.BackendService) {
 					err = mt.DeleteGcobjRecord(CTX, o)
 					if err != nil {
 						// if delete failed, it will be deleted in the next round
-						log.Warnf("delete gc object failed, err:%v\n", err)
+						log.Warnf("delete gc object[key=%s,version=%s] metadata failed, err:%v\n", o.ObjectKey, o.VersionId, err)
 					} else {
 						deleted++
 					}
@@ -101,12 +101,13 @@ func CleanFromBackend(obj *types.Object, bkservice bkd.BackendService) error {
 	}
 
 	// delete object data in backend
+	log.Debugf("delete object, key=%s, verionid=%s, objectid=%s, storageMeta:%+v\n", obj.ObjectKey, obj.VersionId, obj.ObjectId, obj.StorageMeta)
 	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: obj.BucketName, Key: obj.ObjectKey, VersioId: obj.VersionId,
 		StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
 	if err != nil {
 		log.Errorf("failed to delete obejct[%s] from backend storage, err:", obj.ObjectKey, err)
 	} else {
-		log.Infof("delete obejct[%s] from backend storage successfully.", err)
+		log.Infof("delete obejct[%s] from backend storage successfully.", obj.ObjectKey)
 	}
 
 	return err

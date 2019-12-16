@@ -239,17 +239,19 @@ message BaseObjRequest {
 
 message CopyObjPartRequest {
 	string SourceBucket = 1;
-	string SourceObj = 2;
+	string SourceObject = 2;
 	string TargetBucket = 3;
 	string TargetObject = 4;
 	string UploadID = 5;
-	string PartID = 6;
-	// TODO: Add more parameters
+	int64  PartID = 6;
+	int64  ReadOffset = 7;
+	int64  ReadLength = 8;
 }
 
 message CopyObjPartResponse {
-	string LastModified = 1;
-	string Etag = 2;
+	int32 ErrorCode = 1;
+	int64 LastModified = 2;
+	string Etag = 3;
 }
 
 message ServerSideEncryption {

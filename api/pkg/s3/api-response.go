@@ -28,6 +28,7 @@ import (
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -143,6 +144,13 @@ func GenerateCopyObjectResponse(etag string, lastModified time.Time) CopyObjectR
 	}
 }
 
+func GenerateCopyObjectPartResponse(etag string, lastModified int64) CopyObjectPartResponse {
+	return CopyObjectPartResponse{
+		LastModified: time.Unix(lastModified, 0).UTC().Format(timeFormatAMZ),
+		ETag:         "\"" + etag + "\"",
+	}
+}
+
 // GenerateInitiateMultipartUploadResponse
 func GenerateInitiateMultipartUploadResponse(bucket, key, uploadID string) InitiateMultipartUploadResponse {
 	return InitiateMultipartUploadResponse{
@@ -209,6 +217,7 @@ func parseListObjectPartsQuery(query url.Values) (request ListPartsRequest, err 
 	} else {
 		request.MaxParts, err = strconv.Atoi(query.Get("max-parts"))
 		if err != nil {
+			log.Errorln("failed to convert from string to integer. err:", err)
 			return
 		}
 		if request.MaxParts > MaxPartsList || request.MaxParts < 1 {

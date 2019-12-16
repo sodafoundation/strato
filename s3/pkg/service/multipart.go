@@ -393,11 +393,13 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		return err
 	}
 
-	err = s.removeObject(ctx, bucket, objectKey)
-	if err != nil {
-		log.Errorln("failed to delete old object. err:", err)
-		return err
+	// get old object meta if it exist, this is not needed if versioning is enabled
+	oldObj, err := s.MetaStorage.GetObject(ctx, bucketName, objectKey, "", false)
+	if err != nil && err != ErrNoSuchKey {
+		log.Errorf("get object[%s] failed, err:%v\n", objectKey, err)
+		return ErrInternalError
 	}
+	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
 
 	// Add to objects table
 	contentType := multipart.Metadata.ContentType
@@ -415,12 +417,14 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Type:             ObjectTypeNormal,
 		Tier:             utils.Tier1,
 		Size:             totalSize,
+		Acl:              &pb.Acl{CannedAcl: "private"},
 		Location:         multipart.Metadata.Location,
 	}
 
-	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, &multipart, nil, true)
+	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, oldObj, &multipart, nil, true)
 	if err != nil {
-		log.Errorln("failed to put object meta. err:", err)
+		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
+		// TODO: consistent check & clean
 		return ErrDBError
 	}
 
@@ -483,8 +487,8 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 	}
 
 	err = sd.AbortMultipartUpload(ctx, &pb.MultipartUpload{
-		Bucket: bucketName,
-		Key: objectKey,
+		Bucket:   bucketName,
+		Key:      objectKey,
 		UploadId: uploadId,
 		ObjectId: multipart.ObjectId})
 	if err != nil {
@@ -565,5 +569,139 @@ func (s *s3Service) ListObjectParts(ctx context.Context, in *pb.ListObjectPartsR
 
 	log.Infof("list object part successfully. ")
 
+	return nil
+}
+
+func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, out *pb.CopyObjPartResponse) error {
+	log.Info("CopyObjPart is called in s3 service.")
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+
+	srcBucketName := in.SourceBucket
+	srcObjectName := in.SourceObject
+	targetBucketName := in.TargetBucket
+	targetObjectName := in.TargetObject
+	uploadId := in.UploadID
+	partId := in.PartID
+	size := in.ReadLength
+	offset := in.ReadOffset
+
+	srcBucket, err := s.MetaStorage.GetBucket(ctx, srcBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+	srcObject, err := s.MetaStorage.GetObject(ctx, srcBucketName, srcObjectName, "", true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed, err:", err)
+		err = ErrInternalError
+		return err
+	}
+
+	if !isAdmin {
+		//check source object acl
+		switch srcObject.Acl.CannedAcl {
+		case "public-read", "public-read-write":
+			break
+		default:
+			if srcObject.TenantId != tenantId {
+				err = ErrAccessDenied
+				return err
+			}
+		}
+		//check target acl
+		switch targetBucket.Acl.CannedAcl {
+		case "public-read-write":
+			break
+		default:
+			if targetBucket.TenantId != tenantId {
+				err = ErrBucketAccessForbidden
+				return err
+			}
+		} // TODO policy and fancy ACL
+	}
+
+	backendName := srcBucket.DefaultLocation
+	if srcObject.Location != "" {
+		backendName = srcObject.Location
+	}
+	srcBackend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	srcSd, err := driver.CreateStorageDriver(srcBackend.Type, srcBackend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+
+	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBucket.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	targetSd, err := driver.CreateStorageDriver(targetBackend.Type, targetBackend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	reader, err := srcSd.Get(ctx, srcObject.Object, offset, offset+size-1)
+	if err != nil {
+		log.Errorln("failed to get data reader. err:", err)
+		return err
+	}
+	limitedDataReader := io.LimitReader(reader, size)
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+
+	multipart, err := s.MetaStorage.GetMultipart(targetBucketName, targetObjectName, uploadId)
+	if err != nil {
+		log.Infoln("failed to get multipart. err:", err)
+		return err
+	}
+	_, err = targetSd.UploadPart(ctx, dataReader, &pb.MultipartUpload{
+		Bucket:   targetBucketName,
+		Key:      targetObjectName,
+		UploadId: uploadId,
+		ObjectId: multipart.ObjectId},
+		partId, size)
+	if err != nil {
+		log.Errorln("failed to upload part to backend. err:", err)
+		return err
+	}
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
+	part := Part{
+		PartNumber:   int(partId),
+		Size:         size,
+		ObjectId:     multipart.ObjectId,
+		Etag:         calculatedMd5,
+		LastModified: time.Now().UTC().Format(CREATE_TIME_LAYOUT),
+	}
+
+	err = s.MetaStorage.PutObjectPart(ctx, multipart, part)
+	if err != nil {
+		log.Errorln("failed to put object part. err:", err)
+		// because the backend will delete object part that has the same part id in next upload, we return error directly here
+		return err
+	}
+
+	out.Etag = calculatedMd5
+	out.LastModified = time.Now().UTC().Unix()
+
+	log.Infoln("copy object part successfully.")
 	return nil
 }
