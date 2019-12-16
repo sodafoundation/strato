@@ -85,6 +85,36 @@ func (t *TidbClient) GetMultipart(bucketName, objectName, uploadId string) (mult
 		return
 	}
 
+	sqltext = "select partnumber,size,objectid,offset,etag,lastmodified from objectparts " +
+		"where bucketname=? and objectname=? and uploadid=?;"
+	rows, err := t.Client.Query(sqltext, bucketName, objectName, uploadId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	multipart.Parts = make(map[int]*Part)
+	for rows.Next() {
+		p := &Part{}
+		err = rows.Scan(
+			&p.PartNumber,
+			&p.Size,
+			&p.ObjectId,
+			&p.Offset,
+			&p.Etag,
+			&p.LastModified,
+		)
+		ts, e := time.Parse(TIME_LAYOUT_TIDB, p.LastModified)
+		if e != nil {
+			return
+		}
+		p.LastModified = ts.Format(CREATE_TIME_LAYOUT)
+		multipart.Parts[p.PartNumber] = p
+		if err != nil {
+			return
+		}
+	}
+
+
 	return
 }
 
@@ -104,6 +134,12 @@ func (t *TidbClient) DeleteMultipart(multipart *Multipart, tx interface{}) (err 
 	sqlTx, _ = tx.(*sql.Tx)
 
 	sqltext := "delete from multiparts where bucketname=? and objectname=? and uploadid=?;"
+	_, err = sqlTx.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId)
+	if err != nil {
+		return
+	}
+
+	sqltext = "delete from objectparts where bucketname=? and objectname=? and uploadid=?;"
 	_, err = sqlTx.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId)
 	if err != nil {
 		return
@@ -281,5 +317,32 @@ func (t *TidbClient) ListMultipartUploads(input *pb.ListBucketUploadRequest) (ou
 		}
 	}
 	output.CommonPrefix = helper.Keys(commonPrefixes)
+	return
+}
+
+func (t *TidbClient) PutObjectPart(multipart *Multipart, part *Part, tx interface{}) (err error) {
+	var sqlTx *sql.Tx
+	if tx == nil {
+		tx, err = t.Client.Begin()
+		defer func() {
+			if err == nil {
+				err = sqlTx.Commit()
+			}
+			if err != nil {
+				sqlTx.Rollback()
+			}
+		}()
+	}
+	sqlTx, _ = tx.(*sql.Tx)
+
+	lastt, err := time.Parse(CREATE_TIME_LAYOUT, part.LastModified)
+	if err != nil {
+		return
+	}
+	lastModified := lastt.Format(TIME_LAYOUT_TIDB)
+	sqltext := "insert into objectparts(bucketname,objectname,uploadid,partnumber,size,objectid,offset,etag,lastmodified) " +
+		"values(?,?,?,?,?,?,?,?,?)"
+	_, err = sqlTx.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId,part.PartNumber, part.Size,
+		part.ObjectId, part.Offset, part.Etag, lastModified)
 	return
 }

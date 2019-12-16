@@ -48,6 +48,7 @@ type Multipart struct {
 	ObjectId    string
 	StorageMeta string
 	Metadata    MultipartMetadata
+	Parts       map[int]*Part
 }
 
 func (m *Multipart) GetUploadId() (string, error) {

@@ -45,7 +45,7 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	lsRsp, err := s.s3Client.ListObjects(ctx, &req)
-	if HandleS3Error(response, request, err, lsRsp.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, lsRsp.GetErrorCode()) != nil {
 		log.Errorf("get bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, lsRsp.ErrorCode)
 		return
 	}

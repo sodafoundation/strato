@@ -96,6 +96,13 @@ func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipa
 		return err
 	}
 
+	if multipart != nil {
+		err = m.Db.DeleteMultipart(multipart, tx)
+		if err != nil {
+			return err
+		}
+	}
+
 	// TODO: usage need to be updated for charging, and it depends on redis, and the mechanism is:
 	// 1. Update usage in redis when each put happens.
 	// 2. Update usage in database periodically based on redis.
