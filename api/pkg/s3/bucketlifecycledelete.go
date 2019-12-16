@@ -28,7 +28,7 @@ func (s *APIService) BucketLifecycleDelete(request *restful.Request, response *r
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.DeleteBucketLifecycle(ctx, &s3.BaseRequest{Id: bucketName})
 	log.Infof("rsp:%s, err:%v\n", rsp, err)
-	if HandleS3Error(response, request, err, rsp.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
 		log.Errorf("delete bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
 		return
 	}
