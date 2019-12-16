@@ -79,11 +79,14 @@ func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipa
 
 	// if target object exist and it's location is different from new location, need to clean it
 	if deleteObj != nil {
-		log.Infoln("put gc, deleteObj:", deleteObj)
-		err = m.Db.PutGcobjRecord(ctx, deleteObj, tx)
-		if err != nil {
-			return err
+		if deleteObj.Location != object.Location {
+			log.Infoln("put gc, deleteObj:", deleteObj)
+			err = m.Db.PutGcobjRecord(ctx, deleteObj, tx)
+			if err != nil {
+				return err
+			}
 		}
+
 		log.Infoln("delete object metadata, deleteObj:", deleteObj)
 		err = m.Db.DeleteObject(ctx, deleteObj, tx)
 		if err != nil {

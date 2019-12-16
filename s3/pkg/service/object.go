@@ -225,11 +225,8 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 
 	result.Md5 = res.Etag
 	result.LastModified = object.LastModified
-	var deleteObj *Object
-	if oldObj != nil && oldObj.Location != object.Location {
-		deleteObj = oldObj
-	}
-	err = s.MetaStorage.PutObject(ctx, object, deleteObj, nil, nil, true)
+
+	err = s.MetaStorage.PutObject(ctx, object, oldObj, nil, nil, true)
 	if err != nil {
 		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
 		// TODO: consistent check & clean
@@ -562,11 +559,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 
-	var deleteObj *Object
-	if oldObj != nil && oldObj.Location != targetObject.Location {
-		deleteObj = oldObj
-	}
-	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, deleteObj, nil, nil, true)
+	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, oldObj, nil, nil, true)
 	if err != nil {
 		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", targetObject, oldObj, err)
 		// TODO: consistent check & clean

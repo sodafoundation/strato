@@ -419,11 +419,8 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Size:             totalSize,
 		Location:         multipart.Metadata.Location,
 	}
-	var deleteObj *Object
-	if oldObj != nil && oldObj.Location != object.Location {
-		deleteObj = oldObj
-	}
-	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, deleteObj, &multipart, nil, true)
+
+	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, oldObj, &multipart, nil, true)
 	if err != nil {
 		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
 		// TODO: consistent check & clean
