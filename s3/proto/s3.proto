@@ -60,12 +60,27 @@ message ListObjectPartsRequest {
 	string objectKey = 2;
 	string encodingType = 3;
 	string uploadId = 4;
-	int32 maxParts = 5;
-	int32 partNumberMarker = 6;
+	int64 maxParts = 5;
+	int64 partNumberMarker = 6;
+}
+
+message Part {
+	int64 PartNumber = 1;
+	string ETag = 2;
+	string LastModified = 3;
+	int64 Size = 4;
 }
 
 message ListObjectPartsResponse {
-	int32 errorCode = 1;
+	int32 ErrorCode = 1;
+	Owner Initiator = 2;
+	Owner Owner = 3;
+	string StorageClass = 4;
+	int64 PartNumberMarker = 5;
+	int64 NextPartNumberMarker = 6;
+	int64 MaxParts = 7;
+	bool IsTruncated = 8;
+	repeated Part Parts = 9;
 }
 
 message AbortMultipartRequest {

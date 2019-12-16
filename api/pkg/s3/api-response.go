@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
+	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 )
 
@@ -193,5 +193,39 @@ func parseListUploadsQuery(query url.Values) (request ListUploadsRequest, err er
 	request.KeyMarker = query.Get("key-marker")
 	request.Prefix = query.Get("prefix")
 	request.UploadIdMarker = query.Get("upload-id-marker")
+	return
+}
+
+// Parse object url queries
+func parseListObjectPartsQuery(query url.Values) (request ListPartsRequest, err error) {
+	request.EncodingType = query.Get("encoding-type")
+	request.UploadId = query.Get("uploadId")
+	if request.UploadId == "" {
+		err = ErrNoSuchUpload
+		return
+	}
+	if query.Get("max-parts") == "" {
+		request.MaxParts = MaxPartsList
+	} else {
+		request.MaxParts, err = strconv.Atoi(query.Get("max-parts"))
+		if err != nil {
+			return
+		}
+		if request.MaxParts > MaxPartsList || request.MaxParts < 1 {
+			err = ErrInvalidMaxParts
+			return
+		}
+	}
+	if query.Get("part-number-marker") != "" {
+		request.PartNumberMarker, err = strconv.Atoi(query.Get("part-number-marker"))
+		if err != nil {
+			err = ErrInvalidPartNumberMarker
+			return
+		}
+		if request.PartNumberMarker < 0 {
+			err = ErrInvalidPartNumberMarker
+			return
+		}
+	}
 	return
 }
