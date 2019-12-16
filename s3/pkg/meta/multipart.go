@@ -43,3 +43,19 @@ func (m *Meta) DeleteMultipart(ctx context.Context, multipart Multipart) (err er
 	err = m.Db.CommitTrans(tx)
 	return
 }
+
+func (m *Meta) PutObjectPart(ctx context.Context, multipart Multipart, part Part) (err error) {
+	tx, err := m.Db.NewTrans()
+	defer func() {
+		if err != nil {
+			m.Db.AbortTrans(tx)
+		}
+	}()
+	err = m.Db.PutObjectPart(&multipart, &part, tx)
+	if err != nil {
+		return
+	}
+	//TODO: update bucket size
+	err = m.Db.CommitTrans(tx)
+	return
+}

@@ -118,7 +118,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		return
 	}
 	sseType := "NONE"
-	if sseOpts != nil{
+	if sseOpts != nil {
 		sseType = sseOpts.SseType
 	}
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
@@ -202,7 +202,7 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			return
 		}
 		sseType := "NONE"
-		if sseOpts != nil{
+		if sseOpts != nil {
 			sseType = sseOpts.SseType
 		}
 		tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
@@ -453,12 +453,12 @@ func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string
 	var err error
 	var sizeStr sql.NullString
 	if prefix == "" {
-		sqltext = "select count(*),sum(size) from objects where bucketname=?;"
-		err = t.Client.QueryRow(sqltext, bucketName).Scan(&rsp.Count, &sizeStr)
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and tier<?;"
+		err = t.Client.QueryRow(sqltext, bucketName, utils.Tier999).Scan(&rsp.Count, &sizeStr)
 	} else {
 		filt := prefix + "%"
-		sqltext = "select count(*),sum(size) from objects where bucketname=? and name like ?;"
-		err = t.Client.QueryRow(sqltext, bucketName, filt).Scan(&rsp.Count, &sizeStr)
+		sqltext = "select count(*),sum(size) from objects where bucketname=? and tier<? and name like ?;"
+		err = t.Client.QueryRow(sqltext, bucketName, utils.Tier999, filt).Scan(&rsp.Count, &sizeStr)
 	}
 
 	if err != nil {

@@ -223,7 +223,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	}
 
 	lcRsp, err := s.s3Client.PutBucketLifecycle(ctx, &s3.PutBucketLifecycleRequest{BucketName: bucketName, Lc: s3RulePtrArr})
-	if HandleS3Error(response, request, err, lcRsp.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, lcRsp.GetErrorCode()) != nil {
 		log.Errorf("put bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, lcRsp.ErrorCode)
 		return
 	}

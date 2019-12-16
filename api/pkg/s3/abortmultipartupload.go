@@ -19,7 +19,7 @@ func (s *APIService) AbortMultipartUpload(request *restful.Request, response *re
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	result, err := s.s3Client.AbortMultipartUpload(ctx, &pb.AbortMultipartRequest{BucketName:bucketName,ObjectKey:objectKey,UploadId:uploadId})
-	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorf("unable to abort multipart. err:%v, errCode:%v", err, result.ErrorCode)
 		return
 	}

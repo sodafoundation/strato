@@ -152,6 +152,7 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 	if start != 0 || end != 0 {
 		count := end - start + 1
 		buf = make([]byte, count)
+		log.Debugf("start=%d, end=%d, count=%d\n", start, end, count)
 		err := azblob.DownloadBlobToBuffer(ctx, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
 		if err != nil {
 			log.Infof("get object[Azure Blob] failed, objectId:%s, err:%v\n", object.ObjectId, err)
