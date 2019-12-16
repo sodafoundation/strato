@@ -68,13 +68,31 @@ func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName stri
 	return object, nil
 }
 
-func (m *Meta) PutObject(ctx context.Context, object *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
+func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
+	log.Debug("PutObject begin")
 	tx, err := m.Db.NewTrans()
 	defer func() {
 		if err != nil {
 			m.Db.AbortTrans(tx)
 		}
 	}()
+
+	// if target object exist and it's location is different from new location, need to clean it
+	if deleteObj != nil {
+		if deleteObj.Location != object.Location {
+			log.Infoln("put gc, deleteObj:", deleteObj)
+			err = m.Db.PutGcobjRecord(ctx, deleteObj, tx)
+			if err != nil {
+				return err
+			}
+		}
+
+		log.Infoln("delete object metadata, deleteObj:", deleteObj)
+		err = m.Db.DeleteObject(ctx, deleteObj, tx)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = m.Db.PutObject(ctx, object, tx)
 	if err != nil {

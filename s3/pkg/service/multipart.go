@@ -393,11 +393,13 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		return err
 	}
 
-	err = s.removeObject(ctx, bucket, objectKey)
-	if err != nil {
-		log.Errorln("failed to delete old object. err:", err)
-		return err
+	// get old object meta if it exist, this is not needed if versioning is enabled
+	oldObj, err := s.MetaStorage.GetObject(ctx, bucketName, objectKey, "", false)
+	if err != nil && err != ErrNoSuchKey {
+		log.Errorf("get object[%s] failed, err:%v\n", objectKey, err)
+		return ErrInternalError
 	}
+	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
 
 	// Add to objects table
 	contentType := multipart.Metadata.ContentType
@@ -418,9 +420,10 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Location:         multipart.Metadata.Location,
 	}
 
-	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, &multipart, nil, true)
+	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, oldObj, &multipart, nil, true)
 	if err != nil {
-		log.Errorln("failed to put object meta. err:", err)
+		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
+		// TODO: consistent check & clean
 		return ErrDBError
 	}
 
@@ -483,8 +486,8 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 	}
 
 	err = sd.AbortMultipartUpload(ctx, &pb.MultipartUpload{
-		Bucket: bucketName,
-		Key: objectKey,
+		Bucket:   bucketName,
+		Key:      objectKey,
 		UploadId: uploadId,
 		ObjectId: multipart.ObjectId})
 	if err != nil {
