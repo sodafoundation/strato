@@ -60,13 +60,14 @@ const (
 )
 
 const (
-	REQUEST_PATH_BUCKET_NAME      = "bucketName"
-	REQUEST_PATH_OBJECT_KEY       = "objectKey"
-	REQUEST_HEADER_CONTENT_LENGTH = "Content-Length"
-	REQUEST_HEADER_STORAGE_CLASS  = "x-amz-storage-class"
-	REQUEST_HEADER_COPY_SOURCE    = "X-Amz-Copy-Source"
-	REQUEST_HEADER_ACL            = "X-Amz-Acl"
-	REQUEST_HEADER_CONTENT_MD5    = "Content-Md5"
+	REQUEST_PATH_BUCKET_NAME         = "bucketName"
+	REQUEST_PATH_OBJECT_KEY          = "objectKey"
+	REQUEST_HEADER_CONTENT_LENGTH    = "Content-Length"
+	REQUEST_HEADER_STORAGE_CLASS     = "x-amz-storage-class"
+	REQUEST_HEADER_COPY_SOURCE       = "X-Amz-Copy-Source"
+	REQUEST_HEADER_COPY_SOURCE_RANGE = "X-Amz-Copy-Source-Range"
+	REQUEST_HEADER_ACL               = "X-Amz-Acl"
+	REQUEST_HEADER_CONTENT_MD5       = "Content-Md5"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
