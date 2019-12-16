@@ -36,6 +36,7 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/{bucketName}/{objectKey:*}").To(handler.RouteObjectDelete)).Doc("AbortMultipartUpload")
 	ws.Route(ws.HEAD("/{bucketName}/{objectKey:*}").To(handler.RouteObjectHead)).Doc("Head object")
 	ws.Route(ws.POST("/{bucketName}/{objectKey:*}").To(handler.RouteObjectPost)).Doc("Post object")
+	ws.Route(ws.POST("/{bucketName}").To(handler.RouteObjectPost)).Doc("Post object")
 
 	//Router for PUT and GET bucket lifecycle
 	ws.Route(ws.PUT("/{bucketName}/?lifecycle").To(handler.RouteBucketPut)).Doc("Create lifecycle configuration for the bucket")

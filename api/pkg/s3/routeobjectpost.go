@@ -15,7 +15,10 @@
 package s3
 
 import (
+	"regexp"
+
 	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 )
 
@@ -23,11 +26,17 @@ func (s *APIService) RouteObjectPost(request *restful.Request, response *restful
 	if !policy.Authorize(request, response, "object:post") {
 		return
 	}
-	// TODO
-
 	if IsQuery(request, "uploads") {
 		s.MultiPartUploadInit(request, response)
-	}  else if IsQuery(request, "uploadId") {
+	} else if IsQuery(request, "uploadId") {
 		s.CompleteMultipartUpload(request, response)
+	} else {
+		// check whether it is the post object operation.
+		contentType := request.HeaderParameter(common.REQUEST_HEADER_CONTENT_TYPE)
+		objectPostValidate := regexp.MustCompile("multipart/form-data*")
+		if contentType != "" && objectPostValidate.MatchString(contentType) {
+			s.ObjectPost(request, response)
+			return
+		}
 	}
 }
