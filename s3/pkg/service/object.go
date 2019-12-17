@@ -263,7 +263,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		return err
 	}
 
-	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, in.VersionId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return nil
@@ -289,10 +289,17 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 
 func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
 	log.Infoln("GetObject is called in s3 service.")
+	var versionId string
 	bucketName := req.Bucket
 	objectName := req.Key
 	offset := req.Offset
 	length := req.Length
+	if req.VersionId != ""{
+		versionId = req.VersionId
+	} else {
+		versionId = ""
+	}
+
 
 	var err error
 	getObjRes := &pb.GetObjectResponse{}
@@ -301,7 +308,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		stream.SendMsg(getObjRes)
 	}()
 
-	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, "", true)
+	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, versionId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return err
@@ -342,6 +349,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 	log.Infof("get object offset %v, length %v", offset, length)
+	log.Info("object which we need retrieval is : ", object.Object)
 	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
 	if err != nil {
 		log.Errorln("failed to get data. err:", err)

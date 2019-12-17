@@ -69,6 +69,7 @@ const (
 	REQUEST_HEADER_ACL               = "X-Amz-Acl"
 	REQUEST_HEADER_CONTENT_MD5       = "Content-Md5"
 	REQUEST_HEADER_CONTENT_TYPE      = "Content-Type"
+	REQUEST_QUERY_VERSION_ID         = "versionId"
 )
 
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
