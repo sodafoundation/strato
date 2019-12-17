@@ -1,23 +1,23 @@
 package helper
 
 import (
+	"fmt"
 	"io/ioutil"
 	"time"
-	"fmt"
 
 	"github.com/BurntSushi/toml"
 )
 
 const (
-	S3_CONF_PATH = "/etc/multi-cloud/s3.toml"
-	MIN_DOWNLOAD_BUFPOOL_SIZE = 512 << 10  // 512k
-	MAX_DOWNLOAD_BUFPOOL_SIZE = 8 << 20    // 8M
+	S3_CONF_PATH              = "/etc/multi-cloud/s3.toml"
+	MIN_DOWNLOAD_BUFPOOL_SIZE = 512 << 10 // 512k
+	MAX_DOWNLOAD_BUFPOOL_SIZE = 8 << 20   // 8M
 )
 
 type Config struct {
 	S3Domain         []string                `toml:"s3domain"` // Domain name of YIG
 	Region           string                  `toml:"region"`   // Region name this instance belongs to, e.g cn-bj-1
-	Plugins          map[string]PluginConfig          `toml:"plugins"`
+	Plugins          map[string]PluginConfig `toml:"plugins"`
 	LogPath          string                  `toml:"log_path"`
 	AccessLogPath    string                  `toml:"access_log_path"`
 	AccessLogFormat  string                  `toml:"access_log_format"`
@@ -80,9 +80,9 @@ type Config struct {
 }
 
 type PluginConfig struct {
-        Path string  `toml:"path"`
-        Enable bool  `toml:"enable"`
-        Args  map[string]interface{} `toml:"args"`
+	Path   string                 `toml:"path"`
+	Enable bool                   `toml:"enable"`
+	Args   map[string]interface{} `toml:"args"`
 }
 
 type KMSConfig struct {
@@ -123,7 +123,7 @@ func MarshalTOMLConfig() error {
 	data, err := ioutil.ReadFile(S3_CONF_PATH)
 	if err != nil {
 		if err != nil {
-			panic("Cannot open yig.toml")
+			panic(fmt.Sprintf("failed to open %s, err: %v", S3_CONF_PATH, err))
 		}
 	}
 
