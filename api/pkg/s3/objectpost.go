@@ -131,14 +131,18 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
+	// make sure that the grpc server receives the EOF.
+	stream.Send(&s3.PutDataStream{Data: buf[0:0]})
 
 	result := &s3.PutObjectResponse{}
 	err = stream.RecvMsg(result)
 	if err != nil {
 		log.Errorf("stream receive message failed:%v\n", err)
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
+		return
 	}
 
+	log.Info("succeed to put object data for post object request.")
 	if result.Md5 != "" {
 		response.Header().Set("ETag", "\""+result.Md5+"\"")
 	}
