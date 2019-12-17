@@ -41,6 +41,8 @@ It has these top-level messages:
 	GetJobResponse
 	ListJobRequest
 	ListJobResponse
+	AbortJobRequest
+	AbortJobResponse
 */
 package dataflow
 
@@ -49,9 +51,9 @@ import fmt "fmt"
 import math "math"
 
 import (
+	context "context"
 	client "github.com/micro/go-micro/client"
 	server "github.com/micro/go-micro/server"
-	context "context"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -86,6 +88,7 @@ type DataFlowService interface {
 	GetJob(ctx context.Context, in *GetJobRequest, opts ...client.CallOption) (*GetJobResponse, error)
 	ListJob(ctx context.Context, in *ListJobRequest, opts ...client.CallOption) (*ListJobResponse, error)
 	RunPlan(ctx context.Context, in *RunPlanRequest, opts ...client.CallOption) (*RunPlanResponse, error)
+	AbortJob(ctx context.Context, in *AbortJobRequest, opts ...client.CallOption) (*AbortJobResponse, error)
 }
 
 type dataFlowService struct {
@@ -236,6 +239,16 @@ func (c *dataFlowService) RunPlan(ctx context.Context, in *RunPlanRequest, opts 
 	return out, nil
 }
 
+func (c *dataFlowService) AbortJob(ctx context.Context, in *AbortJobRequest, opts ...client.CallOption) (*AbortJobResponse, error) {
+	req := c.c.NewRequest(c.name, "DataFlow.AbortJob", in)
+	out := new(AbortJobResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for DataFlow service
 
 type DataFlowHandler interface {
@@ -252,6 +265,7 @@ type DataFlowHandler interface {
 	GetJob(context.Context, *GetJobRequest, *GetJobResponse) error
 	ListJob(context.Context, *ListJobRequest, *ListJobResponse) error
 	RunPlan(context.Context, *RunPlanRequest, *RunPlanResponse) error
+	AbortJob(context.Context, *AbortJobRequest, *AbortJobResponse) error
 }
 
 func RegisterDataFlowHandler(s server.Server, hdlr DataFlowHandler, opts ...server.HandlerOption) error {
@@ -269,6 +283,7 @@ func RegisterDataFlowHandler(s server.Server, hdlr DataFlowHandler, opts ...serv
 		GetJob(ctx context.Context, in *GetJobRequest, out *GetJobResponse) error
 		ListJob(ctx context.Context, in *ListJobRequest, out *ListJobResponse) error
 		RunPlan(ctx context.Context, in *RunPlanRequest, out *RunPlanResponse) error
+		AbortJob(ctx context.Context, in *AbortJobRequest, out *AbortJobResponse) error
 	}
 	type DataFlow struct {
 		dataFlow
@@ -331,4 +346,8 @@ func (h *dataFlowHandler) ListJob(ctx context.Context, in *ListJobRequest, out *
 
 func (h *dataFlowHandler) RunPlan(ctx context.Context, in *RunPlanRequest, out *RunPlanResponse) error {
 	return h.DataFlowHandler.RunPlan(ctx, in, out)
+}
+
+func (h *dataFlowHandler) AbortJob(ctx context.Context, in *AbortJobRequest, out *AbortJobResponse) error {
+	return h.DataFlowHandler.AbortJob(ctx, in, out)
 }

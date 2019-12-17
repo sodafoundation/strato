@@ -416,6 +416,14 @@
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:8520e78cbe9878f6bf0cfdcfaed5761cd575b3568c260a1c891ac1f5c5c6a726"
+  name = "github.com/looplab/fsm"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "84b5307469f859464403f80919467950a79de1b1"
+  version = "v0.1.0"
+
+[[projects]]
   digest = "1:802689c84994b7f2e41ffe7e39d29a8d8227f2121938dc025db44dfaa9633b15"
   name = "github.com/magiconair/properties"
   packages = ["."]
@@ -875,6 +883,7 @@
     "github.com/hashicorp/vault/api",
     "github.com/journeymidnight/radoshttpd/rados",
     "github.com/journeymidnight/yig/helper",
+	"github.com/looplab/fsm",
     "github.com/micro/go-log",
     "github.com/micro/go-micro",
     "github.com/micro/go-micro/client",

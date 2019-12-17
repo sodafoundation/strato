@@ -16,10 +16,15 @@ package job
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
+	"encoding/json"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
+	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	log "github.com/sirupsen/logrus"
 )
+
+var topicAbortMigration = "abort"
 
 func Create(ctx context.Context, job *Job) (*Job, error) {
 	return db.DbAdapter.CreateJob(ctx, job)
@@ -32,4 +37,19 @@ func Get(ctx context.Context, id string) (*Job, error) {
 
 func List(ctx context.Context, limit int, offset int, filter interface{}) ([]Job, error) {
 	return db.DbAdapter.ListJob(ctx, limit, offset, filter)
+}
+
+func AbortJob(ctx context.Context, id string) error {
+	req := datamover.AbortJobRequest{Id: id}
+	go sendAbortJob(&req)
+	return nil
+}
+func sendAbortJob(req *datamover.AbortJobRequest) error {
+
+	data, err := json.Marshal(*req)
+	if err != nil {
+		log.Infof("Marshal run job request failed, err:%v\n", data)
+		return err
+	}
+	return kafka.ProduceMsg(topicAbortMigration, data)
 }

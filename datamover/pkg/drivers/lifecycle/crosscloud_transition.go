@@ -23,6 +23,7 @@ import (
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
+
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -43,6 +44,17 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 		log.Infof("the transition of object[%s] is in-progress\n", obj.ObjectKey)
 		return errors.New(DMERR_TransitionInprogress)
 	}
+
+// 	var job *model.Job
+// 	var jobFSM *mover.JobFSM
+// 	jobFSM.FSM.SetState("create")
+// 	jobFSM.FSM.SetState("validate")
+// 	jobFSM.FSM.SetState("start")
+// 	if obj.Size <= PART_SIZE {
+// 		err = mover.MoveObj(obj, srcLoc, targetLoc, job, jobFSM)
+// 	} else {
+// 		err = mover.MultipartMoveObj(obj, srcLoc, targetLoc, job, jobFSM)
+
 
 	// copy object
 	ctx, _ := context.WithTimeout(context.Background(), tmout)
