@@ -30,6 +30,8 @@ func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.
 		//TODO
 	} else if IsQuery(request, "uploads") {
 		s.MultiPartUploadInit(request, response)
+	} else if IsQuery(request, "partNumber") && IsQuery(request, "uploadId") && HasHeader(request, "x-amz-copy-source") {
+		s.ObjectPartCopy(request, response)
 	} else if IsQuery(request, "partNumber") && IsQuery(request, "uploadId") {
 		s.UploadPart(request, response)
 	} else if IsQuery(request, "uploadId") {

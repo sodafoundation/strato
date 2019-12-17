@@ -29,7 +29,8 @@ import (
 const (
 	GC_OBJECT_LIMIT_NUM = 10000
 	// max interval time of gc in seconds.
-	GC_MAX_INTERVAL_TIME = 3600
+	GC_MAX_INTERVAL_TIME   = 3600
+	CEPH_OBJ_NON_EXIST_ERR = "rados: ret=-2"
 )
 
 type GcMgr struct {
@@ -179,7 +180,7 @@ func (gm *GcMgr) CreateObjectDeleteStream(in <-chan *types.GcObject) <-chan *GcO
 				continue
 			}
 			err := ceph.Remove(o.Pool, o.ObjectId)
-			if err != nil {
+			if err != nil && err.Error() != CEPH_OBJ_NON_EXIST_ERR {
 				log.Errorf("failed to remove object(%s, %s, %s) from ceph, err: %v", o.Location, o.Pool, o.ObjectId, err)
 				result.ErrNo = ErrInternalError
 				result.Err = err
@@ -188,7 +189,8 @@ func (gm *GcMgr) CreateObjectDeleteStream(in <-chan *types.GcObject) <-chan *GcO
 				case <-gm.ctx.Done():
 					return
 				}
-				return
+				// just continue to remove next object.
+				continue
 			}
 			result.Err = nil
 			result.ErrNo = ErrNoErr

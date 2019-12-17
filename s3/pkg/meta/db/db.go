@@ -42,6 +42,7 @@ type DBAdapter interface {
 	GetMultipart(bucketName, objectName, uploadId string) (multipart Multipart, err error)
 	DeleteMultipart(multipart *Multipart, tx interface{}) (err error)
 	ListMultipartUploads(input *pb.ListBucketUploadRequest) (output *pb.ListBucketUploadResult, err error)
+	PutObjectPart(multipart *Multipart, part *Part, tx interface{}) (err error)
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
