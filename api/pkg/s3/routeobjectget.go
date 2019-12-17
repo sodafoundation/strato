@@ -28,6 +28,8 @@ func (s *APIService) RouteObjectGet(request *restful.Request, response *restful.
 		s.ObjectAclGet(request, response)
 	} else if IsQuery(request, "uploadId") {
 		s.ListObjectParts(request, response)
+	} else if IsQuery(request, "versionId") {
+		s.ObjectVersionGet(request, response)
 	} else {
 		s.ObjectGet(request, response)
 	}
