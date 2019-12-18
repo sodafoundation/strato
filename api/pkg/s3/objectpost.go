@@ -50,7 +50,7 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 		WriteErrorResponse(response, request, s3error.ErrMalformedPOSTRequest)
 		return
 	}
-	objectKey := formValues["Key"]
+	objectKey := formValues[common.REQUEST_FORM_KEY]
 	if !isValidObjectName(objectKey) {
 		log.Errorf("got invalid object key: %s", objectKey)
 		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
@@ -59,7 +59,7 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
-	formValues["Bucket"] = bucketName
+	formValues[common.REQUEST_FORM_BUCKET] = bucketName
 
 	// check if specific bucket exist
 	ctx := common.InitCtxWithAuthInfo(request)
