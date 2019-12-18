@@ -18,6 +18,9 @@ package s3
 
 import (
 	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"strings"
 
 	"github.com/emicklei/go-restful"
@@ -92,4 +95,51 @@ func extractMetadataFromHeader(request *restful.Request) map[string]string {
 // to do case insensitive checks.
 func hasSuffix(s string, suffix string) bool {
 	return strings.HasSuffix(s, suffix)
+}
+
+func extractHTTPFormValues(reader *multipart.Reader) (filePartReader io.Reader,
+	formValues map[string]string, err error) {
+
+	formValues = make(map[string]string)
+	for {
+		var part *multipart.Part
+		part, err = reader.NextPart()
+		if err == io.EOF {
+			err = nil
+			break
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if part.FormName() != "file" {
+			var buffer []byte
+			buffer, err = ioutil.ReadAll(part)
+			if err != nil {
+				return nil, nil, err
+			}
+			formValues[http.CanonicalHeaderKey(part.FormName())] = string(buffer)
+		} else {
+			// "All variables within the form are expanded prior to validating
+			// the POST policy"
+			fileName := part.FileName()
+			objectKey, ok := formValues["Key"]
+			if !ok {
+				return nil, nil, ErrMissingFields
+			}
+			if strings.Contains(objectKey, "${filename}") {
+				formValues["Key"] = strings.Replace(objectKey, "${filename}", fileName, -1)
+			}
+
+			filePartReader = part
+			// "The file or content must be the last field in the form.
+			// Any fields below it are ignored."
+			break
+		}
+	}
+
+	if filePartReader == nil {
+		err = ErrEmptyEntity
+	}
+	return
 }
