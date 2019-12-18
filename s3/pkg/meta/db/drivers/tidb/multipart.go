@@ -34,9 +34,9 @@ func (t *TidbClient) CreateMultipart(multipart Multipart) (err error) {
 	sqltext := "insert into multiparts(bucketname,objectname,uploadid,uploadtime,initiatorid,tenantid,userid,contenttype, " +
 		"location,acl,attrs,objectid,storageMeta,storageclass) " +
 		"values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	_, err = t.Client.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId,uploadTime,
+	_, err = t.Client.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId, uploadTime,
 		m.InitiatorId, m.TenantId, m.UserId, m.ContentType,
-		m.Location, acl, attrs, multipart.ObjectId, multipart.StorageMeta, m.StorageClass)
+		m.Location, acl, attrs, multipart.ObjectId, multipart.StorageMeta, m.Tier)
 	return
 }
 
@@ -59,7 +59,7 @@ func (t *TidbClient) GetMultipart(bucketName, objectName, uploadId string) (mult
 		&attrs,
 		&multipart.ObjectId,
 		&multipart.StorageMeta,
-		&multipart.Metadata.StorageClass,
+		&multipart.Metadata.Tier,
 	)
 	if err != nil && err == sql.ErrNoRows {
 		err = ErrNoSuchUpload
@@ -113,7 +113,6 @@ func (t *TidbClient) GetMultipart(bucketName, objectName, uploadId string) (mult
 			return
 		}
 	}
-
 
 	return
 }
@@ -296,17 +295,17 @@ func (t *TidbClient) ListMultipartUploads(input *pb.ListBucketUploadRequest) (ou
 				return
 			}
 			output.Uploads = append(output.Uploads, &pb.Upload{
-				Key:objName,
-				UploadId:uploadId,
-				Initiator:&pb.Owner{
-					Id: tenantId,
-					DisplayName:tenantId,
+				Key:      objName,
+				UploadId: uploadId,
+				Initiator: &pb.Owner{
+					Id:          tenantId,
+					DisplayName: tenantId,
 				},
-				Owner:&pb.Owner{
-					Id:initiatorId,
-					DisplayName:initiatorId,
+				Owner: &pb.Owner{
+					Id:          initiatorId,
+					DisplayName: initiatorId,
 				},
-				Initiated: ct.Format(CREATE_TIME_LAYOUT),
+				Initiated:    ct.Format(CREATE_TIME_LAYOUT),
 				StorageClass: "STANDARD",
 			})
 		}
@@ -342,7 +341,7 @@ func (t *TidbClient) PutObjectPart(multipart *Multipart, part *Part, tx interfac
 	lastModified := lastt.Format(TIME_LAYOUT_TIDB)
 	sqltext := "insert into objectparts(bucketname,objectname,uploadid,partnumber,size,objectid,offset,etag,lastmodified) " +
 		"values(?,?,?,?,?,?,?,?,?)"
-	_, err = sqlTx.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId,part.PartNumber, part.Size,
+	_, err = sqlTx.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId, part.PartNumber, part.Size,
 		part.ObjectId, part.Offset, part.Etag, lastModified)
 	return
 }
