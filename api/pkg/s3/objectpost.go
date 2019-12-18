@@ -118,10 +118,13 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 			eof = true
 		}
 		err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
-
 		if err != nil {
 			log.Infof("stream send error: %v", err)
 			break
+		}
+		// make sure that the grpc server receives the EOF.
+		if eof {
+			stream.Send(&s3.PutDataStream{Data: buf[0:0]})
 		}
 	}
 
@@ -131,8 +134,6 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
-	// make sure that the grpc server receives the EOF.
-	stream.Send(&s3.PutDataStream{Data: buf[0:0]})
 
 	result := &s3.PutObjectResponse{}
 	err = stream.RecvMsg(result)
