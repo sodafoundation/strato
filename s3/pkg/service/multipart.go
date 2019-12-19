@@ -142,7 +142,7 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 	}
 	tier := in.Tier
 	if tier == 0 {
-		// if not set, use default one
+		// if not set, use the default tier
 		tier = utils.Tier1
 	}
 	res, err := sd.InitMultipartUpload(ctx, &pb.Object{BucketName: bucketName, ObjectKey: objectKey, Tier: tier})

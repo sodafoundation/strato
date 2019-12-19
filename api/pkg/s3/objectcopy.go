@@ -33,7 +33,7 @@ func getTierFromHeader(request *restful.Request) (types.StorageClass, error) {
 	if storageClassStr != "" {
 		return types.MatchStorageClassIndex(storageClassStr)
 	} else {
-		// If you don't specify this header, Amazon S3 uses STANDARD
+		// If you don't specify this header, STANDARD will be used
 		return utils.Tier1, nil
 	}
 }
