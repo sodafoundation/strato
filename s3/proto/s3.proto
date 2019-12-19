@@ -111,7 +111,7 @@ message InitMultiPartRequest {
 	string bucketName = 1;
 	string objectKey = 2;
 	Acl acl = 3;
-	uint32 storageClass = 4;
+	int32 tier = 4;
 	map<string, string> attrs = 5;
 }
 

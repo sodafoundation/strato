@@ -26,7 +26,7 @@ type Part struct {
 }
 
 type MultipartMetadata struct {
-	InitiatorId   string              //TenantId
+	InitiatorId   string //TenantId
 	TenantId      string
 	UserId        string
 	ContentType   string
@@ -37,7 +37,7 @@ type MultipartMetadata struct {
 	EncryptionKey []byte
 	CipherKey     []byte
 	Attrs         map[string]string
-	StorageClass  StorageClass
+	Tier          int32
 }
 
 type Multipart struct {
@@ -92,4 +92,3 @@ func valuesForParts(parts map[int]*Part) (values map[string][]byte, err error) {
 	}
 	return
 }
-
