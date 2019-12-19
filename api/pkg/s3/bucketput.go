@@ -26,6 +26,7 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,6 +44,13 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
+	acl, err := getAclFromHeader(request)
+	if err != nil {
+		log.Errorln("failed to get canned acl. err:", err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
 	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
 	bucket := s3.Bucket{Name: bucketName}
@@ -52,6 +60,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.CreateTime = time.Now().Unix()
 	bucket.Versioning = &s3.BucketVersioning{}
 	bucket.Versioning.Status = utils.VersioningDisabled // it's the default
+	bucket.Acl = &pb.Acl{CannedAcl: acl.CannedAcl}
 	log.Infof("Bucket PUT: TenantId=%s, UserId=%s\n", bucket.TenantId, bucket.UserId)
 
 	body := ReadBody(request)
