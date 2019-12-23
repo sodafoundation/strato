@@ -262,6 +262,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 		log.Errorln("failed to create storage. err:", err)
 		return nil
 	}
+	ctx = context.Background()
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, uploadRequest.Md5Hex)
 	log.Infoln("bucketname:", bucketName, " objectKey:", objectKey, " uploadid:", uploadId, " objectId:", multipart.ObjectId, " partid:", partId)
 	_, err = sd.UploadPart(ctx, dataReader, &pb.MultipartUpload{

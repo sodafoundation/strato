@@ -175,6 +175,7 @@ func MultipartCopyObj(ctx context.Context, obj *osdss3.Object, destLoca *Locatio
 				log.Warnf("copy part failed, err:%v\n", err)
 			}
 			try++
+			time.Sleep(time.Second * 1)
 		}
 		if try == 3 {
 			log.Errorln("copy part failed too many times")

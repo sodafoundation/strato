@@ -180,7 +180,7 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	input.Key = objectId
 	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_OBS)
 	if err != nil {
-		log.Errorf("translate tier[%d] to aws storage class failed\n", object.Tier)
+		log.Errorf("translate tier[%d] to obs storage class failed\n", object.Tier)
 		return nil, ErrInternalError
 	}
 	input.StorageClass = obs.StorageClassType(storClass)
@@ -194,6 +194,7 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	multipartUpload.Bucket = out.Bucket
 	multipartUpload.Key = out.Key
 	multipartUpload.UploadId = out.UploadId
+	multipartUpload.ObjectId = objectId
 	log.Infof("init multipart upload[OBS] succeed, objectId:%s\n", objectId)
 	return multipartUpload, nil
 }
