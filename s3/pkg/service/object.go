@@ -15,8 +15,11 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"time"
 
@@ -145,11 +148,13 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		}
 	}
 
-	err = s.removeObject(ctx, bucket, req.ObjectKey)
-	if err != nil {
-		log.Errorln("failed to delete old object. err:", err)
-		return err
+	// get old object meta if it exist, this is not needed if versioning is enabled
+	oldObj, err := s.MetaStorage.GetObject(ctx, bucket.Name, req.ObjectKey, "", false)
+	if err != nil && err != ErrNoSuchKey {
+		log.Errorf("get object[%s] failed, err:%v\n", req.ObjectKey, err)
+		return ErrInternalError
 	}
+	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
 
 	data := &StreamReader{in: in}
 	var limitedDataReader io.Reader
@@ -157,6 +162,15 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = io.LimitReader(data, req.Size)
 	} else {
 		limitedDataReader = data
+	}
+
+	// encrypt if needed
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		byteArr, _ := ioutil.ReadAll(limitedDataReader)
+		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
+		reader := bytes.NewReader(encBuf)
+		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
+		req.Size = int64(binary.Size(encBuf))
 	}
 
 	backendName := bucket.DefaultLocation
@@ -179,15 +193,17 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	res, err := sd.Put(ctx, limitedDataReader, &pb.Object{BucketName:req.BucketName, ObjectKey:req.ObjectKey})
+	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+	if oldObj != nil && oldObj.Location == backendName {
+		obj.StorageMeta = oldObj.StorageMeta
+		obj.ObjectId = oldObj.ObjectId
+	}
+	res, err := sd.Put(ctx, limitedDataReader, obj)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
 	}
-	var delObj *pb.DeleteObjectInput
-	defer s.removeObjectFromBackend(ctx, sd, delObj)
 
-	obj := &pb.Object{}
 	obj.BucketName = req.BucketName
 	obj.ObjectKey = req.ObjectKey
 	obj.Acl = req.Acl
@@ -203,22 +219,17 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
 	obj.Size = req.Size
-	if req.Location == "" {
-		obj.Location = bucket.DefaultLocation
-	} else {
-		obj.Location = req.Location
-	}
+	obj.Location = backendName
 
 	object := &meta.Object{Object: obj}
 
 	result.Md5 = res.Etag
 	result.LastModified = object.LastModified
 
-	err = s.MetaStorage.PutObject(ctx, object, nil, nil, true)
+	err = s.MetaStorage.PutObject(ctx, object, oldObj, nil, nil, true)
 	if err != nil {
-		log.Errorln("failed to put object meta. err:", err)
-		// delete object that have been written
-		delObj = &pb.DeleteObjectInput{ObjectId:obj.ObjectId, StorageMeta:obj.StorageMeta}
+		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
+		// TODO: consistent check & clean
 		return ErrDBError
 	}
 
@@ -362,6 +373,18 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			break
 		}
 
+		if bucket.ServerSideEncryption.SseType == "SSE" {
+			// decrypt and write
+			decErr, decBytes := utils.DecryptWithAES256(buf[0:n], bucket.ServerSideEncryption.EncryptionKey)
+			if decErr != nil {
+				log.Errorln("failed to decrypt data. err:", decErr)
+				return decErr
+			}
+			log.Infoln("successfully decrypted")
+			buf = decBytes
+			n = int(binary.Size(decBytes))
+		}
+
 		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
@@ -478,13 +501,20 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to get backend client with err:", err)
 		return err
 	}
+	// get old object meta if it exist
+	oldObj, err := s.MetaStorage.GetObject(ctx, targetBackendName, targetObjectName, "", false)
+	if err != nil && err != ErrNoSuchKey {
+		log.Errorf("get object[%s] failed, err:%v\n", targetObjectName, err)
+		return ErrInternalError
+	}
+	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
 	targetSd, err := driver.CreateStorageDriver(targetBackend.Type, targetBackend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
 
-	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size)
+	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
 		return err
@@ -495,6 +525,10 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		ObjectKey:  targetObjectName,
 		BucketName: targetBucketName,
 		Size:       srcObject.Size,
+	}
+	if oldObj != nil && oldObj.Location == targetBackendName {
+		targetObject.StorageMeta = oldObj.StorageMeta
+		targetObject.ObjectId = oldObj.ObjectId
 	}
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, srcObject.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, srcObject.Etag)
@@ -520,14 +554,15 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
+	// this is the default acl setting
+	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
-	// TODO: delete old object
 
-	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, nil, nil, true)
+	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, oldObj, nil, nil, true)
 	if err != nil {
-		log.Errorln("failed to put object meta. err:", err)
-		// TODO: delete uncompleted object at backend
+		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", targetObject, oldObj, err)
+		// TODO: consistent check & clean
 		err = ErrDBError
 		return err
 	}
@@ -698,7 +733,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 
 func (s *s3Service) copyData(ctx context.Context, srcSd, targetSd driver.StorageDriver, srcObj, targetObj *pb.Object) error {
 	log.Infof("copy object data")
-	reader, err := srcSd.Get(ctx, srcObj, 0, srcObj.Size)
+	reader, err := srcSd.Get(ctx, srcObj, 0, srcObj.Size-1)
 	if err != nil {
 		log.Errorln("failed to get data. err:", err)
 		return err
@@ -817,7 +852,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 
 	switch bucket.Versioning.Status {
 	case utils.VersioningDisabled:
-		err = s.removeObject(ctx, bucket, in.Key)
+		err = s.removeObject(ctx, bucket, object)
 	case utils.VersioningEnabled:
 		// TODO: versioning
 		err = ErrInternalError
@@ -834,17 +869,12 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	return nil
 }
 
-func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objectKey string) error {
-	log.Debugf("remove object[%s] from bucket[%s]\n", objectKey, bucket.Name)
-	obj, err := s.MetaStorage.GetObject(ctx, bucket.Name, objectKey, "", true)
-	if err == ErrNoSuchKey {
+func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *Object) error {
+	if obj == nil {
+		log.Infof("no need remove")
 		return nil
 	}
-	if err != nil {
-		log.Errorf("get object failed, err:%v\n", err)
-		return ErrInternalError
-	}
-
+	log.Infof("remove object[%s] from bucket[%s]\n", obj.ObjectKey, bucket.Name)
 	backendName := bucket.DefaultLocation
 	if obj.Location != "" {
 		backendName = obj.Location
@@ -868,21 +898,21 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, objec
 	}
 
 	// delete object data in backend
-	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: objectKey, VersioId: obj.VersionId,
+	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: obj.ObjectKey, VersioId: obj.VersionId,
 		ETag: obj.Etag, StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
 	if err != nil {
-		log.Errorf("failed to delete obejct[%s] from backend storage, err:%v\n", objectKey, err)
+		log.Errorf("failed to delete obejct[%s,versionid=%s] from backend storage, err:%v\n", obj.ObjectKey, obj.VersionId, err)
 		return err
 	} else {
-		log.Infof("delete obejct[%s] from backend storage successfully.\n", objectKey)
+		log.Infof("delete obejct[%s,versionid=%s] from backend storage successfully.\n", obj.ObjectKey, obj.VersionId)
 	}
 
 	// delete object meta data from database
 	err = s.MetaStorage.DeleteObject(ctx, obj)
 	if err != nil {
-		log.Errorf("failed to delete obejct[%s] metadata, err:%v", objectKey, err)
+		log.Errorf("failed to delete obejct[key=%s,versionid=%s] metadata, err:%v", obj.ObjectKey, obj.VersionId, err)
 	} else {
-		log.Infof("delete obejct[%s] metadata successfully.", objectKey)
+		log.Infof("delete obejct[key=%s,versionid=%s] metadata successfully.", obj.ObjectKey, obj.VersionId)
 	}
 
 	return err

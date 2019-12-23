@@ -42,13 +42,14 @@ type DBAdapter interface {
 	GetMultipart(bucketName, objectName, uploadId string) (multipart Multipart, err error)
 	DeleteMultipart(multipart *Multipart, tx interface{}) (err error)
 	ListMultipartUploads(input *pb.ListBucketUploadRequest) (output *pb.ListBucketUploadResult, err error)
+	PutObjectPart(multipart *Multipart, part *Part, tx interface{}) (err error)
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
 	GetBuckets(ctx context.Context) (buckets []*Bucket, err error)
 	PutBucket(ctx context.Context, bucket *Bucket) error
-	UpdateBucketSSE(ctx context.Context, bucketName string, sseType string) error
-	CreateBucketSSE(ctx context.Context, bucketName string, sseType string) error
+	UpdateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error
+	CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error
 	CheckAndPutBucket(ctx context.Context, bucket *Bucket) (bool, error)
 	DeleteBucket(ctx context.Context, bucket *Bucket) error
 	ListObjects(ctx context.Context, bucketName string, versioned bool, maxKeys int, filter map[string]string) (

@@ -93,7 +93,9 @@ func (ydf *YigDriverFactory) Init() error {
 func (ydf *YigDriverFactory) Close() {
 	var keys []interface{}
 	// stop config watcher
-	ydf.cfgWatcher.Stop()
+	if ydf.cfgWatcher != nil {
+		ydf.cfgWatcher.Stop()
+	}
 	// close the drivers
 	ydf.Drivers.Range(func(k, v interface{}) bool {
 		drv := v.(*storage.YigStorage)

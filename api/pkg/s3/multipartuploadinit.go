@@ -46,7 +46,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	// Save metadata.
 	attr := extractMetadataFromHeader(request)
 
-	storageClass, err := getStorageClassFromHeader(request)
+	tier, err := getTierFromHeader(request)
 	if err != nil {
 		log.Errorf("failed to get storage class from http header. err:", err)
 		WriteErrorResponse(response, request, err)
@@ -55,8 +55,8 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	result, err := s.s3Client.InitMultipartUpload(ctx, &pb.InitMultiPartRequest{
-		BucketName: bucketName, ObjectKey: objectKey, Acl: &pb.Acl{CannedAcl: acl.CannedAcl}, StorageClass: uint32(storageClass), Attrs: attr})
-	if HandleS3Error(response, request, err, result.ErrorCode) != nil {
+		BucketName: bucketName, ObjectKey: objectKey, Acl: &pb.Acl{CannedAcl: acl.CannedAcl}, Tier: int32(tier), Attrs: attr})
+	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorln("unable to init multipart. err:%v, errcode:%v", err, result.ErrorCode)
 		return
 	}

@@ -290,7 +290,7 @@ func runjob(in *pb.RunJobRequest) error {
 				log.Infof("ObjectMigrated:%d,TotalCapacity:%d Progress:%d\n", j.PassedCount, j.TotalCapacity, j.Progress)
 				db.DbAdapter.UpdateJob(&j)
 			}
-		case <-time.After(time.Duration(dur) * time.Second):
+		case <-time.After(dur):
 			{
 				tmout = true
 				log.Warnln("Timout.")
