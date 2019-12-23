@@ -270,7 +270,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	}
 
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
+	if err != nil {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
 		return nil
@@ -502,7 +502,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return err
 	}
 	// get old object meta if it exist
-	oldObj, err := s.MetaStorage.GetObject(ctx, targetBackendName, targetObjectName, "", false)
+	oldObj, err := s.MetaStorage.GetObject(ctx, targetBucketName, targetObjectName, "", false)
 	if err != nil && err != ErrNoSuchKey {
 		log.Errorf("get object[%s] failed, err:%v\n", targetObjectName, err)
 		return ErrInternalError
@@ -661,7 +661,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			return err
 		}
 		newObj := &meta.Object{Object: targetObject}
-		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, srcObject, newObj)
+		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, srcObject, newObj, nil)
 	} else {
 		// need move data, get target location first
 		if in.MoveType == utils.MoveType_ChangeLocation {
@@ -713,7 +713,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		out.Md5 = targetObject.Etag
 		out.LastModified = targetObject.LastModified
 		// update object meta data
-		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, srcObject, newObj)
+		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, srcObject, newObj, nil)
 		if err != nil {
 			log.Errorln("failed to update meta data after copy, err:", err)
 			// if failed, delete target object
@@ -963,14 +963,17 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	objects := make([]*pb.Object, 0, len(retObjects))
 	for _, obj := range retObjects {
 		object := pb.Object{
-			LastModified: obj.LastModified,
-			Etag:         obj.Etag,
-			Size:         obj.Size,
-			Tier:         obj.Tier,
-			Location:     obj.Location,
-			TenantId:     obj.TenantId,
-			BucketName:   obj.BucketName,
-			VersionId:    obj.VersionId,
+			LastModified:     obj.LastModified,
+			Etag:             obj.Etag,
+			Size:             obj.Size,
+			Tier:             obj.Tier,
+			Location:         obj.Location,
+			TenantId:         obj.TenantId,
+			BucketName:       obj.BucketName,
+			VersionId:        obj.VersionId,
+			CustomAttributes: obj.CustomAttributes,
+			ContentType:      obj.ContentType,
+			StorageMeta:      obj.StorageMeta,
 		}
 		if in.EncodingType != "" { // only support "url" encoding for now
 			object.ObjectKey = url.QueryEscape(obj.ObjectKey)

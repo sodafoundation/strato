@@ -75,7 +75,7 @@ func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	out, err := ad.client.PutObject(input)
 	log.Infof("upload object[OBS] end, objectId:%s\n", objectId)
 	if err != nil {
-		log.Infof("upload object[OBS] failed, objectId:%s, err:%v", objectId, err)
+		log.Errorf("upload object[OBS] failed, objectId:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 
@@ -113,7 +113,7 @@ func (ad *OBSAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		return nil, ErrGetFromBackendFailed
 	}
 
-	log.Infof("get object[OBS] suceed, objectId:%s\n", objectId)
+	log.Infof("get object[OBS] succeed, objectId:%s\n", objectId)
 	return out.Body, nil
 }
 
@@ -178,7 +178,13 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	input := &obs.InitiateMultipartUploadInput{}
 	input.Bucket = bucket
 	input.Key = objectId
-	input.StorageClass = obs.StorageClassStandard // Currently, only support standard.
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_OBS)
+	if err != nil {
+		log.Errorf("translate tier[%d] to obs storage class failed\n", object.Tier)
+		return nil, ErrInternalError
+	}
+	input.StorageClass = obs.StorageClassType(storClass)
+
 	out, err := ad.client.InitiateMultipartUpload(input)
 	if err != nil {
 		log.Infof("init multipart upload[OBS] failed, objectId:%s, err:%v", objectId, err)
@@ -188,6 +194,7 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	multipartUpload.Bucket = out.Bucket
 	multipartUpload.Key = out.Key
 	multipartUpload.UploadId = out.UploadId
+	multipartUpload.ObjectId = objectId
 	log.Infof("init multipart upload[OBS] succeed, objectId:%s\n", objectId)
 	return multipartUpload, nil
 }
@@ -237,6 +244,10 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 		input.Parts = append(input.Parts, part)
 	}
 	resp, err := ad.client.CompleteMultipartUpload(input)
+	if err != nil {
+		log.Errorf("complete multipart upload[OBS] failed, objectid:%s, err:%v\n", objectId, err)
+		return nil, ErrBackendCompleteMultipartFailed
+	}
 	result := &model.CompleteMultipartUploadResult{
 		Xmlns:    model.Xmlns,
 		Location: resp.Location,
