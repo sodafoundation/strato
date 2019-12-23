@@ -71,9 +71,15 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 }
 
 func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int64, tmout time.Duration) error {
-	// This depend on multipart upload
-	log.Error("not implemented")
-	return errors.New("not implemented")
+	ctx, _ := context.WithTimeout(context.Background(), tmout)
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
+
+	err := migration.MultipartCopyObj(ctx, obj, targetLoc, nil)
+	if err != nil {
+		log.Errorf("multipart move object[] failed, err:%v\n", err)
+	}
+
+	return err
 }
 
 func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {

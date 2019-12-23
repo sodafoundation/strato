@@ -31,7 +31,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -105,6 +104,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			log.Debugf("input.ContentMD5=%s\n", *input.ContentMD5)
 		}
 	}
+	log.Infof("upload object[AWS S3] start, objectId:%s\n", objectId)
 	ret, err := uploader.Upload(input)
 	if err != nil {
 		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v\n", objectId, err)
@@ -211,12 +211,18 @@ func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("init multipart upload[AWS S3], bucket = %v,objectId = %v\n", bucket, objectId)
+
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
+	if err != nil {
+		log.Warnf("translate tier[%d] to aws storage class failed, use default value.\n", object.Tier)
+		return nil, ErrInternalError
+	}
+
 	multipartUpload := &pb.MultipartUpload{}
 	multiUpInput := &awss3.CreateMultipartUploadInput{
-		Bucket: &bucket,
-		Key:    &objectId,
-		// Currently, only support STANDARD.
-		StorageClass: aws.String(constants.StorageClassAWSStandard),
+		Bucket:       &bucket,
+		Key:          &objectId,
+		StorageClass: aws.String(storClass),
 	}
 
 	svc := awss3.New(ad.session)
@@ -236,9 +242,12 @@ func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 
 func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	tries := 1
 	bucket := ad.backend.BucketName
-	bytess, _ := ioutil.ReadAll(stream)
+	bytess, err := ioutil.ReadAll(stream)
+	if err != nil {
+		log.Errorf("read data failed, err:%v\n", err)
+		return nil, ErrInternalError
+	}
 	upPartInput := &awss3.UploadPartInput{
 		Body:          bytes.NewReader(bytess),
 		Bucket:        &bucket,
@@ -247,27 +256,21 @@ func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 		UploadId:      &multipartUpload.UploadId,
 		ContentLength: aws.Int64(upBytes),
 	}
-	log.Infof("upload part[AWS S3], input:%v\n", upPartInput)
+	log.Infof("upload part[AWS S3], input:%v\n", *upPartInput)
 
 	svc := awss3.New(ad.session)
-	for tries <= 3 {
-		upRes, err := svc.UploadPart(upPartInput)
-		if err != nil {
-			if tries == 3 {
-				log.Errorf("upload part[AWS S3] failed. err:%v\n", err)
-				return nil, ErrPutToBackendFailed
-			}
-			log.Debugf("retrying to upload[AWS S3] part#%d ,err:%s\n", partNumber, err)
-			tries++
-		} else {
-			log.Infof("upload object[AWS S3], objectId:%s, part #%d succeed, ETag:%s\n", multipartUpload.ObjectId,
-				partNumber, *upRes.ETag)
-			result := &model.UploadPartResult{
-				Xmlns:      model.Xmlns,
-				ETag:       *upRes.ETag,
-				PartNumber: partNumber}
-			return result, nil
-		}
+	upRes, err := svc.UploadPart(upPartInput)
+	if err != nil {
+		log.Errorf("upload part[AWS S3] failed. err:%v\n", err)
+		return nil, ErrPutToBackendFailed
+	} else {
+		log.Infof("upload object[AWS S3], objectId:%s, part #%d succeed, ETag:%s\n", multipartUpload.ObjectId,
+			partNumber, *upRes.ETag)
+		result := &model.UploadPartResult{
+			Xmlns:      model.Xmlns,
+			ETag:       *upRes.ETag,
+			PartNumber: partNumber}
+		return result, nil
 	}
 
 	log.Error("upload part[AWS S3]: should not be here.")
@@ -296,7 +299,7 @@ func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 		},
 	}
 
-	log.Infof("completeInput %v\n", completeInput)
+	log.Infof("completeInput %v\n", *completeInput)
 	svc := awss3.New(ad.session)
 	resp, err := svc.CompleteMultipartUpload(completeInput)
 	if err != nil {
