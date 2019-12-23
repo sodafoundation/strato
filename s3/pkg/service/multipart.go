@@ -138,20 +138,25 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	res, err := sd.InitMultipartUpload(ctx, &pb.Object{BucketName: bucketName, ObjectKey: objectKey})
+	tier := in.Tier
+	if tier == 0 {
+		// if not set, use the default tier
+		tier = utils.Tier1
+	}
+	res, err := sd.InitMultipartUpload(ctx, &pb.Object{BucketName: bucketName, ObjectKey: objectKey, Tier: tier})
 	if err != nil {
 		log.Errorln("failed to init multipart upload. err:", err)
 		return err
 	}
 
 	multipartMetadata := MultipartMetadata{
-		InitiatorId:  tenantId,
-		TenantId:     bucket.TenantId,
-		UserId:       bucket.UserId,
-		ContentType:  contentType,
-		Acl:          datatype.Acl{CannedAcl: in.Acl.CannedAcl},
-		Attrs:        attrs,
-		StorageClass: StorageClass(in.StorageClass),
+		InitiatorId: tenantId,
+		TenantId:    bucket.TenantId,
+		UserId:      bucket.UserId,
+		ContentType: contentType,
+		Acl:         datatype.Acl{CannedAcl: in.Acl.CannedAcl},
+		Attrs:       attrs,
+		Tier:        tier,
 	}
 
 	multipart := Multipart{
