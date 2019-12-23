@@ -71,6 +71,11 @@ const (
 	REQUEST_HEADER_CONTENT_TYPE      = "Content-Type"
 )
 
+const (
+	REQUEST_FORM_KEY    = "Key"
+	REQUEST_FORM_BUCKET = "Bucket"
+)
+
 func GetPaginationParam(request *restful.Request) (int32, int32, error) {
 	limit := int32(DefaultPaginationLimit)
 	offset := int32(DefaultPaginationOffset)

@@ -50,7 +50,7 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 		WriteErrorResponse(response, request, s3error.ErrMalformedPOSTRequest)
 		return
 	}
-	objectKey := formValues["Key"]
+	objectKey := formValues[common.REQUEST_FORM_KEY]
 	if !isValidObjectName(objectKey) {
 		log.Errorf("got invalid object key: %s", objectKey)
 		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
@@ -59,7 +59,7 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
-	formValues["Bucket"] = bucketName
+	formValues[common.REQUEST_FORM_BUCKET] = bucketName
 
 	// check if specific bucket exist
 	ctx := common.InitCtxWithAuthInfo(request)
@@ -118,10 +118,13 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 			eof = true
 		}
 		err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
-
 		if err != nil {
 			log.Infof("stream send error: %v", err)
 			break
+		}
+		// make sure that the grpc server receives the EOF.
+		if eof {
+			stream.Send(&s3.PutDataStream{Data: buf[0:0]})
 		}
 	}
 
@@ -137,8 +140,10 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 	if err != nil {
 		log.Errorf("stream receive message failed:%v\n", err)
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
+		return
 	}
 
+	log.Info("succeed to put object data for post object request.")
 	if result.Md5 != "" {
 		response.Header().Set("ETag", "\""+result.Md5+"\"")
 	}
