@@ -42,10 +42,6 @@ const (
 )
 
 const (
-	Tier999 = 999
-)
-
-const (
 	ListObjectsType2Str string = "2"
 	ListObjectsType2Int int32  = 2
 	ListObjectsType1Int int32  = 1

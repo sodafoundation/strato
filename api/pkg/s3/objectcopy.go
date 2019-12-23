@@ -23,17 +23,18 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
-func getStorageClassFromHeader(request *restful.Request) (types.StorageClass, error) {
+func getTierFromHeader(request *restful.Request) (types.StorageClass, error) {
 	storageClassStr := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
 	if storageClassStr != "" {
 		return types.MatchStorageClassIndex(storageClassStr)
 	} else {
-		// If you don't specify this header, Amazon S3 uses STANDARD
-		return types.ObjectStorageClassStandard, nil
+		// If you don't specify this header, STANDARD will be used
+		return utils.Tier1, nil
 	}
 }
 
@@ -128,7 +129,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 	}
 
 	//TODO: In a versioning-enabled bucket, you cannot change the storage class of a specific version of an object. When you copy it, Amazon S3 gives it a new version ID.
-	storageClassFromHeader, err := getStorageClassFromHeader(request)
+	storClass, err := getTierFromHeader(request)
 	if err != nil {
 		WriteErrorResponse(response, request, err)
 		return
@@ -147,7 +148,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 			targetObject.ContentType = sourceObject.ContentType
 		}
 		targetObject.CustomAttributes = newMetadata
-		targetObject.StorageClass = storageClassFromHeader.ToString()
+		targetObject.Tier = int32(storClass)
 
 		result, err := s.s3Client.UpdateObjectMeta(ctx, targetObject)
 		if err != nil {
