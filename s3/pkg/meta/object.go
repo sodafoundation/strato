@@ -69,7 +69,7 @@ func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName stri
 }
 
 func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
-	log.Debugf("PutObject begin, object=%+v, deleteObj:%+v")
+	log.Debugf("PutObject begin, object=%+v, deleteObj:%+v", object, deleteObj)
 	tx, err := m.Db.NewTrans()
 	defer func() {
 		if err != nil {
