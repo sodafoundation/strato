@@ -149,7 +149,7 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 	log.Infof("blobURL:%v, size:%d\n", blobURL, object.Size)
 
 	var buf []byte
-	if start != 0 || end != 0 {
+	if end < object.Size - 1 {
 		count := end - start + 1
 		buf = make([]byte, count)
 		log.Debugf("start=%d, end=%d, count=%d\n", start, end, count)

@@ -409,7 +409,8 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		return err
 	}
 
-	oldObj, err := s.MetaStorage.GetObject(ctx, bucketName, objectKey, in.SourceVersionID, false)
+	// TODO: if versioning is enabled, not need to delete oldObj
+	oldObj, err := s.MetaStorage.GetObject(ctx, bucketName, objectKey, "", false)
 	if err != nil && err != ErrNoSuchKey {
 		log.Errorf("get object[%s] failed, err:%v\n", objectKey, err)
 		return ErrInternalError

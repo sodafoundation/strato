@@ -133,8 +133,6 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
 	bucket := ad.backend.BucketName
-	var buf []byte
-	writer := aws.NewWriteAtBuffer(buf)
 	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,
@@ -148,18 +146,15 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		getObjectInput.SetRange(rangestr)
 	}
 
-	downloader := s3manager.NewDownloader(ad.session)
-	numBytes, err := downloader.DownloadWithContext(ctx, writer, &getObjectInput)
+	svc := awss3.New(ad.session)
+	result, err := svc.GetObject(&getObjectInput)
 	if err != nil {
 		log.Errorf("get object[AWS S3] failed, objectId:%s, err:%v", objectId, err)
 		return nil, ErrGetFromBackendFailed
 	}
 
-	log.Infof("get object[AWS S3] succeed, objectId:%s, numBytes:%d\n", objectId, numBytes)
-	body := bytes.NewReader(writer.Bytes())
-	ioReaderClose := ioutil.NopCloser(body)
-
-	return ioReaderClose, nil
+	log.Infof("get object[AWS S3] succeed, objectId:%s, ContentLength:%d\n", objectId, *result.ContentLength)
+	return result.Body, nil
 }
 
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
