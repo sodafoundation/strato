@@ -375,13 +375,14 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 
 		if bucket.ServerSideEncryption.SseType == "SSE" {
 			// decrypt and write
-			decErr, decBytes := utils.DecryptWithAES256(buf[0:n], bucket.ServerSideEncryption.EncryptionKey)
+			decErr, decBytes := utils.DecryptWithAES256(buf[0:left], bucket.ServerSideEncryption.EncryptionKey)
 			if decErr != nil {
 				log.Errorln("failed to decrypt data. err:", decErr)
 				return decErr
 			}
 			log.Infoln("successfully decrypted")
 			buf = decBytes
+			log.Infoln(string(decBytes))
 			n = int(binary.Size(decBytes))
 		}
 
