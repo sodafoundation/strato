@@ -41,6 +41,7 @@ var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved d
 var JOB_RUN_TIME_MAX = 86400           //seconds, equals 1 day
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
+var MiniSpeed int64 = 5 // 5KByte/Sec
 
 const WT_MOVE = 96
 const WT_DELETE = 4
@@ -106,8 +107,9 @@ func CopyObj(ctx context.Context, obj *osdss3.Object, destLoca *LocationInfo, jo
 		TargetBucketName: destLoca.BucketName,
 		TargetObjectName: obj.ObjectKey,
 	}
-
-	_, err := s3client.CopyObject(ctx, req)
+	tmoutSec := obj.Size / MiniSpeed
+	opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
+	_, err := s3client.CopyObject(ctx, req, opt)
 	if err != nil {
 		log.Errorf("copy object[%s] failed, err:%v\n", obj.ObjectKey, err)
 	}
@@ -118,10 +120,115 @@ func CopyObj(ctx context.Context, obj *osdss3.Object, destLoca *LocationInfo, jo
 }
 
 func MultipartCopyObj(ctx context.Context, obj *osdss3.Object, destLoca *LocationInfo, job *flowtype.Job) error {
-	// This depend on multipart upload
-	log.Error("not implemented")
-	return errors.New("not implemented")
+	partCount := int64(obj.Size / PART_SIZE)
+	if obj.Size%PART_SIZE != 0 {
+		partCount++
+	}
 
+	log.Infof("*****Copy object[%s] from #%s# to #%s#, size=%d, partCount=%d.\n", obj.ObjectKey, obj.BucketName,
+		destLoca.BucketName, obj.Size, partCount)
+
+	var i int64
+	var err error
+	var uploadId string
+	var initSucceed bool = false
+	var completeParts []*osdss3.CompletePart
+	currPartSize := PART_SIZE
+	for i = 0; i < partCount; i++ {
+		partNumber := i + 1
+		offset := int64(i) * PART_SIZE
+		if i+1 == partCount {
+			currPartSize = obj.Size - offset
+		}
+
+		if partNumber == 1 {
+			// init upload
+			rsp, err := s3client.InitMultipartUpload(ctx, &osdss3.InitMultiPartRequest{
+				BucketName: destLoca.BucketName,
+				ObjectKey:  obj.ObjectKey,
+				Tier:       destLoca.Tier,
+				Location:   destLoca.BakendName,
+				Attrs:      obj.CustomAttributes,
+				// TODO: add content-type
+			})
+			if err != nil {
+				log.Errorf("init mulipart upload failed:%v\n", err)
+				break
+			}
+			initSucceed = true
+			uploadId = rsp.UploadID
+			log.Debugln("**** init multipart upload succeed, uploadId=", uploadId)
+		}
+
+		// copy part
+		copyReq := &osdss3.CopyObjPartRequest{SourceBucket: obj.BucketName, SourceObject: obj.ObjectKey,
+			TargetBucket: destLoca.BucketName, TargetObject: obj.ObjectKey, PartID: partNumber,
+			UploadID: uploadId, ReadOffset: offset, ReadLength: currPartSize,
+		}
+		var rsp *osdss3.CopyObjPartResponse
+		try := 0
+		tmoutSec := currPartSize / MiniSpeed
+		opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
+		for try < 3 { // try 3 times in case network is not stable
+			log.Debugf("###copy object part, objkey=%s, uploadid=%s, offset=%d, lenth=%d\n", obj.ObjectKey, uploadId, offset, currPartSize)
+			rsp, err = s3client.CopyObjPart(ctx, copyReq, opt)
+			if err == nil {
+				log.Debugln("copy part succeed")
+				break
+			} else {
+				log.Warnf("copy part failed, err:%v\n", err)
+			}
+			try++
+			time.Sleep(time.Second * 1)
+		}
+		if try == 3 {
+			log.Errorln("copy part failed too many times")
+			break
+		}
+
+		log.Debugf("copy part[obj=%s, uploadId=%s, ReadOffset=%d, ReadLength=%d] succeed\n", obj.ObjectKey,
+			uploadId, offset, currPartSize)
+		completePart := &osdss3.CompletePart{PartNumber: partNumber, ETag: rsp.Etag}
+		completeParts = append(completeParts, completePart)
+
+		// update job progress
+		if job != nil {
+			log.Debugln("update job")
+			progress(job, currPartSize, WT_MOVE)
+		}
+	}
+
+	if err == nil {
+		// copy parts succeed, need to complete it
+		completeReq := &osdss3.CompleteMultipartRequest{BucketName: destLoca.BucketName, ObjectKey: obj.ObjectKey,
+			UploadId: uploadId, CompleteParts: completeParts, SourceVersionID: obj.VersionId}
+		if job == nil {
+			// this is for lifecycle management
+			completeReq.RequestType = s3utils.RequestType_Lifecycle
+		}
+		_, err = s3client.CompleteMultipartUpload(ctx, completeReq)
+		if err != nil {
+			log.Errorf("complete multipart copy failed, err:%v\n", err)
+		}
+	}
+
+	if err != nil {
+		if initSucceed == true {
+			log.Debugf("abort multipart copy, bucket:%s, object:%s, uploadid:%s\n", destLoca.BucketName, obj.ObjectKey, uploadId)
+			_, ierr := s3client.AbortMultipartUpload(ctx, &osdss3.AbortMultipartRequest{BucketName: destLoca.BucketName,
+				ObjectKey: obj.ObjectKey, UploadId: uploadId,
+			})
+			if ierr != nil {
+				// it shoud be cleaned by gc in s3 service
+				log.Warnf("abort multipart copy failed, err:%v\n", ierr)
+			}
+		}
+
+		return err
+	}
+
+	log.Infof("*****Copy object[%s] from #%s# to #%s# succeed.\n", obj.ObjectKey, obj.Location,
+		destLoca.BakendName)
 	return nil
 }
 
@@ -148,7 +255,7 @@ func migrate(ctx context.Context, obj *osdss3.Object, capa chan int64, th chan i
 	// copy object
 	var err error
 	PART_SIZE = GetMultipartSize()
-	destLoc := &LocationInfo{BucketName: req.DestConn.BucketName}
+	destLoc := &LocationInfo{BucketName: req.DestConn.BucketName, Tier: obj.Tier}
 	if obj.Size <= PART_SIZE {
 		err = CopyObj(ctx, obj, destLoc, job)
 	} else {
@@ -237,6 +344,8 @@ func runjob(in *pb.RunJobRequest) error {
 
 	// init job
 	j := flowtype.Job{Id: bson.ObjectIdHex(in.Id)}
+	j.StartTime = time.Now()
+	j.Status = flowtype.JOB_STATUS_RUNNING
 	err := initJob(ctx, in, &j)
 	if err != nil {
 		return err

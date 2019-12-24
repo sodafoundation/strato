@@ -68,7 +68,8 @@ func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName stri
 	return object, nil
 }
 
-func (m *Meta) PutObject(ctx context.Context, object *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
+func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
+	log.Debugf("PutObject begin, object=%+v, deleteObj:%+v\n", object, deleteObj)
 	tx, err := m.Db.NewTrans()
 	defer func() {
 		if err != nil {
@@ -76,9 +77,33 @@ func (m *Meta) PutObject(ctx context.Context, object *Object, multipart *Multipa
 		}
 	}()
 
+	// if target object exist and it's location is different from new location, need to clean it
+	if deleteObj != nil {
+		if deleteObj.Location != object.Location {
+			log.Infoln("put gc, deleteObj:", deleteObj)
+			err = m.Db.PutGcobjRecord(ctx, deleteObj, tx)
+			if err != nil {
+				return err
+			}
+		}
+
+		log.Infoln("delete object metadata, deleteObj:", deleteObj)
+		err = m.Db.DeleteObject(ctx, deleteObj, tx)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = m.Db.PutObject(ctx, object, tx)
 	if err != nil {
 		return err
+	}
+
+	if multipart != nil {
+		err = m.Db.DeleteMultipart(multipart, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// TODO: usage need to be updated for charging, and it depends on redis, and the mechanism is:
@@ -122,7 +147,27 @@ func (m *Meta) MarkObjectAsDeleted(ctx context.Context, object *Object) error {
 	return m.Db.SetObjectDeleteMarker(ctx, object, true)
 }
 
-func (m *Meta) UpdateObject4Lifecycle(ctx context.Context, old, new *Object) (err error) {
+func (m *Meta) UpdateObject4Lifecycle(ctx context.Context, old, new *Object, multipart *Multipart) (err error) {
 	log.Infof("update object from %v to %v\n", *old, *new)
-	return m.Db.UpdateObject4Lifecycle(ctx, old, new, nil)
+	tx, err := m.Db.NewTrans()
+	defer func() {
+		if err != nil {
+			m.Db.AbortTrans(tx)
+		}
+	}()
+
+	err = m.Db.UpdateObject4Lifecycle(ctx, old, new, tx)
+	if err != nil {
+		return err
+	}
+
+	if multipart != nil {
+		err = m.Db.DeleteMultipart(multipart, tx)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = m.Db.CommitTrans(tx)
+	return err
 }

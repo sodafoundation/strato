@@ -60,12 +60,27 @@ message ListObjectPartsRequest {
 	string objectKey = 2;
 	string encodingType = 3;
 	string uploadId = 4;
-	int32 maxParts = 5;
-	int32 partNumberMarker = 6;
+	int64 maxParts = 5;
+	int64 partNumberMarker = 6;
+}
+
+message Part {
+	int64 PartNumber = 1;
+	string ETag = 2;
+	string LastModified = 3;
+	int64 Size = 4;
 }
 
 message ListObjectPartsResponse {
-	int32 errorCode = 1;
+	int32 ErrorCode = 1;
+	Owner Initiator = 2;
+	Owner Owner = 3;
+	string StorageClass = 4;
+	int64 PartNumberMarker = 5;
+	int64 NextPartNumberMarker = 6;
+	int64 MaxParts = 7;
+	bool IsTruncated = 8;
+	repeated Part Parts = 9;
 }
 
 message AbortMultipartRequest {
@@ -84,6 +99,9 @@ message CompleteMultipartRequest {
 	string objectKey = 2;
 	string uploadId = 3;
 	repeated CompletePart completeParts = 4;
+	string sourceVersionID = 5; // only for lifecycle
+	string requestType = 6; // "" means end user, it's the default, lifecycle means lifecycle management
+	int32 tier = 7;
 }
 
 message CompleteMultipartResponse {
@@ -96,8 +114,9 @@ message InitMultiPartRequest {
 	string bucketName = 1;
 	string objectKey = 2;
 	Acl acl = 3;
-	uint32 storageClass = 4;
-	map<string, string> attrs = 5;
+	int32 tier = 4;
+	string location = 5;
+	map<string, string> attrs = 6;
 }
 
 message InitMultiPartResponse {
@@ -224,17 +243,20 @@ message BaseObjRequest {
 
 message CopyObjPartRequest {
 	string SourceBucket = 1;
-	string SourceObj = 2;
+	string SourceObject = 2;
 	string TargetBucket = 3;
 	string TargetObject = 4;
-	string UploadID = 5;
-	string PartID = 6;
-	// TODO: Add more parameters
+	string TargetLocation = 5;
+	string UploadID = 6;
+	int64  PartID = 7;
+	int64  ReadOffset = 8;
+	int64  ReadLength = 9;
 }
 
 message CopyObjPartResponse {
-	string LastModified = 1;
-	string Etag = 2;
+	int32 ErrorCode = 1;
+	int64 LastModified = 2;
+	string Etag = 3;
 }
 
 message ServerSideEncryption {
@@ -524,6 +546,8 @@ message MultipartUpload {
     string key = 2;
     string uploadId = 3;
     string objectId = 4;  // id used in backend
+    string location = 5;  // means backend
+    int32 tier = 6;
 }
 
 message ListParts {

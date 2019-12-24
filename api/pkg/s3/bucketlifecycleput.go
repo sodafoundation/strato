@@ -26,6 +26,7 @@ import (
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -83,7 +84,7 @@ func checkValidationOfActions(actions []*s3.Action) error {
 			if action.Name == ActionNameTransition && action.Days < TransitionMinDays {
 				// the days for transition to tiers except tier999 should not less than TransitionMinDays
 				minDays := int32(TransitionMinDays)
-				if action.Tier == Tier999 {
+				if action.Tier == utils.Tier999 {
 					// the days for transition to tier999 should not less than TransitionToArchiveMinDays
 					minDays = TransitionToArchiveMinDays
 				}
@@ -223,7 +224,7 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	}
 
 	lcRsp, err := s.s3Client.PutBucketLifecycle(ctx, &s3.PutBucketLifecycleRequest{BucketName: bucketName, Lc: s3RulePtrArr})
-	if HandleS3Error(response, request, err, lcRsp.ErrorCode) != nil {
+	if HandleS3Error(response, request, err, lcRsp.GetErrorCode()) != nil {
 		log.Errorf("put bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, lcRsp.ErrorCode)
 		return
 	}

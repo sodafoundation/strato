@@ -193,6 +193,7 @@ func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 		multipartUpload.Bucket = object.BucketName
 		multipartUpload.Key = object.ObjectKey
 		multipartUpload.UploadId = res.UploadID
+		multipartUpload.ObjectId = objectId
 	}
 
 	return multipartUpload, nil
@@ -200,7 +201,6 @@ func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 
 func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	tries := 1
 	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
 	bucket := ad.session.NewBucket()
 	log.Infof("upload part[GCS], objectId:%s, bucket:%s, partNum:%d, bytes:%s\n",
@@ -208,29 +208,21 @@ func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 
 	GcpObject := bucket.NewObject(ad.backend.BucketName)
 	uploader := GcpObject.NewUploads(objectId)
-	for tries <= 3 {
-		d, err := ioutil.ReadAll(stream)
-		data := []byte(d)
-		body := ioutil.NopCloser(bytes.NewReader(data))
-		contentMD5 := utils.Md5Content(data)
-		//length := int64(len(data))
-		part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
-
-		if err != nil {
-			if tries == 3 {
-				log.Infof("upload part[GCS] failed, objectId:%s, partNum:%d, err:%v\n", objectId, partNumber, err)
-				return nil, ErrPutToBackendFailed
-			}
-			log.Infof("retrying to upload[GCS] part#%d ,err:%s\n", partNumber, err)
-			tries++
-		} else {
-			log.Infof("upload part[CGS] objectId:%s, partNum:#%d, ETag:%s\n", objectId, partNumber, part.Etag)
-			result := &model.UploadPartResult{
-				Xmlns:      model.Xmlns,
-				ETag:       part.Etag,
-				PartNumber: partNumber}
-			return result, nil
-		}
+	d, err := ioutil.ReadAll(stream)
+	data := []byte(d)
+	body := ioutil.NopCloser(bytes.NewReader(data))
+	contentMD5 := utils.Md5Content(data)
+	part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
+	if err != nil {
+		log.Infof("upload part[GCS] failed, objectId:%s, partNum:%d, err:%v\n", objectId, partNumber, err)
+		return nil, ErrPutToBackendFailed
+	} else {
+		log.Infof("upload part[CGS] objectId:%s, partNum:#%d, ETag:%s\n", objectId, partNumber, part.Etag)
+		result := &model.UploadPartResult{
+			Xmlns:      model.Xmlns,
+			ETag:       part.Etag,
+			PartNumber: partNumber}
+		return result, nil
 	}
 
 	log.Error("upload part[GCS]: should not be here.")
