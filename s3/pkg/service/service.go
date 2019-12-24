@@ -17,7 +17,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud-orig/s3/pkg/utils"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"os"
 	"strconv"
 

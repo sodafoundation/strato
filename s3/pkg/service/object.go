@@ -382,7 +382,6 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			}
 			log.Infoln("successfully decrypted")
 			buf = decBytes
-			log.Infoln(string(decBytes))
 			n = int(binary.Size(decBytes))
 		}
 
