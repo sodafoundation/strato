@@ -113,7 +113,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
-	log.Debugf("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
+	log.Debug("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 	if userMd5 != "" && userMd5 != calculatedMd5 {
 		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 		return result, ErrBadDigest

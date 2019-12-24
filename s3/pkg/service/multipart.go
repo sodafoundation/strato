@@ -414,7 +414,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		log.Errorf("get object[%s] failed, err:%v\n", objectKey, err)
 		return ErrInternalError
 	}
-	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
+	log.Debugf("bucketName=%s,objectKey=%s,version=%s,existObj=%v, err=%v\n", bucketName, objectKey, in.SourceVersionID, oldObj, err)
 
 	// Add to objects table
 	contentType := multipart.Metadata.ContentType
