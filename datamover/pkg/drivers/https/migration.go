@@ -41,6 +41,7 @@ var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved d
 var JOB_RUN_TIME_MAX = 86400           //seconds, equals 1 day
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
+var MiniSpeed int64 = 5 // 5KByte/Sec
 
 const WT_MOVE = 96
 const WT_DELETE = 4
@@ -106,8 +107,9 @@ func CopyObj(ctx context.Context, obj *osdss3.Object, destLoca *LocationInfo, jo
 		TargetBucketName: destLoca.BucketName,
 		TargetObjectName: obj.ObjectKey,
 	}
-
-	_, err := s3client.CopyObject(ctx, req)
+	tmoutSec := obj.Size / MiniSpeed
+	opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
+	_, err := s3client.CopyObject(ctx, req, opt)
 	if err != nil {
 		log.Errorf("copy object[%s] failed, err:%v\n", obj.ObjectKey, err)
 	}
@@ -165,9 +167,11 @@ func MultipartCopyObj(ctx context.Context, obj *osdss3.Object, destLoca *Locatio
 		}
 		var rsp *osdss3.CopyObjPartResponse
 		try := 0
+		tmoutSec := currPartSize / MiniSpeed
+		opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
 		for try < 3 { // try 3 times in case network is not stable
 			log.Debugf("###copy object part, objkey=%s, uploadid=%s, offset=%d, lenth=%d\n", obj.ObjectKey, uploadId, offset, currPartSize)
-			rsp, err = s3client.CopyObjPart(ctx, copyReq)
+			rsp, err = s3client.CopyObjPart(ctx, copyReq, opt)
 			if err == nil {
 				log.Debugln("copy part succeed")
 				break

@@ -21,12 +21,15 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
+	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	s3error "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/error"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
+
+var MiniSpeed int64 = 5 // 5KByte/Sec
 
 // supportedGetReqParams - supported request parameters for GET presigned request.
 var supportedGetReqParams = map[string]string{
@@ -101,7 +104,9 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		startOffset = hrange.OffsetBegin
 		length = hrange.GetLength()
 	}
-	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket: bucketName, Key: objectKey, Offset: startOffset, Length: length})
+	tmoutSec := object.Size / MiniSpeed
+	opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
+	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket: bucketName, Key: objectKey, Offset: startOffset, Length: length}, opt)
 	if err != nil {
 		log.Errorln("get object failed, err:%v", err)
 		WriteErrorResponse(response, request, err)
@@ -157,6 +162,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		}
 		left -= int64(len(rsp.Data))
 	}
+	log.Debugf("left bytes=%d\n", left)
 
 	if !dataWritten {
 		if s3err == int32(s3error.ErrNoErr) {
@@ -167,7 +173,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		}
 	}
 
-	log.Info("Get object successfully.")
+	log.Infof("Get object[%s] end.\n", objectKey)
 }
 
 func (s *APIService) HeadObject(request *restful.Request, response *restful.Response) {

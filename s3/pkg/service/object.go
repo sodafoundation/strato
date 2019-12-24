@@ -393,7 +393,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		left -= int64(n)
 	}
 
-	log.Infoln("get object successfully")
+	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
 	return err
 }
 
@@ -513,7 +513,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-
+	log.Debugf("***********************ctx:%+v\n", ctx)
+	log.Infof("get object ....")
 	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
@@ -531,7 +532,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		targetObject.ObjectId = oldObj.ObjectId
 	}
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, srcObject.Size)
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, srcObject.Etag)
+	log.Info("put object ....")
 	res, err := targetSd.Put(ctx, limitedDataReader, targetObject)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
@@ -558,7 +559,6 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
-
 	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, oldObj, nil, nil, true)
 	if err != nil {
 		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", targetObject, oldObj, err)

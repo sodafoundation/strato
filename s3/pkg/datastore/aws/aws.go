@@ -66,7 +66,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
-	log.Infof("put object[OBS], objectId:%s, bucket:%s, size=%d, userMd5=%s\n", objectId, bucket, size, userMd5)
+	log.Infof("put object, objectId:%s, bucket:%s, size=%d, userMd5=%s\n", objectId, bucket, size, userMd5)
 
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
@@ -113,7 +113,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
-	log.Debugf("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
+	log.Debug("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 	if userMd5 != "" && userMd5 != calculatedMd5 {
 		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 		return result, ErrBadDigest
@@ -135,6 +135,7 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	bucket := ad.backend.BucketName
 	var buf []byte
 	writer := aws.NewWriteAtBuffer(buf)
+
 	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,

@@ -94,7 +94,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	uploadResp, err := azblob.UploadStreamToBlockBlob(ctx, stream, blobURL, options)
 	log.Infof("put object[Azure Blob] end, objectId:%s\n", objectId)
 	if err != nil {
-		log.Errorf("put object[Azure Blob], objectId:%s, err:%d\n", objectId, err)
+		log.Errorf("put object[Azure Blob], objectId:%s, err:%v\n", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 	if uploadResp.Response().StatusCode != http.StatusCreated {
@@ -148,7 +148,6 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 	blobURL := ad.containerURL.NewBlobURL(object.ObjectId)
 	log.Infof("blobURL:%v, size:%d\n", blobURL, object.Size)
 
-	len := object.Size
 	var buf []byte
 	if start != 0 || end != 0 {
 		count := end - start + 1
@@ -163,15 +162,13 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 		ioReaderClose := ioutil.NopCloser(body)
 		return ioReaderClose, nil
 	} else {
-		buf = make([]byte, len)
-		//err := azblob.DownloadBlobToBuffer(context, blobURL, 0, 0, buf, azblob.DownloadFromBlobOptions{})
 		downloadResp, err := blobURL.Download(ctx, 0, azblob.CountToEnd, azblob.BlobAccessConditions{},
 			false)
 		if err != nil {
 			log.Errorf("get object[Azure Blob] failed, objectId:%s, err:%v\n", object.ObjectId, err)
 			return nil, ErrGetFromBackendFailed
 		}
-		log.Errorf("get object[Azure Blob] successfully, objectId:%s\n", object.ObjectId)
+		log.Infof("get object[Azure Blob] successfully, objectId:%s\n", object.ObjectId)
 		return downloadResp.Response().Body, nil
 	}
 

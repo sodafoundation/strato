@@ -194,6 +194,7 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 	multipartUpload.Bucket = out.Bucket
 	multipartUpload.Key = out.Key
 	multipartUpload.UploadId = out.UploadId
+	multipartUpload.ObjectId = objectId
 	log.Infof("init multipart upload[OBS] succeed, objectId:%s\n", objectId)
 	return multipartUpload, nil
 }
