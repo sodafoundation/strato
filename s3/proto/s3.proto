@@ -99,6 +99,9 @@ message CompleteMultipartRequest {
 	string objectKey = 2;
 	string uploadId = 3;
 	repeated CompletePart completeParts = 4;
+	string sourceVersionID = 5; // only for lifecycle
+	string requestType = 6; // "" means end user, it's the default, lifecycle means lifecycle management
+	int32 tier = 7;
 }
 
 message CompleteMultipartResponse {
@@ -112,7 +115,8 @@ message InitMultiPartRequest {
 	string objectKey = 2;
 	Acl acl = 3;
 	int32 tier = 4;
-	map<string, string> attrs = 5;
+	string location = 5;
+	map<string, string> attrs = 6;
 }
 
 message InitMultiPartResponse {
@@ -242,10 +246,11 @@ message CopyObjPartRequest {
 	string SourceObject = 2;
 	string TargetBucket = 3;
 	string TargetObject = 4;
-	string UploadID = 5;
-	int64  PartID = 6;
-	int64  ReadOffset = 7;
-	int64  ReadLength = 8;
+	string TargetLocation = 5;
+	string UploadID = 6;
+	int64  PartID = 7;
+	int64  ReadOffset = 8;
+	int64  ReadLength = 9;
 }
 
 message CopyObjPartResponse {
@@ -541,6 +546,8 @@ message MultipartUpload {
     string key = 2;
     string uploadId = 3;
     string objectId = 4;  // id used in backend
+    string location = 5;  // means backend
+    int32 tier = 6;
 }
 
 message ListParts {
