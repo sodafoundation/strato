@@ -90,7 +90,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 
 	rsp, err := s.s3Client.CreateBucket(ctx, &bucket)
 	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
-		log.Errorf("delete bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
+		log.Errorf("delete bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.GetErrorCode())
 		return
 	}
 
