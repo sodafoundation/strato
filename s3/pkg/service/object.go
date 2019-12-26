@@ -410,7 +410,7 @@ func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObje
 		left -= int64(n)
 	}
 
-	log.Infoln("get object successfully")
+	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
 	return err
 }
 
@@ -636,7 +636,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-
+	log.Debugf("***ctx:%+v\n", ctx)
 	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)

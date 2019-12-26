@@ -193,6 +193,7 @@ func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 		multipartUpload.Bucket = object.BucketName
 		multipartUpload.Key = object.ObjectKey
 		multipartUpload.UploadId = res.UploadID
+		multipartUpload.ObjectId = objectId
 	}
 
 	return multipartUpload, nil
