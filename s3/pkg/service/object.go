@@ -164,6 +164,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = data
 	}
 
+	actualSize := req.Size
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 		byteArr, _ := ioutil.ReadAll(limitedDataReader)
@@ -218,7 +219,8 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
-	obj.Size = req.Size
+	obj.Size = actualSize
+	obj.EncSize = req.Size
 	obj.Location = backendName
 
 	object := &meta.Object{Object: obj}
@@ -288,6 +290,21 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 }
 
 func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
+	log.Infoln("GetObject is called in s3 service.")
+	bucketName := req.Bucket
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+	if bucket.ServerSideEncryption != nil && bucket.ServerSideEncryption.SseType == "SSE" {
+		return GetEncObject(ctx, req, stream, s)
+	} else {
+		return GetObject(ctx, req, stream, s)
+	}
+}
+
+func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
 	log.Infoln("GetObject is called in s3 service.")
 	bucketName := req.Bucket
 	objectName := req.Key
@@ -391,6 +408,112 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 			break
 		}
 		left -= int64(n)
+	}
+
+	log.Infoln("get object successfully")
+	return err
+}
+
+func GetEncObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
+	log.Infoln("GetObject is called in s3 service.")
+	bucketName := req.Bucket
+	objectName := req.Key
+	offset := req.Offset
+	length := req.Length
+
+	var err error
+	getObjRes := &pb.GetObjectResponse{}
+	defer func() {
+		getObjRes.ErrorCode = GetErrCode(err)
+		stream.SendMsg(getObjRes)
+	}()
+
+	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, "", true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
+	if err != nil {
+		log.Errorln("failed to check source object rights. err:", err)
+		return err
+	}
+
+	backendName := bucket.DefaultLocation
+	if object.Location != "" {
+		backendName = object.Location
+	}
+	// if this object has only one part
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("unable to get backend. err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		length = object.EncSize
+	}
+	log.Infof("get object offset %v, length %v", offset, length)
+	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
+	if err != nil {
+		log.Errorln("failed to get data. err:", err)
+		return err
+	}
+
+	buf := make([]byte, object.EncSize)
+
+	n, err := reader.Read(buf)
+	if err != nil && err != io.EOF {
+		log.Errorln("failed to read, err:", err)
+		return err
+	}
+	// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
+	// may return either err == EOF or err == nil. The next Read should return 0, EOF.
+	// If err is equal to io.EOF, a non-zero number of bytes may be returned.
+	if err == io.EOF {
+		log.Debugln("finished read")
+	}
+	// From https://golang.org/pkg/io/, there is the following statement.
+	// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
+	// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
+	// If n is equal 0, it indicate that there is no more data to read
+	if n == 0 {
+		log.Infoln("reader return zero bytes.")
+		return err
+	}
+
+	// decrypt and write
+	decErr, decBytes := utils.DecryptWithAES256(buf[0:object.EncSize], bucket.ServerSideEncryption.EncryptionKey)
+	if decErr != nil {
+		log.Errorln("failed to decrypt data. err:", decErr)
+		return decErr
+	}
+	log.Infoln("successfully decrypted")
+	buf = decBytes
+	n = binary.Size(decBytes)
+
+	err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
+	if err != nil {
+		log.Infof("stream send error: %v\n", err)
+		return err
 	}
 
 	log.Infoln("get object successfully")
