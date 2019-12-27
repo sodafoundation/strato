@@ -79,8 +79,8 @@ func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
 	if err == nil {
-		if rsp.ErrorCode != int32(ErrNoErr) {
-			err = S3ErrorCode(rsp.ErrorCode)
+		if rsp.GetErrorCode() != int32(ErrNoErr) {
+			err = S3ErrorCode(rsp.GetErrorCode())
 		}
 	}
 	if err != nil {
@@ -97,8 +97,8 @@ func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, 
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
 	if err == nil {
-		if rsp.ErrorCode != int32(ErrNoErr) {
-			err = S3ErrorCode(rsp.ErrorCode)
+		if rsp.GetErrorCode() != int32(ErrNoErr) {
+			err = S3ErrorCode(rsp.GetErrorCode())
 		}
 	}
 	if err != nil {
