@@ -37,14 +37,6 @@ var InProgressObjs = make(map[string]struct{})
 func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) error {
 	log.Infof("copy object[%s], size=%d\n", obj.ObjectKey, obj.Size)
 
-	// add object to InProgressObjs
-	if _, ok := InProgressObjs[obj.ObjectKey]; !ok {
-		InProgressObjs[obj.ObjectKey] = struct{}{}
-	} else {
-		log.Infof("the transition of object[%s] is in-progress\n", obj.ObjectKey)
-		return errors.New(DMERR_TransitionInprogress)
-	}
-
 	// copy object
 	ctx, _ := context.WithTimeout(context.Background(), tmout)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
@@ -64,9 +56,6 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 	} else {
 		log.Infof("copy object[%s] succeed\v", obj.ObjectKey)
 	}
-
-	// remove object from InProgressObjs
-	delete(InProgressObjs, obj.ObjectKey)
 
 	return err
 }
@@ -93,6 +82,14 @@ func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	obj := &osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName,
 		Tier: acReq.SourceTier, VersionId: acReq.VersionId}
 
+	// add object to InProgressObjs
+	if _, ok := InProgressObjs[obj.ObjectKey]; !ok {
+		InProgressObjs[obj.ObjectKey] = struct{}{}
+	} else {
+		log.Infof("the transition of object[%s] is in-progress\n", obj.ObjectKey)
+		return errors.New(DMERR_TransitionInprogress)
+	}
+
 	var err error
 	size := migration.GetMultipartSize()
 	// min is 1 minute, max is 30 days, default is 1 hour, user defined value should not less than min and not more than
@@ -109,6 +106,9 @@ func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	} else {
 		log.Infof("cross-cloud transition of %s succeed.\n", acReq.ObjKey)
 	}
+
+	// remove object from InProgressObjs
+	delete(InProgressObjs, obj.ObjectKey)
 
 	return err
 }

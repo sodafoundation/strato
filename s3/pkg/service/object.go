@@ -889,13 +889,6 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *
 		return err
 	}
 
-	// mark object as deleted
-	err = s.MetaStorage.MarkObjectAsDeleted(ctx, obj)
-	if err != nil {
-		log.Errorln("failed to mark object as deleted, err:", err)
-		return err
-	}
-
 	// delete object data in backend
 	err = sd.Delete(ctx, &pb.DeleteObjectInput{Bucket: bucket.Name, Key: obj.ObjectKey, VersioId: obj.VersionId,
 		ETag: obj.Etag, StorageMeta: obj.StorageMeta, ObjectId: obj.ObjectId})
@@ -1040,14 +1033,31 @@ func (s *s3Service) cleanObject(ctx context.Context, object *Object, sd driver.S
 		Bucket: object.BucketName, Key: object.ObjectKey, ObjectId: object.ObjectId,
 		VersioId: object.VersionId, StorageMeta: object.StorageMeta,
 	}
+	var err error
+	defer func() {
+		if err != nil {
+			ierr := s.MetaStorage.AddGcobjRecord(ctx, object)
+			if ierr != nil {
+				log.Warnf("add gc record failed, object:%v, err:%v\n", object, ierr)
+			}
+		}
+	}()
+	if sd == nil {
+		backend, err := utils.GetBackend(ctx, s.backendClient, object.Location)
+		if err != nil {
+			log.Errorln("failed to get backend client with err:", err)
+			return err
+		}
+		sd, err = driver.CreateStorageDriver(backend.Type, backend)
+		if err != nil {
+			log.Errorln("failed to create storage, err:", err)
+			return err
+		}
+	}
 
-	err := sd.Delete(ctx, delInput)
+	err = sd.Delete(ctx, delInput)
 	if err != nil {
 		log.Warnf("clean object[%v] from backend failed, err:%v\n", err)
-		ierr := s.MetaStorage.AddGcobjRecord(ctx, object)
-		if ierr != nil {
-			log.Warnf("add gc record failed, object:%v, err:%v\n", object, ierr)
-		}
 	}
 
 	return err
