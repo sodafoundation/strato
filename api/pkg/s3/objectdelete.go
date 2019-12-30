@@ -50,7 +50,7 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.DeleteObject(ctx, &input)
 	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
-		log.Errorf("delete object[%s] failed, err=%v, errCode=%d\n", objectName, err, rsp.ErrorCode)
+		log.Errorf("delete object[%s] failed, err=%v, errCode=%d\n", objectName, err, rsp.GetErrorCode())
 		return
 	}
 
