@@ -390,18 +390,6 @@ func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObje
 			break
 		}
 
-		if bucket.ServerSideEncryption.SseType == "SSE" {
-			// decrypt and write
-			decErr, decBytes := utils.DecryptWithAES256(buf[0:left], bucket.ServerSideEncryption.EncryptionKey)
-			if decErr != nil {
-				log.Errorln("failed to decrypt data. err:", decErr)
-				return decErr
-			}
-			log.Infoln("successfully decrypted")
-			buf = decBytes
-			n = int(binary.Size(decBytes))
-		}
-
 		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
