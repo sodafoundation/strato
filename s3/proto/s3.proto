@@ -510,7 +510,12 @@ message ListObjectsResponse {
 	repeated string Prefixes = 4;
 
 	// List of objects info for this request.
-	repeated Object objects = 5;
+	repeated ListObjects listOfListOfObjects = 5;
+}
+
+message ListObjects {
+	// List of objects info for this request.
+	repeated Object objects = 1;
 }
 
 message CountObjectsResponse {

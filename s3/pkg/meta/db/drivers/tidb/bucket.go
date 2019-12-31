@@ -299,7 +299,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 	}()
 	var count int
 	var exit bool
-	objectMap := make(map[string]struct{})
+	//objectMap := make(map[string]struct{})
 	objectNum := make(map[string]int)
 	commonPrefixes := make(map[string]struct{})
 	if filter == nil {
@@ -336,8 +336,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		for rows.Next() {
 			loopcount += 1
 			//var name, lastModified string
-			var bname, name string
-			var version uint64
+			var bname, name, version string
 			err = rows.Scan(
 				&bname,
 				&name,
@@ -354,12 +353,6 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			}
 			objectNum[name] += 1
 			filter[common.KMarker] = name
-
-			if _, ok := objectMap[name]; !ok {
-				objectMap[name] = struct{}{}
-			} else {
-				continue
-			}
 
 			// TODO: filter by deletemarker if versioning enabled
 
@@ -401,7 +394,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			}
 
 			var o *Object
-			strVer := strconv.FormatUint(version, 10)
+			strVer := version
 			o, err = t.GetObject(ctx, bname, name, strVer)
 			if err != nil {
 				log.Errorf("err:%v\n", err)

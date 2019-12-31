@@ -33,6 +33,11 @@ type LocationResponse struct {
 	Location string   `xml:",chardata"`
 }
 
+type ListObjectsResponseHolder struct{
+	XMLName xml.Name `xml:"result"`
+	Objects []ListObjectsResponse `xml:"ListBucketResult"`
+}
+
 type ListObjectsResponse struct {
 	XMLName xml.Name `xml:"ListBucketResult"`
 
@@ -209,6 +214,7 @@ type Object struct {
 
 	Location string
 	Tier     int32
+	Version string
 }
 
 type VersionedObject struct {

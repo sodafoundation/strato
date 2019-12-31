@@ -95,19 +95,19 @@ func (t *TidbClient) ListGcObjs(ctx context.Context, offset, limit int) (objs []
 	}
 	defer rows.Close()
 
-	var iversion uint64
+	//var iversion uint64
 	for rows.Next() {
 		obj := &Object{Object: &pb.Object{}}
 
 		err = rows.Scan(
 			&obj.BucketName,
 			&obj.ObjectKey,
-			&iversion,
+			&obj.VersionId,
 			&obj.Location,
 			&obj.ObjectId,
 			&obj.StorageMeta,
 		)
-		obj.VersionId = strconv.FormatUint(iversion, 10)
+		//obj.VersionId = strconv.FormatUint(iversion, 10)
 		objs = append(objs, obj)
 	}
 
