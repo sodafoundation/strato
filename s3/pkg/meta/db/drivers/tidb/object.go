@@ -16,21 +16,17 @@ package tidbclient
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
-	"math"
-	"strconv"
 	"time"
 
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, version string) (object *Object, err error) {
 	var sqltext, ibucketname, iname, customattributes, acl, lastModified string
-	var iversion uint64
+	//var iversion uint64
 	var row *sql.Row
 	if version == "" {
 		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
@@ -48,7 +44,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	err = row.Scan(
 		&ibucketname,
 		&iname,
-		&iversion,
+		&object.VersionId,
 		&object.Location,
 		&object.TenantId,
 		&object.UserId,
@@ -89,9 +85,10 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		return
 	}
 	// TODO: getting multi-parts
-	timestamp := math.MaxUint64 - iversion
+	/*timestamp := math.MaxUint64 - iversion
 	timeData := []byte(strconv.FormatUint(timestamp, 10))
 	object.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
+	 */
 	return
 }
 
@@ -137,7 +134,7 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 	}
 	sqlTx, _ = tx.(*sql.Tx)
 
-	version := VersionStr2UInt64(object.VersionId)
+	version := object.VersionId
 	log.Infof("delete from objects where name=%s and bucketname=%s and version=%d;\n",
 		object.ObjectKey, object.BucketName, version)
 
@@ -151,7 +148,7 @@ func (t *TidbClient) DeleteObject(ctx context.Context, object *Object, tx interf
 }
 
 func (t *TidbClient) SetObjectDeleteMarker(ctx context.Context, object *Object, deleteMarker bool) error {
-	version := VersionStr2UInt64(object.VersionId)
+	version := object.VersionId
 
 	sqltext := "update objects set deletemarker=? where bucketname=? and name=? and version=?;"
 	_, err := t.Client.Exec(sqltext, deleteMarker, object.BucketName, object.ObjectKey, version)
@@ -177,7 +174,7 @@ func (t *TidbClient) UpdateObject4Lifecycle(ctx context.Context, old, new *Objec
 	}
 	sqlTx, _ = tx.(*sql.Tx)
 
-	oldversion := VersionStr2UInt64(old.VersionId)
+	oldversion := old.VersionId
 
 	sqltext := "update objects set location=?,objectid=?,tier=?,storageMeta=? where bucketname=? and name=? and version=?"
 	args := []interface{}{new.Location, new.ObjectId, new.Tier, new.StorageMeta, old.BucketName, old.ObjectKey, oldversion}
