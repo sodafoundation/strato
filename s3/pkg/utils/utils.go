@@ -21,6 +21,9 @@ import (
 	"encoding/hex"
 	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
+	"math"
+	"strconv"
+	"time"
 )
 
 type Database struct {
@@ -138,4 +141,14 @@ func GetBackend(ctx context.Context, backedClient backend.BackendService, backen
 	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	return backend, nil
+}
+
+func GetVersionId() (versionId string, timeStamp int64) {
+	now := time.Now().UTC().Unix()
+	version := strconv.FormatUint(math.MaxUint64 - uint64(now),10)
+	return version, now
+}
+
+func GetSingleVersionId() (versionId string) {
+	return ""
 }
