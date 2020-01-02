@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"crypto/md5"
-	"encoding/hex"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -41,15 +39,6 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
-/*func Init(backend *backendpb.BackendDetail) *GcsAdapter {
-	endpoint := backend.Endpoint
-	AccessKeyID := backend.Access
-	AccessKeySecret := backend.Security
-	sess := s3client.NewClient(endpoint, AccessKeyID, AccessKeySecret)
-	adap := &GcsAdapter{backend: backend, session: sess}
-	return adap
-}*/
-
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucketName := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
@@ -66,19 +55,20 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	} else {
 		limitedDataReader = stream
 	}
-	md5Writer := md5.New()
-	dataReader := io.TeeReader(limitedDataReader, md5Writer)
 
 	bucket := ad.session.NewBucket()
 	GcpObject := bucket.NewObject(bucketName)
-	body := ioutil.NopCloser(dataReader)
-	err := GcpObject.Create(objectId, userMd5, "", size, body, models.Private)
+	d, err := ioutil.ReadAll(limitedDataReader)
+	data := []byte(d)
+	base64Encoded, hexEncoded := utils.Md5Content(data)
+	body := ioutil.NopCloser(bytes.NewReader(data))
+	err = GcpObject.Create(objectId, base64Encoded, "", size, body, models.Private)
 	if err != nil {
 		log.Infof("put object[GCS] failed, object:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 
-	calculatedMd5 := "\"" + hex.EncodeToString(md5Writer.Sum(nil)) + "\""
+	calculatedMd5 := "\"" + hexEncoded + "\""
 	if userMd5 != "" && userMd5 != calculatedMd5 {
 		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 		return result, ErrBadDigest
@@ -107,7 +97,6 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		}
 	}
 
-	//if context.Value("operation") == "download" {
 	bucket := ad.session.NewBucket()
 	GcpObject := bucket.NewObject(ad.backend.BucketName)
 	getObject, err := GcpObject.Get(objectId, &getObjectOption)
@@ -116,7 +105,6 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		log.Infof("get object[GCS] failed, objectId:%s, err:%v", objectId, err)
 		return nil, ErrGetFromBackendFailed
 	}
-	//}
 
 	log.Infof("get object[GCS] succeed, objectId:%s, bytes:%d\n", objectId, getObject.ContentLength)
 	return getObject.Body, nil
@@ -143,38 +131,6 @@ func (ad *GcsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	return ErrInternalError
 }
 
-/*func (ad *GcsAdapter) GetObjectInfo(bucketName string, key string, context context.Context) (*pb.Object, S3Error) {
-
-	bucket := ad.backend.BucketName
-	newKey := bucketName + "/" + key
-
-	bucketO := ad.session.NewBucket()
-	bucketResp, err := bucketO.Get(bucket, newKey, "", "", 1000)
-
-	if err != nil {
-		log.Infof("Error occured during get Object Info, err:%v\n", err)
-		//log.Fatalf("Error occured during get Object Info, err:%v\n", err)
-		return nil, S3Error{Code: 500, Description: err.Error()}
-	}
-
-	for _, content := range bucketResp.Contents {
-		realKey := bucketName + "/" + key
-		if realKey != content.Key {
-			break
-		}
-		obj := &pb.Object{
-			BucketName: bucketName,
-			ObjectKey:  key,
-			Size:       content.Size,
-		}
-
-		return obj, NoError
-	}
-
-	log.Infof("Can not find specified object(%s).\n", key)
-	return nil, NoSuchObject
-}*/
-
 func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.session.NewBucket()
 	objectId := object.BucketName + "/" + object.ObjectKey
@@ -186,7 +142,7 @@ func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 
 	res, err := uploader.Initiate(nil)
 	if err != nil {
-		log.Fatalf("init multipart upload[GCS] failed, objectId:%s, err:%v\n", objectId, err)
+		log.Errorf("init multipart upload[GCS] failed, objectId:%s, err:%v\n", objectId, err)
 		return nil, ErrBackendInitMultipartFailed
 	} else {
 		log.Infof("Init multipart upload[GCS] succeed, objectId:%s, UploadId:%s\n", objectId, res.UploadID)
@@ -211,7 +167,7 @@ func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 	d, err := ioutil.ReadAll(stream)
 	data := []byte(d)
 	body := ioutil.NopCloser(bytes.NewReader(data))
-	contentMD5 := utils.Md5Content(data)
+	contentMD5, _ := utils.Md5Content(data)
 	part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 	if err != nil {
 		log.Infof("upload part[GCS] failed, objectId:%s, partNum:%d, err:%v\n", objectId, partNumber, err)
@@ -314,11 +270,17 @@ func (ad *GcsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 	}
 }*/
 
-func (ad *GcpAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
+func (ad *GcsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
 	return nil, ErrNotImplemented
 }
 
-func (ad *GcsAdapter) Close(ctx context.Context) error {
+func (ad *GcsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	log.Errorf("copy[GCS] is not supported.")
+	err = ErrInternalError
+	return
+}
+
+func (ad *GcsAdapter) Close() error {
 	//TODO
 	return nil
 }
