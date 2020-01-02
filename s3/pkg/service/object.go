@@ -168,7 +168,11 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 		byteArr, _ := ioutil.ReadAll(limitedDataReader)
-		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
+		encErr, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
+		if encErr != nil {
+			log.Errorln("failed to encrypt object", encErr)
+			return encErr
+		}
 		reader := bytes.NewReader(encBuf)
 		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
 		req.Size = int64(binary.Size(encBuf))
