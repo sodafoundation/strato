@@ -69,7 +69,7 @@ func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName stri
 }
 
 func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipart *Multipart, objMap *ObjMap, updateUsage bool) error {
-	log.Debug("PutObject begin")
+	log.Debugf("PutObject begin, object=%+v, deleteObj:%+v\n", object, deleteObj)
 	tx, err := m.Db.NewTrans()
 	defer func() {
 		if err != nil {
@@ -147,7 +147,27 @@ func (m *Meta) MarkObjectAsDeleted(ctx context.Context, object *Object) error {
 	return m.Db.SetObjectDeleteMarker(ctx, object, true)
 }
 
-func (m *Meta) UpdateObject4Lifecycle(ctx context.Context, old, new *Object) (err error) {
+func (m *Meta) UpdateObject4Lifecycle(ctx context.Context, old, new *Object, multipart *Multipart) (err error) {
 	log.Infof("update object from %v to %v\n", *old, *new)
-	return m.Db.UpdateObject4Lifecycle(ctx, old, new, nil)
+	tx, err := m.Db.NewTrans()
+	defer func() {
+		if err != nil {
+			m.Db.AbortTrans(tx)
+		}
+	}()
+
+	err = m.Db.UpdateObject4Lifecycle(ctx, old, new, tx)
+	if err != nil {
+		return err
+	}
+
+	if multipart != nil {
+		err = m.Db.DeleteMultipart(multipart, tx)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = m.Db.CommitTrans(tx)
+	return err
 }

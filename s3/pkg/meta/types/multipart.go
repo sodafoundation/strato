@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
+	"github.com/opensds/multi-cloud/s3/proto"
 	"github.com/xxtea/xxtea-go/xxtea"
 )
 
@@ -32,7 +33,7 @@ type MultipartMetadata struct {
 	ContentType   string
 	Location      string
 	Pool          string
-	Acl           datatype.Acl
+	Acl           s3.Acl
 	SseRequest    datatype.SseRequest
 	EncryptionKey []byte
 	CipherKey     []byte
