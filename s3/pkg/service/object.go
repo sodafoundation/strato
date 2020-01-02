@@ -263,7 +263,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		return err
 	}
 
-	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, in.VersionId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return nil
