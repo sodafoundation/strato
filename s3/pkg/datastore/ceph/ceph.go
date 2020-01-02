@@ -203,7 +203,7 @@ func (ad *CephAdapter) UploadPart(ctx context.Context, stream io.Reader, multipa
 	d, err := ioutil.ReadAll(stream)
 	data := []byte(d)
 	body := ioutil.NopCloser(bytes.NewReader(data))
-	contentMD5 := utils.Md5Content(data)
+	contentMD5, _ := utils.Md5Content(data)
 	part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 	if err != nil {
 		log.Errorf("upload part[Ceph S3] failed, err:%v\n", err)
