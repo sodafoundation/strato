@@ -161,12 +161,11 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	// TODO: is this the right way to get response?
 	rsp := &s3.PutObjectResponse{}
 	err = stream.RecvMsg(rsp)
-	if err != nil {
-		log.Infof("stream receive message failed:%v\n", err)
-		WriteErrorResponse(response, request, s3error.ErrInternalError)
+	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
+		log.Errorf("stream receive message failed, err=%v, errCode=%d\n", err, rsp.GetErrorCode())
+		return
 	}
 
 	log.Info("PUT object successfully.")
