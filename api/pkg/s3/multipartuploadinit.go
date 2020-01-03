@@ -24,8 +24,9 @@ import (
 )
 
 func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
-	bucketName := request.PathParameter("bucketName")
-	objectKey := request.PathParameter("objectKey")
+	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
+	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
+	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
 
 	log.Infof("received request: multipart init, objectkey=%s, bucketName=%s\n:",
 		objectKey, bucketName)
@@ -54,8 +55,23 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	location := ""
+	if backendName != "" {
+		// check if backend exist
+		if s.isBackendExist(ctx, backendName) == false {
+			WriteErrorResponse(response, request, ErrGetBackendFailed)
+			return
+		}
+		location = backendName
+	}
+
 	result, err := s.s3Client.InitMultipartUpload(ctx, &pb.InitMultiPartRequest{
-		BucketName: bucketName, ObjectKey: objectKey, Acl: &pb.Acl{CannedAcl: acl.CannedAcl}, Tier: int32(tier), Attrs: attr})
+		BucketName: bucketName,
+		ObjectKey:  objectKey,
+		Acl:        &pb.Acl{CannedAcl: acl.CannedAcl},
+		Tier:       int32(tier),
+		Location:   location,
+		Attrs:      attr})
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorln("unable to init multipart. err:%v, errcode:%v", err, result.ErrorCode)
 		return
