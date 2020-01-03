@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS `objects` (
   `type` tinyint(1) DEFAULT 0,
   `tier` int(11) DEFAULT 1,
   `storageMeta` varchar(255) NOT NULL DEFAULT "",
+  `encsize` bigint(20) DEFAULT NULL,
    UNIQUE KEY `rowkey` (`bucketname`,`name`,`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;

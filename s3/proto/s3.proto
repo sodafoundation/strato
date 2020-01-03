@@ -448,6 +448,7 @@ message Object {
 	bool nullVersion = 23;
 	map<string, string> customAttributes = 24;
 	string storageMeta = 25; // append info used by storage driver
+	int64 encSize = 26;
 }
 
 message ListBucketsResponse {

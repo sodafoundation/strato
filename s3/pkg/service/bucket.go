@@ -95,7 +95,6 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			return err
 		}
 	}
-	return nil
 
 	if in.ServerSideEncryption != nil{
 		byteArr, keyErr := utils.GetRandom32BitKey()
