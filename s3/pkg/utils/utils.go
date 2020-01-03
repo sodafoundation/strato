@@ -19,6 +19,8 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -138,4 +140,14 @@ func GetBackend(ctx context.Context, backedClient backend.BackendService, backen
 	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	return backend, nil
+}
+
+func SetRepresentTenant(ctx context.Context, requestTenant, sourceTenant string) context.Context {
+	if requestTenant != sourceTenant {
+		md, _ := metadata.FromContext(ctx)
+		md[common.CTX_REPRE_TENANT] = sourceTenant
+		ctx = metadata.NewContext(ctx, md)
+	}
+
+	return ctx
 }

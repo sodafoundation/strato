@@ -53,6 +53,7 @@ const (
 	CTX_KEY_USER_ID     = "Userid"
 	CTX_KEY_IS_ADMIN    = "Isadmin"
 	CTX_VAL_TRUE        = "true"
+	CTX_REPRE_TENANT    = "Representedtenantid"
 	CTX_KEY_OBJECT_KEY  = "ObjectKey"
 	CTX_KEY_BUCKET_NAME = "BucketName"
 	CTX_KEY_SIZE        = "ObjectSize"
