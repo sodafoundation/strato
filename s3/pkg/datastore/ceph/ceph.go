@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"crypto/md5"
-	"encoding/hex"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -56,21 +54,22 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 	} else {
 		limitedDataReader = stream
 	}
-	md5Writer := md5.New()
-	dataReader := io.TeeReader(limitedDataReader, md5Writer)
 
 	bucket := ad.session.NewBucket()
 	cephObject := bucket.NewObject(bucketName)
-	body := ioutil.NopCloser(dataReader)
-	log.Infof("put object[Ceph S3] begin, objectId:%s\n", objectId)
-	err = cephObject.Create(objectId, userMd5, "", object.Size, body, models.Private)
+	d, err := ioutil.ReadAll(limitedDataReader)
+	data := []byte(d)
+	length := int64(len(d))
+	base64Encoded, hexEncoded := utils.Md5Content(data)
+	body := ioutil.NopCloser(bytes.NewReader(data))
+	err = cephObject.Create(objectId, base64Encoded, "", length, body, models.Private)
 	log.Infof("put object[Ceph S3] end, objectId:%s\n", objectId)
 	if err != nil {
 		log.Infof("upload object[Ceph S3] failed, objectId:%s, err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 
-	calculatedMd5 := "\"" + hex.EncodeToString(md5Writer.Sum(nil)) + "\""
+	calculatedMd5 := "\"" + hexEncoded + "\""
 	if userMd5 != "" && userMd5 != calculatedMd5 {
 		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 		return result, ErrBadDigest
@@ -79,7 +78,7 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
 	result.Etag = calculatedMd5
-	result.Written = size
+	result.Written = length
 	log.Infof("upload object[Ceph S3] succeed, objectId:%s, UpdateTime is:%v, etag:\n", objectId,
 		result.UpdateTime, result.Etag)
 
@@ -172,15 +171,14 @@ func (ad *CephAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object
 func (ad *CephAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.session.NewBucket()
 	objectId := object.BucketName + "/" + object.ObjectKey
-	log.Infof("init multipart upload[Ceph S3], bucket = %v,objectId = %v\n", bucket, objectId)
+	log.Infof("init multipart upload[Ceph S3], bucket = %s,objectId = %v\n", bucket, objectId)
 	cephObject := bucket.NewObject(ad.backend.BucketName)
 	uploader := cephObject.NewUploads(objectId)
 	multipartUpload := &pb.MultipartUpload{}
 
 	res, err := uploader.Initiate(nil)
-
 	if err != nil {
-		log.Fatalf("init multipart upload[Ceph S3] failed, objectId:%s, err:%v\n", objectId, err)
+		log.Errorf("init multipart upload[Ceph S3] failed, objectId:%s, err:%v\n", objectId, err)
 		return nil, err
 	} else {
 		log.Infof("init multipart upload[Ceph S3] succeed, objectId:%s, UploadId:%s\n", objectId, res.UploadID)
@@ -203,7 +201,7 @@ func (ad *CephAdapter) UploadPart(ctx context.Context, stream io.Reader, multipa
 	d, err := ioutil.ReadAll(stream)
 	data := []byte(d)
 	body := ioutil.NopCloser(bytes.NewReader(data))
-	contentMD5 := utils.Md5Content(data)
+	contentMD5, _ := utils.Md5Content(data)
 	part, err := uploader.UploadPart(int(partNumber), multipartUpload.UploadId, contentMD5, "", upBytes, body)
 	if err != nil {
 		log.Errorf("upload part[Ceph S3] failed, err:%v\n", err)
