@@ -17,6 +17,7 @@ package utils
 import (
 	"context"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
 	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
@@ -109,13 +110,17 @@ const (
 	MoveType_ChangeStorageTier
 )
 
-func Md5Content(data []byte) string {
-	md5Ctx := md5.New()
-	md5Ctx.Write(data)
-	cipherStr := md5Ctx.Sum(nil)
-	//value := base64.StdEncoding.EncodeToString(cipherStr)
-	value := hex.EncodeToString(cipherStr)
-	return value
+const (
+	RequestType_Lifecycle = "lifecycle"
+)
+
+func Md5Content(data []byte) (base64Encoded, hexEncoded string) {
+	md5ctx := md5.New()
+	md5ctx.Write(data)
+	cipherStr := md5ctx.Sum(nil)
+	base64Encoded = base64.StdEncoding.EncodeToString(cipherStr)
+	hexEncoded = hex.EncodeToString(cipherStr)
+	return
 }
 
 func GetBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,

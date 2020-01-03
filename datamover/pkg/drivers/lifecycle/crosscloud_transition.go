@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/micro/go-micro/client"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
@@ -55,8 +56,8 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 		TargetTier:       targetLoc.Tier,
 		MoveType:         utils.MoveType_ChangeLocation,
 	}
-
-	_, err := s3client.MoveObject(ctx, req)
+	opt := client.WithRequestTimeout(tmout)
+	_, err := s3client.MoveObject(ctx, req, opt)
 	if err != nil {
 		// if failed, it will try again in the next round schedule
 		log.Errorf("copy object[%s] failed, err:%\v", obj.ObjectKey, err)
@@ -71,9 +72,15 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 }
 
 func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int64, tmout time.Duration) error {
-	// This depend on multipart upload
-	log.Error("not implemented")
-	return errors.New("not implemented")
+	ctx, _ := context.WithTimeout(context.Background(), tmout)
+	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
+
+	err := migration.MultipartCopyObj(ctx, obj, targetLoc, nil)
+	if err != nil {
+		log.Errorf("multipart move object[] failed, err:%v\n", err)
+	}
+
+	return err
 }
 
 func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {

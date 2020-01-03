@@ -59,7 +59,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.GetBucketLifecycle(ctx, &s3.BaseRequest{Id: bucketName})
 	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
-		log.Errorf("get bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.ErrorCode)
+		log.Errorf("get bucket[%s] lifecycle failed, err=%v, errCode=%d\n", bucketName, err, rsp.GetErrorCode())
 		return
 	}
 

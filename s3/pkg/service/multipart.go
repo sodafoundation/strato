@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -86,9 +85,9 @@ func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBuck
 }
 
 func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPartRequest, out *pb.InitMultiPartResponse) error {
-	log.Info("InitMultipartUpload is called in s3 service.")
 	bucketName := in.BucketName
 	objectKey := in.ObjectKey
+	log.Infof("InitMultipartUpload is called in s3 service, bucketName=%s, objectKey=%s\n", bucketName, objectKey)
 
 	var err error
 	defer func() {
@@ -126,7 +125,10 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 		contentType = "application/octet-stream"
 	}
 
-	backendName := bucket.DefaultLocation
+	backendName := in.Location
+	if backendName == "" {
+		backendName = bucket.DefaultLocation
+	}
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -138,20 +140,31 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	res, err := sd.InitMultipartUpload(ctx, &pb.Object{BucketName: bucketName, ObjectKey: objectKey})
+	tier := in.Tier
+	if tier == 0 {
+		// if not set, use the default tier
+		tier = utils.Tier1
+	}
+	res, err := sd.InitMultipartUpload(ctx, &pb.Object{BucketName: bucketName, ObjectKey: objectKey, Tier: tier})
 	if err != nil {
 		log.Errorln("failed to init multipart upload. err:", err)
 		return err
 	}
 
 	multipartMetadata := MultipartMetadata{
-		InitiatorId:  tenantId,
-		TenantId:     bucket.TenantId,
-		UserId:       bucket.UserId,
-		ContentType:  contentType,
-		Acl:          datatype.Acl{CannedAcl: in.Acl.CannedAcl},
-		Attrs:        attrs,
-		StorageClass: StorageClass(in.StorageClass),
+		InitiatorId: tenantId,
+		TenantId:    bucket.TenantId,
+		UserId:      bucket.UserId,
+		ContentType: contentType,
+		Attrs:       attrs,
+		Tier:        tier,
+		Location:    backendName,
+		// TODO: add sse information
+	}
+	if in.Acl != nil {
+		multipartMetadata.Acl = *in.Acl
+	} else {
+		multipartMetadata.Acl.CannedAcl = "private"
 	}
 
 	multipart := Multipart{
@@ -194,7 +207,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	uploadId := uploadRequest.UploadId
 	size := uploadRequest.Size
 
-	log.Infof("receive msg, bucketname:%v, objectkey:%v, partId:%v, uploadId:%v,size:%v", bucketName, objectKey, partId, uploadId, size)
+	log.Infof("uploadpart, bucketname:%v, objectkey:%v, partId:%v, uploadId:%v,size:%v", bucketName, objectKey, partId, uploadId, size)
 	multipart, err := s.MetaStorage.GetMultipart(bucketName, objectKey, uploadId)
 	if err != nil {
 		log.Infoln("failed to get multipart. err:", err)
@@ -249,6 +262,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 		log.Errorln("failed to create storage. err:", err)
 		return nil
 	}
+	ctx = context.Background()
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, uploadRequest.Md5Hex)
 	log.Infoln("bucketname:", bucketName, " objectKey:", objectKey, " uploadid:", uploadId, " objectId:", multipart.ObjectId, " partid:", partId)
 	_, err = sd.UploadPart(ctx, dataReader, &pb.MultipartUpload{
@@ -296,7 +310,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	}()
 
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
+	if err != nil {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
 		return err
@@ -387,19 +401,21 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Key:      objectKey,
 		UploadId: uploadId,
 		ObjectId: multipart.ObjectId,
+		Location: multipart.Metadata.Location,
+		Tier:     multipart.Metadata.Tier,
 	}, completeUpload)
 	if err != nil {
 		log.Errorln("failed to complete multipart. err:", err)
 		return err
 	}
 
-	// get old object meta if it exist, this is not needed if versioning is enabled
+	// TODO: if versioning is enabled, not need to delete oldObj
 	oldObj, err := s.MetaStorage.GetObject(ctx, bucketName, objectKey, "", false)
 	if err != nil && err != ErrNoSuchKey {
 		log.Errorf("get object[%s] failed, err:%v\n", objectKey, err)
 		return ErrInternalError
 	}
-	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
+	log.Debugf("bucketName=%s,objectKey=%s,version=%s,existObj=%v, err=%v\n", bucketName, objectKey, in.SourceVersionID, oldObj, err)
 
 	// Add to objects table
 	contentType := multipart.Metadata.ContentType
@@ -415,17 +431,27 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		DeleteMarker:     false,
 		CustomAttributes: multipart.Metadata.Attrs,
 		Type:             ObjectTypeNormal,
-		Tier:             utils.Tier1,
+		Tier:             multipart.Metadata.Tier,
 		Size:             totalSize,
-		Acl:              &pb.Acl{CannedAcl: "private"},
 		Location:         multipart.Metadata.Location,
+		Acl:              &multipart.Metadata.Acl,
 	}
 
-	err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, oldObj, &multipart, nil, true)
-	if err != nil {
-		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
-		// TODO: consistent check & clean
-		return ErrDBError
+	if in.RequestType != utils.RequestType_Lifecycle {
+		err = s.MetaStorage.PutObject(ctx, &Object{Object: object}, oldObj, &multipart, nil, true)
+		if err != nil {
+			log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", object, oldObj, err)
+			// TODO: consistent check & clean
+			return ErrDBError
+		}
+	} else {
+		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, oldObj, &Object{Object: object}, &multipart)
+		if err != nil {
+			log.Errorln("failed to put object meta. err:", err)
+			// delete new object, lifecycle will try again in the next schedule round
+			s.cleanObject(ctx, &Object{Object: object}, sd)
+			return err
+		}
 	}
 
 	log.Infoln("CompleteMultipartUpload upload part successfully.")
@@ -648,8 +674,11 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 		log.Errorln("failed to create storage driver. err:", err)
 		return err
 	}
-
-	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBucket.DefaultLocation)
+	targetBackendName := targetBucket.DefaultLocation
+	if in.TargetLocation != "" {
+		targetBackendName = in.TargetLocation
+	}
+	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -670,7 +699,7 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 
 	multipart, err := s.MetaStorage.GetMultipart(targetBucketName, targetObjectName, uploadId)
 	if err != nil {
-		log.Infoln("failed to get multipart. err:", err)
+		log.Errorln("failed to get multipart. err:", err)
 		return err
 	}
 	_, err = targetSd.UploadPart(ctx, dataReader, &pb.MultipartUpload{
