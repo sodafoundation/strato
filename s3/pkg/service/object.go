@@ -177,6 +177,8 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if req.Location != "" {
 		backendName = req.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -185,7 +187,6 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 
 	log.Infoln("bucket location:", req.Location, " backendtype:", backend.Type, " endpoint:", backend.Endpoint)
 	bodyMd5 := req.Attrs["md5Sum"]
-	ctx = context.Background()
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, req.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
@@ -330,6 +331,8 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	if object.Location != "" {
 		backendName = object.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	// if this object has only one part
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
@@ -484,6 +487,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	if srcObject.Location != "" {
 		backendName = srcObject.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, srcBucket.TenantId)
 	srcBackend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -496,6 +501,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	}
 
 	targetBackendName := targetBucket.DefaultLocation
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, targetBucket.TenantId)
 	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -557,6 +564,11 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
+	if validTier(in.TargetTier) {
+		targetObject.Tier = in.TargetTier
+	} else {
+		targetObject.Tier = srcObject.Tier
+	}
 
 	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, oldObj, nil, nil, true)
 	if err != nil {
@@ -827,7 +839,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	object, err := s.MetaStorage.GetObject(ctx, in.Bucket, in.Key, in.VersioId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
+		return nil
 	}
 	isAdmin, tenantId, _, err := CheckRights(ctx, object.TenantId)
 	if err != nil {
@@ -851,7 +863,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 
 	switch bucket.Versioning.Status {
 	case utils.VersioningDisabled:
-		err = s.removeObject(ctx, bucket, object)
+		err = s.removeObject(ctx, bucket, object, tenantId)
 	case utils.VersioningEnabled:
 		// TODO: versioning
 		err = ErrInternalError
@@ -868,7 +880,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	return nil
 }
 
-func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *Object) error {
+func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *Object, requestTenant string) error {
 	if obj == nil {
 		log.Infof("no need remove")
 		return nil
@@ -878,6 +890,8 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *
 	if obj.Location != "" {
 		backendName = obj.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, requestTenant, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend with err:", err)
