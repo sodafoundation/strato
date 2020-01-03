@@ -146,34 +146,17 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 	log.Infof("get object[Azure Blob], bucket:%s, objectId:%s\n", bucket, object.ObjectId)
 
 	blobURL := ad.containerURL.NewBlobURL(object.ObjectId)
-	log.Infof("blobURL:%v, size:%d\n", blobURL, object.Size)
 
-	var buf []byte
-	if end < object.Size - 1 {
-		count := end - start + 1
-		buf = make([]byte, count)
-		log.Debugf("start=%d, end=%d, count=%d\n", start, end, count)
-		err := azblob.DownloadBlobToBuffer(ctx, blobURL, start, count, buf, azblob.DownloadFromBlobOptions{})
-		if err != nil {
-			log.Errorf("get object[Azure Blob] failed, objectId:%s, err:%v\n", object.ObjectId, err)
-			return nil, ErrGetFromBackendFailed
-		}
-		body := bytes.NewReader(buf)
-		ioReaderClose := ioutil.NopCloser(body)
-		return ioReaderClose, nil
-	} else {
-		downloadResp, err := blobURL.Download(ctx, 0, azblob.CountToEnd, azblob.BlobAccessConditions{},
-			false)
-		if err != nil {
-			log.Errorf("get object[Azure Blob] failed, objectId:%s, err:%v\n", object.ObjectId, err)
-			return nil, ErrGetFromBackendFailed
-		}
-		log.Infof("get object[Azure Blob] successfully, objectId:%s\n", object.ObjectId)
-		return downloadResp.Response().Body, nil
+	count := end - start + 1
+	log.Infof("blobURL:%v, size:%d, start=%d, end=%d, count=%d\n", blobURL, object.Size, start, end, count)
+	downloadResp, err := blobURL.Download(ctx, start, count, azblob.BlobAccessConditions{}, false)
+	if err != nil {
+		log.Errorf("get object[Azure Blob] failed, objectId:%s, err:%v\n", object.ObjectId, err)
+		return nil, ErrGetFromBackendFailed
 	}
 
-	log.Error("get object[Azure Blob]: should not be here")
-	return nil, ErrInternalError
+	log.Infof("get object[Azure Blob] successfully, objectId:%s\n", object.ObjectId)
+	return downloadResp.Response().Body, nil
 }
 
 func (ad *AzureAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
@@ -279,7 +262,7 @@ func (ad *AzureAdapter) Base64ToInt64(base64ID string) int64 {
 func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
 	bucket := ad.backend.BucketName
-	log.Infof("upload part[Azure Blob], bucket:%s, objectId:%s\n", bucket, multipartUpload.ObjectId)
+	log.Infof("upload part[Azure Blob], bucket:%s, objectId:%s, partNumber:%d\n", bucket, multipartUpload.ObjectId, partNumber)
 
 	blobURL := ad.containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	base64ID := ad.Int64ToBase64(partNumber)
