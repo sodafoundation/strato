@@ -22,10 +22,10 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
+	log "github.com/sirupsen/logrus"
 )
 
 type mongoRepository struct {
@@ -72,11 +72,15 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 
 	isAdmin, _ := md[common.CTX_KEY_IS_ADMIN]
 	if isAdmin != common.CTX_VAL_TRUE {
-		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
-		if !ok {
-			log.Error("get tenantid failed")
-			return errors.New("get tenantid failed")
+		tenantId, _ := md[common.CTX_REPRE_TENANT]
+		if tenantId == "" {
+			tenantId, ok = md[common.CTX_KEY_TENANT_ID]
+			if !ok {
+				log.Error("get tenantid failed")
+				return errors.New("get tenantid failed")
+			}
 		}
+
 		m["tenantId"] = tenantId
 	}
 
