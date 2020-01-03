@@ -19,6 +19,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/micro/go-micro/client"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
@@ -56,7 +57,7 @@ func doInCloudTransition(acReq *datamover.LifecycleActionRequest) error {
 	tmout := migration.GetCtxTimeout("OBJECT_MOVE_TIME", SECONDS_ONE_MINUTE, SECONDS_30_DAYS, SECONDS_ONE_HOUR)
 	ctx, _ := context.WithTimeout(context.Background(), tmout)
 	ctx = metadata.NewContext(ctx, map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
-	_, err := s3client.MoveObject(ctx, req)
+	_, err := s3client.MoveObject(ctx, req, client.WithRequestTimeout(tmout))
 	if err != nil {
 		// if failed, it will try again in the next round schedule
 		log.Errorf("in-cloud transition of %s failed:%v\n", acReq.ObjKey, err)
