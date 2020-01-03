@@ -484,8 +484,17 @@ func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) error {
 	if err != nil {
 		return handleDBError(err)
 	} else {
-		sqltext := "delete from bucket_versionopts where bucketname=?;"
+		sqltext := "select * from bucket_versionopts where bucketname=?;"
 		_, err := t.Client.Exec(sqltext, bucket.Name)
+		if err == sql.ErrNoRows {
+			return nil
+		} else {
+			sqltext := "delete from bucket_versionopts where bucketname=?;"
+			_, err := t.Client.Exec(sqltext, bucket.Name)
+			if err != nil{
+				return handleDBError(err)
+			}
+		}
 		if err != nil {
 			return handleDBError(err)
 		}
