@@ -34,12 +34,12 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 	var row *sql.Row
 	if version == "" {
 		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
-			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta" +
+			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta,encsize" +
 			" from objects where bucketname=? and name=? order by bucketname,name,version limit 1;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName)
 	} else {
 		sqltext = "select bucketname,name,version,location,tenantid,userid,size,objectid,lastmodifiedtime,etag," +
-			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta" +
+			"contenttype,customattributes,acl,nullversion,deletemarker,ssetype,encryptionkey,initializationvector,type,tier,storageMeta,encsize" +
 			" from objects where bucketname=? and name=? and version=?;"
 		row = t.Client.QueryRow(sqltext, bucketName, objectName, version)
 	}
@@ -67,6 +67,7 @@ func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, vers
 		&object.Type,
 		&object.Tier,
 		&object.StorageMeta,
+		&object.EncSize,
 	)
 	if err != nil {
 		log.Errorf("err: %v\n", err)
