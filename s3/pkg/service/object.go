@@ -164,10 +164,15 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		limitedDataReader = data
 	}
 
+	actualSize := req.Size
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 		byteArr, _ := ioutil.ReadAll(limitedDataReader)
-		_, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
+		encErr, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
+		if encErr != nil {
+			log.Errorln("failed to encrypt object", encErr)
+			return encErr
+		}
 		reader := bytes.NewReader(encBuf)
 		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
 		req.Size = int64(binary.Size(encBuf))
@@ -177,6 +182,8 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	if req.Location != "" {
 		backendName = req.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -185,7 +192,6 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 
 	log.Infoln("bucket location:", req.Location, " backendtype:", backend.Type, " endpoint:", backend.Endpoint)
 	bodyMd5 := req.Attrs["md5Sum"]
-	ctx = context.Background()
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, req.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
@@ -218,7 +224,8 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
-	obj.Size = req.Size
+	obj.Size = actualSize
+	obj.EncSize = req.Size
 	obj.Location = backendName
 
 	object := &meta.Object{Object: obj}
@@ -290,6 +297,121 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
 	log.Infoln("GetObject is called in s3 service.")
 	bucketName := req.Bucket
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+	if bucket.ServerSideEncryption != nil && bucket.ServerSideEncryption.SseType == "SSE" {
+		return GetEncObject(ctx, req, stream, s)
+	} else {
+		return GetObject(ctx, req, stream, s)
+	}
+}
+
+func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
+	log.Infoln("GetObject is called in s3 service.")
+	bucketName := req.Bucket
+	objectName := req.Key
+	offset := req.Offset
+	length := req.Length
+
+	var err error
+	getObjRes := &pb.GetObjectResponse{}
+	defer func() {
+		getObjRes.ErrorCode = GetErrCode(err)
+		stream.SendMsg(getObjRes)
+	}()
+
+	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, "", true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
+	if err != nil {
+		log.Errorln("failed to check source object rights. err:", err)
+		return err
+	}
+
+	backendName := bucket.DefaultLocation
+	if object.Location != "" {
+		backendName = object.Location
+	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
+	// if this object has only one part
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("unable to get backend. err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	log.Infof("get object offset %v, length %v", offset, length)
+	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
+	if err != nil {
+		log.Errorln("failed to get data. err:", err)
+		return err
+	}
+
+	eof := false
+	left := object.Size
+	buf := make([]byte, ChunkSize)
+	for !eof && left > 0 {
+		n, err := reader.Read(buf)
+		if err != nil && err != io.EOF {
+			log.Errorln("failed to read, err:", err)
+			break
+		}
+		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
+		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
+		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
+		if err == io.EOF {
+			log.Debugln("finished read")
+			eof = true
+		}
+		// From https://golang.org/pkg/io/, there is the following statement.
+		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
+		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
+		// If n is equal 0, it indicate that there is no more data to read
+		if n == 0 {
+			log.Infoln("reader return zero bytes.")
+			break
+		}
+
+		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
+		if err != nil {
+			log.Infof("stream send error: %v\n", err)
+			break
+		}
+		left -= int64(n)
+	}
+
+	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
+	return err
+}
+
+func GetEncObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
+	log.Infoln("GetObject is called in s3 service.")
+	bucketName := req.Bucket
 	objectName := req.Key
 	offset := req.Offset
 	length := req.Length
@@ -341,6 +463,9 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		log.Errorln("failed to create storage driver. err:", err)
 		return err
 	}
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		length = object.EncSize
+	}
 	log.Infof("get object offset %v, length %v", offset, length)
 	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
 	if err != nil {
@@ -348,52 +473,45 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 
-	eof := false
-	left := object.Size
-	buf := make([]byte, ChunkSize)
-	for !eof && left > 0 {
-		n, err := reader.Read(buf)
-		if err != nil && err != io.EOF {
-			log.Errorln("failed to read, err:", err)
-			break
-		}
-		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
-		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
-		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
-		if err == io.EOF {
-			log.Debugln("finished read")
-			eof = true
-		}
-		// From https://golang.org/pkg/io/, there is the following statement.
-		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
-		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
-		// If n is equal 0, it indicate that there is no more data to read
-		if n == 0 {
-			log.Infoln("reader return zero bytes.")
-			break
-		}
+	buf := make([]byte, object.EncSize)
 
-		if bucket.ServerSideEncryption.SseType == "SSE" {
-			// decrypt and write
-			decErr, decBytes := utils.DecryptWithAES256(buf[0:n], bucket.ServerSideEncryption.EncryptionKey)
-			if decErr != nil {
-				log.Errorln("failed to decrypt data. err:", decErr)
-				return decErr
-			}
-			log.Infoln("successfully decrypted")
-			buf = decBytes
-			n = int(binary.Size(decBytes))
-		}
-
-		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
-		if err != nil {
-			log.Infof("stream send error: %v\n", err)
-			break
-		}
-		left -= int64(n)
+	n, err := reader.Read(buf)
+	if err != nil && err != io.EOF {
+		log.Errorln("failed to read, err:", err)
+		return err
+	}
+	// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
+	// may return either err == EOF or err == nil. The next Read should return 0, EOF.
+	// If err is equal to io.EOF, a non-zero number of bytes may be returned.
+	if err == io.EOF {
+		log.Debugln("finished read")
+	}
+	// From https://golang.org/pkg/io/, there is the following statement.
+	// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
+	// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
+	// If n is equal 0, it indicate that there is no more data to read
+	if n == 0 {
+		log.Infoln("reader return zero bytes.")
+		return err
 	}
 
-	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
+	// decrypt and write
+	decErr, decBytes := utils.DecryptWithAES256(buf[0:object.EncSize], bucket.ServerSideEncryption.EncryptionKey)
+	if decErr != nil {
+		log.Errorln("failed to decrypt data. err:", decErr)
+		return decErr
+	}
+	log.Infoln("successfully decrypted")
+	buf = decBytes
+	n = binary.Size(decBytes)
+
+	err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
+	if err != nil {
+		log.Infof("stream send error: %v\n", err)
+		return err
+	}
+
+	log.Infoln("get object successfully")
 	return err
 }
 
@@ -484,6 +602,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	if srcObject.Location != "" {
 		backendName = srcObject.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, srcBucket.TenantId)
 	srcBackend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -496,6 +616,8 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	}
 
 	targetBackendName := targetBucket.DefaultLocation
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, targetBucket.TenantId)
 	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -557,6 +679,11 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
+	if validTier(in.TargetTier) {
+		targetObject.Tier = in.TargetTier
+	} else {
+		targetObject.Tier = srcObject.Tier
+	}
 
 	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, oldObj, nil, nil, true)
 	if err != nil {
@@ -827,7 +954,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	object, err := s.MetaStorage.GetObject(ctx, in.Bucket, in.Key, in.VersioId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
+		return nil
 	}
 	isAdmin, tenantId, _, err := CheckRights(ctx, object.TenantId)
 	if err != nil {
@@ -851,7 +978,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 
 	switch bucket.Versioning.Status {
 	case utils.VersioningDisabled:
-		err = s.removeObject(ctx, bucket, object)
+		err = s.removeObject(ctx, bucket, object, tenantId)
 	case utils.VersioningEnabled:
 		// TODO: versioning
 		err = ErrInternalError
@@ -868,7 +995,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	return nil
 }
 
-func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *Object) error {
+func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *Object, requestTenant string) error {
 	if obj == nil {
 		log.Infof("no need remove")
 		return nil
@@ -878,6 +1005,8 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *
 	if obj.Location != "" {
 		backendName = obj.Location
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, requestTenant, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend with err:", err)
@@ -886,13 +1015,6 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage, err:", err)
-		return err
-	}
-
-	// mark object as deleted
-	err = s.MetaStorage.MarkObjectAsDeleted(ctx, obj)
-	if err != nil {
-		log.Errorln("failed to mark object as deleted, err:", err)
 		return err
 	}
 
@@ -1040,14 +1162,31 @@ func (s *s3Service) cleanObject(ctx context.Context, object *Object, sd driver.S
 		Bucket: object.BucketName, Key: object.ObjectKey, ObjectId: object.ObjectId,
 		VersioId: object.VersionId, StorageMeta: object.StorageMeta,
 	}
+	var err error
+	defer func() {
+		if err != nil {
+			ierr := s.MetaStorage.AddGcobjRecord(ctx, object)
+			if ierr != nil {
+				log.Warnf("add gc record failed, object:%v, err:%v\n", object, ierr)
+			}
+		}
+	}()
+	if sd == nil {
+		backend, err := utils.GetBackend(ctx, s.backendClient, object.Location)
+		if err != nil {
+			log.Errorln("failed to get backend client with err:", err)
+			return err
+		}
+		sd, err = driver.CreateStorageDriver(backend.Type, backend)
+		if err != nil {
+			log.Errorln("failed to create storage, err:", err)
+			return err
+		}
+	}
 
-	err := sd.Delete(ctx, delInput)
+	err = sd.Delete(ctx, delInput)
 	if err != nil {
 		log.Warnf("clean object[%v] from backend failed, err:%v\n", err)
-		ierr := s.MetaStorage.AddGcobjRecord(ctx, object)
-		if ierr != nil {
-			log.Warnf("add gc record failed, object:%v, err:%v\n", object, ierr)
-		}
 	}
 
 	return err

@@ -17,7 +17,10 @@ package utils
 import (
 	"context"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
+	"github.com/micro/go-micro/metadata"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -113,13 +116,13 @@ const (
 	RequestType_Lifecycle = "lifecycle"
 )
 
-func Md5Content(data []byte) string {
-	md5Ctx := md5.New()
-	md5Ctx.Write(data)
-	cipherStr := md5Ctx.Sum(nil)
-	//value := base64.StdEncoding.EncodeToString(cipherStr)
-	value := hex.EncodeToString(cipherStr)
-	return value
+func Md5Content(data []byte) (base64Encoded, hexEncoded string) {
+	md5ctx := md5.New()
+	md5ctx.Write(data)
+	cipherStr := md5ctx.Sum(nil)
+	base64Encoded = base64.StdEncoding.EncodeToString(cipherStr)
+	hexEncoded = hex.EncodeToString(cipherStr)
+	return
 }
 
 func GetBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,
@@ -137,4 +140,14 @@ func GetBackend(ctx context.Context, backedClient backend.BackendService, backen
 	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	return backend, nil
+}
+
+func SetRepresentTenant(ctx context.Context, requestTenant, sourceTenant string) context.Context {
+	if requestTenant != sourceTenant {
+		md, _ := metadata.FromContext(ctx)
+		md[common.CTX_REPRE_TENANT] = sourceTenant
+		ctx = metadata.NewContext(ctx, md)
+	}
+
+	return ctx
 }

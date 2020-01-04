@@ -129,6 +129,8 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 	if backendName == "" {
 		backendName = bucket.DefaultLocation
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -247,6 +249,8 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	}
 
 	backendName := bucket.DefaultLocation
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -375,7 +379,9 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	eTag := hex.EncodeToString(md5Writer.Sum(nil))
 	eTag += "-" + strconv.Itoa(len(in.CompleteParts))
 
-	backendName := bucket.DefaultLocation
+	backendName := multipart.Metadata.Location
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -451,6 +457,8 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 			// delete new object, lifecycle will try again in the next schedule round
 			s.cleanObject(ctx, &Object{Object: object}, sd)
 			return err
+		} else {
+			s.cleanObject(ctx, oldObj, nil)
 		}
 	}
 
@@ -500,7 +508,9 @@ func (s *s3Service) AbortMultipartUpload(ctx context.Context, in *pb.AbortMultip
 		return err
 	}
 
-	backendName := bucket.DefaultLocation
+	backendName := multipart.Metadata.Location
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -678,6 +688,8 @@ func (s *s3Service) CopyObjPart(ctx context.Context, in *pb.CopyObjPartRequest, 
 	if in.TargetLocation != "" {
 		targetBackendName = in.TargetLocation
 	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, targetBucket.TenantId)
 	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)

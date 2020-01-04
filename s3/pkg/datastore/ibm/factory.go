@@ -16,5 +16,5 @@ func (factory *IBMCOSDriverFactory) CreateDriver(backend *backendpb.BackendDetai
 }
 
 func init() {
-	driver.RegisterDriverFactory(constants.BackendTypeAws, &IBMCOSDriverFactory{})
+	driver.RegisterDriverFactory(constants.BackendTypeIBMCos, &IBMCOSDriverFactory{})
 }
