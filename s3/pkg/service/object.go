@@ -1123,7 +1123,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	case utils.VersioningDisabled:
 		err = s.removeObject(ctx, bucket, object, tenantId)
 	case utils.VersioningEnabled:
-		err = s.removeObject(ctx, bucket, object)
+		err = s.removeObject(ctx, bucket, object, tenantId)
 	case utils.VersioningSuspended:
 		// TODO: versioning
 		err = ErrInternalError
