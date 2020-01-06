@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `multiparts` (
   `attrs` JSON DEFAULT NULL,
   `objectid` varchar(255) NOT NULL DEFAULT "",
   `storageMeta` varchar(255) NOT NULL DEFAULT "",
-  `storageclass` tinyint(1) DEFAULT 0,
+  `storageclass` int(11) DEFAULT 0,
   UNIQUE KEY `rowkey` (`bucketname`,`objectname`,`uploadid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
