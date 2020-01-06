@@ -55,10 +55,15 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter("bucketName")
 	objectKey := request.PathParameter("objectKey")
 	rangestr := request.HeaderParameter("Range")
+	versionId := request.Request.URL.Query().Get(common.REQUEST_QUERY_VERSION_ID)
+	if versionId != ""{
+		objectKey = objectKey + "_" + versionId
+	}
+
 	log.Infof("%v\n", rangestr)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	object, err := s.getObjectMeta(ctx, bucketName, objectKey, "")
+	object, err := s.getObjectMeta(ctx, bucketName, objectKey, versionId)
 	if err != nil {
 		log.Errorln("get object meta failed. err:", err)
 		WriteErrorResponse(response, request, err)
