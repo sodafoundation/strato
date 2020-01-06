@@ -37,8 +37,8 @@ import (
 )
 
 var simuRoutines = 10
-var PART_SIZE int64 = 16 * 1024 * 1024 //The max object size that can be moved directly, default is 16M.
-var JOB_RUN_TIME_MAX = 86400           //seconds, equals 1 day
+var PART_SIZE int64 = 5 * 1024 * 1024 //The max object size that can be moved directly, default is 16M.
+var JOB_RUN_TIME_MAX = 86400          //seconds, equals 1 day
 var s3client osdss3.S3Service
 var bkendclient backend.BackendService
 var MiniSpeed int64 = 5 // 5KByte/Sec
@@ -120,6 +120,7 @@ func CopyObj(ctx context.Context, obj *osdss3.Object, destLoca *LocationInfo, jo
 }
 
 func MultipartCopyObj(ctx context.Context, obj *osdss3.Object, destLoca *LocationInfo, job *flowtype.Job) error {
+	log.Debugf("obj.Size=%d, PART_SIZE=%d\n", obj.Size, PART_SIZE)
 	partCount := int64(obj.Size / PART_SIZE)
 	if obj.Size%PART_SIZE != 0 {
 		partCount++
@@ -163,7 +164,7 @@ func MultipartCopyObj(ctx context.Context, obj *osdss3.Object, destLoca *Locatio
 		// copy part
 		copyReq := &osdss3.CopyObjPartRequest{SourceBucket: obj.BucketName, SourceObject: obj.ObjectKey,
 			TargetBucket: destLoca.BucketName, TargetObject: obj.ObjectKey, PartID: partNumber,
-			UploadID: uploadId, ReadOffset: offset, ReadLength: currPartSize,
+			UploadID: uploadId, ReadOffset: offset, ReadLength: currPartSize, TargetLocation: destLoca.BakendName,
 		}
 		var rsp *osdss3.CopyObjPartResponse
 		try := 0
