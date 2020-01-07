@@ -487,13 +487,37 @@ func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string
 	return &rsp, err
 }
 
-func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) error {
+func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) (err error) {
+	var sqlTx *sql.Tx
+	var tx interface{}
+	tx, err = t.Client.Begin()
+
+	defer func() {
+		if err == nil {
+			err = sqlTx.Commit()
+		}
+		if err != nil {
+			sqlTx.Rollback()
+		}
+	}()
+
+	sqlTx, _ = tx.(*sql.Tx)
+
 	sqltext := "delete from buckets where bucketname=?;"
-	_, err := t.Client.Exec(sqltext, bucket.Name)
+	_, err = sqlTx.Exec(sqltext, bucket.Name)
 	if err != nil {
-		return handleDBError(err)
+		err = handleDBError(err)
 	}
-	return nil
+
+	sqltextDelSSE := "delete from bucket_sseopts where bucketname=?;"
+
+	_, err = sqlTx.Exec(sqltextDelSSE, bucket.Name)
+
+	if err != nil {
+		err = handleDBError(err)
+	}
+
+	return
 }
 
 func (t *TidbClient) UpdateUsage(ctx context.Context, bucketName string, size int64, tx interface{}) (err error) {
