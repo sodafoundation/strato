@@ -16,12 +16,11 @@ package service
 
 import (
 	"context"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -86,6 +85,8 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			err = ErrBucketAlreadyExists
 		}
 	}
+	//TODO FIXME
+	/*
 	if in.Versioning != nil {
 		err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
 		if err != nil {
@@ -95,6 +96,8 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			return err
 		}
 	}
+
+	 */
 
 	if in.ServerSideEncryption != nil{
 		byteArr, keyErr := utils.GetRandom32BitKey()
