@@ -100,6 +100,9 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		err = handleDBError(err)
 		return
 	}
+
+	//TODO FIXME
+	/*
 	//get versioning for the bucket
 	versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
 	if versionErr != nil {
@@ -111,6 +114,8 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	if versionOpts != nil {
 		tmp.Versioning.Status = versionOpts.Status
 	}
+
+	 */
 
 	// get SSE info for this bucket
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
@@ -184,6 +189,8 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			return
 		}
 
+		//TODO FIXME
+		/*
 		//get versioning for the bucket
 		versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
 		if versionErr != nil {
@@ -195,6 +202,8 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 		if versionOpts != nil {
 			tmp.Versioning.Status = versionOpts.Status
 		}
+
+		 */
 
 		// get SSE info for this bucket
 		sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
@@ -478,13 +487,37 @@ func (t *TidbClient) CountObjects(ctx context.Context, bucketName, prefix string
 	return &rsp, err
 }
 
-func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) error {
+func (t *TidbClient) DeleteBucket(ctx context.Context, bucket *Bucket) (err error) {
+	var sqlTx *sql.Tx
+	var tx interface{}
+	tx, err = t.Client.Begin()
+
+	defer func() {
+		if err == nil {
+			err = sqlTx.Commit()
+		}
+		if err != nil {
+			sqlTx.Rollback()
+		}
+	}()
+
+	sqlTx, _ = tx.(*sql.Tx)
+
 	sqltext := "delete from buckets where bucketname=?;"
-	_, err := t.Client.Exec(sqltext, bucket.Name)
+	_, err = sqlTx.Exec(sqltext, bucket.Name)
 	if err != nil {
-		return handleDBError(err)
+		err = handleDBError(err)
 	}
-	return nil
+
+	sqltextDelSSE := "delete from bucket_sseopts where bucketname=?;"
+
+	_, err = sqlTx.Exec(sqltextDelSSE, bucket.Name)
+
+	if err != nil {
+		err = handleDBError(err)
+	}
+
+	return
 }
 
 func (t *TidbClient) UpdateUsage(ctx context.Context, bucketName string, size int64, tx interface{}) (err error) {
@@ -589,6 +622,7 @@ func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket
 	return
 }
 
+/*
 func (t *TidbClient) UpdateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error {
 	log.Infof("put bucket[%s] Version info[%s] into tidb ...\n", bucketName, versionStatus)
 
@@ -626,6 +660,7 @@ func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string)
 	if err != nil {
 		return nil, ErrInternalError
 	}*/
+/*
 
 	var rows *sql.Rows
 	sqltext := "select versionstatus from bucket_versionopts where bucketname=?;"
@@ -654,6 +689,8 @@ func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string)
 	}
 	return
 }
+*/
+
 
 func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error {
 	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
