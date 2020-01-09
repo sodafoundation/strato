@@ -99,7 +99,7 @@ func (gm *GcMgr) Start() {
 			// if so, start from 1
 			if count+1 <= 0 {
 				loopCount = 1
-				count = (2 << unit(loopCount)) - 1
+				count = (2 << uint(loopCount)) - 1
 			}
 			rd := rand.New(rand.NewSource(time.Now().UnixNano()))
 			backoffCount := rd.Intn(count + 1)
