@@ -95,6 +95,12 @@ func (gm *GcMgr) Start() {
 			// below will calculate the backoffCount.
 			// backOffCount is used to avoid concurrent gc at the same time made by different servers.
 			count := (2 << uint(loopCount)) - 1
+			// check that whether count +1 is overflow for int value.
+			// if so, start from 1
+			if count+1 <= 0 {
+				loopCount = 1
+				count = (2 << unit(loopCount)) - 1
+			}
 			rd := rand.New(rand.NewSource(time.Now().UnixNano()))
 			backoffCount := rd.Intn(count + 1)
 			intervalTime *= int64(backoffCount)
