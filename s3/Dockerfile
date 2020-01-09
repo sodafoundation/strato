@@ -19,9 +19,12 @@ RUN rpm --import https://packages.confluent.io/rpm/5.2/archive.key && yum makeca
 yum install -y epel-release && \
 rpm -ivh https://download.ceph.com/rpm-luminous/el7/noarch/ceph-release-1-1.el7.noarch.rpm && \
 yum --enablerepo=epel-testing install -y lttng-ust libradosstriper-devel librados2-devel librdkafka-devel && \
+yum -y install mysql && \
 yum clean all && \
 rm -rf /var/cache/yum
 
 
 COPY s3 /s3
-ENTRYPOINT ["/s3"]
+COPY initdb.sh /initdb.sh
+ENTRYPOINT ["/initdb.sh"]
+

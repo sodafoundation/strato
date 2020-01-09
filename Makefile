@@ -56,6 +56,7 @@ docker: build
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
+	chmod 755 s3/initdb.sh
 	docker build s3 -t opensdsio/multi-cloud-s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
