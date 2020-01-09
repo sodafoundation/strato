@@ -17,6 +17,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"os"
 	"strconv"
 
@@ -318,12 +319,28 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
+	//TODO FIXME
+	/*
 	//update versioning if not nil
 	if in.Versioning != nil {
 		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
 		if err != nil {
 			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
 			return err
+		}
+	}
+
+	 */
+	if in.ServerSideEncryption != nil{
+		byteArr, keyErr := utils.GetRandom32BitKey()
+		if keyErr != nil {
+			log.Error("Error generating SSE key", keyErr)
+			return keyErr
+		}
+		sseErr := s.MetaStorage.Db.UpdateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, byteArr)
+		if sseErr != nil {
+			log.Error("Error creating SSE entry: ", sseErr)
+			return sseErr
 		}
 	}
 	return nil
