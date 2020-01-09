@@ -134,5 +134,3 @@ services:
       - --store=mocktikv
       - --config=/tidb.toml
       - -L=info
-
-
