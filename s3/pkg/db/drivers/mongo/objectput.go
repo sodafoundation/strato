@@ -19,10 +19,10 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func (ad *adapter) CreateObject(ctx context.Context, in *pb.Object) S3Error {
@@ -95,4 +95,3 @@ func (ad *adapter) UpdateObjMeta(ctx context.Context, objKey *string, bucketName
 
 	return NoError
 }
-
