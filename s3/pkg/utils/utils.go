@@ -23,6 +23,9 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
+	"math"
+	"strconv"
+	"time"
 )
 
 type Database struct {
@@ -150,4 +153,14 @@ func SetRepresentTenant(ctx context.Context, requestTenant, sourceTenant string)
 	}
 
 	return ctx
+}
+
+func GetVersionId() (versionId string, timeStamp int64) {
+	now := time.Now().UTC().Unix()
+	version := strconv.FormatUint(math.MaxUint64 - uint64(now),10)
+	return version, now
+}
+
+func GetSingleVersionId() (versionId string) {
+	return ""
 }

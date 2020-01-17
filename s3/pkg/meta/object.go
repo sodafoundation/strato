@@ -18,11 +18,9 @@ import (
 
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -33,11 +31,7 @@ const (
 func (m *Meta) GetObject(ctx context.Context, bucketName string, objectName string, versionId string, willNeed bool) (object *Object, err error) {
 	getObject := func() (o helper.Serializable, err error) {
 		log.Info("GetObject CacheMiss. bucket:", bucketName, ", object:", objectName)
-		version := ""
-		if versionId != "" {
-			version = strconv.FormatUint(tidbclient.VersionStr2UInt64(versionId), 10)
-		}
-		object, err := m.Db.GetObject(ctx, bucketName, objectName, version)
+		object, err := m.Db.GetObject(ctx, bucketName, objectName, versionId)
 		if err != nil {
 			log.Errorln("get object failed, err:", err)
 			return

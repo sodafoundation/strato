@@ -34,13 +34,12 @@ import (
 	"github.com/opensds/multi-cloud/s3/error"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
 var topicLifecycle = "lifecycle"
-var s3client = osdss3.NewS3Service("s3", client.DefaultClient)
+var s3client = s3.NewS3Service("s3", client.DefaultClient)
 
 const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
 
@@ -112,7 +111,7 @@ func ScheduleLifecycle() {
 
 // Need to lock the bucket, incase the schedule period is too short and the bucket is scheduled at the same time.
 // Need to consider confliction between rules.
-func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
+func handleBucketLifecyle(bucket string, rules []*s3.LifecycleRule) error {
 	// Translate rules set by user to internal rules which can be sorted.
 
 	// Lifecycle scheduling must be mutual excluded among several schedulers, so get lock first.
@@ -200,7 +199,7 @@ func checkTransitionValidation(source int32, destination int32) bool {
 	return true
 }
 
-func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*osdss3.Object, error) {
+func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*s3.Object, error) {
 	// Get objects by communicating with s3 service.
 	filt := make(map[string]string)
 
@@ -212,7 +211,7 @@ func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*osdss3
 	}
 
 	log.Infof("The filter: %+v\n", filt)
-	s3req := osdss3.ListObjectsRequest{
+	s3req := s3.ListObjectsRequest{
 		Version:    constants.ListObjectsType2Int,
 		Bucket:     r.Bucket,
 		Filter:     filt,
@@ -230,7 +229,11 @@ func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*osdss3
 		return nil, err
 	}
 
-	return s3rsp.Objects, nil
+	retObjs := make([]*s3.Object, 0)
+	for _, list := range s3rsp.ListOfListOfObjects {
+		retObjs = append(retObjs, list.Objects...)
+	}
+	return retObjs, nil
 }
 
 func schedSortedAbortRules(inRules *InterRules) {
@@ -240,7 +243,7 @@ func schedSortedAbortRules(inRules *InterRules) {
 		var uploadIdMarker = ""
 		for {
 			log.Debugf("list upload reqest, bucket:%s, UploadIdMarker:%s\n", r.Bucket, uploadIdMarker)
-			req := osdss3.ListBucketUploadRequest{BucketName: r.Bucket, MaxUploads: 1000, UploadIdMarker: uploadIdMarker}
+			req := s3.ListBucketUploadRequest{BucketName: r.Bucket, MaxUploads: 1000, UploadIdMarker: uploadIdMarker}
 			s3rsp, err := s3client.ListBucketUploadRecords(ctx, &req)
 			if err != nil {
 				log.Errorf("schedule for rule[id=%s,bucket=%s] failed, err:%v\n", r.Id, r.Bucket, err)

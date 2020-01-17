@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `objectparts` (
 CREATE TABLE IF NOT EXISTS `objects` (
   `bucketname` varchar(255) DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
-  `version` bigint(20) UNSIGNED DEFAULT NULL,
+  `version` varchar(255) DEFAULT NULL,
   `location` varchar(255) DEFAULT NULL,
   `tenantid` varchar(255) DEFAULT NULL,
   `userid` varchar(255) DEFAULT NULL,
