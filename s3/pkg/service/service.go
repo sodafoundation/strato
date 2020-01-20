@@ -17,9 +17,10 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"os"
 	"strconv"
+
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/client"
@@ -320,7 +321,6 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	log.Info("UpdateBucket is called in s3 service.")
 
 	//TODO FIXME
-	/*
 	//update versioning if not nil
 	if in.Versioning != nil {
 		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
@@ -329,9 +329,7 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			return err
 		}
 	}
-
-	 */
-	if in.ServerSideEncryption != nil{
+	if in.ServerSideEncryption != nil {
 		byteArr, keyErr := utils.GetRandom32BitKey()
 		if keyErr != nil {
 			log.Error("Error generating SSE key", keyErr)

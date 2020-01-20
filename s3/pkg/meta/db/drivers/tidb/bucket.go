@@ -645,11 +645,6 @@ func (t *TidbClient) CreateBucketVersioning(ctx context.Context, bucketName stri
 
 func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string) (versionOptsPtr *pb.BucketVersioning, err error) {
 	log.Info("list bucket Versions info from tidb ...")
-	/*m := bson.M{}
-	err = UpdateContextFilter(ctx, m)
-	if err != nil {
-		return nil, ErrInternalError
-	}*/
 
 	var rows *sql.Rows
 	sqltext := "select versionstatus from bucket_versionopts where bucketname=?;"
