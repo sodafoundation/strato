@@ -1272,11 +1272,13 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			ContentType:      obj.ContentType,
 			StorageMeta:      obj.StorageMeta,
 		}
-		if in.EncodingType != "" { // only support "url" encoding for now
+		/*if in.EncodingType != "" { // only support "url" encoding for now
 			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
 		} else {
 			object.ObjectKey = obj.ObjectKey
-		}
+		}*/
+		object.ObjectKey = obj.ObjectKey
+
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
 		log.Infof("object:%+v\n", object)
@@ -1323,6 +1325,8 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		out.NextMarker = url.QueryEscape(out.NextMarker)
 	}
 
+	log.Infof("The objects in debug one is : %+v \n", objects)
+	log.Infof("The out debug is : %+v \n", out)
 	err = ErrNoErr
 	return nil
 }
