@@ -337,8 +337,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		for rows.Next() {
 			loopcount += 1
 			//var name, lastModified string
-			var bname, name string
-			var version uint64
+			var bname, name, version string
 			err = rows.Scan(
 				&bname,
 				&name,
@@ -402,8 +401,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			}
 
 			var o *Object
-			strVer := strconv.FormatUint(version, 10)
-			o, err = t.GetObject(ctx, bname, name, strVer)
+			o, err = t.GetObject(ctx, bname, name, version)
 			if err != nil {
 				log.Errorf("err:%v\n", err)
 				return

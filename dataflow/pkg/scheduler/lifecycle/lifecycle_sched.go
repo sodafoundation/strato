@@ -224,6 +224,7 @@ func getObjects(r *InternalLifecycleRule, marker string, limit int32) ([]*s3.Obj
 	ctx := metadata.NewContext(context.Background(), map[string]string{common.CTX_KEY_IS_ADMIN: strconv.FormatBool(true)})
 	log.Debugf("ListObjectsRequest:%+v\n", s3req)
 	s3rsp, err := s3client.ListObjects(ctx, &s3req)
+
 	if err != nil || s3rsp.GetErrorCode() != int32(s3error.ErrNoErr) {
 		log.Errorf("list objects failed, req:%+v,  err:%v.\n", s3req, err)
 		return nil, err
