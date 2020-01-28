@@ -41,6 +41,7 @@ type S3Service interface {
 	GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error)
 	UpdateObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*PutObjectResponse, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponse, error)
+	ListObjectsAllVersions(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponseAllVersions, error)
 	CountObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*CountObjectsResponse, error)
 	PutObject(ctx context.Context, opts ...client.CallOption) (S3_PutObjectService, error)
 	UpdateObject(ctx context.Context, in *Object, opts ...client.CallOption) (*BaseResponse, error)
@@ -166,6 +167,16 @@ func (c *s3Service) UpdateObjectMeta(ctx context.Context, in *Object, opts ...cl
 func (c *s3Service) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.ListObjects", in)
 	out := new(ListObjectsResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) ListObjectsAllVersions(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponseAllVersions, error) {
+	req := c.c.NewRequest(c.name, "S3.ListObjectsAllVersions", in)
+	out := new(ListObjectsResponseAllVersions)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -694,6 +705,7 @@ type S3Handler interface {
 	GetObjectMeta(context.Context, *Object, *GetObjectMetaResult) error
 	UpdateObjectMeta(context.Context, *Object, *PutObjectResponse) error
 	ListObjects(context.Context, *ListObjectsRequest, *ListObjectsResponse) error
+	ListObjectsAllVersions(context.Context, *ListObjectsRequest, *ListObjectsResponseAllVersions) error
 	CountObjects(context.Context, *ListObjectsRequest, *CountObjectsResponse) error
 	PutObject(context.Context, S3_PutObjectStream) error
 	UpdateObject(context.Context, *Object, *BaseResponse) error
@@ -747,6 +759,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error
 		UpdateObjectMeta(ctx context.Context, in *Object, out *PutObjectResponse) error
 		ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error
+		ListObjectsAllVersions(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponseAllVersions) error
 		CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error
 		PutObject(ctx context.Context, stream server.Stream) error
 		UpdateObject(ctx context.Context, in *Object, out *BaseResponse) error
@@ -826,6 +839,10 @@ func (h *s3Handler) UpdateObjectMeta(ctx context.Context, in *Object, out *PutOb
 
 func (h *s3Handler) ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error {
 	return h.S3Handler.ListObjects(ctx, in, out)
+}
+
+func (h *s3Handler) ListObjectsAllVersions(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponseAllVersions) error {
+	return h.S3Handler.ListObjectsAllVersions(ctx, in, out)
 }
 
 func (h *s3Handler) CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error {

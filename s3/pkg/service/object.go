@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/journeymidnight/yig/helper"
@@ -1108,8 +1109,6 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		out.NextMarker = util.Encrypt(out.NextMarker)
 	}
 
-	// handle versioning
-	var mapNameToListOfObjects = make(map[string]pb.ListObjects)
 	objects := make([]*pb.Object, 0, len(retObjects))
 	for _, obj := range retObjects {
 		object := pb.Object{
@@ -1125,49 +1124,16 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			ContentType:      obj.ContentType,
 			StorageMeta:      obj.StorageMeta,
 		}
-		/*if in.EncodingType != "" { // only support "url" encoding for now
+		if in.EncodingType != "" { // only support "url" encoding for now
 			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
 		} else {
 			object.ObjectKey = obj.ObjectKey
-		}*/
-		object.ObjectKey = obj.ObjectKey
-
+		}
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
-		log.Infof("object:%+v\n", object)
-
-		objList, ok := mapNameToListOfObjects[object.ObjectKey]
-		if !ok {
-			// add a new obj list
-			objList = pb.ListObjects{
-				Objects:              make([]*pb.Object, 0),
-				XXX_NoUnkeyedLiteral: struct{}{},
-				XXX_unrecognized:     nil,
-				XXX_sizecache:        0,
-			}
-			objList.Objects = append(objList.Objects, &object)
-			mapNameToListOfObjects[object.ObjectKey] = objList
-		} else {
-			objList.Objects = append(objList.Objects, &object)
-			mapNameToListOfObjects[object.ObjectKey] = objList
-		}
+		log.Debugf("object:%+v\n", object)
 	}
-
-	out.ListOfListOfObjects = make([]*pb.ListObjects, len(mapNameToListOfObjects))
-	var count = 0
-	for _, v := range mapNameToListOfObjects {
-		out.ListOfListOfObjects[count] = &pb.ListObjects{
-			Objects:              nil,
-			XXX_NoUnkeyedLiteral: struct{}{},
-			XXX_unrecognized:     nil,
-			XXX_sizecache:        0,
-		}
-		out.ListOfListOfObjects[count].Objects = make([]*pb.Object, 0)
-		for _, obj := range v.Objects {
-			out.ListOfListOfObjects[count].Objects = append(out.ListOfListOfObjects[count].Objects, obj)
-		}
-		count = count + 1
-	}
+	out.Objects = objects
 	out.Prefixes = appendInfo.Prefixes
 	out.IsTruncated = appendInfo.Truncated
 
@@ -1178,8 +1144,109 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		out.NextMarker = url.QueryEscape(out.NextMarker)
 	}
 
-	log.Infof("The objects in debug one is : %+v \n", objects)
-	log.Infof("The out debug is : %+v \n", out)
+	err = ErrNoErr
+	return nil
+}
+
+func (s *s3Service) ListObjectsAllVersions(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponseAllVersions) error {
+	log.Infof("ListObjectsAllVersions is called in s3 service, bucket is %s.\n", in.Bucket)
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+	// Check ACL
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+	if err != nil {
+		log.Errorf("err:%v\n", err)
+		return nil
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	// administrator can get any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "public-read", "public-read-write":
+			break
+		default:
+			if bucket.TenantId != tenantId {
+				log.Errorf("tenantId(%s) does not much bucket.TenantId(%s)", tenantId, bucket.TenantId)
+				err = ErrBucketAccessForbidden
+				return nil
+			}
+		}
+		// TODO validate user policy and ACL
+	}
+
+	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
+	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
+		out.NextMarker = appendInfo.NextMarker
+	}
+	if in.Version == constants.ListObjectsType2Int {
+		out.NextMarker = util.Encrypt(out.NextMarker)
+	}
+
+	objects := make([]*pb.Object, 0, len(retObjects))
+	for _, obj := range retObjects {
+		object := pb.Object{
+			LastModified:     obj.LastModified,
+			Etag:             obj.Etag,
+			Size:             obj.Size,
+			Tier:             obj.Tier,
+			Location:         obj.Location,
+			TenantId:         obj.TenantId,
+			BucketName:       obj.BucketName,
+			VersionId:        obj.VersionId,
+			CustomAttributes: obj.CustomAttributes,
+			ContentType:      obj.ContentType,
+			StorageMeta:      obj.StorageMeta,
+		}
+		if in.EncodingType != "" { // only support "url" encoding for now
+			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
+		} else {
+			object.ObjectKey = obj.ObjectKey
+		}
+		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
+		objects = append(objects, &object)
+		log.Debugf("object:%+v\n", object)
+	}
+	// build the list of lists
+	var mapNameToListOfObjects = make(map[string]*pb.ListObjectsResponse)
+	for _, o := range objects {
+
+		obName := o.GetObjectKey()[:strings.IndexByte(o.ObjectKey, '_')]
+
+		_, ok := mapNameToListOfObjects[obName]
+		if !ok {
+			// add a new ListObjectsResponse
+			lor := pb.ListObjectsResponse{Objects: make([]*pb.Object, 0, len(retObjects))}
+			mapNameToListOfObjects[obName] = &lor
+		}
+		mapNameToListOfObjects[obName].Objects = append(mapNameToListOfObjects[obName].Objects, o)
+	}
+
+	// build output structure
+	arrOfList := make([]*pb.ListObjectsResponse, 0, len(retObjects))
+	for _,v := range mapNameToListOfObjects{
+		arrOfList = append(arrOfList, v)
+	}
+	out.Objects = arrOfList
+
+	out.Prefixes = appendInfo.Prefixes
+	out.IsTruncated = appendInfo.Truncated
+
+	if in.EncodingType != "" { // only support "url" encoding for now
+		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
+			return url.QueryEscape(s)
+		})
+		out.NextMarker = url.QueryEscape(out.NextMarker)
+	}
+
 	err = ErrNoErr
 	return nil
 }
