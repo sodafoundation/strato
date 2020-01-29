@@ -19,7 +19,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"strconv"
 	"time"
@@ -265,15 +264,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	var dataReader io.Reader
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
-		/*byteArr, _ := ioutil.ReadAll(limitedDataReader)
-		encErr, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
-		if encErr != nil {
-			log.Errorln("failed to encrypt object", encErr)
-			return encErr
-		}
-		reader := bytes.NewReader(encBuf)
-		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
-		req.Size = int64(binary.Size(encBuf))*/
+
 		var readerErr error
 		tempReader, readerErr := utils.WrapEncryptionReader(limitedDataReader,
 			bucket.ServerSideEncryption.EncryptionKey,
@@ -432,7 +423,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		})
 	}
 	completeUpload.Parts = parts
-	mpures, mpuerr := sd.CompleteMultipartUpload(ctx, &pb.MultipartUpload{
+	_, mpuerr := sd.CompleteMultipartUpload(ctx, &pb.MultipartUpload{
 		Bucket:   bucketName,
 		Key:      objectKey,
 		UploadId: uploadId,
@@ -440,7 +431,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Location: multipart.Metadata.Location,
 		Tier:     multipart.Metadata.Tier,
 	}, completeUpload)
-	fmt.Println(mpures)
+
 	if mpuerr != nil {
 		log.Errorln("failed to complete multipart. err:", err)
 		return mpuerr
