@@ -374,9 +374,9 @@ const (
 type AclType string
 
 const (
-	AclPrivate                AclType = "private"
-	AclPublicRead             AclType = "public-read"
-	AclPublicReadWrite        AclType = "public-read-write"
+	AclPrivate         AclType = "private"
+	AclPublicRead      AclType = "public-read"
+	AclPublicReadWrite AclType = "public-read-write"
 )
 
 type StorageClassType string

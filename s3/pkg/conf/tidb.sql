@@ -243,6 +243,7 @@ CREATE TABLE  IF NOT EXISTS `bucket_sseopts` (
                                   `bucketname` varchar(255) NOT NULL,
                                   `sse` varchar(255) DEFAULT NULL,
                                   `sseserverkey` VARBINARY(255) DEFAULT NULL,
+                                  `sseiv` varbinary(255) DEFAULT NULL,
                                   PRIMARY KEY (`bucketname`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
@@ -30,6 +29,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+	log "github.com/sirupsen/logrus"
 )
 
 type Keystone struct {
