@@ -90,7 +90,6 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			err = ErrBucketAlreadyExists
 		}
 	}
-	//TODO FIXME
 	if in.Versioning != nil {
 		err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
 		if err != nil {

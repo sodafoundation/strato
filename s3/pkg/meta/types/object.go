@@ -183,25 +183,9 @@ func (o *Object) encryptSseKey() (err error) {
 	o.ServerSideEncryption.EncryptionKey = aesGcm.Seal(nil, o.ServerSideEncryption.InitilizationVector[:12], o.ServerSideEncryption.EncryptionKey, nil)
 	return nil
 }
-
-/*func (o *Object) GetVersionId() string {
-	if o.NullVersion {
-		return "null"
-	}
-	if o.VersionId != "" {
-		return o.VersionId
-	}
-	timeData := []byte(strconv.FormatUint(uint64(o.LastModified), 10))
-	o.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
-	return o.VersionId
-}
-
- */
-
 //Tidb related function
 
 func (o *Object) GetCreateSql() (string, []interface{}) {
-	//version := math.MaxUint64 - uint64(o.LastModified)
 	customAttributes, _ := json.Marshal(o.CustomAttributes)
 	acl, _ := json.Marshal(o.Acl)
 	var sseType string

@@ -54,9 +54,9 @@ func LoadAllPlans() {
 			offset += planNum
 		}
 		for _, p := range plans {
-			/*if p.PolicyId == "" || !p.PolicyEnabled {
+			if p.PolicyId == "" || !p.PolicyEnabled {
 				continue
-			}*/
+			}
 			e := plan.NewPlanExecutor(&p)
 			err := trigger.GetTriggerMgr().Add(ctx, &p, e)
 			if err != nil {

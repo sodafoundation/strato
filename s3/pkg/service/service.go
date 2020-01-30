@@ -320,7 +320,6 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
-	//TODO FIXME
 	//update versioning if not nil
 	if in.Versioning != nil {
 		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
