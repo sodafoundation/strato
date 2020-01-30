@@ -222,7 +222,6 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}
 
 	obj.BucketName = req.BucketName
-	obj.ObjectKey = req.ObjectKey
 	obj.Acl = req.Acl
 	obj.TenantId = tenantId
 	obj.UserId = userId

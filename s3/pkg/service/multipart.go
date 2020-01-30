@@ -385,10 +385,12 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	}
 
 	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
+	var versionId string
 	if isBucketVersioned {
 		log.Info("Inside service/object.go PUT bucket version enabled")
 		inputKey := objectKey
-		objectKey = objectKey + "_" + getVersionId(objectKey)
+		versionId = getVersionId(objectKey)
+		objectKey = objectKey + "_" + versionId
 		removeVersionId(inputKey)
 
 	}
@@ -496,6 +498,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	object := &pb.Object{
 		BucketName:       bucketName,
 		ObjectKey:        multipart.ObjectKey,
+		VersionId:		  versionId,
 		TenantId:         multipart.Metadata.TenantId,
 		UserId:           multipart.Metadata.UserId,
 		ContentType:      contentType,
