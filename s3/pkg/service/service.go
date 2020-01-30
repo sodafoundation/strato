@@ -330,7 +330,7 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		}
 	}
 	if in.ServerSideEncryption != nil {
-		byteArr, keyErr := utils.GetRandom32BitKey()
+		byteArr, keyErr := utils.GetRandomNBitKey(32)
 		if keyErr != nil {
 			log.Error("Error generating SSE key", keyErr)
 			return keyErr

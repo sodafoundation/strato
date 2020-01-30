@@ -39,6 +39,24 @@ const (
 	MAX_PART_NUMBER = 10000   // max upload part number in one multipart upload
 )
 
+var mapObjectKeyToVersionId map[string]string
+
+func init() {
+	mapObjectKeyToVersionId = make(map[string]string)
+}
+
+func addToMap(key string, versionid string) {
+	mapObjectKeyToVersionId[key] = versionid
+}
+
+func getVersionId(key string) (versionid string) {
+	return mapObjectKeyToVersionId[key]
+}
+
+func removeVersionId(key string) {
+	delete(mapObjectKeyToVersionId, key)
+}
+
 func (s *s3Service) ListBucketUploadRecords(ctx context.Context, in *pb.ListBucketUploadRequest, out *pb.ListBucketUploadResponse) error {
 	log.Info("ListBucketUploadRecords is called in s3 service.")
 	bucketName := in.BucketName
@@ -107,6 +125,17 @@ func (s *s3Service) InitMultipartUpload(ctx context.Context, in *pb.InitMultiPar
 		log.Errorln("failed to get bucket from meta storage. err:", err)
 		return err
 	}
+
+	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
+	if isBucketVersioned {
+		log.Info("Inside service/object.go PUT bucket version enabled")
+		versionId, _ := utils.GetVersionId()
+		inputKey := objectKey
+		// update the cloud backend object name here
+		objectKey = objectKey + "_" + versionId
+		addToMap(inputKey, versionId)
+	}
+
 	if !isAdmin {
 		switch bucket.Acl.CannedAcl {
 		case "public-read-write":
@@ -210,6 +239,20 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	uploadId := uploadRequest.UploadId
 	size := uploadRequest.Size
 
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("get bucket failed with err:", err)
+		return err
+	}
+
+	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
+	if isBucketVersioned {
+		log.Info("Inside service/object.go PUT bucket version enabled")
+
+		// update the cloud backend object name here
+		objectKey = objectKey + "_" + getVersionId(objectKey)
+	}
+
 	log.Infof("uploadpart, bucketname:%v, objectkey:%v, partId:%v, uploadId:%v,size:%v", bucketName, objectKey, partId, uploadId, size)
 	multipart, err := s.MetaStorage.GetMultipart(bucketName, objectKey, uploadId)
 	if err != nil {
@@ -227,12 +270,6 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	if err != nil && isAdmin == false {
 		log.Error("get tenant id failed")
 		err = ErrInternalError
-		return err
-	}
-
-	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
-	if err != nil {
-		log.Errorln("get bucket failed with err:", err)
 		return err
 	}
 
@@ -347,6 +384,15 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		return err
 	}
 
+	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
+	if isBucketVersioned {
+		log.Info("Inside service/object.go PUT bucket version enabled")
+		inputKey := objectKey
+		objectKey = objectKey + "_" + getVersionId(objectKey)
+		removeVersionId(inputKey)
+
+	}
+
 	if !isAdmin {
 		switch bucket.Acl.CannedAcl {
 		case "public-read-write":
@@ -449,7 +495,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 	contentType := multipart.Metadata.ContentType
 	object := &pb.Object{
 		BucketName:       bucketName,
-		ObjectKey:        objectKey,
+		ObjectKey:        multipart.ObjectKey,
 		TenantId:         multipart.Metadata.TenantId,
 		UserId:           multipart.Metadata.UserId,
 		ContentType:      contentType,

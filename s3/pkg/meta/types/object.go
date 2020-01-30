@@ -215,11 +215,11 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 	lastModifiedTime := time.Unix(o.LastModified, 0).Format(TIME_LAYOUT_TIDB)
 	sql := "insert into objects (bucketname, name, version, location, tenantid, userid, size, objectid, " +
 		" lastmodifiedtime, etag, contenttype, customattributes, acl, nullversion, deletemarker, ssetype, " +
-		" encryptionkey, initializationvector, type, tier, storageMeta) " +
-		"values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+		" encryptionkey, initializationvector, type, tier, storageMeta, encsize) " +
+		"values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 	args := []interface{}{o.BucketName, o.ObjectKey, o.VersionId, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
 		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker, sseType,
-		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta}
+		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta, o.EncSize}
 
 	return sql, args
 }
