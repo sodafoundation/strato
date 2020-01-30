@@ -114,159 +114,16 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		in.SendMsg(result)
 	}()
 
+	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Errorln("failed to get credential info. err:", err)
+		return nil
+	}
 	req := &pb.PutObjectRequest{}
 	err = in.RecvMsg(req)
 	if err != nil {
 		log.Errorln("failed to get msg with err:", err)
-		return ErrInternalError
-	}
-
-	log.Infof("*********bucket:%s,key:%s,size:%d\n", req.BucketName, req.ObjectKey, req.Size)
-	bucket, err := s.MetaStorage.GetBucket(ctx, req.BucketName, true)
-	if err != nil {
-		log.Errorln("get bucket failed with err:", err)
-		return err
-	}
-	if bucket.Versioning.Status == utils.VersioningEnabled {
-		log.Info("Inside PUT Versioned Objects")
-		return PutVersionedObject(ctx, req, in, s)
-	} else {
-		log.Info("Inside PUT  Objects")
-		return PutObject(ctx, req, in, s)
-	}
-}
-
-func PutVersionedObject(ctx context.Context, req *pb.PutObjectRequest, in pb.S3_PutObjectStream, s *s3Service) error {
-	log.Infoln("PutVersionedObject is called in s3 service.")
-
-	var err error
-	result := &pb.PutObjectResponse{}
-	defer func() {
-		result.ErrorCode = GetErrCode(err)
-		in.SendMsg(result)
-	}()
-
-	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		log.Errorln("failed to get credential info. err:", err)
-		return nil
-	}
-
-	log.Infof("*********bucket:%s,key:%s,size:%d\n", req.BucketName, req.ObjectKey, req.Size)
-	bucket, err := s.MetaStorage.GetBucket(ctx, req.BucketName, true)
-	if err != nil {
-		log.Errorln("get bucket failed with err:", err)
-		return err
-	}
-
-	if !isAdmin {
-		switch bucket.Acl.CannedAcl {
-		case "public-read-write":
-			break
-		default:
-			if bucket.TenantId != tenantId {
-				err = ErrBucketAccessForbidden
-				return err
-			}
-		}
-	}
-	data := &StreamReader{in: in}
-	var limitedDataReader io.Reader
-	if req.Size > 0 { // request.ContentLength is -1 if length is unknown
-		limitedDataReader = io.LimitReader(data, req.Size)
-	} else {
-		limitedDataReader = data
-	}
-
-	backendName := bucket.DefaultLocation
-	if req.Location != "" {
-		backendName = req.Location
-	}
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
-	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
-		return err
-	}
-
-	log.Infoln("bucket location:", req.Location, " backendtype:", backend.Type, " endpoint:", backend.Endpoint)
-	bodyMd5 := req.Attrs["md5Sum"]
-	ctx = context.Background()
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, req.Size)
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
-	sd, err := driver.CreateStorageDriver(backend.Type, backend)
-	if err != nil {
-		log.Errorln("failed to create storage. err:", err)
-		return err
-	}
-	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
-	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
-	if isBucketVersioned {
-		log.Info("Inside service/object.go PUT bucket version enabled")
-		versionId, now := utils.GetVersionId()
-		obj.VersionId = versionId
-		obj.LastModified = now
-		// update the cloud backend object name here
-		obj.ObjectKey = obj.ObjectKey + "_" + obj.VersionId
-	} else {
-		obj.VersionId = utils.GetSingleVersionId()
-		obj.LastModified = time.Now().UTC().Unix()
-	}
-
-	log.Info("Object in object.go PUT bucket versioned object is :", obj)
-	res, err := sd.Put(ctx, limitedDataReader, obj)
-	if err != nil {
-		log.Errorln("failed to put data. err:", err)
-		return err
-	}
-
-	obj.BucketName = req.BucketName
-	//obj.ObjectKey = req.ObjectKey
-	obj.Acl = req.Acl
-	obj.TenantId = tenantId
-	obj.UserId = userId
-	obj.ObjectId = res.ObjectId
-	obj.LastModified = time.Now().UTC().Unix()
-	obj.Etag = res.Etag
-	obj.ContentType = req.ContentType
-	obj.DeleteMarker = false
-	obj.CustomAttributes = req.Attrs
-	obj.Type = meta.ObjectTypeNormal
-	obj.Tier = utils.Tier1 // Currently only support tier1
-	obj.StorageMeta = res.Meta
-	obj.Size = req.Size
-	obj.Location = backendName
-
-	object := &meta.Object{Object: obj}
-
-	result.Md5 = res.Etag
-	result.LastModified = object.LastModified
-
-	log.Info("Putting into metadata object is :", object)
-	err = s.MetaStorage.PutObject(ctx, object, nil, nil, nil, true)
-	if err != nil {
-		log.Errorf("failed to put object meta[object:%+v, err:%v\n", object, err)
-		// TODO: consistent check & clean
-		return ErrDBError
-	}
-
-	return nil
-
-}
-
-func PutObject(ctx context.Context, req *pb.PutObjectRequest, in pb.S3_PutObjectStream, s *s3Service) error {
-	log.Infoln("PutObject is called in s3 service.")
-
-	var err error
-	result := &pb.PutObjectResponse{}
-	defer func() {
-		result.ErrorCode = GetErrCode(err)
-		in.SendMsg(result)
-	}()
-
-	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
-	if err != nil {
-		log.Errorln("failed to get credential info. err:", err)
-		return nil
+ 		return ErrInternalError
 	}
 
 	log.Infof("*********bucket:%s,key:%s,size:%d\n", req.BucketName, req.ObjectKey, req.Size)
@@ -341,9 +198,22 @@ func PutObject(ctx context.Context, req *pb.PutObjectRequest, in pb.S3_PutObject
 		return err
 	}
 	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
-	if oldObj != nil && oldObj.Location == backendName {
-		obj.StorageMeta = oldObj.StorageMeta
-		obj.ObjectId = oldObj.ObjectId
+
+	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
+	if isBucketVersioned {
+		log.Info("Inside service/object.go PUT bucket version enabled")
+		versionId, now := utils.GetVersionId()
+		obj.VersionId = versionId
+		obj.LastModified = now
+		// update the cloud backend object name here
+		obj.ObjectKey = obj.ObjectKey + "_" + obj.VersionId
+	} else {
+		obj.VersionId = utils.GetSingleVersionId()
+		obj.LastModified = time.Now().UTC().Unix()
+		if oldObj != nil && oldObj.Location == backendName {
+			obj.StorageMeta = oldObj.StorageMeta
+			obj.ObjectId = oldObj.ObjectId
+		}
 	}
 	res, err := sd.Put(ctx, limitedDataReader, obj)
 	if err != nil {

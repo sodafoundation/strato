@@ -673,7 +673,7 @@ func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string)
 	return
 }
 
-func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error {
+func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte, sseIV []byte) error {
 	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
 	sql := "insert into bucket_sseopts(bucketname, sse, sseserverkey, sseiv) values(?,?,?,?);"
