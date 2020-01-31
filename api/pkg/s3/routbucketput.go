@@ -42,7 +42,7 @@ func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.
 
 	} else if IsQuery(request, "lifecycle") {
 		s.BucketLifecyclePut(request, response)
-	}  else if IsQuery(request, "DefaultEncryption") {
+	} else if IsQuery(request, "DefaultEncryption") {
 		s.BucketSSEPut(request, response)
 	} else {
 		s.BucketPut(request, response)

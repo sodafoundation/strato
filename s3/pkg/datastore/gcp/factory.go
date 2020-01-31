@@ -1,14 +1,13 @@
 package gcp
 
 import (
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/webrtcn/s3client"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 )
 
 type GcsDriverFactory struct {
-
 }
 
 func (cdf *GcsDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {

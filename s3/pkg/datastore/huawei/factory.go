@@ -1,14 +1,13 @@
 package hws
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 )
 
 type HWObsDriverFactory struct {
-
 }
 
 func (cdf *HWObsDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
