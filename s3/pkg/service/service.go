@@ -17,9 +17,10 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"os"
 	"strconv"
+
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/client"
@@ -319,18 +320,14 @@ func (s *s3Service) GetTierMap(ctx context.Context, in *pb.BaseRequest, out *pb.
 func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	log.Info("UpdateBucket is called in s3 service.")
 
-	//TODO FIXME
-	/*
-		//update versioning if not nil
-		if in.Versioning != nil {
-			err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
-			if err != nil {
-				log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
-				return err
-			}
+	//update versioning if not nil
+	if in.Versioning != nil {
+		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+		if err != nil {
+			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
+			return err
 		}
-
-	*/
+	}
 	if in.ServerSideEncryption != nil {
 		byteArr, keyErr := utils.GetRandomNBitKey(32)
 		if keyErr != nil {

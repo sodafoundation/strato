@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +17,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 type Object struct {
@@ -185,23 +183,9 @@ func (o *Object) encryptSseKey() (err error) {
 	o.ServerSideEncryption.EncryptionKey = aesGcm.Seal(nil, o.ServerSideEncryption.InitilizationVector[:12], o.ServerSideEncryption.EncryptionKey, nil)
 	return nil
 }
-
-func (o *Object) GetVersionId() string {
-	if o.NullVersion {
-		return "null"
-	}
-	if o.VersionId != "" {
-		return o.VersionId
-	}
-	timeData := []byte(strconv.FormatUint(uint64(o.LastModified), 10))
-	o.VersionId = hex.EncodeToString(xxtea.Encrypt(timeData, XXTEA_KEY))
-	return o.VersionId
-}
-
 //Tidb related function
 
 func (o *Object) GetCreateSql() (string, []interface{}) {
-	version := math.MaxUint64 - uint64(o.LastModified)
 	customAttributes, _ := json.Marshal(o.CustomAttributes)
 	acl, _ := json.Marshal(o.Acl)
 	var sseType string
@@ -217,7 +201,7 @@ func (o *Object) GetCreateSql() (string, []interface{}) {
 		" lastmodifiedtime, etag, contenttype, customattributes, acl, nullversion, deletemarker, ssetype, " +
 		" encryptionkey, initializationvector, type, tier, storageMeta, encsize) " +
 		"values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	args := []interface{}{o.BucketName, o.ObjectKey, version, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
+	args := []interface{}{o.BucketName, o.ObjectKey, o.VersionId, o.Location, o.TenantId, o.UserId, o.Size, o.ObjectId,
 		lastModifiedTime, o.Etag, o.ContentType, customAttributes, acl, o.NullVersion, o.DeleteMarker, sseType,
 		encryptionKey, initVector, o.Type, o.Tier, o.StorageMeta, o.EncSize}
 

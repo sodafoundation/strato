@@ -100,22 +100,17 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		err = handleDBError(err)
 		return
 	}
-
-	//TODO FIXME
-	/*
-		//get versioning for the bucket
-		versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
-		if versionErr != nil {
-			log.Error("error in getting versioning information, err:%v\n", versionErr)
-			err = handleDBError(versionErr)
-			return
-		}
-		tmp.Versioning = &pb.BucketVersioning{}
-		if versionOpts != nil {
-			tmp.Versioning.Status = versionOpts.Status
-		}
-
-	*/
+	//get versioning for the bucket
+	versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
+	if versionErr != nil {
+		log.Error("error in getting versioning information, err:%v\n", versionErr)
+		err = handleDBError(versionErr)
+		return
+	}
+	tmp.Versioning = &pb.BucketVersioning{}
+	if versionOpts != nil {
+		tmp.Versioning.Status = versionOpts.Status
+	}
 
 	// get SSE info for this bucket
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
@@ -190,21 +185,17 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			return
 		}
 
-		//TODO FIXME
-		/*
-			//get versioning for the bucket
-			versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
-			if versionErr != nil {
-				log.Error("error in getting versioning information, err:%v\n", versionErr)
-				err = handleDBError(versionErr)
-				return
-			}
-			tmp.Versioning = &pb.BucketVersioning{}
-			if versionOpts != nil {
-				tmp.Versioning.Status = versionOpts.Status
-			}
-
-		*/
+		//get versioning for the bucket
+		versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
+		if versionErr != nil {
+			log.Error("error in getting versioning information, err:%v\n", versionErr)
+			err = handleDBError(versionErr)
+			return
+		}
+		tmp.Versioning = &pb.BucketVersioning{}
+		if versionOpts != nil {
+			tmp.Versioning.Status = versionOpts.Status
+		}
 
 		// get SSE info for this bucket
 		sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
@@ -346,8 +337,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 		for rows.Next() {
 			loopcount += 1
 			//var name, lastModified string
-			var bname, name string
-			var version uint64
+			var bname, name, version string
 			err = rows.Scan(
 				&bname,
 				&name,
@@ -411,8 +401,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			}
 
 			var o *Object
-			strVer := strconv.FormatUint(version, 10)
-			o, err = t.GetObject(ctx, bname, name, strVer)
+			o, err = t.GetObject(ctx, bname, name, version)
 			if err != nil {
 				log.Errorf("err:%v\n", err)
 				return
@@ -623,7 +612,6 @@ func (t *TidbClient) ListBucketLifecycle(ctx context.Context) (buckets []*Bucket
 	return
 }
 
-/*
 func (t *TidbClient) UpdateBucketVersioning(ctx context.Context, bucketName string, versionStatus string) error {
 	log.Infof("put bucket[%s] Version info[%s] into tidb ...\n", bucketName, versionStatus)
 
@@ -656,12 +644,6 @@ func (t *TidbClient) CreateBucketVersioning(ctx context.Context, bucketName stri
 
 func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string) (versionOptsPtr *pb.BucketVersioning, err error) {
 	log.Info("list bucket Versions info from tidb ...")
-	/*m := bson.M{}
-	err = UpdateContextFilter(ctx, m)
-	if err != nil {
-		return nil, ErrInternalError
-	}*/
-/*
 
 	var rows *sql.Rows
 	sqltext := "select versionstatus from bucket_versionopts where bucketname=?;"
@@ -690,7 +672,6 @@ func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string)
 	}
 	return
 }
-*/
 
 func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte, sseIV []byte) error {
 	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)

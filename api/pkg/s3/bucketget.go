@@ -58,6 +58,33 @@ func (s *APIService) BucketGet(request *restful.Request, response *restful.Respo
 	return
 }
 
+func (s *APIService) BucketGetAllVersions(request *restful.Request, response *restful.Response) {
+	bucketName := request.PathParameter("bucketName")
+	log.Infof("Received request for bucket details: %s\n", bucketName)
+
+	var err error
+	req, err := parseListObjectsQuery(request.Request.URL.Query())
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+	req.Bucket = bucketName
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	lsRsp, err := s.s3Client.ListObjectsAllVersions(ctx, &req)
+	if HandleS3Error(response, request, err, lsRsp.GetErrorCode()) != nil {
+		log.Errorf("get bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, lsRsp.GetErrorCode())
+		return
+	}
+
+	rsp := CreateListObjectsResponseAllVersions(bucketName, &req, lsRsp)
+	log.Debugf("rsp:%+v\n", rsp)
+	// Write success response.
+	response.WriteEntity(rsp)
+
+	return
+}
+
 func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err error) {
 	if query.Get("list-type") == constants.ListObjectsType2Str {
 		request.Version = constants.ListObjectsType2Int
@@ -143,6 +170,72 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 			obj.Owner.ID = o.TenantId //TODO: DisplayName
 		}
 		response.Contents = append(response.Contents, obj)
+	}
+
+	var prefixes []datatype.CommonPrefix
+	for _, prefix := range listRsp.Prefixes {
+		item := datatype.CommonPrefix{
+			Prefix: prefix,
+		}
+		prefixes = append(prefixes, item)
+	}
+	response.CommonPrefixes = prefixes
+
+	response.Delimiter = request.Delimiter
+	response.EncodingType = request.EncodingType
+	response.IsTruncated = listRsp.IsTruncated
+	response.MaxKeys = int(request.MaxKeys)
+	response.Prefix = request.Prefix
+	response.BucketName = bucketName
+
+	if request.Version == constants.ListObjectsType2Int {
+		response.KeyCount = len(response.Contents)
+		response.ContinuationToken = request.ContinuationToken
+		response.NextContinuationToken = listRsp.NextMarker
+		response.StartAfter = request.StartAfter
+	} else { // version 1
+		response.Marker = request.Marker
+		response.NextMarker = listRsp.NextMarker
+	}
+
+	if request.EncodingType != "" {
+		response.Delimiter = url.QueryEscape(response.Delimiter)
+		response.Prefix = url.QueryEscape(response.Prefix)
+		response.StartAfter = url.QueryEscape(response.StartAfter)
+		response.Marker = url.QueryEscape(response.Marker)
+	}
+
+	return
+}
+
+// this function refers to GenerateListObjectsResponse in api-response.go from Minio Cloud Storage.
+func CreateListObjectsResponseAllVersions(bucketName string, request *s3.ListObjectsRequest,
+	listRsp *s3.ListObjectsResponseAllVersions) (response datatype.ListObjectsResponseAllVersions) {
+
+	i := 0
+	response.Contents = make([]datatype.ListObjectsResponse, len(listRsp.Objects))
+	for _, ptrArr := range listRsp.Objects {
+		response.Contents[i] = datatype.ListObjectsResponse{}
+		response.Contents[i].Contents = make([]datatype.Object, 0, len(ptrArr.Objects))
+		for _, o := range ptrArr.Objects {
+			obj := datatype.Object{
+				Key:          o.ObjectKey,
+				LastModified: time.Unix(o.LastModified, 0).In(time.Local).Format(timeFormatAMZ),
+				ETag:         o.Etag,
+				Size:         o.Size,
+				StorageClass: o.StorageClass,
+				Location:     o.Location,
+				Tier:         o.Tier,
+			}
+			if request.EncodingType != "" { // only support "url" encoding for now
+				obj.Key = url.QueryEscape(obj.Key)
+			}
+			if request.FetchOwner {
+				obj.Owner.ID = o.TenantId //TODO: DisplayName
+			}
+			response.Contents[i].Contents = append(response.Contents[i].Contents, obj)
+		}
+		i = i + 1
 	}
 
 	var prefixes []datatype.CommonPrefix

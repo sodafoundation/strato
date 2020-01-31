@@ -27,8 +27,8 @@ func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.
 		s.BucketAclGet(request, response)
 	} else if IsQuery(request, "uploads") {
 		s.ListBucketUploadRecords(request, response)
-	} else if IsQuery(request, "versioning") {
-		//TODO
+	} else if IsQuery(request, "allversions") {
+		s.BucketGetAllVersions(request, response)
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {

@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3"
@@ -89,19 +90,15 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			err = ErrBucketAlreadyExists
 		}
 	}
-	//TODO FIXME
-	/*
-		if in.Versioning != nil {
-			err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
-			if err != nil {
-				// set default version to disabled
-				err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, "Disabled")
-				log.Error("Error creating version entry: ", err)
-				return err
-			}
+	if in.Versioning != nil {
+		err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+		if err != nil {
+			// set default version to disabled
+			err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, "Disabled")
+			log.Error("Error creating version entry: ", err)
+			return err
 		}
-
-	*/
+	}
 
 	if in.ServerSideEncryption != nil {
 		byteArr, keyErr := utils.GetRandomNBitKey(ENC_KEY_LEN)

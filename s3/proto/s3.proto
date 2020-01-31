@@ -8,6 +8,7 @@ service S3 {
 	rpc GetObjectMeta(Object) returns (GetObjectMetaResult) {}
 	rpc UpdateObjectMeta(Object) returns (PutObjectResponse) {}
 	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+	rpc ListObjectsAllVersions(ListObjectsRequest) returns (ListObjectsResponseAllVersions) {}
 	rpc CountObjects(ListObjectsRequest) returns (CountObjectsResponse) {}
 	rpc PutObject(stream PutDataStream) returns (PutObjectResponse) {}
 	rpc UpdateObject(Object) returns (BaseResponse) {}
@@ -488,6 +489,30 @@ message ListObjectsRequest {
 
     // for internal use, for example, lifecycle management may need to filter objects by tier, or create time.
     map<string, string> filter = 14;
+}
+
+message ListObjectsResponseAllVersions {
+	int32 errorCode = 1;
+
+	// Indicates whether the returned list objects response is truncated. A
+	// value of true indicates that the list was truncated. The list can be truncated
+	// if the number of objects exceeds the limit allowed or specified
+	// by max keys.
+	bool isTruncated = 2;
+
+	// When response is truncated (the IsTruncated element value in the response
+	// is true), you can use the key name in this field as marker in the subsequent
+	// request to get next set of objects.
+	//
+	// NOTE: This element is returned only if you have delimiter request parameter
+	// specified.
+	string nextMarker = 3;
+
+	// List of prefixes for this request.
+	repeated string Prefixes = 4;
+
+	// List of objects info for this request.
+	repeated ListObjectsResponse objects = 5;
 }
 
 message ListObjectsResponse {

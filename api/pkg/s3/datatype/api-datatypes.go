@@ -33,6 +33,11 @@ type LocationResponse struct {
 	Location string   `xml:",chardata"`
 }
 
+type ListObjectsResponseHolder struct{
+	XMLName xml.Name `xml:"result"`
+	Objects []ListObjectsResponse `xml:"ListBucketResult"`
+}
+
 type ListObjectsResponse struct {
 	XMLName xml.Name `xml:"ListBucketResult"`
 
@@ -55,6 +60,30 @@ type ListObjectsResponse struct {
 	StartAfter            string `xml:",omitempty"`
 
 	Contents []Object
+}
+
+type ListObjectsResponseAllVersions struct {
+	XMLName xml.Name `xml:"ListBucketResultAllVersions"`
+
+	CommonPrefixes []CommonPrefix
+	Delimiter      string
+	EncodingType   string `xml:"Encoding-Type,omitempty"`
+	IsTruncated    bool
+	MaxKeys        int
+	KeyCount       int `xml:",omitempty"`
+	Prefix         string
+	BucketName     string `xml:"Name"`
+
+	// v1 specific
+	Marker     string
+	NextMarker string `xml:",omitempty"`
+
+	// v2 specific
+	ContinuationToken     string `xml:",omitempty"`
+	NextContinuationToken string `xml:",omitempty"`
+	StartAfter            string `xml:",omitempty"`
+
+	Contents []ListObjectsResponse
 }
 
 type VersionedListObjectsResponse struct {
@@ -209,6 +238,7 @@ type Object struct {
 
 	Location string
 	Tier     int32
+	Version string
 }
 
 type VersionedObject struct {

@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/journeymidnight/yig/helper"
@@ -118,12 +119,11 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to get credential info. err:", err)
 		return nil
 	}
-
 	req := &pb.PutObjectRequest{}
 	err = in.RecvMsg(req)
 	if err != nil {
 		log.Errorln("failed to get msg with err:", err)
-		return ErrInternalError
+ 		return ErrInternalError
 	}
 
 	log.Infof("*********bucket:%s,key:%s,size:%d\n", req.BucketName, req.ObjectKey, req.Size)
@@ -198,9 +198,22 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		return err
 	}
 	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
-	if oldObj != nil && oldObj.Location == backendName {
-		obj.StorageMeta = oldObj.StorageMeta
-		obj.ObjectId = oldObj.ObjectId
+
+	isBucketVersioned := bucket.Versioning.Status == utils.VersioningEnabled
+	if isBucketVersioned {
+		log.Info("Inside service/object.go PUT bucket version enabled")
+		versionId, now := utils.GetVersionId()
+		obj.VersionId = versionId
+		obj.LastModified = now
+		// update the cloud backend object name here
+		obj.ObjectKey = obj.ObjectKey + "_" + obj.VersionId
+	} else {
+		obj.VersionId = utils.GetSingleVersionId()
+		obj.LastModified = time.Now().UTC().Unix()
+		if oldObj != nil && oldObj.Location == backendName {
+			obj.StorageMeta = oldObj.StorageMeta
+			obj.ObjectId = oldObj.ObjectId
+		}
 	}
 	res, err := sd.Put(ctx, limitedDataReader, obj)
 	if err != nil {
@@ -209,7 +222,6 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}
 
 	obj.BucketName = req.BucketName
-	obj.ObjectKey = req.ObjectKey
 	obj.Acl = req.Acl
 	obj.TenantId = tenantId
 	obj.UserId = userId
@@ -268,7 +280,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		return err
 	}
 
-	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
+	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, in.VersionId, true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
 		return nil
@@ -865,8 +877,7 @@ func (s *s3Service) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput, 
 	case utils.VersioningDisabled:
 		err = s.removeObject(ctx, bucket, object, tenantId)
 	case utils.VersioningEnabled:
-		// TODO: versioning
-		err = ErrInternalError
+		err = s.removeObject(ctx, bucket, object, tenantId)
 	case utils.VersioningSuspended:
 		// TODO: versioning
 		err = ErrInternalError
@@ -992,6 +1003,109 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		log.Debugf("object:%+v\n", object)
 	}
 	out.Objects = objects
+	out.Prefixes = appendInfo.Prefixes
+	out.IsTruncated = appendInfo.Truncated
+
+	if in.EncodingType != "" { // only support "url" encoding for now
+		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
+			return url.QueryEscape(s)
+		})
+		out.NextMarker = url.QueryEscape(out.NextMarker)
+	}
+
+	err = ErrNoErr
+	return nil
+}
+
+func (s *s3Service) ListObjectsAllVersions(ctx context.Context, in *pb.ListObjectsRequest, out *pb.ListObjectsResponseAllVersions) error {
+	log.Infof("ListObjectsAllVersions is called in s3 service, bucket is %s.\n", in.Bucket)
+	var err error
+	defer func() {
+		out.ErrorCode = GetErrCode(err)
+	}()
+	// Check ACL
+	bucket, err := s.MetaStorage.GetBucket(ctx, in.Bucket, true)
+	if err != nil {
+		log.Errorf("err:%v\n", err)
+		return nil
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	// administrator can get any resource
+	if isAdmin == false {
+		switch bucket.Acl.CannedAcl {
+		case "public-read", "public-read-write":
+			break
+		default:
+			if bucket.TenantId != tenantId {
+				log.Errorf("tenantId(%s) does not much bucket.TenantId(%s)", tenantId, bucket.TenantId)
+				err = ErrBucketAccessForbidden
+				return nil
+			}
+		}
+		// TODO validate user policy and ACL
+	}
+
+	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
+	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
+		out.NextMarker = appendInfo.NextMarker
+	}
+	if in.Version == constants.ListObjectsType2Int {
+		out.NextMarker = util.Encrypt(out.NextMarker)
+	}
+
+	objects := make([]*pb.Object, 0, len(retObjects))
+	for _, obj := range retObjects {
+		object := pb.Object{
+			LastModified:     obj.LastModified,
+			Etag:             obj.Etag,
+			Size:             obj.Size,
+			Tier:             obj.Tier,
+			Location:         obj.Location,
+			TenantId:         obj.TenantId,
+			BucketName:       obj.BucketName,
+			VersionId:        obj.VersionId,
+			CustomAttributes: obj.CustomAttributes,
+			ContentType:      obj.ContentType,
+			StorageMeta:      obj.StorageMeta,
+		}
+		if in.EncodingType != "" { // only support "url" encoding for now
+			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
+		} else {
+			object.ObjectKey = obj.ObjectKey
+		}
+		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
+		objects = append(objects, &object)
+		log.Debugf("object:%+v\n", object)
+	}
+	// build the list of lists
+	var mapNameToListOfObjects = make(map[string]*pb.ListObjectsResponse)
+	for _, o := range objects {
+
+		obName := o.GetObjectKey()[:strings.IndexByte(o.ObjectKey, '_')]
+
+		_, ok := mapNameToListOfObjects[obName]
+		if !ok {
+			// add a new ListObjectsResponse
+			lor := pb.ListObjectsResponse{Objects: make([]*pb.Object, 0, len(retObjects))}
+			mapNameToListOfObjects[obName] = &lor
+		}
+		mapNameToListOfObjects[obName].Objects = append(mapNameToListOfObjects[obName].Objects, o)
+	}
+
+	// build output structure
+	arrOfList := make([]*pb.ListObjectsResponse, 0, len(retObjects))
+	for _,v := range mapNameToListOfObjects{
+		arrOfList = append(arrOfList, v)
+	}
+	out.Objects = arrOfList
+
 	out.Prefixes = appendInfo.Prefixes
 	out.IsTruncated = appendInfo.Truncated
 
