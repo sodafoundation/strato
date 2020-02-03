@@ -2,8 +2,8 @@ package types
 
 import (
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	. "gopkg.in/check.v1"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	. "gopkg.in/check.v1"
 )
 
 type TestData struct {
@@ -13,8 +13,8 @@ type TestData struct {
 
 func (ts *TypesSuite) TestBucketSerialize(c *C) {
 	b := Bucket{&pb.Bucket{
-		Name:       "test_bucket",
-		Usages:      100,
+		Name:   "test_bucket",
+		Usages: 100,
 	}}
 
 	fields, err := b.Serialize()

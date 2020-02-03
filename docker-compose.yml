@@ -72,6 +72,8 @@ services:
       - ./s3/pkg/datastore/yig/conf/:/etc/yig
       - /etc/ceph:/etc/ceph
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+      - ./s3/pkg/conf/tidb.sql:/s3.sql
+      - ./s3/pkg/datastore/yig/conf/yig.sql:/yig.sql
     depends_on:
       - redis
       - tidb
@@ -132,15 +134,3 @@ services:
       - --store=mocktikv
       - --config=/tidb.toml
       - -L=info
-
-  mysql:
-    image: mysql:5.7
-    container_name: mysql
-    volumes:
-      - ./s3/pkg/conf/tidb.sql:/s3.sql
-      - ./s3/pkg/datastore/yig/conf/yig.sql:/yig.sql
-    command: mysql -h tidb  -P 4000 -u root -e "create database if not exists s3 character set utf8;use s3;source /s3.sql;create database if not exists yig character set utf8;use yig;source /yig.sql;"
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
-    depends_on:
-      - tidb

@@ -26,6 +26,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var ENC_KEY_LEN int = 32
+var ENC_IV_LEN int = 16
+
 func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb.ListBucketsResponse) error {
 	log.Info("ListBuckets is called in s3 service.")
 	var err error
@@ -88,32 +91,37 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 	//TODO FIXME
 	/*
-	if in.Versioning != nil {
-		err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
-		if err != nil {
-			// set default version to disabled
-			err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, "Disabled")
-			log.Error("Error creating version entry: ", err)
-			return err
+		if in.Versioning != nil {
+			err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+			if err != nil {
+				// set default version to disabled
+				err = s.MetaStorage.Db.CreateBucketVersioning(ctx, in.Name, "Disabled")
+				log.Error("Error creating version entry: ", err)
+				return err
+			}
 		}
-	}
 
-	 */
+	*/
 
-	if in.ServerSideEncryption != nil{
-		byteArr, keyErr := utils.GetRandom32BitKey()
+	if in.ServerSideEncryption != nil {
+		byteArr, keyErr := utils.GetRandomNBitKey(ENC_KEY_LEN)
 		if keyErr != nil {
 			log.Error("Error generating SSE key", keyErr)
 			return keyErr
 		}
-		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, byteArr)
+		ivArr, ivErr := utils.GetRandomNBitKey(ENC_IV_LEN)
+		if ivErr != nil {
+			log.Error("Error generating SSE IV", ivErr)
+			return ivErr
+		}
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, byteArr, ivArr)
 		if err != nil {
 			log.Error("Error creating SSE entry: ", err)
 			return err
 		}
-	} else{
+	} else {
 		// set default SSE option to none
-		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE", []byte("NONE"))
+		err = s.MetaStorage.Db.CreateBucketSSE(ctx, in.Name, "NONE", []byte("NONE"), []byte("NONE"))
 		if err != nil {
 			log.Error("Error creating SSE entry: ", err)
 			return err

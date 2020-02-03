@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/go-redis/redis"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

@@ -15,6 +15,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -260,7 +261,27 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	md5Writer := md5.New()
 	data := &StreamReader{in: stream}
 	limitedDataReader := io.LimitReader(data, size)
-	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+	var dataReader io.Reader
+	// encrypt if needed
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+
+		var readerErr error
+		tempReader, readerErr := utils.WrapEncryptionReader(limitedDataReader,
+			bucket.ServerSideEncryption.EncryptionKey,
+			bucket.ServerSideEncryption.InitilizationVector)
+		if readerErr != nil {
+			log.Errorln("failed to get encrypted reader with err:", readerErr)
+			return readerErr
+		}
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(tempReader)
+		size = int64(buf.Len())
+
+		dataReader = io.TeeReader(io.LimitReader(bytes.NewReader(buf.Bytes()), size), md5Writer)
+	} else {
+		dataReader = io.TeeReader(limitedDataReader, md5Writer)
+	}
+
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
@@ -402,7 +423,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		})
 	}
 	completeUpload.Parts = parts
-	_, err = sd.CompleteMultipartUpload(ctx, &pb.MultipartUpload{
+	_, mpuerr := sd.CompleteMultipartUpload(ctx, &pb.MultipartUpload{
 		Bucket:   bucketName,
 		Key:      objectKey,
 		UploadId: uploadId,
@@ -410,9 +431,10 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Location: multipart.Metadata.Location,
 		Tier:     multipart.Metadata.Tier,
 	}, completeUpload)
-	if err != nil {
+
+	if mpuerr != nil {
 		log.Errorln("failed to complete multipart. err:", err)
-		return err
+		return mpuerr
 	}
 
 	// TODO: if versioning is enabled, not need to delete oldObj

@@ -73,10 +73,10 @@ func (s *APIService) BucketSSEPut(request *restful.Request, response *restful.Re
 		bucket.BucketMeta.ServerSideEncryption = s3SSE
 
 		baseResponse, errSSE := s.s3Client.UpdateBucket(ctx, bucket.BucketMeta)
-		if baseResponse.ErrorCode != 0{
+		if baseResponse.ErrorCode != 0 {
 			response.WriteError(http.StatusInternalServerError, fmt.Errorf("Update bucket SSE options failed, error code %v", baseResponse.ErrorCode))
 		}
-		if errSSE != nil{
+		if errSSE != nil {
 			response.WriteError(http.StatusInternalServerError, fmt.Errorf("Update bucket SSE options failed"))
 		}
 

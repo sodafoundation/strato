@@ -233,4 +233,3 @@ func (o *Object) GetUpdateMetaSql() (string, []interface{}) {
 	return sql, args
 
 }
-
