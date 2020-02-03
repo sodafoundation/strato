@@ -15,11 +15,8 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"time"
 
@@ -165,17 +162,18 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}
 
 	actualSize := req.Size
+
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
-		byteArr, _ := ioutil.ReadAll(limitedDataReader)
-		encErr, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
-		if encErr != nil {
-			log.Errorln("failed to encrypt object", encErr)
-			return encErr
+
+		var readerErr error
+		limitedDataReader, readerErr = utils.WrapEncryptionReader(io.LimitReader(data, req.Size),
+			bucket.ServerSideEncryption.EncryptionKey,
+			bucket.ServerSideEncryption.InitilizationVector)
+		if readerErr != nil {
+			log.Errorln("failed to get encrypted reader with err:", readerErr)
+			return readerErr
 		}
-		reader := bytes.NewReader(encBuf)
-		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
-		req.Size = int64(binary.Size(encBuf))
 	}
 
 	backendName := bucket.DefaultLocation
@@ -297,38 +295,6 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
 	log.Infoln("GetObject is called in s3 service.")
 	bucketName := req.Bucket
-	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
-	if err != nil {
-		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
-	}
-
-	/*
-	here, we have an issue, described below, this code is added to get around the issue
-	we do NOT support encrypted multipart upload, so a large object, > 5MB,
-	gets uploaded as is (even if the bucket encryption is set to ON)
-	Now, on download, we try to  decrypt (a not-encrypted object) which fails, we cannot download this object
-	so below, checking,
-		1. if the object is in an encrypted bucket
-		2. but was not encrypted
-	then do NOT attempt to decrypt, just download it
-	 */
-	object, err := s.MetaStorage.GetObject(ctx, bucketName, req.Key, "", true)
-	if err != nil {
-		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
-	}
-
-	if (bucket.ServerSideEncryption != nil && bucket.ServerSideEncryption.SseType == "SSE") && (object.EncSize != 0) {
-		return GetEncObject(ctx, req, stream, s)
-	} else {
-		return GetObject(ctx, req, stream, s)
-	}
-}
-
-func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
-	log.Infoln("GetObject is called in s3 service.")
-	bucketName := req.Bucket
 	objectName := req.Key
 	offset := req.Offset
 	length := req.Length
@@ -389,11 +355,19 @@ func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObje
 		return err
 	}
 
+	var finalReader io.Reader
+	finalReader = reader
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
+			bucket.ServerSideEncryption.EncryptionKey,
+			bucket.ServerSideEncryption.InitilizationVector)
+	}
+
 	eof := false
 	left := object.Size
 	buf := make([]byte, ChunkSize)
 	for !eof && left > 0 {
-		n, err := reader.Read(buf)
+		n, err := finalReader.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Errorln("failed to read, err:", err)
 			break
@@ -423,127 +397,6 @@ func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObje
 	}
 
 	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
-	return err
-}
-
-func GetEncObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
-
-	log.Infoln("GetObject is called in s3 service.")
-	bucketName := req.Bucket
-	objectName := req.Key
-	offset := req.Offset
-	length := req.Length
-
-	var err error
-	getObjRes := &pb.GetObjectResponse{}
-	defer func() {
-		getObjRes.ErrorCode = GetErrCode(err)
-		stream.SendMsg(getObjRes)
-	}()
-
-	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, "", true)
-	if err != nil {
-		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
-	}
-
-	// retrieve the encrypted object from the cloud backend, by reading all encrypted bytes
-	length = object.EncSize
-
-	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
-	if err != nil {
-		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
-	}
-
-	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
-		log.Error("get tenant id failed")
-		err = ErrInternalError
-		return nil
-	}
-
-	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
-	if err != nil {
-		log.Errorln("failed to check source object rights. err:", err)
-		return err
-	}
-
-	backendName := bucket.DefaultLocation
-	if object.Location != "" {
-		backendName = object.Location
-	}
-	// incase get backend failed
-	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
-	// if this object has only one part
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
-	if err != nil {
-		log.Errorln("unable to get backend. err:", err)
-		return err
-	}
-	sd, err := driver.CreateStorageDriver(backend.Type, backend)
-	if err != nil {
-		log.Errorln("failed to create storage driver. err:", err)
-		return err
-	}
-	log.Infof("get object offset %v, length %v", offset, length)
-	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
-	if err != nil {
-		log.Errorln("failed to get data. err:", err)
-		return err
-	}
-
-	// empty buffer, to keep appending the output of the chunked reads (and re-assemble all bytes)
-	fullBuf := make([]byte, 0)
-
-	eof := false
-	left := object.EncSize
-	buf := make([]byte, ChunkSize)
-	for !eof && left > 0 {
-		n, err := reader.Read(buf)
-		if err != nil && err != io.EOF {
-			log.Errorln("failed to read, err:", err)
-			break
-		}
-		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
-		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
-		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
-		if err == io.EOF {
-			log.Debugln("finished read")
-			eof = true
-		}
-		// From https://golang.org/pkg/io/, there is the following statement.
-		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
-		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
-		// If n is equal 0, it indicate that there is no more data to read
-		if n == 0 {
-			log.Infoln("reader return zero bytes.")
-			break
-		}
-
-		fullBuf = append(fullBuf, buf[0:n]...)
-		if err != nil {
-			log.Infof("stream send error: %v\n", err)
-			break
-		}
-		left -= int64(n)
-	}
-
-	// decrypt the full byte array
-	decErr, decBytes := utils.DecryptWithAES256(fullBuf, bucket.ServerSideEncryption.EncryptionKey)
-	if decErr != nil {
-		log.Errorln("failed to decrypt data. err:", decErr)
-		return decErr
-	}
-	log.Infoln("successfully decrypted")
-
-	err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: decBytes})
-	if err != nil {
-		log.Infof("stream send error: %v\n", err)
-		return err
-	}
-
-	log.Infoln("get object successfully")
 	return err
 }
 

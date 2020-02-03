@@ -34,4 +34,3 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.GET("/{tenantId}/types").To(handler.ListType)).
 		Doc("Get backend types")
 }
-

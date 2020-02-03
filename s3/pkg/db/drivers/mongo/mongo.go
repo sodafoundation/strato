@@ -18,11 +18,11 @@ import (
 	"context"
 	"errors"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	log "github.com/sirupsen/logrus"
 )
 
 var adap = &adapter{}
