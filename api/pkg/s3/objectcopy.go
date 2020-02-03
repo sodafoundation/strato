@@ -22,6 +22,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	apiutils "github.com/opensds/multi-cloud/api/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -184,7 +185,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 
 	log.Infoln("srcBucket:", sourceBucketName, " srcObject:", sourceObjectName,
 		" targetBucket:", targetBucketName, " targetObject:", targetObjectName)
-	tmoutSec := sourceObject.Size / MiniSpeed
+	tmoutSec := apiutils.GetTimeoutSec(sourceObject.Size)
 	opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
 	result, err := s.s3Client.CopyObject(ctx, &pb.CopyObjectRequest{
 		SrcBucketName:    sourceBucketName,

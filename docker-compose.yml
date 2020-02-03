@@ -39,6 +39,7 @@ services:
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
       - OS_PROJECT_NAME=service
+      - TRANSFER_SPEED_MIN=10   #Bytes/Sec
 
   backend:
     image: opensdsio/multi-cloud-backend
