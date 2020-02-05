@@ -271,12 +271,20 @@ func (cluster *CephStorage) Put(poolname string, oid string, data io.Reader) (si
 
 	var offset uint64 = 0
 
+	isEof := false
+
 	for {
+		if isEof {
+			break
+		}
 		start := time.Now()
 		count, err := data.Read(slice)
 		if err != nil && err != io.EOF {
 			drain_pending(pending)
 			return 0, fmt.Errorf("Read from client failed. pool:%s oid:%s", poolname, oid)
+		}
+		if err == io.EOF {
+			isEof = true
 		}
 		if count == 0 {
 			break
