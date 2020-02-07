@@ -17,12 +17,16 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"math"
 	"math/rand"
 	"os"
 	"reflect"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
+
+const DEFAULT_TIMEOUT_SEC int64 = 5 // Same as the default timeout of go-micro.
 
 //remove redundant elements
 func RvRepElement(arr []string) []string {
@@ -194,4 +198,20 @@ func RandSeq(n int, chs []rune) string {
 		b[i] = chs[rand.Intn(len(chs))]
 	}
 	return string(b)
+}
+
+func GetTimeoutSec(objSize int64) int64 {
+	minSpeed, err := strconv.ParseInt(os.Getenv("TRANSFER_SPEED_MIN"), 10, 64)
+	if err != nil || minSpeed > math.MaxInt64 || minSpeed < 1 {
+		minSpeed = 1
+	}
+
+	tmoutSec := objSize / minSpeed
+	if tmoutSec < DEFAULT_TIMEOUT_SEC {
+		tmoutSec = DEFAULT_TIMEOUT_SEC
+	}
+
+	log.Debugf("tmoutSec=%d\n", tmoutSec)
+
+	return tmoutSec
 }
