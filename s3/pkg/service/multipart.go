@@ -17,6 +17,8 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/md5"
 	"encoding/hex"
 	"io"
@@ -261,23 +263,27 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 	md5Writer := md5.New()
 	data := &StreamReader{in: stream}
 	limitedDataReader := io.LimitReader(data, size)
+
 	var dataReader io.Reader
 	// encrypt if needed
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 
-		var readerErr error
-		tempReader, readerErr := utils.WrapEncryptionReader(limitedDataReader,
-			bucket.ServerSideEncryption.EncryptionKey,
-			bucket.ServerSideEncryption.InitilizationVector)
-		if readerErr != nil {
-			log.Errorln("failed to get encrypted reader with err:", readerErr)
-			return readerErr
-		}
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(tempReader)
-		size = int64(buf.Len())
+		var out bytes.Buffer
 
-		dataReader = io.TeeReader(io.LimitReader(bytes.NewReader(buf.Bytes()), size), md5Writer)
+		block, err := aes.NewCipher(bucket.ServerSideEncryption.EncryptionKey)
+		if err != nil {
+			panic(err)
+		}
+		stream := cipher.NewCTR(block, bucket.ServerSideEncryption.InitilizationVector)
+		writer := &cipher.StreamWriter{S: stream, W: &out}
+		// Copy the input to the output buffer, encrypting as we go.
+		if _, err := io.Copy(writer, limitedDataReader); err != nil {
+			panic(err)
+		}
+
+		log.Infof("length of encrypted bytes-%v", len(out.Bytes()))
+		dataReader = io.TeeReader(bytes.NewReader(out.Bytes()), md5Writer)
+
 	} else {
 		dataReader = io.TeeReader(limitedDataReader, md5Writer)
 	}
@@ -296,6 +302,7 @@ func (s *s3Service) UploadPart(ctx context.Context, stream pb.S3_UploadPartStrea
 		UploadId: uploadId,
 		ObjectId: multipart.ObjectId},
 		int64(partId), size)
+
 	if err != nil {
 		log.Errorln("failed to upload part to backend. err:", err)
 		return err
@@ -461,6 +468,7 @@ func (s *s3Service) CompleteMultipartUpload(ctx context.Context, in *pb.Complete
 		Type:             ObjectTypeNormal,
 		Tier:             multipart.Metadata.Tier,
 		Size:             totalSize,
+		EncSize:          totalSize,
 		Location:         multipart.Metadata.Location,
 		Acl:              &multipart.Metadata.Acl,
 	}

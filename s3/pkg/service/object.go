@@ -2,6 +2,7 @@
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
+// you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,8 +16,12 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"time"
 
@@ -35,8 +40,6 @@ import (
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
-
-var ChunkSize int = 2048
 
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
@@ -355,45 +358,77 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		return err
 	}
 
-	var finalReader io.Reader
-	finalReader = reader
+	allBytes, _ := ioutil.ReadAll(reader)
+
+	log.Infof("allBytes.len - %v", len(allBytes))
+
+	allDecBytes := make([]byte, 0)
+
 	if bucket.ServerSideEncryption.SseType == "SSE" {
-		finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
-			bucket.ServerSideEncryption.EncryptionKey,
-			bucket.ServerSideEncryption.InitilizationVector)
+		// this should match the upload chunk size during multipart upload, which is 5MB (5*1024*1024). During multipart
+		// upload, each part gets encrypted and uploaded, so here, we need to decrypt each part and re-assemble the file
+		chunkSize := 5242880
+
+		allBytesLen := len(allBytes)
+		modVal := allBytesLen / chunkSize
+
+		for i := 0; i < modVal; i++ {
+			decThouBytes := make([]byte, 0)
+			for j := (i) * chunkSize; j < (i+1)*chunkSize; j++ {
+				decThouBytes = append(decThouBytes, allBytes[j])
+			}
+
+			// encrypt in chunks of chunkSize, write file to disk
+			var out bytes.Buffer
+			block, err := aes.NewCipher(bucket.ServerSideEncryption.EncryptionKey)
+			if err != nil {
+				panic(err)
+			}
+			stream := cipher.NewCTR(block, bucket.ServerSideEncryption.InitilizationVector)
+			writer := &cipher.StreamWriter{S: stream, W: &out}
+
+			// Copy the input to the output buffer, encrypting as we go.
+			if _, err := io.Copy(writer, bytes.NewReader(decThouBytes)); err != nil {
+				panic(err)
+			}
+
+			allDecBytes = append(allDecBytes, out.Bytes()...)
+		}
+
+		decChunkBytes := make([]byte, 0)
+		for j := (modVal) * chunkSize; j < allBytesLen; j++ {
+			decChunkBytes = append(decChunkBytes, allBytes[j])
+		}
+
+		// decrypt in chunks of 5MB
+		var out bytes.Buffer
+		block, err := aes.NewCipher(bucket.ServerSideEncryption.EncryptionKey)
+		if err != nil {
+			panic(err)
+		}
+		stream := cipher.NewCTR(block, bucket.ServerSideEncryption.InitilizationVector)
+		writer := &cipher.StreamWriter{S: stream, W: &out}
+
+		// Copy the input to the output buffer, encrypting as we go.
+		if _, err := io.Copy(writer, bytes.NewReader(decChunkBytes)); err != nil {
+			panic(err)
+		}
+
+		allDecBytes = append(allDecBytes, out.Bytes()...)
+
+		log.Infof("bytes.Equal(allBytes, allDecBytes) - %v", bytes.Equal(allBytes, allDecBytes))
 	}
 
-	eof := false
-	left := object.Size
-	buf := make([]byte, ChunkSize)
-	for !eof && left > 0 {
-		n, err := finalReader.Read(buf)
-		if err != nil && err != io.EOF {
-			log.Errorln("failed to read, err:", err)
-			break
-		}
-		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
-		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
-		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
-		if err == io.EOF {
-			log.Debugln("finished read")
-			eof = true
-		}
-		// From https://golang.org/pkg/io/, there is the following statement.
-		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
-		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
-		// If n is equal 0, it indicate that there is no more data to read
-		if n == 0 {
-			log.Infoln("reader return zero bytes.")
-			break
-		}
+	finalReader := bytes.NewReader(allDecBytes)
 
-		err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf[0:n]})
-		if err != nil {
-			log.Infof("stream send error: %v\n", err)
-			break
-		}
-		left -= int64(n)
+	//eof := false
+	left := object.Size
+	buf, _ := ioutil.ReadAll(finalReader)
+
+	err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: buf})
+	if err != nil {
+		log.Infof("stream send error: %v\n", err)
+
 	}
 
 	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
