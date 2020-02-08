@@ -24,12 +24,11 @@ import (
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
-
-var MiniSpeed int64 = 5 // 5KByte/Sec
 
 // supportedGetReqParams - supported request parameters for GET presigned request.
 var supportedGetReqParams = map[string]string{
@@ -104,7 +103,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		startOffset = hrange.OffsetBegin
 		length = hrange.GetLength()
 	}
-	tmoutSec := object.Size / MiniSpeed
+	tmoutSec := utils.GetTimeoutSec(object.Size)
 	opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
 	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket: bucketName, Key: objectKey, Offset: startOffset, Length: length}, opt)
 	if err != nil {
