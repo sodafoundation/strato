@@ -181,7 +181,7 @@ func (ad *OSSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	case "GLACIER":
 		input.StorClass = oss.StorageArchive
 	default:
-		log.Infof("[OSS] unspport storage class:%s", newClass)
+		log.Infof("[OSS] unSpport storage class:%s", newClass)
 		return ErrInvalidStorageClass
 	}
 	if err != nil {
