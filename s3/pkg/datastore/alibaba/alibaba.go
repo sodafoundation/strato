@@ -29,7 +29,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -173,16 +172,17 @@ func (ad *OSSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	objectId := object.ObjectId
 	alibabaBucket, err := ad.client.Bucket(bucket)
 	srcObjectKey := object.BucketName + "/" + object.ObjectKey
+	var StorClass oss.StorageClassType
 	switch *newClass {
 	case "STANDARD_IA":
-		input.StorClass = oss.StorageIA
+		StorClass = oss.StorageIA
 	case "GLACIER":
-		input.StorClass = oss.StorageArchive
+		StorClass = oss.StorageArchive
 	default:
 		log.Infof("[OSS] unSpport storage class:%s", newClass)
 		return ErrInvalidStorageClass
 	}
-	_, err = alibabaBucket.CopyObject(srcObjectKey, objectId, oss.ObjectStorageClass(oss.StorageClassType(utils.OSTYPE_ALIBABA)))
+	_, err = alibabaBucket.CopyObject(srcObjectKey, objectId, oss.ObjectStorageClass(StorClass))
 
 	if err != nil {
 		log.Errorf("[OSS] change storage class of object[%s] to %s failed: %v\n", object.ObjectId, newClass, err)
