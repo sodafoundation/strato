@@ -5,26 +5,19 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	"errors"
-
+	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3api/pkg/datatype"
 	. "github.com/opensds/multi-cloud/s3api/pkg/error"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/credentials/keystonecredentials"
-	//. "github.com/journeymidnight/yig/error"
-	//"github.com/journeymidnight/yig/helper"
-	//"github.com/journeymidnight/yig/iam"
-	//"github.com/journeymidnight/yig/iam/common"
-
-	//	"net"
-	"strconv"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -194,7 +187,6 @@ func DoesSignatureMatchV2(r *http.Request) (credential credentials.Value, err er
 
 	stringToSign += buildCanonicalizedAmzHeaders(r.Context(), &r.Header)
 	stringToSign += buildCanonicalizedResource(r)
-
 
 	log.Debugln("stringtosign", stringToSign, credential.SecretAccessKey)
 	log.Debugln("credential", credential.TenantID, credential.AccessKeyID, credential.SecretAccessKey)

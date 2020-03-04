@@ -15,7 +15,7 @@
  */
 /*
  * Modifications copyright (C) 2020 The OpenSDS Authors.
-*/
+ */
 
 package signature
 
@@ -129,7 +129,7 @@ func sumMD5(data []byte) []byte {
 func IsReqAuthenticated(r *http.Request) (credential credentials.Value, e error) {
 	payload, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return  credential, ErrInternalError
+		return credential, ErrInternalError
 	}
 	// Verify Content-Md5, if payload is set.
 	if r.Header.Get("Content-Md5") != "" {

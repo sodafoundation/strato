@@ -20,15 +20,15 @@
 package signer
 
 import (
+	"github.com/emicklei/go-restful"
+	"github.com/opensds/multi-cloud/s3/error"
+	c "github.com/opensds/multi-cloud/s3api/pkg/context"
+	. "github.com/opensds/multi-cloud/s3api/pkg/filters/signature"
+	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/credentials"
+	"github.com/opensds/multi-cloud/s3api/pkg/s3"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
-	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/credentials"
-	. "github.com/opensds/multi-cloud/s3api/pkg/filters/signature"
-	c "github.com/opensds/multi-cloud/s3api/pkg/context"
-	"github.com/opensds/multi-cloud/s3api/pkg/s3"
-	"github.com/opensds/multi-cloud/s3/error"
 )
 
 type SignatureBase interface {
@@ -70,9 +70,9 @@ func FilterFactory() restful.FilterFunction {
 // Authorization: algorithm Credential=accesskeyID/credential scope, SignedHeaders=SignedHeaders, Signature=signature
 // credential scope <requestDate>/<region>/<service>/sign_request
 func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-    // TODO:Location constraint
-    var cred credentials.Value
-    var err error
+	// TODO:Location constraint
+	var cred credentials.Value
+	var err error
 	authType := GetRequestAuthType(req.Request)
 	switch authType {
 	case AuthTypeSignedV4, AuthTypePresignedV4,

@@ -22,8 +22,8 @@ import (
 	"reflect"
 
 	log "github.com/sirupsen/logrus"
-	"strconv"
 	"math"
+	"strconv"
 )
 
 var DefaultMinSpeed int64 = 5

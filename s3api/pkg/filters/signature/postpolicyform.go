@@ -30,7 +30,6 @@ import (
 
 	. "github.com/opensds/multi-cloud/s3api/pkg/error"
 
-
 	log "github.com/sirupsen/logrus"
 )
 

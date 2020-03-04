@@ -183,7 +183,6 @@ func (obsClient ObsClient) doHttpWithSignedUrl(action, method string, signedUrl 
 	resp, err = obsClient.httpClient.Do(req)
 	log.Info("Do http request cost %d ms", (GetCurrentTimestamp() - start))
 
-
 	var msg interface{}
 	if err != nil {
 		respError = err

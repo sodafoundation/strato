@@ -1,7 +1,7 @@
 package datatype
 
 import (
-	. "github.com/journeymidnight/yig/error"
+	. "github.com/opensds/multi-cloud/s3api/pkg/error"
 	"time"
 )
 

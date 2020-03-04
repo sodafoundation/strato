@@ -20,13 +20,13 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/s3api/pkg/common"
-	c "github.com/opensds/multi-cloud/s3api/pkg/context"
 	"github.com/opensds/multi-cloud/s3/error"
-	. "github.com/opensds/multi-cloud/s3api/pkg/s3/datatype"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"github.com/opensds/multi-cloud/s3/proto"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3api/pkg/common"
+	c "github.com/opensds/multi-cloud/s3api/pkg/context"
+	. "github.com/opensds/multi-cloud/s3api/pkg/s3/datatype"
 	log "github.com/sirupsen/logrus"
 )
 

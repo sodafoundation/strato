@@ -20,9 +20,9 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
+	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3api/pkg/common"
 	"github.com/opensds/multi-cloud/s3api/pkg/s3/datatype"
-	. "github.com/opensds/multi-cloud/s3/error"
 
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"

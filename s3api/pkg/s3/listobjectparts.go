@@ -2,9 +2,9 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	"github.com/opensds/multi-cloud/s3api/pkg/common"
 	"github.com/opensds/multi-cloud/s3api/pkg/s3/datatype"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
