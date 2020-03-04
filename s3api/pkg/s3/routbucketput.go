@@ -21,11 +21,6 @@ import (
 
 func (s *APIService) RouteBucketPut(request *restful.Request, response *restful.Response) {
 	log.Debugf("put bucket, request URL:%v\n", *request.Request.URL)
-	/*if !policy.Authorize(request, response, "bucket:put") {
-		log.Errorln("Authorize policy check failed.")
-		WriteErrorResponse(response, request, s3error.ErrAccessDenied)
-		return
-	}*/
 
 	if IsQuery(request, "acl") {
 		s.BucketAclPut(request, response)

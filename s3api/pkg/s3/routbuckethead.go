@@ -16,13 +16,8 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/s3api/pkg/policy"
 )
 
 func (s *APIService) RouteBucketHead(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:get") {
-		return
-	}
-
 	s.HeadBucket(request, response)
 }

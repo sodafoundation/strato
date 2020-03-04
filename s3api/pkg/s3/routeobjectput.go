@@ -16,14 +16,9 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/s3api/pkg/policy"
 )
 
 func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:put") {
-		return
-	}
-
 	if IsQuery(request, "acl") {
 		s.ObjectAclPut(request, response)
 	} else if IsQuery(request, "tagging") {

@@ -25,15 +25,10 @@ import (
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/credentials"
-	"github.com/opensds/multi-cloud/s3api/pkg/signature"
+	. "github.com/opensds/multi-cloud/s3api/pkg/filters/signature"
 	c "github.com/opensds/multi-cloud/s3api/pkg/context"
 	"github.com/opensds/multi-cloud/s3api/pkg/s3"
 	"github.com/opensds/multi-cloud/s3/error"
-)
-
-const (
-	authHeaderPrefix  = "OPENSDS-HMAC-SHA256"
-	emptyStringSHA256 = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 )
 
 type SignatureBase interface {
@@ -78,18 +73,18 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
     // TODO:Location constraint
     var cred credentials.Value
     var err error
-	authType := signature.GetRequestAuthType(req.Request)
+	authType := GetRequestAuthType(req.Request)
 	switch authType {
-	case signature.AuthTypeSignedV4, signature.AuthTypePresignedV4,
-		signature.AuthTypePresignedV2, signature.AuthTypeSignedV2:
+	case AuthTypeSignedV4, AuthTypePresignedV4,
+		AuthTypePresignedV2, AuthTypeSignedV2:
 		log.Infof("[%s], AuthTypeSigned:%v", req.Request.URL, authType)
-		if cred, err = signature.IsReqAuthenticated(req.Request); err != nil {
+		if cred, err = IsReqAuthenticated(req.Request); err != nil {
 			log.Errorf("[%s] reject: IsReqAuthenticated return false, err:%v\n", req.Request.URL, err)
 			s3.WriteErrorResponse(resp, req, err)
 			return
 		}
 		// TODO: check bucket policy
-	case signature.AuthTypeAnonymous:
+	case AuthTypeAnonymous:
 		log.Errorf("[%s] reject: Anonymous not supported.\n", req.Request.URL)
 		s3.WriteErrorResponse(resp, req, s3error.ErrSignatureVersionNotSupported)
 		// TODO: check bucket policy

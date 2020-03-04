@@ -60,7 +60,7 @@ func (k *Keystone) SetUp() error {
 	log.Infof("opts:%v", opts)
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
-		log.Errorf("When get auth client:", err)
+		log.Errorln("When get auth client:", err)
 		return err
 	}
 	// Only support keystone v3

@@ -19,13 +19,9 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/s3api/pkg/common"
-	"github.com/opensds/multi-cloud/s3api/pkg/policy"
 )
 
 func (s *APIService) RouteObjectPost(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:post") {
-		return
-	}
 	if IsQuery(request, "uploads") {
 		s.MultiPartUploadInit(request, response)
 	} else if IsQuery(request, "uploadId") {
