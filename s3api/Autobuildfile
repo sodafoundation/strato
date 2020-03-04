@@ -1,0 +1,6 @@
+FROM alpine:latest
+
+RUN mkdir -p /etc/opensds
+COPY  s3api/pkg/examples/policy.json /etc/opensds/
+COPY s3api/s3api /s3api
+ENTRYPOINT ["/s3api"]

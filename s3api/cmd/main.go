@@ -16,17 +16,17 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-web"
-	"github.com/opensds/multi-cloud/api/pkg/backend"
-	"github.com/opensds/multi-cloud/api/pkg/dataflow"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
-	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	log "github.com/sirupsen/logrus"
+	"github.com/micro/go-web"
+	"github.com/opensds/multi-cloud/s3api/pkg/filters/context"
+	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/signer"
+	"github.com/opensds/multi-cloud/s3api/pkg/filters/logging"
+	"github.com/opensds/multi-cloud/s3api/pkg/s3"
+	"github.com/opensds/multi-cloud/s3api/pkg/utils/obs"
 )
 
 const (
-	serviceName = "gelato"
+	serviceName = "gelatos3"
 )
 
 func main() {
@@ -38,22 +38,21 @@ func main() {
 
 	obs.InitLogs()
 	wc := restful.NewContainer()
-	ws := new(restful.WebService)
-	ws.Path("/v1")
-	ws.Doc("OpenSDS Multi-Cloud API")
-	ws.Consumes(restful.MIME_JSON)
-	ws.Produces(restful.MIME_JSON)
 
-	backend.RegisterRouter(ws)
-	dataflow.RegisterRouter(ws)
-	// add filter for authentication context
-	ws.Filter(logging.FilterFactory())
-	ws.Filter(context.FilterFactory())
+	s3ws := new(restful.WebService)
+	s3ws.Path("/")
+	s3ws.Doc("OpenSDS Multi-Cloud API")
+	s3ws.Consumes(restful.MIME_XML)
+	s3ws.Produces(restful.MIME_XML)
 
-	wc.Add(ws)
+	s3ws.Filter(logging.FilterFactory())
+	s3ws.Filter(context.FilterFactory())
+	s3ws.Filter(signer.FilterFactory())
+	s3.RegisterRouter(s3ws)
+
+	wc.Add(s3ws)
 	webService.Handle("/", wc)
 	if err := webService.Run(); err != nil {
 		log.Fatal(err)
 	}
-
 }

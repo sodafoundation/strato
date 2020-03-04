@@ -38,6 +38,24 @@ services:
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
+
+  s3api:
+    image: opensdsio/multi-cloud-s3api
+    volumes:
+      - /etc/ssl/certs:/etc/ssl/certs
+      - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
+      - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+    ports:
+      - 8090:8090
+    environment:
+      - MICRO_SERVER_ADDRESS=:8090
+      - MICRO_REGISTRY=mdns
+      - OS_AUTH_AUTHSTRATEGY=keystone
+      - OS_AUTH_URL=http://10.10.3.151/identity
+      - OS_USER_DOMIN_ID=Default
+      - OS_USERNAME=opensds
+      - OS_PASSWORD=opensds@123
       - OS_PROJECT_NAME=service
       - TRANSFER_SPEED_MIN=10   #Bytes/Sec
 

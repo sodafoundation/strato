@@ -1,0 +1,109 @@
+// Copyright 2019 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// Package signer implements signing and signature validation for opensds multi-cloud signer.
+//
+// Provides request signing for request that need to be signed with the Signature.
+// Provides signature validation for request.
+
+package signer
+
+import (
+	"net/http"
+	"net/url"
+	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/s3api/pkg/filters/signature/credentials"
+	"github.com/opensds/multi-cloud/s3api/pkg/signature"
+	c "github.com/opensds/multi-cloud/s3api/pkg/context"
+	"github.com/opensds/multi-cloud/s3api/pkg/s3"
+	"github.com/opensds/multi-cloud/s3/error"
+)
+
+const (
+	authHeaderPrefix  = "OPENSDS-HMAC-SHA256"
+	emptyStringSHA256 = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+)
+
+type SignatureBase interface {
+	Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain)
+}
+
+type Signature struct {
+	Service string
+	Region  string
+	Request *http.Request
+	Body    string
+	Query   url.Values
+
+	SignedHeaderValues http.Header
+
+	credValues       credentials.Value
+	requestDateTime  string
+	requestDate      string
+	requestPayload   string
+	signedHeaders    string
+	canonicalHeaders string
+	canonicalString  string
+	credentialString string
+	stringToSign     string
+	signature        string
+	authorization    string
+}
+
+func NewSignature() SignatureBase {
+	return &Signature{}
+}
+
+func FilterFactory() restful.FilterFunction {
+	sign := NewSignature()
+	return sign.Filter
+}
+
+// Signature Authorization Filter to validate the Request Signature
+// Authorization: algorithm Credential=accesskeyID/credential scope, SignedHeaders=SignedHeaders, Signature=signature
+// credential scope <requestDate>/<region>/<service>/sign_request
+func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+    // TODO:Location constraint
+    var cred credentials.Value
+    var err error
+	authType := signature.GetRequestAuthType(req.Request)
+	switch authType {
+	case signature.AuthTypeSignedV4, signature.AuthTypePresignedV4,
+		signature.AuthTypePresignedV2, signature.AuthTypeSignedV2:
+		log.Infof("[%s], AuthTypeSigned:%v", req.Request.URL, authType)
+		if cred, err = signature.IsReqAuthenticated(req.Request); err != nil {
+			log.Errorf("[%s] reject: IsReqAuthenticated return false, err:%v\n", req.Request.URL, err)
+			s3.WriteErrorResponse(resp, req, err)
+			return
+		}
+		// TODO: check bucket policy
+	case signature.AuthTypeAnonymous:
+		log.Errorf("[%s] reject: Anonymous not supported.\n", req.Request.URL)
+		s3.WriteErrorResponse(resp, req, s3error.ErrSignatureVersionNotSupported)
+		// TODO: check bucket policy
+		return
+	default:
+		log.Errorf("[%s] reject: AuthTypeUnknown\n", req.Request.URL)
+		s3.WriteErrorResponse(resp, req, s3error.ErrSignatureVersionNotSupported)
+		return
+	}
+
+	ctx := req.Attribute(c.KContext).(*c.Context)
+	ctx.TenantId = cred.TenantID
+	ctx.UserId = cred.UserID
+	log.Debugf("****************ctx:%+v\n", *ctx)
+
+	chain.ProcessFilter(req, resp)
+}
