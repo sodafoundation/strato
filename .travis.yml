@@ -30,6 +30,8 @@ matrix:
   - go: tip
 
 install:
+  # TODO: Remove once source code is fixed for sodafoundation
+  - ln -s $GOPATH/src/sodafoundation $GOPATH/src/opensds
   # Build OpenSDS multi-cloud container images
   - make docker
   - docker-compose up -d
