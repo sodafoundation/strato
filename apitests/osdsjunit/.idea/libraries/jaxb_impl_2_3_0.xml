@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="jaxb-impl-2.3.0" type="repository">
+    <properties maven-id="com.sun.xml.bind:jaxb-impl:2.3.0" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.3.0/jaxb-impl-2.3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="jaxb-api-2.2.3" type="repository">
+    <properties maven-id="javax.xml.bind:jaxb-api:2.2.2" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/javax/xml/bind/jaxb-api/2.2.2/jaxb-api-2.2.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/javax/xml/stream/stax-api/1.0-2/stax-api-1.0-2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/javax/activation/activation/1.1/activation-1.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

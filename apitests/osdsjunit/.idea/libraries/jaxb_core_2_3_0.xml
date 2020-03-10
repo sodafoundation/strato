@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="jaxb-core-2.3.0" type="repository">
+    <properties maven-id="org.glassfish.jaxb:jaxb-core:2.3.0" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/jaxb/jaxb-core/2.3.0/jaxb-core-2.3.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/javax/xml/bind/jaxb-api/2.3.0/jaxb-api-2.3.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/jaxb/txw2/2.3.0/txw2-2.3.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/sun/istack/istack-commons-runtime/3.0.5/istack-commons-runtime-3.0.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
