@@ -136,7 +136,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	obj.Headers = make(map[string]*pb.HeaderValues, len(request.Request.Header))
 
 	for k, v := range request.Request.Header {
-		valueArr := make([]string, len(v))
+		valueArr := make([]string, 0)
 		headerValues := pb.HeaderValues{Values: valueArr}
 		// add all v for this k to headerValues
 		headerValues.Values = append(headerValues.Values, v...)
