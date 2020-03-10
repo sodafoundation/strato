@@ -38,6 +38,7 @@ services:
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
+      - OS_PROJECT_NAME=service
 
   s3api:
     image: opensdsio/multi-cloud-s3api

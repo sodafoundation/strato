@@ -84,11 +84,8 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 			return
 		}
 		// TODO: check bucket policy
-	case AuthTypeAnonymous:
-		log.Errorf("[%s] reject: Anonymous not supported.\n", req.Request.URL)
-		s3.WriteErrorResponse(resp, req, s3error.ErrSignatureVersionNotSupported)
-		// TODO: check bucket policy
-		return
+	case AuthTypeAnonymous, AuthTypePostPolicy:
+		log.Debugln("no auth check in filter if it is post or anonymous request, cause auth will be handled in s3 module in these cases.")
 	default:
 		log.Errorf("[%s] reject: AuthTypeUnknown\n", req.Request.URL)
 		s3.WriteErrorResponse(resp, req, s3error.ErrSignatureVersionNotSupported)
@@ -98,7 +95,6 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 	ctx := req.Attribute(c.KContext).(*c.Context)
 	ctx.TenantId = cred.TenantID
 	ctx.UserId = cred.UserID
-	log.Debugf("****************ctx:%+v\n", *ctx)
 
 	chain.ProcessFilter(req, resp)
 }
