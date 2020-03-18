@@ -177,6 +177,10 @@ message MoveObjectResponse {
     int64 lastModified = 5;
 }
 
+message HeaderValues {
+	repeated string Values = 1;
+}
+
 message PutObjectRequest {
 	string BucketName = 1;
 	string ObjectKey = 2;
@@ -185,6 +189,7 @@ message PutObjectRequest {
 	string location = 5;
 	int64 size = 6;
 	string contentType = 7;
+	map<string, HeaderValues> headers = 8;
 }
 
 message GetObjectResponse {
