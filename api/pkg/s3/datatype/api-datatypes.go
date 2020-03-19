@@ -37,8 +37,8 @@ type ListObjectsResponse struct {
 	XMLName xml.Name `xml:"ListBucketResult"`
 
 	CommonPrefixes []CommonPrefix
-	Delimiter      string
-	EncodingType   string `xml:"Encoding-Type,omitempty"`
+	Delimiter      string `xml:"Delimiter,omitempty"`
+	EncodingType   string `xml:"EncodingType,omitempty"`
 	IsTruncated    bool
 	MaxKeys        int
 	KeyCount       int `xml:",omitempty"`
@@ -190,8 +190,32 @@ type CommonPrefix struct {
 
 // Bucket container for bucket metadata
 type Bucket struct {
-	Name         string
-	CreationDate string // time string of format "2006-01-02T15:04:05.000Z"
+	Name               string
+	CreationDate       string // time string of format "2006-01-02T15:04:05.000Z"
+	LocationConstraint string
+	VersionOpts        VersioningConfiguration
+	SSEOpts            SSEConfiguration
+}
+
+// added for soda
+type VersioningConfiguration struct {
+	XMLName xml.Name `xml:"VersioningConfiguration"`
+	Status  string   `xml:"Status"`
+}
+
+// added for soda
+type SSEConfiguration struct {
+	XMLName xml.Name `xml:"SSEConfiguration"`
+	Text    string   `xml:",chardata"`
+	SSE     struct {
+		Text    string `xml:",chardata"`
+		Enabled string `xml:"enabled"`
+	} `xml:"SSE"`
+	SSEKMS struct {
+		Text                string `xml:",chardata"`
+		Enabled             string `xml:"enabled"`
+		DefaultKMSMasterKey string `xml:"DefaultKMSMasterKey"`
+	} `xml:"SSE-KMS"`
 }
 
 // Object container for object metadata
@@ -202,7 +226,7 @@ type Object struct {
 	ETag         string
 	Size         int64
 
-	Owner Owner
+	Owner *Owner `xml:"Owner,omitempty"`
 
 	// The class of storage used to store the object.
 	StorageClass string

@@ -150,6 +150,11 @@ func InitCtxWithAuthInfo(request *restful.Request) context.Context {
 	return ctx
 }
 
+func GetOwner(request *restful.Request) (ownerId string) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	return actx.TenantId
+}
+
 func InitCtxWithVal(request *restful.Request, md map[string]string) context.Context {
 	actx := request.Attribute(c.KContext).(*c.Context)
 	md[CTX_KEY_USER_ID] = actx.UserId

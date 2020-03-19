@@ -22,6 +22,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -141,3 +142,11 @@ func setXmlHeader(w http.ResponseWriter, body []byte) {
 /*func hasServerSideEncryptionHeader(header http.Header) bool {
 	return crypto.S3.IsRequested(header) || crypto.SSEC.IsRequested(header)
 }*/
+
+func UrlEncodeAsAwsS3(s string) string {
+	s = url.QueryEscape(s)
+	// slash('/') should not be escaped
+	s = strings.Replace(s, "%2F", "/", -1)
+
+	return s
+}

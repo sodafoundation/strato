@@ -22,6 +22,7 @@ package signer
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
@@ -84,6 +85,16 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 			return
 		}
 		// TODO: check bucket policy
+	case AuthTypeAnonymous:
+		log.Debugf("[%s], AuthTypeSigned:%v", req.Request.URL, authType)
+		if !isValidAnonymousRequest(req.Request) {
+			log.Errorf("[%s] reject: Authenticated required.\n", req.Request.URL)
+			s3.WriteErrorResponse(resp, req, s3error.ErrAccessDenied)
+			return
+		}
+	case AuthTypePostPolicy:
+		// in this case, authentication infomation is in the request body, it will be checked in s3 service
+		log.Infof("AuthTypePostPolicy: no need auth check here")
 	default:
 		log.Errorf("[%s] reject: AuthTypeUnknown\n", req.Request.URL)
 		s3.WriteErrorResponse(resp, req, s3error.ErrSignatureVersionNotSupported)
@@ -95,4 +106,21 @@ func (sign *Signature) Filter(req *restful.Request, resp *restful.Response, chai
 	ctx.UserId = cred.UserID
 
 	chain.ProcessFilter(req, resp)
+}
+
+// Only list buckets and create bucket can be anonymous.
+func isValidAnonymousRequest(req *http.Request) bool {
+	method := req.Method
+	path := req.URL.Path
+	if method == "GET" && path == "/" {
+		// This is for list buckets
+		return false
+	} else if method == "PUT" {
+		if strings.IndexAny(path[1:], "/") == -1 {
+			// This is for create bucket, URL is suposed to be /bucket-name
+			return false
+		}
+	}
+
+	return true
 }
