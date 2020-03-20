@@ -162,6 +162,9 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	actualSize := req.Size
 
 	// encrypt if needed
+	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+	// if the header contains the encryption header, encrypt
+	headerValues, ok := req.Headers["X-Amz-Server-Side-Encryption"]
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 
 		var readerErr error
@@ -171,6 +174,34 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		if readerErr != nil {
 			log.Errorln("failed to get encrypted reader with err:", readerErr)
 			return readerErr
+		}
+	} else if ok {
+		encAlgo := headerValues.Values[0]
+		if encAlgo == "AES256" {
+			// encrypt
+			byteArr, keyErr := utils.GetRandomNBitKey(ENC_KEY_LEN)
+			if keyErr != nil {
+				log.Error("Error generating SSE key", keyErr)
+				return keyErr
+			}
+			ivArr, ivErr := utils.GetRandomNBitKey(ENC_IV_LEN)
+			if ivErr != nil {
+				log.Error("Error generating SSE IV", ivErr)
+				return ivErr
+			}
+			obj.ServerSideEncryption = &pb.ServerSideEncryption{
+				SseType:             "AES256",
+				EncryptionKey:       byteArr,
+				InitilizationVector: ivArr}
+
+			var readerErr error
+			limitedDataReader, readerErr = utils.WrapEncryptionReader(io.LimitReader(data, req.Size),
+				obj.ServerSideEncryption.EncryptionKey,
+				obj.ServerSideEncryption.InitilizationVector)
+			if readerErr != nil {
+				log.Errorln("failed to get encrypted reader with err:", readerErr)
+				return readerErr
+			}
 		}
 	}
 
@@ -195,7 +226,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+
 	if oldObj != nil && oldObj.Location == backendName {
 		obj.StorageMeta = oldObj.StorageMeta
 		obj.ObjectId = oldObj.ObjectId
@@ -359,6 +390,12 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
 			bucket.ServerSideEncryption.EncryptionKey,
 			bucket.ServerSideEncryption.InitilizationVector)
+	} else if object.ServerSideEncryption != nil {
+		if object.ServerSideEncryption.SseType == "AES256" {
+			finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
+				object.ServerSideEncryption.EncryptionKey,
+				object.ServerSideEncryption.InitilizationVector)
+		}
 	}
 
 	eof := false
