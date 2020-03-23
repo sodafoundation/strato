@@ -76,6 +76,7 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 			err = ErrNonUTF8Encode
 			return
 		}
+		request.FetchOwner = true
 	}
 	request.Delimiter = query.Get("delimiter")
 	if !utf8.ValidString(request.Delimiter) {
@@ -97,7 +98,7 @@ func parseListObjectsQuery(query url.Values) (request s3.ListObjectsRequest, err
 			return request, ErrInvalidMaxKeys
 		}
 		request.MaxKeys = int32(maxKey)
-		if request.MaxKeys > utils.MaxObjectList || request.MaxKeys < 1 {
+		if request.MaxKeys > utils.MaxObjectList || request.MaxKeys < 0 {
 			err = ErrInvalidMaxKeys
 			return
 		}
@@ -129,7 +130,7 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 	for _, o := range listRsp.Objects {
 		obj := datatype.Object{
 			Key:          o.ObjectKey,
-			LastModified: time.Unix(o.LastModified, 0).In(time.Local).Format(timeFormatAMZ),
+			LastModified: time.Unix(o.LastModified, 0).UTC().Format(timeFormatAMZ),
 			ETag:         o.Etag,
 			Size:         o.Size,
 			StorageClass: o.StorageClass,
@@ -137,10 +138,14 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 			Tier:         o.Tier,
 		}
 		if request.EncodingType != "" { // only support "url" encoding for now
-			obj.Key = url.QueryEscape(obj.Key)
+			obj.Key = UrlEncodeAsAwsS3(obj.Key)
 		}
 		if request.FetchOwner {
-			obj.Owner.ID = o.TenantId //TODO: DisplayName
+			obj.Owner = &datatype.Owner{
+				ID: o.TenantId,
+				// currently, display name is the same as tenantId
+				DisplayName: o.TenantId, //TODO: DisplayName
+			}
 		}
 		response.Contents = append(response.Contents, obj)
 	}
@@ -172,10 +177,9 @@ func CreateListObjectsResponse(bucketName string, request *s3.ListObjectsRequest
 	}
 
 	if request.EncodingType != "" {
-		response.Delimiter = url.QueryEscape(response.Delimiter)
-		response.Prefix = url.QueryEscape(response.Prefix)
-		response.StartAfter = url.QueryEscape(response.StartAfter)
-		response.Marker = url.QueryEscape(response.Marker)
+		response.Delimiter = UrlEncodeAsAwsS3(response.Delimiter)
+		response.Prefix = UrlEncodeAsAwsS3(response.Prefix)
+		response.StartAfter = UrlEncodeAsAwsS3(response.StartAfter)
 	}
 
 	return

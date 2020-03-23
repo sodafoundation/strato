@@ -24,7 +24,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -399,6 +398,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 							break
 						}
 						commonPrefixes[prefixKey] = struct{}{}
+						appendInfo.Prefixes = append(appendInfo.Prefixes, prefixKey)
 						// When response is truncated (the IsTruncated element value in the response is true), you can
 						// use the key name in this field as marker in the subsequent request to get next set of objects,
 						// the same as AWS S3. See https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjects.html
@@ -451,8 +451,6 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			return
 		}
 	}
-
-	appendInfo.Prefixes = helper.Keys(commonPrefixes)
 
 	return
 }

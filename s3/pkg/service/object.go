@@ -17,10 +17,8 @@ package service
 import (
 	"context"
 	"io"
-	"net/url"
 	"time"
 
-	"github.com/journeymidnight/yig/helper"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
@@ -996,6 +994,12 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		// TODO validate user policy and ACL
 	}
 
+	// this is for aws s3 compatible
+	if in.MaxKeys == 0 {
+		out.IsTruncated = false
+		return nil
+	}
+
 	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
 	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
 		out.NextMarker = appendInfo.NextMarker
@@ -1008,7 +1012,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	for _, obj := range retObjects {
 		object := pb.Object{
 			LastModified:     obj.LastModified,
-			Etag:             obj.Etag,
+			Etag:             "\"" + obj.Etag + "\"",
 			Size:             obj.Size,
 			Tier:             obj.Tier,
 			Location:         obj.Location,
@@ -1018,11 +1022,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			CustomAttributes: obj.CustomAttributes,
 			ContentType:      obj.ContentType,
 			StorageMeta:      obj.StorageMeta,
-		}
-		if in.EncodingType != "" { // only support "url" encoding for now
-			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
-		} else {
-			object.ObjectKey = obj.ObjectKey
+			ObjectKey:        obj.ObjectKey,
 		}
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
@@ -1031,13 +1031,6 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	out.Objects = objects
 	out.Prefixes = appendInfo.Prefixes
 	out.IsTruncated = appendInfo.Truncated
-
-	if in.EncodingType != "" { // only support "url" encoding for now
-		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
-			return url.QueryEscape(s)
-		})
-		out.NextMarker = url.QueryEscape(out.NextMarker)
-	}
 
 	err = ErrNoErr
 	return nil
