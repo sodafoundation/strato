@@ -159,7 +159,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 			inRules = append(inRules, &v)
 		}
 
-		if rule.AbortIncompleteMultipartUpload.DaysAfterInitiation > 0 {
+		if rule.AbortIncompleteMultipartUpload != nil && rule.AbortIncompleteMultipartUpload.DaysAfterInitiation > 0 {
 			// abort incomplete multipart uploads
 			abortRule := InternalLifecycleRule{Bucket: bucket, Days: rule.AbortIncompleteMultipartUpload.DaysAfterInitiation, ActionType: AbortIncompleteMultipartUpload}
 			if rule.GetFilter() != nil {

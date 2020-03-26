@@ -117,7 +117,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 	log.Infoln("sourceBucketName:", sourceBucketName, " sourceObjectName:", sourceObjectName, " sourceVersion:", sourceVersion)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	sourceObject, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName, "")
+	sourceObject, _, _, err := s.getObjectMeta(ctx, sourceBucketName, sourceObjectName, "", false)
 	if err != nil {
 		log.Errorln("unable to fetch object info. err:", err)
 		WriteErrorResponse(response, request, err)

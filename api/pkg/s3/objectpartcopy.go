@@ -106,7 +106,7 @@ func (s *APIService) ObjectPartCopy(request *restful.Request, response *restful.
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	getObjMetaRes, err := s.s3Client.GetObjectMeta(ctx, &pb.Object{
+	getObjMetaRes, err := s.s3Client.GetObjectMeta(ctx, &pb.GetObjectMetaRequest{
 		ObjectKey:  sourceObjectName,
 		BucketName: sourceBucketName,
 	})

@@ -17,11 +17,13 @@ package service
 import (
 	"context"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+	utils2 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -285,7 +287,7 @@ func (s *s3Service) checkGetObjectRights(ctx context.Context, isAdmin bool, tena
 	return
 }
 
-func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.GetObjectMetaResult) error {
+func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.GetObjectMetaRequest, out *pb.GetObjectMetaResult) error {
 	var err error
 	defer func() {
 		out.ErrorCode = GetErrCode(err)
@@ -316,9 +318,36 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		return err
 	}
 
+	// get expiration date
+	if in.IsHeadReq == true {
+		out.ExpireTime, out.RuleId = getObjectExpDate(bucket.LifecycleConfiguration, object.ObjectKey, object.LastModified)
+	}
+
 	out.Object = object.Object
 	object.StorageClass, _ = GetNameFromTier(object.Tier, utils.OSTYPE_OPENSDS)
 	return nil
+}
+
+func getObjectExpDate(lcRules []*pb.LifecycleRule, objKey string, lastModified int64) (int64, string) {
+	var expTime int64 = 0
+	for _, r := range lcRules {
+		if r.Status == utils2.RuleStatusDisabled {
+			continue
+		}
+		for _, ac := range r.Actions {
+			if ac.Name == utils2.ActionNameExpiration {
+				if r.Filter.Prefix == "" || strings.HasPrefix(objKey, r.Filter.Prefix) {
+					exp := lastModified + 60*60*24*int64(ac.Days)
+					if expTime < exp {
+						expTime = exp
+					}
+					return expTime, r.Id
+				}
+			}
+		}
+	}
+
+	return expTime, ""
 }
 
 func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
