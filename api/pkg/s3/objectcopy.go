@@ -101,19 +101,6 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	var isOnlyUpdateMetadata = false
-	if sourceBucketName == targetBucketName && sourceObjectName == targetObjectName {
-		if request.HeaderParameter("X-Amz-Metadata-Directive") == "COPY" {
-			WriteErrorResponse(response, request, ErrInvalidCopyDest)
-			return
-		} else if request.HeaderParameter("X-Amz-Metadata-Directive") == "REPLACE" {
-			isOnlyUpdateMetadata = true
-		} else {
-			WriteErrorResponse(response, request, ErrInvalidRequestBody)
-			return
-		}
-	}
-
 	log.Infoln("sourceBucketName:", sourceBucketName, " sourceObjectName:", sourceObjectName, " sourceVersion:", sourceVersion)
 
 	ctx := common.InitCtxWithAuthInfo(request)
@@ -137,13 +124,25 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		return
 	}
 
+	var updateMetaData bool
+	newMetadata := make(map[string]string)
+	if request.HeaderParameter("X-Amz-Metadata-Directive") == "REPLACE" {
+		updateMetaData = true
+		newMetadata = extractMetadataFromHeader(request.Request.Header)
+	}
+
 	// if source == dest and X-Amz-Metadata-Directive == REPLACE, only update the meta;
-	if isOnlyUpdateMetadata {
+	if sourceBucketName == targetBucketName && sourceObjectName == targetObjectName {
+		if !updateMetaData {
+			WriteErrorResponse(response, request, ErrInvalidCopyDest)
+			return
+		}
+
+		// only update metadata
 		log.Infoln("only update metadata.")
 		targetObject := sourceObject
 
 		//update custom attrs from headers
-		newMetadata := extractMetadataFromHeader(request.Request.Header)
 		if c, ok := newMetadata["Content-Type"]; ok {
 			targetObject.ContentType = c
 		} else {
@@ -183,6 +182,12 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		return
 	}
 
+	acl, err := getAclFromHeader(request)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
 	log.Infoln("srcBucket:", sourceBucketName, " srcObject:", sourceObjectName,
 		" targetBucket:", targetBucketName, " targetObject:", targetObjectName)
 	tmoutSec := apiutils.GetTimeoutSec(sourceObject.Size)
@@ -192,6 +197,8 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		TargetBucketName: targetBucketName,
 		SrcObjectName:    sourceObjectName,
 		TargetObjectName: targetObjectName,
+		Acl:              &pb.Acl{CannedAcl: acl.CannedAcl},
+		CustomAttributes: newMetadata,
 	}, opt)
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorf("unable to copy object, err=%v, errCode=%v\n", err, result.GetErrorCode())

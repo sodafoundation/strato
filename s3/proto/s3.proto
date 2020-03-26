@@ -197,6 +197,8 @@ message CopyObjectRequest {
     string targetObjectName = 4;
     string targetBackend = 5;
     int32 targetTier = 6;
+    Acl    Acl = 7;
+    map<string, string> customAttributes = 8;
 }
 
 message CopyObjectResponse {

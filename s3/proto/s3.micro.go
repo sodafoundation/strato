@@ -193,7 +193,6 @@ func (c *s3Service) PutObject(ctx context.Context, opts ...client.CallOption) (S
 }
 
 type S3_PutObjectService interface {
-	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
@@ -206,10 +205,6 @@ type s3ServicePutObject struct {
 
 func (x *s3ServicePutObject) Close() error {
 	return x.stream.Close()
-}
-
-func (x *s3ServicePutObject) Context() context.Context {
-	return x.stream.Context()
 }
 
 func (x *s3ServicePutObject) SendMsg(m interface{}) error {
@@ -247,7 +242,6 @@ func (c *s3Service) GetObject(ctx context.Context, in *GetObjectInput, opts ...c
 }
 
 type S3_GetObjectService interface {
-	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
@@ -260,10 +254,6 @@ type s3ServiceGetObject struct {
 
 func (x *s3ServiceGetObject) Close() error {
 	return x.stream.Close()
-}
-
-func (x *s3ServiceGetObject) Context() context.Context {
-	return x.stream.Context()
 }
 
 func (x *s3ServiceGetObject) SendMsg(m interface{}) error {
@@ -433,7 +423,6 @@ func (c *s3Service) UploadPart(ctx context.Context, opts ...client.CallOption) (
 }
 
 type S3_UploadPartService interface {
-	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
@@ -446,10 +435,6 @@ type s3ServiceUploadPart struct {
 
 func (x *s3ServiceUploadPart) Close() error {
 	return x.stream.Close()
-}
-
-func (x *s3ServiceUploadPart) Context() context.Context {
-	return x.stream.Context()
 }
 
 func (x *s3ServiceUploadPart) SendMsg(m interface{}) error {
@@ -837,7 +822,6 @@ func (h *s3Handler) PutObject(ctx context.Context, stream server.Stream) error {
 }
 
 type S3_PutObjectStream interface {
-	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
@@ -850,10 +834,6 @@ type s3PutObjectStream struct {
 
 func (x *s3PutObjectStream) Close() error {
 	return x.stream.Close()
-}
-
-func (x *s3PutObjectStream) Context() context.Context {
-	return x.stream.Context()
 }
 
 func (x *s3PutObjectStream) SendMsg(m interface{}) error {
@@ -885,7 +865,6 @@ func (h *s3Handler) GetObject(ctx context.Context, stream server.Stream) error {
 }
 
 type S3_GetObjectStream interface {
-	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
@@ -898,10 +877,6 @@ type s3GetObjectStream struct {
 
 func (x *s3GetObjectStream) Close() error {
 	return x.stream.Close()
-}
-
-func (x *s3GetObjectStream) Context() context.Context {
-	return x.stream.Context()
 }
 
 func (x *s3GetObjectStream) SendMsg(m interface{}) error {
@@ -977,7 +952,6 @@ func (h *s3Handler) UploadPart(ctx context.Context, stream server.Stream) error 
 }
 
 type S3_UploadPartStream interface {
-	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
 	Close() error
@@ -990,10 +964,6 @@ type s3UploadPartStream struct {
 
 func (x *s3UploadPartStream) Close() error {
 	return x.stream.Close()
-}
-
-func (x *s3UploadPartStream) Context() context.Context {
-	return x.stream.Context()
 }
 
 func (x *s3UploadPartStream) SendMsg(m interface{}) error {
