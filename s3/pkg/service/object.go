@@ -294,7 +294,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.BucketName, true)
 	if err != nil {
 		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
+		return nil
 	}
 
 	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
@@ -313,7 +313,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
 	if err != nil {
 		log.Errorln("failed to check source object rights. err:", err)
-		return err
+		return nil
 	}
 
 	out.Object = object.Object
