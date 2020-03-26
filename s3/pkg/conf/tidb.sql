@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS `objectparts` (
   `offset` bigint(20) DEFAULT NULL,
   `etag` varchar(255) DEFAULT NULL,
   `lastmodified` datetime DEFAULT NULL,
-   KEY `rowkey` (`bucketname`,`objectname`,`uploadid`,`partnumber`)
+   UNIQUE KEY `rowkey` (`bucketname`,`objectname`,`uploadid`,`partnumber`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 --
