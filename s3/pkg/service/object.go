@@ -38,6 +38,8 @@ import (
 
 var ChunkSize int = 2048
 
+const SecondsOneDay = 60 * 60 * 24
+
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
 
@@ -337,7 +339,7 @@ func getObjectExpDate(lcRules []*pb.LifecycleRule, objKey string, lastModified i
 		for _, ac := range r.Actions {
 			if ac.Name == utils2.ActionNameExpiration {
 				if r.Filter.Prefix == "" || strings.HasPrefix(objKey, r.Filter.Prefix) {
-					exp := lastModified + 60*60*24*int64(ac.Days)
+					exp := lastModified + SecondsOneDay*int64(ac.Days)
 					if expTime < exp {
 						expTime = exp
 					}
