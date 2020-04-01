@@ -143,7 +143,7 @@ func (s *APIService) ObjectCopy(request *restful.Request, response *restful.Resp
 		targetObject := sourceObject
 
 		//update custom attrs from headers
-		newMetadata := extractMetadataFromHeader(request)
+		newMetadata := extractMetadataFromHeader(request.Request.Header)
 		if c, ok := newMetadata["Content-Type"]; ok {
 			targetObject.ContentType = c
 		} else {

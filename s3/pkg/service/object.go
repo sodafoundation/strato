@@ -255,9 +255,13 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
-	obj.Size = actualSize
 	obj.EncSize = req.Size
 	obj.Location = backendName
+	if actualSize == -1 {
+		obj.Size = res.Written
+	} else {
+		obj.Size = actualSize
+	}
 
 	object := &meta.Object{Object: obj}
 
