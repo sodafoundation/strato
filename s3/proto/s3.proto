@@ -9,7 +9,7 @@ service S3 {
     }
     rpc GetBucket (Bucket) returns (GetBucketResponse) {
     }
-    rpc GetObjectMeta (Object) returns (GetObjectMetaResult) {
+    rpc GetObjectMeta (GetObjectMetaRequest) returns (GetObjectMetaResult) {
     }
     rpc UpdateObjectMeta (Object) returns (PutObjectResponse) {
     }
@@ -245,9 +245,18 @@ message GetObjectResponse {
     bytes data = 2;
 }
 
+message GetObjectMetaRequest {
+	string bucketName = 1;
+	string objectKey = 2;
+	string versionId = 3;
+	bool isHeadReq = 4;
+}
+
 message GetObjectMetaResult {
     int32 errorCode = 1;
     Object object = 2;
+    int64 expireTime = 3;
+    string ruleId = 4;
 }
 
 message PutObjectResponse {
