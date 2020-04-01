@@ -68,7 +68,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	}
 
 	// Save metadata.
-	metadata := extractMetadataFromHeader(request)
+	metadata := extractMetadataFromHeader(request.Request.Header)
 	// Get Content-Md5 sent by client and verify if valid
 	if _, ok := request.Request.Header["Content-Md5"]; !ok {
 		metadata["md5Sum"] = ""
