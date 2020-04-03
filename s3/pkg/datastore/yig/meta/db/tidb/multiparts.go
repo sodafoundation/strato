@@ -59,7 +59,8 @@ func (t *Tidb) ListParts(uploadId uint64) ([]*types.PartInfo, error) {
 }
 
 func (t *Tidb) PutPart(partInfo *types.PartInfo) (err error) {
-	sqlText := "insert into multiparts(upload_id, part_num, object_id, location, pool, offset, size, etag, flag) values(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	sqlText := "insert into multiparts(upload_id, part_num, object_id, location, pool, offset, size, etag, flag) values(?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+		" ON DUPLICATE KEY UPDATE object_id=?,location=?,pool=?,offset=?,size=?,etag=?,flag=?"
 	var tx *sql.Tx
 	tx, err = t.DB.Begin()
 	if err != nil {
@@ -81,7 +82,8 @@ func (t *Tidb) PutPart(partInfo *types.PartInfo) (err error) {
 		}
 	}()
 
-	_, err = tx.Exec(sqlText, partInfo.UploadId, partInfo.PartNum, partInfo.ObjectId, partInfo.Location, partInfo.Pool, partInfo.Offset, partInfo.Size, partInfo.Etag, partInfo.Flag)
+	_, err = tx.Exec(sqlText, partInfo.UploadId, partInfo.PartNum, partInfo.ObjectId, partInfo.Location, partInfo.Pool, partInfo.Offset, partInfo.Size, partInfo.Etag, partInfo.Flag,
+		partInfo.ObjectId, partInfo.Location, partInfo.Pool, partInfo.Offset, partInfo.Size, partInfo.Etag, partInfo.Flag)
 	if err != nil {
 		log.Errorf("failed to save partInfo(%v), err: %v", partInfo, err)
 		return err

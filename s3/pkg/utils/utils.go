@@ -158,3 +158,8 @@ func SetRepresentTenant(ctx context.Context, requestTenant, sourceTenant string)
 
 	return ctx
 }
+
+const (
+	REQUEST_HEADER_SSE_KEY          = "x-amz-server-side-encryption"
+	REQUEST_HEADER_SSE_VALUE_AES256 = "AES256"
+)

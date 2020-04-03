@@ -68,7 +68,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	}
 
 	// Save metadata.
-	metadata := extractMetadataFromHeader(request)
+	metadata := extractMetadataFromHeader(request.Request.Header)
 	// Get Content-Md5 sent by client and verify if valid
 	if _, ok := request.Request.Header["Content-Md5"]; !ok {
 		metadata["md5Sum"] = ""
@@ -132,6 +132,18 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		Location:   location,
 		Size:       size,
 	}
+	// add all header information, if any
+	obj.Headers = make(map[string]*pb.HeaderValues, len(request.Request.Header))
+
+	for k, v := range request.Request.Header {
+		valueArr := make([]string, 0)
+		headerValues := pb.HeaderValues{Values: valueArr}
+		// add all v for this k to headerValues
+		headerValues.Values = append(headerValues.Values, v...)
+		// add k,[v] to input proto struct
+		obj.Headers[k] = &headerValues
+	}
+
 	err = stream.SendMsg(&obj)
 	if err != nil {
 		WriteErrorResponse(response, request, s3error.ErrInternalError)

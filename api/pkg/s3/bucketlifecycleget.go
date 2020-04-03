@@ -112,18 +112,18 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	log.Info("GET lifecycle succeed.")
 }
 
-func converts3FilterToRuleFilter(filter *s3.LifecycleFilter) model.Filter {
-	retFilter := model.Filter{}
-	if filter != nil {
-		retFilter.Prefix = filter.Prefix
+func converts3FilterToRuleFilter(filter *s3.LifecycleFilter) *model.Filter {
+	if filter == nil {
+		return nil
 	}
-	return retFilter
+
+	return &model.Filter{Prefix: filter.Prefix}
 }
 
-func converts3UploadToRuleUpload(upload *s3.AbortMultipartUpload) model.AbortIncompleteMultipartUpload {
-	retUpload := model.AbortIncompleteMultipartUpload{}
-	if upload != nil {
-		retUpload.DaysAfterInitiation = upload.DaysAfterInitiation
+func converts3UploadToRuleUpload(upload *s3.AbortMultipartUpload) *model.AbortIncompleteMultipartUpload {
+	if upload == nil {
+		return nil
 	}
-	return retUpload
+
+	return &model.AbortIncompleteMultipartUpload{DaysAfterInitiation: upload.DaysAfterInitiation}
 }

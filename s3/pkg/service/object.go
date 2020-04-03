@@ -17,13 +17,13 @@ package service
 import (
 	"context"
 	"io"
-	"net/url"
+	"strings"
 	"time"
 
-	"github.com/journeymidnight/yig/helper"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+	utils2 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -37,6 +37,8 @@ import (
 )
 
 var ChunkSize int = 2048
+
+const SecondsOneDay = 60 * 60 * 24
 
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
@@ -164,6 +166,9 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	actualSize := req.Size
 
 	// encrypt if needed
+	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+	// if the header contains the encryption header, encrypt
+	headerValues, ok := req.Headers["X-Amz-Server-Side-Encryption"]
 	if bucket.ServerSideEncryption.SseType == "SSE" {
 
 		var readerErr error
@@ -173,6 +178,34 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		if readerErr != nil {
 			log.Errorln("failed to get encrypted reader with err:", readerErr)
 			return readerErr
+		}
+	} else if ok {
+		encAlgo := headerValues.Values[0]
+		if encAlgo == "AES256" {
+			// encrypt
+			byteArr, keyErr := utils.GetRandomNBitKey(ENC_KEY_LEN)
+			if keyErr != nil {
+				log.Error("Error generating SSE key", keyErr)
+				return keyErr
+			}
+			ivArr, ivErr := utils.GetRandomNBitKey(ENC_IV_LEN)
+			if ivErr != nil {
+				log.Error("Error generating SSE IV", ivErr)
+				return ivErr
+			}
+			obj.ServerSideEncryption = &pb.ServerSideEncryption{
+				SseType:             "AES256",
+				EncryptionKey:       byteArr,
+				InitilizationVector: ivArr}
+
+			var readerErr error
+			limitedDataReader, readerErr = utils.WrapEncryptionReader(io.LimitReader(data, req.Size),
+				obj.ServerSideEncryption.EncryptionKey,
+				obj.ServerSideEncryption.InitilizationVector)
+			if readerErr != nil {
+				log.Errorln("failed to get encrypted reader with err:", readerErr)
+				return readerErr
+			}
 		}
 	}
 
@@ -197,7 +230,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+
 	if oldObj != nil && oldObj.Location == backendName {
 		obj.StorageMeta = oldObj.StorageMeta
 		obj.ObjectId = oldObj.ObjectId
@@ -222,9 +255,13 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
-	obj.Size = actualSize
 	obj.EncSize = req.Size
 	obj.Location = backendName
+	if actualSize == -1 {
+		obj.Size = res.Written
+	} else {
+		obj.Size = actualSize
+	}
 
 	object := &meta.Object{Object: obj}
 
@@ -256,7 +293,7 @@ func (s *s3Service) checkGetObjectRights(ctx context.Context, isAdmin bool, tena
 	return
 }
 
-func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.GetObjectMetaResult) error {
+func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.GetObjectMetaRequest, out *pb.GetObjectMetaResult) error {
 	var err error
 	defer func() {
 		out.ErrorCode = GetErrCode(err)
@@ -287,9 +324,36 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 		return err
 	}
 
+	// get expiration date
+	if in.IsHeadReq == true {
+		out.ExpireTime, out.RuleId = getObjectExpDate(bucket.LifecycleConfiguration, object.ObjectKey, object.LastModified)
+	}
+
 	out.Object = object.Object
 	object.StorageClass, _ = GetNameFromTier(object.Tier, utils.OSTYPE_OPENSDS)
 	return nil
+}
+
+func getObjectExpDate(lcRules []*pb.LifecycleRule, objKey string, lastModified int64) (int64, string) {
+	var expTime int64 = 0
+	for _, r := range lcRules {
+		if r.Status == utils2.RuleStatusDisabled {
+			continue
+		}
+		for _, ac := range r.Actions {
+			if ac.Name == utils2.ActionNameExpiration {
+				if r.Filter.Prefix == "" || strings.HasPrefix(objKey, r.Filter.Prefix) {
+					exp := lastModified + SecondsOneDay*int64(ac.Days)
+					if expTime < exp {
+						expTime = exp
+					}
+					return expTime, r.Id
+				}
+			}
+		}
+	}
+
+	return expTime, ""
 }
 
 func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
@@ -361,6 +425,12 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 		finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
 			bucket.ServerSideEncryption.EncryptionKey,
 			bucket.ServerSideEncryption.InitilizationVector)
+	} else if object.ServerSideEncryption != nil {
+		if object.ServerSideEncryption.SseType == "AES256" {
+			finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
+				object.ServerSideEncryption.EncryptionKey,
+				object.ServerSideEncryption.InitilizationVector)
+		}
 	}
 
 	eof := false
@@ -959,6 +1029,12 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		// TODO validate user policy and ACL
 	}
 
+	// this is for aws s3 compatible
+	if in.MaxKeys == 0 {
+		out.IsTruncated = false
+		return nil
+	}
+
 	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
 	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
 		out.NextMarker = appendInfo.NextMarker
@@ -971,7 +1047,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	for _, obj := range retObjects {
 		object := pb.Object{
 			LastModified:     obj.LastModified,
-			Etag:             obj.Etag,
+			Etag:             "\"" + obj.Etag + "\"",
 			Size:             obj.Size,
 			Tier:             obj.Tier,
 			Location:         obj.Location,
@@ -981,11 +1057,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			CustomAttributes: obj.CustomAttributes,
 			ContentType:      obj.ContentType,
 			StorageMeta:      obj.StorageMeta,
-		}
-		if in.EncodingType != "" { // only support "url" encoding for now
-			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
-		} else {
-			object.ObjectKey = obj.ObjectKey
+			ObjectKey:        obj.ObjectKey,
 		}
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
@@ -994,13 +1066,6 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	out.Objects = objects
 	out.Prefixes = appendInfo.Prefixes
 	out.IsTruncated = appendInfo.Truncated
-
-	if in.EncodingType != "" { // only support "url" encoding for now
-		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
-			return url.QueryEscape(s)
-		})
-		out.NextMarker = url.QueryEscape(out.NextMarker)
-	}
 
 	err = ErrNoErr
 	return nil

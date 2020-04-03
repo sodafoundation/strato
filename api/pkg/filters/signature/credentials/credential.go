@@ -29,6 +29,9 @@ type Value struct {
 	// TenantID
 	TenantID string
 
+	// Tenant DisplayName
+	DisplayName string
+
 	// UserID
 	UserID string
 

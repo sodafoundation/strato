@@ -57,7 +57,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	log.Infof("%v\n", rangestr)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	object, err := s.getObjectMeta(ctx, bucketName, objectKey, "")
+	object, _, _, err := s.getObjectMeta(ctx, bucketName, objectKey, "", false)
 	if err != nil {
 		log.Errorln("get object meta failed. err:", err)
 		WriteErrorResponse(response, request, err)
@@ -120,7 +120,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 		if !dataWritten {
 			// Set headers on the first write.
 			// Set standard object headers.
-			SetObjectHeaders(response, object, hrange)
+			SetObjectHeaders(response, object, 0, "", hrange)
 
 			// Set any additional requested response headers.
 			setGetRespHeaders(response.ResponseWriter, request.Request.URL.Query())
@@ -182,7 +182,7 @@ func (s *APIService) HeadObject(request *restful.Request, response *restful.Resp
 	log.Infof("Received request for head object: bucket=%s, objectkey=%s, version=%s\n", bucketName, objectKey, versionId)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	object, err := s.getObjectMeta(ctx, bucketName, objectKey, versionId)
+	object, expTime, ruleId, err := s.getObjectMeta(ctx, bucketName, objectKey, versionId, true)
 	if err != nil {
 		log.Errorf("head object[bucketname=%s, key=%s] failed, err=%v\n", bucketName, objectKey, err)
 		WriteErrorResponse(response, request, err)
@@ -232,7 +232,7 @@ func (s *APIService) HeadObject(request *restful.Request, response *restful.Resp
 
 	log.Debugf("object:%+v\n", object)
 	// Set standard object headers.
-	SetObjectHeaders(response, object, nil)
+	SetObjectHeaders(response, object, expTime, ruleId, nil)
 
 	// Successful response.
 	response.WriteHeader(http.StatusOK)

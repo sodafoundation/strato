@@ -70,6 +70,8 @@ const (
 	REQUEST_HEADER_ACL               = "X-Amz-Acl"
 	REQUEST_HEADER_CONTENT_MD5       = "Content-Md5"
 	REQUEST_HEADER_CONTENT_TYPE      = "Content-Type"
+	REQUEST_HEADER_SSE_KEY           = "x-amz-server-side-encryption"
+	REQUEST_HEADER_SSE_VALUE_AES256	 = "AES256"
 )
 
 const (
@@ -148,6 +150,11 @@ func InitCtxWithAuthInfo(request *restful.Request) context.Context {
 	})
 
 	return ctx
+}
+
+func GetOwner(request *restful.Request) (ownerId string) {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	return actx.TenantId
 }
 
 func InitCtxWithVal(request *restful.Request, md map[string]string) context.Context {
