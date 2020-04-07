@@ -34,6 +34,14 @@
   version = "v1.19.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:34eaeedfc6b235248d342fa917752f32c82b14b418107ebebffcb45c9ed6206b"
+  name = "github.com/aliyun/aliyun-oss-go-sdk"
+  packages = ["oss"]
+  pruneopts = "NUT"
+  revision = "2cbd89fcf3b425ebf1c3ddc517bb99131d96dbd0"
+
+[[projects]]
   digest = "1:53e3ab12bcb7015566286a486db7322c4641aa53de6fa3eb8a37ab8d15da9a0a"
   name = "github.com/armon/go-metrics"
   packages = ["."]
@@ -851,6 +859,7 @@
     "github.com/Azure/azure-storage-blob-go/azblob",
     "github.com/BurntSushi/toml",
     "github.com/Shopify/sarama",
+	"github.com/aliyun/aliyun-oss-go-sdk/oss",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",

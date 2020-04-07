@@ -109,3 +109,7 @@
 [[constraint]]
   name = "go.uber.org/automaxprocs"
   version = "=1.2.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/aliyun/aliyun-oss-go-sdk"
