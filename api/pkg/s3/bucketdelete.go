@@ -31,6 +31,6 @@ func (s *APIService) BucketDelete(request *restful.Request, response *restful.Re
 		log.Errorf("delete bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.GetErrorCode())
 		return
 	}
-
+	WriteSuccessNoContent(response)
 	log.Infof("delete bucket[%s] successfully\n", bucketName)
 }

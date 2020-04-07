@@ -382,3 +382,32 @@ type SseRequest struct {
 	CopySourceSseCustomerAlgorithm string
 	CopySourceSseCustomerKey       []byte
 }
+
+type LifecycleConfiguration struct {
+	Rule []Rule `xml:"Rule"`
+}
+
+type Rule struct {
+	ID                             string                          `xml:"ID"`
+	Prefix                         string                          `xml:"Prefix,omitempty"`
+	Status                         string                          `xml:"Status"`
+	Transition                     []Transition                    `xml:"Transition,omitempty"`
+	Expiration                     []Expiration                    `xml:"Expiration,omitempty"`
+	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload,omitempty"`
+}
+
+type Transition struct {
+	Days         int32  `xml:"Days"`
+	StorageClass string `xml:"StorageClass"`
+	Backend      string `xml:"Backend"`
+}
+
+type Expiration struct {
+	Days int32 `xml:"Days"`
+	//Delete marker will be used in later release
+	//ExpiredObjectDeleteMarker string   `xml:"ExpiredObjectDeleteMArker"`
+}
+
+type AbortIncompleteMultipartUpload struct {
+	DaysAfterInitiation int32 `xml:"DaysAfterInitiation"`
+}

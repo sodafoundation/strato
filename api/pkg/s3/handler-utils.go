@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/emicklei/go-restful"
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
@@ -71,19 +70,18 @@ var supportedHeaders = []string{
 }
 
 // extractMetadataFromHeader extracts metadata from HTTP header.
-func extractMetadataFromHeader(request *restful.Request) map[string]string {
+func extractMetadataFromHeader(header http.Header) map[string]string {
 	metadata := make(map[string]string)
 	// Save standard supported headers.
 	for _, supportedHeader := range supportedHeaders {
-		if h := request.HeaderParameter(supportedHeader); h != "" {
+		if h := header.Get(http.CanonicalHeaderKey(supportedHeader)); h != "" {
 			metadata[supportedHeader] = h
 		}
 	}
-
 	// Go through all other headers for any additional headers that needs to be saved.
-	for key := range request.Request.Header {
+	for key := range header {
 		if strings.HasPrefix(strings.ToLower(key), "x-amz-meta-") {
-			metadata[key] = request.HeaderParameter(key)
+			metadata[key] = header.Get(key)
 		}
 	}
 	// Return.

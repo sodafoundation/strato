@@ -91,8 +91,11 @@ func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.
 	return rsp.BucketMeta, nil
 }
 
-func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, versiongId string) (*s3.Object, error) {
-	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.Object{BucketName: bucketName, ObjectKey: objectName, VersionId: versiongId})
+// if isHeadReq is true, will return expiration time and the ruleId which cause the expiration, that is need for HeadObject
+func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, versiongId string,
+	isHeadReq bool) (*s3.Object, int64, string, error) {
+	rsp, err := s.s3Client.GetObjectMeta(ctx, &s3.GetObjectMetaRequest{
+		BucketName: bucketName, ObjectKey: objectName, VersionId: versiongId, IsHeadReq: isHeadReq})
 	// according to gRPC framework work mechanism, if gRPC return error, then no response package can be received by
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
@@ -103,10 +106,10 @@ func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, 
 	}
 	if err != nil {
 		log.Infof("get object meta data[bucket=%s,key=%s] failed, err=%v\n", bucketName, objectName, err)
-		return nil, err
+		return nil, 0, "", err
 	}
 
-	return rsp.Object, nil
+	return rsp.Object, rsp.ExpireTime, rsp.RuleId, nil
 }
 
 func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
