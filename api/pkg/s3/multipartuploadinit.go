@@ -45,7 +45,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 	}
 
 	// Save metadata.
-	attr := extractMetadataFromHeader(request)
+	attr := extractMetadataFromHeader(request.Request.Header)
 
 	tier, err := getTierFromHeader(request)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		Location:   location,
 		Attrs:      attr})
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
-		log.Errorln("unable to init multipart. err:%v, errcode:%v", err, result.ErrorCode)
+		log.Errorln("unable to init multipart. err:%v, errcode:%v", err, result.GetErrorCode())
 		return
 	}
 

@@ -116,12 +116,12 @@ type SSEConfiguration struct {
 }
 
 type Rule struct {
-	ID                             string                         `xml:"ID"`
-	Filter                         Filter                         `xml:"Filter"`
-	Status                         string                         `xml:"Status"`
-	Transition                     []Transition                   `xml:"Transition"`
-	Expiration                     []Expiration                   `xml:"Expiration"`
-	AbortIncompleteMultipartUpload AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload"`
+	ID                             string                          `xml:"ID"`
+	Filter                         *Filter                         `xml:"Filter,omitempty"`
+	Status                         string                          `xml:"Status"`
+	Transition                     []Transition                    `xml:"Transition,omitempty"`
+	Expiration                     []Expiration                    `xml:"Expiration,omitempty"`
+	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload,omitempty"`
 }
 
 type Filter struct {
