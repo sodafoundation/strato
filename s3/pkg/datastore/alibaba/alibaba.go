@@ -87,27 +87,9 @@ func (ad *OSSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 }
 
 func (ad *OSSAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	//bucket := ad.backend.BucketName
-	//objectId := object.ObjectId
-	//log.Infof("get object[OSS], objectId:%s, bucket:%s\n", objectId, bucket)
-	//log.Println("Start Range ",start," End Range  ",end)
-	//alibabaBucket, err := ad.client.Bucket(bucket)
-	//if err != nil {
-	//	log.Error("bucket is not created, err:%v", err)
-	//}
-	//if start != 0 || end != 0 {
-	//	body, err := alibabaBucket.GetObject(object.ObjectKey, oss.Range(start, end))
-	//	if err != nil {
-	//		log.Infof("get object[OSS] failed, objectId:%,s err:%v", objectId, err)
-	//		return nil, ErrGetFromBackendFailed
-	//	}
-	//	return body, nil
-	//}
-	//log.Infof("get object[OSS] succeed, objectId:%s\n", objectId)
-	//return nil, nil
 	bucket := ad.backend.BucketName
 	log.Infof("bucket is %v\n", bucket)
-	log.Infof("object keyyyyyyyyyyyyyyyyyyyyyyyy %v    %v\n", object.ObjectKey, object.ObjectId)
+	log.Infof("object key %v    %v\n", object.ObjectKey, object.ObjectId)
 
 	objectId := object.BucketName + "/" + object.ObjectKey
 	alibabaBucket, err := ad.client.Bucket(bucket)
@@ -124,36 +106,20 @@ func (ad *OSSAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		return nil, ErrGetFromBackendFailed
 	}
 
-	//defer body.Close()
 	log.Println(" download object ", body)
 	return body, nil
 
 }
 
 func (ad *OSSAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) error {
-	//bucket := ad.backend.BucketName
-	//objectId := object.Bucket + "/" + object.Key
-	//log.Infof("delete object[OSS], objectId:%s\n", objectId)
-	//
-	//alibabaBucket, err := ad.client.Bucket(bucket)
-	//
-	//err = alibabaBucket.DeleteObject(objectId)
-	//if err != nil {
-	//	log.Infof("delete object[OSS] failed, objectId:%s, :%v", objectId, err)
-	//	return ErrDeleteFromBackendFailed
-	//}
-	//log.Infof("delete object[OSS] succeed, objectId:%s.\n", objectId)
 
 	bucket := ad.backend.BucketName
-
 	objectId := object.Bucket + "/" + object.Key
 	getbucket, err := ad.client.Bucket(bucket)
 	if err != nil {
 		log.Errorf("get bucket failed, err:%v\n", err)
 		return ErrDeleteFromBackendFailed
-
 	}
-
 	// Delete an object.
 	err = getbucket.DeleteObject(objectId)
 	if err != nil {
@@ -199,31 +165,7 @@ func (ad *OSSAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 }
 
 func (ad *OSSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
-	//bucket := ad.backend.BucketName
-	//objectId := object.BucketName + "/" + object.ObjectKey
-	//multipartUpload := &pb.MultipartUpload{}
-	//
-	//log.Infof("init multipart upload[OSS], objectId:%s, bucket:%s\n", objectId, bucket)
-	//alibabaBucket, err := ad.client.Bucket(bucket)
-	//
-	//output, err := alibabaBucket.InitiateMultipartUpload(objectId, oss.ObjectStorageClass(oss.StorageClassType(utils.OSTYPE_ALIBABA)))
-	//
-	//if err != nil {
-	//	log.Errorf("translate tier[%d] to oss storage class failed\n", object.Tier)
-	//	return nil, ErrInternalError
-	//}
-	//
-	//if err != nil {
-	//	log.Infof("init multipart upload[OSS] failed, objectId:%s, err:%v", objectId, err)
-	//	return nil, ErrBackendInitMultipartFailed
-	//}
-	//multipartUpload.Bucket = output.Bucket
-	//multipartUpload.Key = output.Key
-	//multipartUpload.UploadId = output.UploadID
-	//multipartUpload.ObjectId = objectId
-	//
-	//log.Infof("init multipart upload[OSS] succeed, objectId:%s\n", objectId)
-	//return multipartUpload, nil
+
 	bucket := ad.backend.BucketName
 	newObjectKey := object.BucketName + "/" + object.ObjectKey
 	log.Infof("bucket = %v,newObjectKey = %v\n", bucket, newObjectKey)
@@ -252,7 +194,6 @@ func (ad *OSSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 	tries := 1
 	bucket := ad.backend.BucketName
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
-	//bytess, _ := ioutil.ReadAll(stream)
 	input := oss.InitiateMultipartUploadResult{
 		UploadID: multipartUpload.UploadId,
 		Bucket:   bucket,
@@ -299,20 +240,15 @@ func (ad *OSSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 		Key:      newObjectKey,
 		UploadID: multipartUpload.UploadId,
 	}
-	//input := oss.InitiateMultipartUploadResult{
-	//	UploadID: ,
-	//	Bucket:   ,
-	//	Key:      ,
-	//}
 
-	log.Infof("etag partnumber here:%v %v \n", multipartUpload.UploadId, newObjectKey)
+	log.Infof("etag partnumber :%v %v \n", multipartUpload.UploadId, newObjectKey)
 	var completeParts []oss.UploadPart
 	for _, p := range completeUpload.Parts {
 		completePart := oss.UploadPart{
 			ETag:       strings.ToUpper(p.ETag),
 			PartNumber: int(p.PartNumber),
 		}
-		log.Infof("etag partnumber here:%v %v \n", p.ETag, p.PartNumber)
+		log.Infof("etag partnumber :%v %v \n", p.ETag, p.PartNumber)
 		completeParts = append(completeParts, completePart)
 	}
 	//completeParts[0].ETag
@@ -342,24 +278,6 @@ func (ad *OSSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 }
 
 func (ad *OSSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
-	//bucket := ad.backend.BucketName
-	//objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
-	//alibabaBucket, err := ad.client.Bucket(bucket)
-	//
-	//log.Infof("abort multipart upload[OSS], objectId:%s, bucket:%s\n", objectId, bucket)
-	//
-	//input := oss.InitiateMultipartUploadResult{
-	//	Bucket:   bucket,
-	//	Key:      objectId,
-	//	UploadID: multipartUpload.UploadId,
-	//}
-	//err = alibabaBucket.AbortMultipartUpload(input)
-	//if err != nil {
-	//	log.Infof("abort multipart upload[OSS] failed, objectId:%s, err:%v", objectId, err)
-	//	return ErrBackendAbortMultipartFailed
-	//}
-	//log.Infof("abort multipart upload[OSS] succeed, objectId:%s\n", objectId)
-	//return nil
 
 	bucket := ad.backend.BucketName
 	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
