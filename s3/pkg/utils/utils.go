@@ -56,6 +56,12 @@ const (
 	GCS_COLDLINE       = "COLDLINE"
 )
 
+const (
+	ALIBABA_STANDARD = "STANDARD"
+	ALIBABA_IA       = "IA"
+	ALIBABA_ARCHIVE  = "ARCHIVE"
+)
+
 //Object Storage Type
 const (
 	OSTYPE_OPENSDS       = "OpenSDS"
@@ -65,6 +71,7 @@ const (
 	OSTYPE_GCS           = "gcp-s3"
 	OSTYPE_CEPH          = "ceph-s3"
 	OSTYPE_FUSIONSTORAGE = "fusionstorage-object"
+	OSTYPE_ALIBABA       = "alibaba-oss"
 )
 
 const (
@@ -151,8 +158,3 @@ func SetRepresentTenant(ctx context.Context, requestTenant, sourceTenant string)
 
 	return ctx
 }
-
-const (
-	REQUEST_HEADER_SSE_KEY          = "x-amz-server-side-encryption"
-	REQUEST_HEADER_SSE_VALUE_AES256 = "AES256"
-)

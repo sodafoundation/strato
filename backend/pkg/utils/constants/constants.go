@@ -23,4 +23,5 @@ const (
 	BackendTypeGcs       = "gcp-s3"
 	BackendFusionStorage = "fusionstorage-object"
 	BackendTypeYIGS3     = "yig"
+	BackendTypeAlibaba   = "alibaba-oss"
 )

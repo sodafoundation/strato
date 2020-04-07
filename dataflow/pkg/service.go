@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/job"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
@@ -32,6 +31,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 type dataflowService struct{}
@@ -199,7 +199,7 @@ func fillRspConnector(out *pb.Connector, in *model.Connector) {
 	case model.STOR_TYPE_OPENSDS:
 		out.BucketName = in.BucketName
 	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
-		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3, model.STOR_TYPE_GCP_S3:
+		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3, model.STOR_TYPE_GCP_S3, model.STOR_TYPE_ALIBABA_OSS:
 		for i := 0; i < len(in.ConnConfig); i++ {
 			out.ConnConfig = append(out.ConnConfig, &pb.KV{Key: in.ConnConfig[i].Key, Value: in.ConnConfig[i].Value})
 		}
@@ -306,7 +306,7 @@ func fillReqConnector(out *model.Connector, in *pb.Connector) error {
 		out.BucketName = in.BucketName
 		return nil
 	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
-		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3, model.STOR_TYPE_GCP_S3, model.STOR_TYPE_IBM_COS:
+		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3, model.STOR_TYPE_GCP_S3, model.STOR_TYPE_IBM_COS, model.STOR_TYPE_ALIBABA_OSS:
 		for i := 0; i < len(in.ConnConfig); i++ {
 			out.ConnConfig = append(out.ConnConfig, model.KeyValue{Key: in.ConnConfig[i].Key, Value: in.ConnConfig[i].Value})
 		}
