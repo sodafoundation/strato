@@ -80,6 +80,7 @@ const (
 	ErrSignatureDoesNotMatch
 	ErrMethodNotAllowed
 	ErrInvalidPart
+	EntityTooSmall
 	ErrInvalidPartOrder
 	ErrAuthorizationHeaderMalformed
 	ErrMalformedPOSTRequest
@@ -372,6 +373,11 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 	ErrInvalidPart: {
 		AwsErrorCode:   "InvalidPart",
 		Description:    "One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part's entity tag.",
+		HttpStatusCode: http.StatusBadRequest,
+	},
+	EntityTooSmall: {
+		AwsErrorCode:   "EntityTooSmall",
+		Description:    "Your proposed upload is smaller than the minimum allowed object size..",
 		HttpStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidPartOrder: {
