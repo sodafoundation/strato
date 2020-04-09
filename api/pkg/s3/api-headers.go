@@ -65,8 +65,10 @@ func SetObjectHeaders(response *restful.Response, object *pb.Object, expTime int
 		w.Header().Set(key, val)
 	}
 	//default cache-control is no-store
-	if _, ok := object.CustomAttributes["Cache-Control"]; !ok {
+	if cc, ok := object.CustomAttributes["cache-control"]; !ok {
 		w.Header().Set("Cache-Control", "no-store")
+	} else {
+		w.Header().Set("Cache-Control", cc)
 	}
 
 	w.Header().Set("X-Amz-Object-Type", (&types.Object{Object: object}).ObjectTypeToString())

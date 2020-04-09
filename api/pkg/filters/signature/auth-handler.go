@@ -133,6 +133,11 @@ func IsReqAuthenticated(r *http.Request) (credential credentials.Value, e error)
 	}
 	// Verify Content-Md5, if payload is set.
 	if r.Header.Get("Content-Md5") != "" {
+		// check if it is valid
+		_, err := base64.StdEncoding.DecodeString(r.Header.Get("Content-Md5"))
+		if err != nil {
+			return credential, ErrInvalidDigest
+		}
 		if r.Header.Get("Content-Md5") != base64.StdEncoding.EncodeToString(sumMD5(payload)) {
 			return credential, ErrBadDigest
 		}

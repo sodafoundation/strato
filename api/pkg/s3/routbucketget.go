@@ -17,6 +17,7 @@ package s3
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	. "github.com/opensds/multi-cloud/s3/error"
 )
 
 func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.Response) {
@@ -27,8 +28,9 @@ func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.
 		s.BucketAclGet(request, response)
 	} else if IsQuery(request, "uploads") {
 		s.ListBucketUploadRecords(request, response)
-	} else if IsQuery(request, "versioning") {
+	} else if IsQuery(request, "versions") {
 		//TODO
+		WriteErrorResponse(response, request, ErrNotImplemented)
 	} else if IsQuery(request, "website") {
 		//TODO
 	} else if IsQuery(request, "cors") {

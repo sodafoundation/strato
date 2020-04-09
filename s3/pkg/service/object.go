@@ -302,7 +302,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.GetObjectMetaReque
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.BucketName, true)
 	if err != nil {
 		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
+		return nil
 	}
 
 	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
@@ -321,7 +321,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.GetObjectMetaReque
 	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
 	if err != nil {
 		log.Errorln("failed to check source object rights. err:", err)
-		return err
+		return nil
 	}
 
 	// get expiration date
