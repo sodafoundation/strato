@@ -179,6 +179,10 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		log.Errorf("stream receive message failed, err=%v, errCode=%d\n", err, rsp.GetErrorCode())
 		return
 	}
+	log.Infoln("object etag:", rsp.Md5)
+	if rsp.Md5 != "" {
+		response.AddHeader("ETag", "\""+rsp.Md5+"\"")
+	}
 
 	log.Info("PUT object successfully.")
 	WriteSuccessResponse(response, nil)
