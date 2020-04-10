@@ -87,6 +87,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		if err == nil {
 			log.Error("Error get bucket: ", bucketName, ", with error", err)
 			err = ErrBucketAlreadyExists
+			return nil
 		}
 	}
 	//TODO FIXME
@@ -147,7 +148,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		log.Errorf("get credential faied, err:%v\n", err)
-		return err
+		return nil
 	}
 	if !isAdmin {
 		if tenantId != bucket.TenantId {
@@ -156,7 +157,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 				break
 			default:
 				err = ErrBucketAccessForbidden
-				return err
+				return nil
 			}
 		}
 	}
