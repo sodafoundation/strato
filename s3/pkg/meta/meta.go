@@ -11,12 +11,12 @@ const (
 )
 
 type MetaConfig struct {
-	CacheType     CacheType
-	TidbInfo      string
+	CacheType CacheType
+	TidbInfo  string
 }
 
 type Meta struct {
-	Db db.DBAdapter
+	Db     db.DBAdapter
 	Logger *log.Logger
 	Cache  MetaCache
 }
@@ -29,7 +29,7 @@ func (m *Meta) Stop() {
 
 func New(cfg MetaConfig) *Meta {
 	meta := Meta{
-		Cache:  newMetaCache(cfg.CacheType),
+		Cache: newMetaCache(cfg.CacheType),
 	}
 	meta.Db = tidbclient.NewTidbClient(cfg.TidbInfo)
 	return &meta

@@ -24,7 +24,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -103,19 +102,19 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 
 	//TODO FIXME
 	/*
-	//get versioning for the bucket
-	versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
-	if versionErr != nil {
-		log.Error("error in getting versioning information, err:%v\n", versionErr)
-		err = handleDBError(versionErr)
-		return
-	}
-	tmp.Versioning = &pb.BucketVersioning{}
-	if versionOpts != nil {
-		tmp.Versioning.Status = versionOpts.Status
-	}
+		//get versioning for the bucket
+		versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
+		if versionErr != nil {
+			log.Error("error in getting versioning information, err:%v\n", versionErr)
+			err = handleDBError(versionErr)
+			return
+		}
+		tmp.Versioning = &pb.BucketVersioning{}
+		if versionOpts != nil {
+			tmp.Versioning.Status = versionOpts.Status
+		}
 
-	 */
+	*/
 
 	// get SSE info for this bucket
 	tmp.ServerSideEncryption = &pb.ServerSideEncryption{}
@@ -127,6 +126,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	if sseOpts != nil {
 		sseType = sseOpts.SseType
 		tmp.ServerSideEncryption.EncryptionKey = sseOpts.EncryptionKey
+		tmp.ServerSideEncryption.InitilizationVector = sseOpts.InitilizationVector
 	}
 	tmp.ServerSideEncryption.SseType = sseType
 	bucket = tmp
@@ -191,19 +191,19 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 
 		//TODO FIXME
 		/*
-		//get versioning for the bucket
-		versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
-		if versionErr != nil {
-			log.Error("error in getting versioning information, err:%v\n", versionErr)
-			err = handleDBError(versionErr)
-			return
-		}
-		tmp.Versioning = &pb.BucketVersioning{}
-		if versionOpts != nil {
-			tmp.Versioning.Status = versionOpts.Status
-		}
+			//get versioning for the bucket
+			versionOpts, versionErr := t.GetBucketVersioning(ctx, tmp.Name)
+			if versionErr != nil {
+				log.Error("error in getting versioning information, err:%v\n", versionErr)
+				err = handleDBError(versionErr)
+				return
+			}
+			tmp.Versioning = &pb.BucketVersioning{}
+			if versionOpts != nil {
+				tmp.Versioning.Status = versionOpts.Status
+			}
 
-		 */
+		*/
 
 		// get SSE info for this bucket
 		sseOpts, sseErr := t.GetBucketSSE(ctx, tmp.Name)
@@ -398,6 +398,7 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 							break
 						}
 						commonPrefixes[prefixKey] = struct{}{}
+						appendInfo.Prefixes = append(appendInfo.Prefixes, prefixKey)
 						// When response is truncated (the IsTruncated element value in the response is true), you can
 						// use the key name in this field as marker in the subsequent request to get next set of objects,
 						// the same as AWS S3. See https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjects.html
@@ -450,8 +451,6 @@ func (t *TidbClient) ListObjects(ctx context.Context, bucketName string, version
 			return
 		}
 	}
-
-	appendInfo.Prefixes = helper.Keys(commonPrefixes)
 
 	return
 }
@@ -691,12 +690,11 @@ func (t *TidbClient) GetBucketVersioning(ctx context.Context, bucketName string)
 }
 */
 
-
-func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error {
+func (t *TidbClient) CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte, sseIV []byte) error {
 	log.Infof("create bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
-	sql := "insert into bucket_sseopts(bucketname, sse, sseserverkey) values(?,?,?);"
-	args := []interface{}{bucketName, sseType, sseKey}
+	sql := "insert into bucket_sseopts(bucketname, sse, sseserverkey, sseiv) values(?,?,?,?);"
+	args := []interface{}{bucketName, sseType, sseKey, sseIV}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {
@@ -710,7 +708,7 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 	log.Info("list bucket SSE info from tidb ...")
 
 	var rows *sql.Rows
-	sqltext := "select sse,sseserverkey from bucket_sseopts where bucketname=?;"
+	sqltext := "select sse,sseserverkey,sseiv from bucket_sseopts where bucketname=?;"
 
 	rows, err = t.Client.Query(sqltext, bucketName)
 
@@ -728,7 +726,8 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 
 		err = rows.Scan(
 			&tmp.SseType,
-			&tmp.EncryptionKey)
+			&tmp.EncryptionKey,
+			&tmp.InitilizationVector)
 		if err != nil {
 			err = handleDBError(err)
 			return
@@ -743,11 +742,12 @@ func (t *TidbClient) GetBucketSSE(ctx context.Context, bucketName string) (sseOp
 	return
 }
 
-func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte) error {
+func (t *TidbClient) UpdateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte,
+	sseIV []byte) error {
 	log.Infof("put bucket[%s] SSE info[%s] into tidb ...\n", bucketName, sseType)
 
-	sql := "update bucket_sseopts set sse=?,sseserverkey=? where bucketname=?"
-	args := []interface{}{sseType, sseKey, bucketName}
+	sql := "update bucket_sseopts set sse=?,sseserverkey=?, sseiv=? where bucketname=?"
+	args := []interface{}{sseType, sseKey, sseIV, bucketName}
 
 	_, err := t.Client.Exec(sql, args...)
 	if err != nil {

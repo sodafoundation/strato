@@ -10,12 +10,12 @@ import (
 func TestGetRandom32BitKey(t *testing.T) {
 
 	randomCount := rand.Intn(100)
-	sliceByteArray := make([][]byte,0)
+	sliceByteArray := make([][]byte, 0)
 
-	for i:=0;i<randomCount;i++{
+	for i := 0; i < randomCount; i++ {
 		// get a new []byte, check none of the earlier []byte equal this
-		newByteArr,_ := GetRandom32BitKey()
-		for _,byteArr := range sliceByteArray{
+		newByteArr, _ := GetRandom32BitKey()
+		for _, byteArr := range sliceByteArray {
 			assert.False(t, bytes.Equal(byteArr, newByteArr))
 		}
 		// add the new []byte to the array

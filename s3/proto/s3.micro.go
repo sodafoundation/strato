@@ -38,7 +38,7 @@ type S3Service interface {
 	CreateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*GetBucketResponse, error)
-	GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error)
+	GetObjectMeta(ctx context.Context, in *GetObjectMetaRequest, opts ...client.CallOption) (*GetObjectMetaResult, error)
 	UpdateObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*PutObjectResponse, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*ListObjectsResponse, error)
 	CountObjects(ctx context.Context, in *ListObjectsRequest, opts ...client.CallOption) (*CountObjectsResponse, error)
@@ -143,7 +143,7 @@ func (c *s3Service) GetBucket(ctx context.Context, in *Bucket, opts ...client.Ca
 	return out, nil
 }
 
-func (c *s3Service) GetObjectMeta(ctx context.Context, in *Object, opts ...client.CallOption) (*GetObjectMetaResult, error) {
+func (c *s3Service) GetObjectMeta(ctx context.Context, in *GetObjectMetaRequest, opts ...client.CallOption) (*GetObjectMetaResult, error) {
 	req := c.c.NewRequest(c.name, "S3.GetObjectMeta", in)
 	out := new(GetObjectMetaResult)
 	err := c.c.Call(ctx, req, out, opts...)
@@ -676,7 +676,7 @@ type S3Handler interface {
 	CreateBucket(context.Context, *Bucket, *BaseResponse) error
 	DeleteBucket(context.Context, *Bucket, *BaseResponse) error
 	GetBucket(context.Context, *Bucket, *GetBucketResponse) error
-	GetObjectMeta(context.Context, *Object, *GetObjectMetaResult) error
+	GetObjectMeta(context.Context, *GetObjectMetaRequest, *GetObjectMetaResult) error
 	UpdateObjectMeta(context.Context, *Object, *PutObjectResponse) error
 	ListObjects(context.Context, *ListObjectsRequest, *ListObjectsResponse) error
 	CountObjects(context.Context, *ListObjectsRequest, *CountObjectsResponse) error
@@ -729,7 +729,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		CreateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		DeleteBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		GetBucket(ctx context.Context, in *Bucket, out *GetBucketResponse) error
-		GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error
+		GetObjectMeta(ctx context.Context, in *GetObjectMetaRequest, out *GetObjectMetaResult) error
 		UpdateObjectMeta(ctx context.Context, in *Object, out *PutObjectResponse) error
 		ListObjects(ctx context.Context, in *ListObjectsRequest, out *ListObjectsResponse) error
 		CountObjects(ctx context.Context, in *ListObjectsRequest, out *CountObjectsResponse) error
@@ -801,7 +801,7 @@ func (h *s3Handler) GetBucket(ctx context.Context, in *Bucket, out *GetBucketRes
 	return h.S3Handler.GetBucket(ctx, in, out)
 }
 
-func (h *s3Handler) GetObjectMeta(ctx context.Context, in *Object, out *GetObjectMetaResult) error {
+func (h *s3Handler) GetObjectMeta(ctx context.Context, in *GetObjectMetaRequest, out *GetObjectMetaResult) error {
 	return h.S3Handler.GetObjectMeta(ctx, in, out)
 }
 

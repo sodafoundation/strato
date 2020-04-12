@@ -18,8 +18,8 @@ import (
 	"os"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
+	log "github.com/sirupsen/logrus"
 )
 
 type AuthBase interface {

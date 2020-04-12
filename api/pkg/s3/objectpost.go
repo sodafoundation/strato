@@ -22,6 +22,9 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
@@ -35,6 +38,9 @@ var ValidSuccessActionStatus = []string{"200", "201", "204"}
 
 func (s *APIService) ObjectPost(request *restful.Request, response *restful.Response) {
 	var err error
+
+	log.Infof("received request: POST object")
+
 	// Here the parameter is the size of the form data that should
 	// be loaded in memory, the remaining being put in temporary files.
 	reader, err := request.Request.MultipartReader()
@@ -61,8 +67,39 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
 	formValues[common.REQUEST_FORM_BUCKET] = bucketName
 
-	// check if specific bucket exist
+	var credential credentials.Value
+	postPolicyType := signature.GetPostPolicyType(formValues)
+	log.Debugln("type", postPolicyType)
+	switch postPolicyType {
+	case signature.PostPolicyV2:
+		credential, err = signature.DoesPolicySignatureMatchV2(formValues)
+	case signature.PostPolicyV4:
+		credential, err = signature.DoesPolicySignatureMatchV4(formValues)
+	case signature.PostPolicyAnonymous:
+	default:
+		WriteErrorResponse(response, request, s3error.ErrMalformedPOSTRequest)
+		return
+	}
+	if err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	if credential.TenantID != "" {
+		actx.TenantId = credential.TenantID
+	}
+	if credential.UserID != "" {
+		actx.UserId = credential.UserID
+	}
+
 	ctx := common.InitCtxWithAuthInfo(request)
+	if err = signature.CheckPostPolicy(ctx, formValues, postPolicyType); err != nil {
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	// check if specific bucket exist
 	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
 	if err != nil {
 		log.Errorf("failed to get bucket meta. err: %v", err)
@@ -80,7 +117,14 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 		location = backendName
 	}
 
-	metadata := extractMetadataFromHeader(request)
+	// Convert form values to header type so those values could be handled as in
+	// normal requests
+	headerfiedFormValues := make(http.Header)
+	for key := range formValues {
+		headerfiedFormValues.Add(key, formValues[key])
+		log.Infoln("22key:", key, "  val:", formValues[key])
+	}
+	metadata := extractMetadataFromHeader(headerfiedFormValues)
 
 	acl, err := getAclFromFormValues(formValues)
 	if err != nil {
@@ -156,9 +200,11 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 	if redirect != "" {
 		redirectUrl, err := url.Parse(redirect)
 		if err == nil {
-			redirectUrl.Query().Set("bucket", bucketName)
-			redirectUrl.Query().Set("key", objectKey)
-			redirectUrl.Query().Set("etag", result.Md5)
+			urlQuery := redirectUrl.Query()
+			urlQuery.Set("bucket", bucketName)
+			urlQuery.Set("key", objectKey)
+			urlQuery.Set("etag", "\""+result.Md5+"\"")
+			redirectUrl.RawQuery = urlQuery.Encode()
 			http.Redirect(response, request.Request, redirectUrl.String(), http.StatusSeeOther)
 			return
 		}

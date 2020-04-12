@@ -16,10 +16,12 @@ package s3
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/xml"
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -35,6 +37,8 @@ import (
 // Map from storage calss to tier
 var ClassAndTier map[string]int32
 var mutext sync.Mutex
+
+const IdLimiteLen int = 255
 
 func (s *APIService) loadStorageClassDefinition() error {
 	ctx := context.Background()
@@ -112,6 +116,30 @@ func checkValidationOfActions(actions []*s3.Action) error {
 	return nil
 }
 
+func validLcStatus(status string) bool {
+	switch status {
+	case "Enabled", "Disabled":
+		return true
+	default:
+		log.Errorln("invalid lc status:", status)
+	}
+
+	return false
+}
+
+func getRandID() (string, error) {
+	bits := uint64(time.Now().UnixNano())
+	buf := make([]byte, 16)
+
+	readLen, err := rand.Read(buf)
+	if err != nil || readLen != len(buf) {
+		return "", err
+	}
+
+	str := fmt.Sprintf("%X%X", bits, buf)
+	return str, nil
+}
+
 func (s *APIService) BucketLifecyclePut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter("bucketName")
 	log.Infof("received request for creating lifecycle of bucket: %s", bucketName)
@@ -153,6 +181,23 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 
 		s3Rule := s3.LifecycleRule{}
 
+		if len(rule.ID) > IdLimiteLen {
+			log.Errorf("ruleID is too long : %s\n", rule.ID)
+			WriteApiErrorResponse(response, request, http.StatusBadRequest, AWSErrCodeInvalidArgument,
+				InvalidRuleId)
+			return
+		}
+		if rule.ID == "" {
+			// create a random rule id
+			rule.ID, err = getRandID()
+			if err != nil {
+				log.Errorf("get random id failed:%v\n", err)
+				WriteApiErrorResponse(response, request, http.StatusInternalServerError,
+					ErrInternalError.AwsErrorCode(), ErrInternalError.Description())
+				return
+			}
+		}
+
 		//check if the ruleID has any duplicate values
 		if _, ok := dupIdCheck[rule.ID]; ok {
 			log.Errorf("duplicate ruleID found for rule : %s\n", rule.ID)
@@ -167,6 +212,10 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 		//Assigning the status value to s3 status
 		log.Infof("status in rule file is %v\n", rule.Status)
 		s3Rule.Status = rule.Status
+		if !validLcStatus(s3Rule.Status) {
+			WriteErrorResponse(response, request, ErrMalformedXML)
+			return
+		}
 
 		//Assigning the filter, using convert function to convert xml struct to s3 struct
 		s3Rule.Filter = convertRuleFilterToS3Filter(rule.Filter)
@@ -233,21 +282,18 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 	WriteSuccessResponse(response, nil)
 }
 
-func convertRuleFilterToS3Filter(filter model.Filter) *s3.LifecycleFilter {
-	retFilter := s3.LifecycleFilter{}
-	/*
-		check if prefix is not empty
-	*/
-	if filter.Prefix != "" {
-		retFilter.Prefix = filter.Prefix
-		return &retFilter
-	} else {
+func convertRuleFilterToS3Filter(filter *model.Filter) *s3.LifecycleFilter {
+	if filter == nil || filter.Prefix == "" {
 		return nil
 	}
+
+	return &s3.LifecycleFilter{Prefix: filter.Prefix}
 }
 
-func convertRuleUploadToS3Upload(upload model.AbortIncompleteMultipartUpload) *s3.AbortMultipartUpload {
-	retUpload := s3.AbortMultipartUpload{}
-	retUpload.DaysAfterInitiation = upload.DaysAfterInitiation
-	return &retUpload
+func convertRuleUploadToS3Upload(upload *model.AbortIncompleteMultipartUpload) *s3.AbortMultipartUpload {
+	if upload == nil || upload.DaysAfterInitiation <= 0 {
+		return nil
+	}
+
+	return &s3.AbortMultipartUpload{DaysAfterInitiation: upload.DaysAfterInitiation}
 }

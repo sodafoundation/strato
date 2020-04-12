@@ -15,18 +15,15 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"io"
-	"io/ioutil"
-	"net/url"
+	"strings"
 	"time"
 
-	"github.com/journeymidnight/yig/helper"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+	utils2 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -40,6 +37,8 @@ import (
 )
 
 var ChunkSize int = 2048
+
+const SecondsOneDay = 60 * 60 * 24
 
 func (s *s3Service) CreateObject(ctx context.Context, in *pb.Object, out *pb.BaseResponse) error {
 	log.Infoln("CreateObject is called in s3 service.")
@@ -165,17 +164,49 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}
 
 	actualSize := req.Size
+
 	// encrypt if needed
+	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+	// if the header contains the encryption header, encrypt
+	headerValues, ok := req.Headers["X-Amz-Server-Side-Encryption"]
 	if bucket.ServerSideEncryption.SseType == "SSE" {
-		byteArr, _ := ioutil.ReadAll(limitedDataReader)
-		encErr, encBuf := utils.EncryptWithAES256RandomKey(byteArr, bucket.ServerSideEncryption.EncryptionKey)
-		if encErr != nil {
-			log.Errorln("failed to encrypt object", encErr)
-			return encErr
+
+		var readerErr error
+		limitedDataReader, readerErr = utils.WrapEncryptionReader(io.LimitReader(data, req.Size),
+			bucket.ServerSideEncryption.EncryptionKey,
+			bucket.ServerSideEncryption.InitilizationVector)
+		if readerErr != nil {
+			log.Errorln("failed to get encrypted reader with err:", readerErr)
+			return readerErr
 		}
-		reader := bytes.NewReader(encBuf)
-		limitedDataReader = io.LimitReader(reader, int64(binary.Size(encBuf)))
-		req.Size = int64(binary.Size(encBuf))
+	} else if ok {
+		encAlgo := headerValues.Values[0]
+		if encAlgo == "AES256" {
+			// encrypt
+			byteArr, keyErr := utils.GetRandomNBitKey(ENC_KEY_LEN)
+			if keyErr != nil {
+				log.Error("Error generating SSE key", keyErr)
+				return keyErr
+			}
+			ivArr, ivErr := utils.GetRandomNBitKey(ENC_IV_LEN)
+			if ivErr != nil {
+				log.Error("Error generating SSE IV", ivErr)
+				return ivErr
+			}
+			obj.ServerSideEncryption = &pb.ServerSideEncryption{
+				SseType:             "AES256",
+				EncryptionKey:       byteArr,
+				InitilizationVector: ivArr}
+
+			var readerErr error
+			limitedDataReader, readerErr = utils.WrapEncryptionReader(io.LimitReader(data, req.Size),
+				obj.ServerSideEncryption.EncryptionKey,
+				obj.ServerSideEncryption.InitilizationVector)
+			if readerErr != nil {
+				log.Errorln("failed to get encrypted reader with err:", readerErr)
+				return readerErr
+			}
+		}
 	}
 
 	backendName := bucket.DefaultLocation
@@ -199,7 +230,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 		log.Errorln("failed to create storage. err:", err)
 		return err
 	}
-	obj := &pb.Object{BucketName: req.BucketName, ObjectKey: req.ObjectKey}
+
 	if oldObj != nil && oldObj.Location == backendName {
 		obj.StorageMeta = oldObj.StorageMeta
 		obj.ObjectId = oldObj.ObjectId
@@ -224,9 +255,13 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
 	obj.StorageMeta = res.Meta
-	obj.Size = actualSize
 	obj.EncSize = req.Size
 	obj.Location = backendName
+	if actualSize == -1 {
+		obj.Size = res.Written
+	} else {
+		obj.Size = actualSize
+	}
 
 	object := &meta.Object{Object: obj}
 
@@ -258,7 +293,7 @@ func (s *s3Service) checkGetObjectRights(ctx context.Context, isAdmin bool, tena
 	return
 }
 
-func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.GetObjectMetaResult) error {
+func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.GetObjectMetaRequest, out *pb.GetObjectMetaResult) error {
 	var err error
 	defer func() {
 		out.ErrorCode = GetErrCode(err)
@@ -267,7 +302,7 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	bucket, err := s.MetaStorage.GetBucket(ctx, in.BucketName, true)
 	if err != nil {
 		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
+		return nil
 	}
 
 	object, err := s.MetaStorage.GetObject(ctx, in.BucketName, in.ObjectKey, "", true)
@@ -286,7 +321,12 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
 	if err != nil {
 		log.Errorln("failed to check source object rights. err:", err)
-		return err
+		return nil
+	}
+
+	// get expiration date
+	if in.IsHeadReq == true {
+		out.ExpireTime, out.RuleId = getObjectExpDate(bucket.LifecycleConfiguration, object.ObjectKey, object.LastModified)
 	}
 
 	out.Object = object.Object
@@ -294,39 +334,29 @@ func (s *s3Service) GetObjectMeta(ctx context.Context, in *pb.Object, out *pb.Ge
 	return nil
 }
 
-func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
-	log.Infoln("GetObject is called in s3 service.")
-	bucketName := req.Bucket
-	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
-	if err != nil {
-		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
+func getObjectExpDate(lcRules []*pb.LifecycleRule, objKey string, lastModified int64) (int64, string) {
+	var expTime int64 = 0
+	for _, r := range lcRules {
+		if r.Status == utils2.RuleStatusDisabled {
+			continue
+		}
+		for _, ac := range r.Actions {
+			if ac.Name == utils2.ActionNameExpiration {
+				if r.Filter.Prefix == "" || strings.HasPrefix(objKey, r.Filter.Prefix) {
+					exp := lastModified + SecondsOneDay*int64(ac.Days)
+					if expTime < exp {
+						expTime = exp
+					}
+					return expTime, r.Id
+				}
+			}
+		}
 	}
 
-	/*
-	here, we have an issue, described below, this code is added to get around the issue
-	we do NOT support encrypted multipart upload, so a large object, > 5MB,
-	gets uploaded as is (even if the bucket encryption is set to ON)
-	Now, on download, we try to  decrypt (a not-encrypted object) which fails, we cannot download this object
-	so below, checking,
-		1. if the object is in an encrypted bucket
-		2. but was not encrypted
-	then do NOT attempt to decrypt, just download it
-	 */
-	object, err := s.MetaStorage.GetObject(ctx, bucketName, req.Key, "", true)
-	if err != nil {
-		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
-	}
-
-	if (bucket.ServerSideEncryption != nil && bucket.ServerSideEncryption.SseType == "SSE") && (object.EncSize != 0) {
-		return GetEncObject(ctx, req, stream, s)
-	} else {
-		return GetObject(ctx, req, stream, s)
-	}
+	return expTime, ""
 }
 
-func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
+func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream) error {
 	log.Infoln("GetObject is called in s3 service.")
 	bucketName := req.Bucket
 	objectName := req.Key
@@ -389,11 +419,25 @@ func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObje
 		return err
 	}
 
+	var finalReader io.Reader
+	finalReader = reader
+	if bucket.ServerSideEncryption.SseType == "SSE" {
+		finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
+			bucket.ServerSideEncryption.EncryptionKey,
+			bucket.ServerSideEncryption.InitilizationVector)
+	} else if object.ServerSideEncryption != nil {
+		if object.ServerSideEncryption.SseType == "AES256" {
+			finalReader, _ = utils.WrapAlignedEncryptionReader(reader, 0,
+				object.ServerSideEncryption.EncryptionKey,
+				object.ServerSideEncryption.InitilizationVector)
+		}
+	}
+
 	eof := false
 	left := object.Size
 	buf := make([]byte, ChunkSize)
 	for !eof && left > 0 {
-		n, err := reader.Read(buf)
+		n, err := finalReader.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Errorln("failed to read, err:", err)
 			break
@@ -423,127 +467,6 @@ func GetObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObje
 	}
 
 	log.Infof("get object end, object:%s, left bytes:%d, err:%v\n", objectName, left, err)
-	return err
-}
-
-func GetEncObject(ctx context.Context, req *pb.GetObjectInput, stream pb.S3_GetObjectStream, s *s3Service) error {
-
-	log.Infoln("GetObject is called in s3 service.")
-	bucketName := req.Bucket
-	objectName := req.Key
-	offset := req.Offset
-	length := req.Length
-
-	var err error
-	getObjRes := &pb.GetObjectResponse{}
-	defer func() {
-		getObjRes.ErrorCode = GetErrCode(err)
-		stream.SendMsg(getObjRes)
-	}()
-
-	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, "", true)
-	if err != nil {
-		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
-	}
-
-	// retrieve the encrypted object from the cloud backend, by reading all encrypted bytes
-	length = object.EncSize
-
-	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
-	if err != nil {
-		log.Errorln("failed to get bucket from meta storage. err:", err)
-		return err
-	}
-
-	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
-	if err != nil && isAdmin == false {
-		log.Error("get tenant id failed")
-		err = ErrInternalError
-		return nil
-	}
-
-	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, bucket.Bucket, object.Object)
-	if err != nil {
-		log.Errorln("failed to check source object rights. err:", err)
-		return err
-	}
-
-	backendName := bucket.DefaultLocation
-	if object.Location != "" {
-		backendName = object.Location
-	}
-	// incase get backend failed
-	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
-	// if this object has only one part
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
-	if err != nil {
-		log.Errorln("unable to get backend. err:", err)
-		return err
-	}
-	sd, err := driver.CreateStorageDriver(backend.Type, backend)
-	if err != nil {
-		log.Errorln("failed to create storage driver. err:", err)
-		return err
-	}
-	log.Infof("get object offset %v, length %v", offset, length)
-	reader, err := sd.Get(ctx, object.Object, offset, offset+length-1)
-	if err != nil {
-		log.Errorln("failed to get data. err:", err)
-		return err
-	}
-
-	// empty buffer, to keep appending the output of the chunked reads (and re-assemble all bytes)
-	fullBuf := make([]byte, 0)
-
-	eof := false
-	left := object.EncSize
-	buf := make([]byte, ChunkSize)
-	for !eof && left > 0 {
-		n, err := reader.Read(buf)
-		if err != nil && err != io.EOF {
-			log.Errorln("failed to read, err:", err)
-			break
-		}
-		// From https://golang.org/pkg/io/, a Reader returning a non-zero number of bytes at the end of the input stream
-		// may return either err == EOF or err == nil. The next Read should return 0, EOF.
-		// If err is equal to io.EOF, a non-zero number of bytes may be returned.
-		if err == io.EOF {
-			log.Debugln("finished read")
-			eof = true
-		}
-		// From https://golang.org/pkg/io/, there is the following statement.
-		// Implementations of Read are discouraged from returning a zero byte count with a nil error, except when len(p) ==
-		// 0. Callers should treat a return of 0 and nil as indicating that nothing happened; in particular it does not indicate EOF.
-		// If n is equal 0, it indicate that there is no more data to read
-		if n == 0 {
-			log.Infoln("reader return zero bytes.")
-			break
-		}
-
-		fullBuf = append(fullBuf, buf[0:n]...)
-		if err != nil {
-			log.Infof("stream send error: %v\n", err)
-			break
-		}
-		left -= int64(n)
-	}
-
-	// decrypt the full byte array
-	decErr, decBytes := utils.DecryptWithAES256(fullBuf, bucket.ServerSideEncryption.EncryptionKey)
-	if decErr != nil {
-		log.Errorln("failed to decrypt data. err:", decErr)
-		return decErr
-	}
-	log.Infoln("successfully decrypted")
-
-	err = stream.Send(&pb.GetObjectResponse{ErrorCode: int32(ErrNoErr), Data: decBytes})
-	if err != nil {
-		log.Infof("stream send error: %v\n", err)
-		return err
-	}
-
-	log.Infoln("get object successfully")
 	return err
 }
 
@@ -592,13 +515,13 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetBucket, err := s.MetaStorage.GetBucket(ctx, targetBucketName, true)
 	if err != nil {
 		log.Errorln("get bucket failed with err:", err)
-		return err
+		return nil
 	}
 
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		log.Errorf("get credential faied, err:%v\n", err)
-		return err
+		return nil
 	}
 
 	if !isAdmin {
@@ -608,7 +531,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		default:
 			if targetBucket.TenantId != tenantId {
 				err = ErrBucketAccessForbidden
-				return err
+				return nil
 			}
 		}
 	}
@@ -616,18 +539,18 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	srcBucket, err := s.MetaStorage.GetBucket(ctx, srcBucketName, true)
 	if err != nil {
 		log.Errorln("get bucket failed with err:", err)
-		return err
+		return nil
 	}
 	srcObject, err := s.MetaStorage.GetObject(ctx, srcBucketName, srcObjectName, "", true)
 	if err != nil {
 		log.Errorln("failed to get object info from meta storage. err:", err)
-		return err
+		return nil
 	}
 
 	err = s.checkGetObjectRights(ctx, isAdmin, tenantId, srcBucket.Bucket, srcObject.Object)
 	if err != nil {
 		log.Errorln("failed to check source object rights. err:", err)
-		return err
+		return nil
 	}
 
 	backendName := srcBucket.DefaultLocation
@@ -639,12 +562,12 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	srcBackend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
-		return err
+		return nil
 	}
 	srcSd, err := driver.CreateStorageDriver(srcBackend.Type, srcBackend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
-		return err
+		return nil
 	}
 
 	targetBackendName := targetBucket.DefaultLocation
@@ -653,25 +576,26 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
-		return err
+		return nil
 	}
 	// get old object meta if it exist
 	oldObj, err := s.MetaStorage.GetObject(ctx, targetBucketName, targetObjectName, "", false)
 	if err != nil && err != ErrNoSuchKey {
 		log.Errorf("get object[%s] failed, err:%v\n", targetObjectName, err)
-		return ErrInternalError
+		err = ErrInternalError
+		return nil
 	}
 	log.Debugf("existObj=%v, err=%v\n", oldObj, err)
 	targetSd, err := driver.CreateStorageDriver(targetBackend.Type, targetBackend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
-		return err
+		return nil
 	}
 	log.Debugf("***ctx:%+v\n", ctx)
 	reader, err := srcSd.Get(ctx, srcObject.Object, 0, srcObject.Size-1)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
-		return err
+		return nil
 	}
 	limitedDataReader := io.LimitReader(reader, srcObject.Size)
 
@@ -688,13 +612,13 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	res, err := targetSd.Put(ctx, limitedDataReader, targetObject)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
-		return err
+		return nil
 	}
 	if res.Written < srcObject.Size {
 		// TODO: delete incomplete object at backend
 		log.Warnf("write objects, already written(%d), total size(%d)\n", res.Written, srcObject.Size)
 		err = ErrIncompleteBody
-		return err
+		return nil
 	}
 
 	targetObject.Etag = res.Etag
@@ -702,13 +626,12 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.LastModified = time.Now().UTC().Unix()
 	targetObject.ContentType = srcObject.ContentType
 	targetObject.DeleteMarker = false
-	targetObject.CustomAttributes = srcObject.CustomAttributes
 	targetObject.Type = meta.ObjectTypeNormal
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
 	// this is the default acl setting
-	targetObject.Acl = &pb.Acl{CannedAcl: "private"}
+	targetObject.Acl = in.Acl
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	if validTier(in.TargetTier) {
@@ -716,13 +639,18 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	} else {
 		targetObject.Tier = srcObject.Tier
 	}
+	if len(in.CustomAttributes) != 0 {
+		targetObject.CustomAttributes = in.CustomAttributes
+	} else {
+		targetObject.CustomAttributes = srcObject.CustomAttributes
+	}
 
 	err = s.MetaStorage.PutObject(ctx, &meta.Object{Object: targetObject}, oldObj, nil, nil, true)
 	if err != nil {
 		log.Errorf("failed to put object meta[object:%+v, oldObj:%+v]. err:%v\n", targetObject, oldObj, err)
 		// TODO: consistent check & clean
 		err = ErrDBError
-		return err
+		return nil
 	}
 
 	out.Md5 = res.Etag
@@ -1106,6 +1034,12 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 		// TODO validate user policy and ACL
 	}
 
+	// this is for aws s3 compatible
+	if in.MaxKeys == 0 {
+		out.IsTruncated = false
+		return nil
+	}
+
 	retObjects, appendInfo, err := s.ListObjectsInternal(ctx, in)
 	if appendInfo.Truncated && len(appendInfo.NextMarker) != 0 {
 		out.NextMarker = appendInfo.NextMarker
@@ -1118,7 +1052,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	for _, obj := range retObjects {
 		object := pb.Object{
 			LastModified:     obj.LastModified,
-			Etag:             obj.Etag,
+			Etag:             "\"" + obj.Etag + "\"",
 			Size:             obj.Size,
 			Tier:             obj.Tier,
 			Location:         obj.Location,
@@ -1128,11 +1062,7 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			CustomAttributes: obj.CustomAttributes,
 			ContentType:      obj.ContentType,
 			StorageMeta:      obj.StorageMeta,
-		}
-		if in.EncodingType != "" { // only support "url" encoding for now
-			object.ObjectKey = url.QueryEscape(obj.ObjectKey)
-		} else {
-			object.ObjectKey = obj.ObjectKey
+			ObjectKey:        obj.ObjectKey,
 		}
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)
 		objects = append(objects, &object)
@@ -1141,13 +1071,6 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	out.Objects = objects
 	out.Prefixes = appendInfo.Prefixes
 	out.IsTruncated = appendInfo.Truncated
-
-	if in.EncodingType != "" { // only support "url" encoding for now
-		out.Prefixes = helper.Map(out.Prefixes, func(s string) string {
-			return url.QueryEscape(s)
-		})
-		out.NextMarker = url.QueryEscape(out.NextMarker)
-	}
 
 	err = ErrNoErr
 	return nil

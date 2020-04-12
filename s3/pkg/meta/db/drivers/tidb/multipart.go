@@ -340,8 +340,8 @@ func (t *TidbClient) PutObjectPart(multipart *Multipart, part *Part, tx interfac
 	}
 	lastModified := lastt.Format(TIME_LAYOUT_TIDB)
 	sqltext := "insert into objectparts(bucketname,objectname,uploadid,partnumber,size,objectid,offset,etag,lastmodified) " +
-		"values(?,?,?,?,?,?,?,?,?)"
+		"values(?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE size=?,objectid=?,offset=?,etag=?,lastmodified=?"
 	_, err = sqlTx.Exec(sqltext, multipart.BucketName, multipart.ObjectKey, multipart.UploadId, part.PartNumber, part.Size,
-		part.ObjectId, part.Offset, part.Etag, lastModified)
+		part.ObjectId, part.Offset, part.Etag, lastModified, part.Size, part.ObjectId, part.Offset, part.Etag, lastModified)
 	return
 }

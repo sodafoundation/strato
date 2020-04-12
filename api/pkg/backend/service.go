@@ -20,7 +20,6 @@ import (
 	"strconv"
 
 	"github.com/emicklei/go-restful"
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
@@ -29,6 +28,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	"github.com/opensds/multi-cloud/s3/proto"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -318,6 +318,3 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	log.Info("List types successfully.")
 	response.WriteEntity(res)
 }
-
-
-

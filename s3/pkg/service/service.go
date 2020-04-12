@@ -321,23 +321,28 @@ func (s *s3Service) UpdateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	//TODO FIXME
 	/*
-	//update versioning if not nil
-	if in.Versioning != nil {
-		err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
-		if err != nil {
-			log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
-			return err
+		//update versioning if not nil
+		if in.Versioning != nil {
+			err := s.MetaStorage.Db.UpdateBucketVersioning(ctx, in.Name, in.Versioning.Status)
+			if err != nil {
+				log.Errorf("get bucket[%s] failed, err:%v\n", in.Name, err)
+				return err
+			}
 		}
-	}
 
-	 */
-	if in.ServerSideEncryption != nil{
-		byteArr, keyErr := utils.GetRandom32BitKey()
+	*/
+	if in.ServerSideEncryption != nil {
+		byteArr, keyErr := utils.GetRandomNBitKey(32)
 		if keyErr != nil {
 			log.Error("Error generating SSE key", keyErr)
 			return keyErr
 		}
-		sseErr := s.MetaStorage.Db.UpdateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, byteArr)
+		ivArr, ivErr := utils.GetRandomNBitKey(16)
+		if ivErr != nil {
+			log.Error("Error generating SSE IV", ivErr)
+			return ivErr
+		}
+		sseErr := s.MetaStorage.Db.UpdateBucketSSE(ctx, in.Name, in.ServerSideEncryption.SseType, byteArr, ivArr)
 		if sseErr != nil {
 			log.Error("Error creating SSE entry: ", sseErr)
 			return sseErr

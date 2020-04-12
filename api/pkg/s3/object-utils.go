@@ -17,11 +17,11 @@
 package s3
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
-	"fmt"
 )
 
 // validBucket regexp.
@@ -73,10 +73,6 @@ func isValidObjectName(objectName string) bool {
 	}
 	for _, n := range objectName {
 		if (n >= 0 && n <= 31) || (n >= 127 && n <= 255) {
-			return false
-		}
-		c := string(n)
-		if strings.ContainsAny(c, "\\") {
 			return false
 		}
 	}

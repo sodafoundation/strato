@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS `multiparts` (
 
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `objectparts` (
+CREATE TABLE IF NOT EXISTS `objectparts` (
   `bucketname` varchar(255) DEFAULT NULL,
   `objectname` varchar(255) DEFAULT NULL,
   `uploadid` varchar(255) DEFAULT NULL,
@@ -139,7 +139,7 @@ CREATE TABLE `objectparts` (
   `offset` bigint(20) DEFAULT NULL,
   `etag` varchar(255) DEFAULT NULL,
   `lastmodified` datetime DEFAULT NULL,
-   KEY `rowkey` (`bucketname`,`objectname`,`uploadid`,`partnumber`)
+   UNIQUE KEY `rowkey` (`bucketname`,`objectname`,`uploadid`,`partnumber`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 --
@@ -239,10 +239,11 @@ CREATE TABLE IF NOT EXISTS `lifecycle` (
                        `status` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
-CREATE TABLE `bucket_sseopts` (
+CREATE TABLE  IF NOT EXISTS `bucket_sseopts` (
                                   `bucketname` varchar(255) NOT NULL,
                                   `sse` varchar(255) DEFAULT NULL,
                                   `sseserverkey` VARBINARY(255) DEFAULT NULL,
+                                  `sseiv` varbinary(255) DEFAULT NULL,
                                   PRIMARY KEY (`bucketname`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

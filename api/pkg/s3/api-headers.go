@@ -42,12 +42,19 @@ func EncodeResponse(response interface{}) []byte {
 	return bytesBuffer.Bytes()
 }
 
-// Write object header
-func SetObjectHeaders(response *restful.Response, object *pb.Object, contentRange *HttpRange) {
+// Write object header, expTime and ruleId only used for HeadObject
+func SetObjectHeaders(response *restful.Response, object *pb.Object, expTime int64, ruleId string,
+	contentRange *HttpRange) {
 	// set object-related metadata headers
 	w := response.ResponseWriter
 	lastModified := time.Unix(object.LastModified, 0).UTC().Format(http.TimeFormat)
 	response.ResponseWriter.Header().Set("Last-Modified", lastModified)
+
+	if expTime > 0 {
+		timeStr := time.Unix(expTime, 0).UTC().Format(http.TimeFormat)
+		expStr := "expiry-date=\"" + timeStr + "\", rule-id=\"" + ruleId + "\""
+		response.ResponseWriter.Header().Set("x-amz-expiration", expStr)
+	}
 
 	w.Header().Set("Content-Type", object.ContentType)
 	if object.Etag != "" {
@@ -58,8 +65,10 @@ func SetObjectHeaders(response *restful.Response, object *pb.Object, contentRang
 		w.Header().Set(key, val)
 	}
 	//default cache-control is no-store
-	if _, ok := object.CustomAttributes["Cache-Control"]; !ok {
+	if cc, ok := object.CustomAttributes["cache-control"]; !ok {
 		w.Header().Set("Cache-Control", "no-store")
+	} else {
+		w.Header().Set("Cache-Control", cc)
 	}
 
 	w.Header().Set("X-Amz-Object-Type", (&types.Object{Object: object}).ObjectTypeToString())
