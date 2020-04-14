@@ -161,6 +161,8 @@ func (ad *OSSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 }
 
 func (ad *OSSAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Object) (result dscommon.PutResult, err error) {
+	log.Errorf("Copy[Alibaba-OSS] not implemented")
+	err = ErrInternalError
 	return
 }
 
