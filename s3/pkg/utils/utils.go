@@ -57,9 +57,9 @@ const (
 )
 
 const (
-	ALIBABA_STANDARD = "STANDARD"
+	ALIBABA_STANDARD = "Standard"
 	ALIBABA_IA       = "IA"
-	ALIBABA_ARCHIVE  = "ARCHIVE"
+	ALIBABA_ARCHIVE  = "Archive"
 )
 
 //Object Storage Type

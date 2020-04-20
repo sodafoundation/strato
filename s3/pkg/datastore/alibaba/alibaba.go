@@ -20,6 +20,8 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"strings"
 	"time"
 
@@ -63,7 +65,26 @@ func (ad *OSSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 	md5Writer := md5.New()
 	dataReader := io.TeeReader(limitedDataReader, md5Writer)
-	err = out.PutObject(objectId, dataReader, oss.ObjectStorageClass(oss.StorageStandard))
+	if object.Tier == 0 {
+		// default
+		object.Tier = utils.Tier1
+	}
+	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_ALIBABA)
+	if err != nil {
+		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		return result, ErrInternalError
+	}
+	var storageClass oss.StorageClassType
+	switch storClass {
+	case "Standard":
+		storageClass = oss.StorageStandard
+	case "IA":
+		storageClass = oss.StorageIA
+	case "Archive":
+		storageClass = oss.StorageArchive
+
+	}
+	err = out.PutObject(objectId, dataReader, oss.ObjectStorageClass(storageClass))
 	if err != nil {
 		log.Info("Upload to alibaba failed:%v", err)
 		return result, ErrInternalError
@@ -140,9 +161,9 @@ func (ad *OSSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	srcObjectKey := object.BucketName + "/" + object.ObjectKey
 	var StorClass oss.StorageClassType
 	switch *newClass {
-	case "STANDARD_IA":
+	case "IA":
 		StorClass = oss.StorageIA
-	case "GLACIER":
+	case "Archive":
 		StorClass = oss.StorageArchive
 	default:
 		log.Infof("[OSS] unSpport storage class:%s", newClass)
