@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/alibaba"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/aws"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/azure"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/ceph"
