@@ -1,4 +1,4 @@
-# Copyright 2020 The SODA Authors.
+# Copyright 2020 The OpenSDS Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ paths:
         '415':
           description: Unsupported Media Type
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
       requestBody:
         $ref: '#/components/requestBodies/Backend'
     get:
@@ -149,7 +149,7 @@ paths:
                     type: integer
                     example: 1
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
   '/{tenantId}/backends/{backendId}':
     parameters:
       - name: tenantId
@@ -177,7 +177,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Backend'
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist.
     put:
@@ -193,7 +193,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Backend'
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist.
       requestBody:
@@ -221,7 +221,7 @@ paths:
         '400':
           description: Invalid ID supplied
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist.
         '500':
@@ -264,7 +264,7 @@ paths:
                     type: integer
                     example: 1
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
   '/{tenantId}/plans':
     parameters:
       - name: tenantId
@@ -291,7 +291,7 @@ paths:
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
       requestBody:
         $ref: '#/components/requestBodies/Plan'
     get:
@@ -333,7 +333,7 @@ paths:
                     type: integer
                     example: 1
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
   '/{tenantId}/plans/{planId}':
     parameters:
       - name: tenantId
@@ -366,7 +366,7 @@ paths:
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '403':
           description: Forbidden
         '404':
@@ -387,7 +387,7 @@ paths:
                   plan:
                     $ref: '#/components/schemas/Plan'
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist i.e. Plan does not exist.
       requestBody:
@@ -405,7 +405,7 @@ paths:
               schema:
                 type: object
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist i.e. Plan does not exist.
     post:
@@ -426,7 +426,7 @@ paths:
                     description: Id of the Job created for the Plan
                     example: '5eaa86fe6f384d000116d1d5'
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist i.e. Plan does not exist.
   '/{tenantId}/jobs':
@@ -472,7 +472,7 @@ paths:
                     type: integer
                     example: 1
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
   '/{tenantId}/jobs/{jobId}':
     parameters:
       - name: tenantId
@@ -505,7 +505,7 @@ paths:
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '403':
           description: Forbidden
         '404':
@@ -534,7 +534,7 @@ paths:
                   policy:
                     $ref: '#/components/schemas/Policy'
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
       requestBody:
         $ref: '#/components/requestBodies/Policy'
     get:
@@ -562,7 +562,7 @@ paths:
                     type: integer
                     example: 1
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
   '/{tenantId}/policies/{policyId}':
     parameters:
       - name: tenantId
@@ -595,7 +595,7 @@ paths:
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '403':
           description: Forbidden
         '404':
@@ -632,7 +632,7 @@ paths:
         '400':
           description: Invalid ID supplied
         '401':
-          description: Unauthorized token not found in header
+          description: Unauthorized. Token not found in header
   '/':
     parameters:
       - name: bucketName
@@ -687,7 +687,7 @@ paths:
     get:
       tags:
         - s3
-      summary: Get Bucket Objects
+      summary: Get Objects of the Bucket
       operationId: listObjects
       responses:
         '200':
@@ -794,7 +794,7 @@ paths:
       operationId: objectdelete
       responses:
         '200':
-          description: Successful Delete Object
+          description: Successful Deletion of Object
           content:
             application/xml:
               schema:
@@ -852,7 +852,7 @@ components:
       type: object
       properties:
         Id:
-          description: The backend ID, generate by server
+          description: The backend ID, generated by server
           type: string
           example: '5ea809d2553b0f000116be32'
         TenantId:
@@ -929,7 +929,7 @@ components:
       type: object
       properties:
         Id:
-          description: The plan ID, generate by server
+          description: The plan ID, generated by server
           type: string
           example: '5eaa81fd6f384d000116d1d4'
         TenantId:
@@ -1076,14 +1076,14 @@ components:
           type: integer
           example: 100
         RemainSource:
-          description: Flag indicating to keep the content of source bucket
+          description: Flag indicating whether to keep the content of source bucket
           type: boolean
           example: true
     Policy:
       type: object
       properties:
         Id:
-          description: The policy ID, generate by server
+          description: The policy ID, generated by server
           type: string
           example: '5bd6f273b0bdf90001dc91c3'
         TenantId:
