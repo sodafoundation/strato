@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="2397a4b7-6355-404e-bda4-8021f4265188" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectId" id="1VxP9i9YGAnGHSebBtdlzIU7nRj" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/3rdparty/commons-lang3-3.9.jar!/" />
+    <property name="project.structure.last.edited" value="Libraries" />
+    <property name="project.structure.proportion" value="0.15" />
+    <property name="project.structure.side.proportion" value="0.2" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.opensds.jsonmodels.projectsresponses" />
+      <recent name="com.opensds.jsonmodels.requests" />
+      <recent name="com.opensds.jsonmodels" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="com.opensds.Main" />
+      <module name="osdsjunit" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.Main" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
+      <list>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2397a4b7-6355-404e-bda4-8021f4265188" name="Default Changelist" comment="" />
+      <created>1578191622592</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1578191622592</updated>
+      <workItem from="1578191626885" duration="1879000" />
+      <workItem from="1578193540882" duration="9713000" />
+      <workItem from="1578213431209" duration="5041000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="588" y="214" width="800" height="677" key="#Project_Structure" timestamp="1578196535575">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="588" y="214" width="800" height="677" key="#Project_Structure/67.27.1853.1053@67.27.1853.1053" timestamp="1578196535575" />
+    <state x="716" y="256" width="544" height="592" key="#com.intellij.ide.util.MemberChooser" timestamp="1578218285274">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="716" y="256" width="544" height="592" key="#com.intellij.ide.util.MemberChooser/67.27.1853.1053@67.27.1853.1053" timestamp="1578218285274" />
+    <state x="692" y="87" width="592" height="930" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1578219137958">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="692" y="87" width="592" height="930" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1853.1053@67.27.1853.1053" timestamp="1578219137958" />
+    <state x="615" y="296" width="735" height="513" key="FileChooserDialogImpl" timestamp="1578196533971">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="615" y="296" width="735" height="513" key="FileChooserDialogImpl/67.27.1853.1053@67.27.1853.1053" timestamp="1578196533971" />
+    <state width="1807" height="278" key="GridCell.Tab.0.bottom" timestamp="1578219143677">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="278" key="GridCell.Tab.0.bottom/67.27.1853.1053@67.27.1853.1053" timestamp="1578219143677" />
+    <state width="1807" height="278" key="GridCell.Tab.0.center" timestamp="1578219143677">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="278" key="GridCell.Tab.0.center/67.27.1853.1053@67.27.1853.1053" timestamp="1578219143677" />
+    <state width="1807" height="278" key="GridCell.Tab.0.left" timestamp="1578219143677">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="278" key="GridCell.Tab.0.left/67.27.1853.1053@67.27.1853.1053" timestamp="1578219143677" />
+    <state width="1807" height="278" key="GridCell.Tab.0.right" timestamp="1578219143677">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="278" key="GridCell.Tab.0.right/67.27.1853.1053@67.27.1853.1053" timestamp="1578219143677" />
+    <state width="1807" height="344" key="GridCell.Tab.1.bottom" timestamp="1578214747508">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="344" key="GridCell.Tab.1.bottom/67.27.1853.1053@67.27.1853.1053" timestamp="1578214747508" />
+    <state width="1807" height="344" key="GridCell.Tab.1.center" timestamp="1578214747508">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="344" key="GridCell.Tab.1.center/67.27.1853.1053@67.27.1853.1053" timestamp="1578214747508" />
+    <state width="1807" height="344" key="GridCell.Tab.1.left" timestamp="1578214747508">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="344" key="GridCell.Tab.1.left/67.27.1853.1053@67.27.1853.1053" timestamp="1578214747508" />
+    <state width="1807" height="344" key="GridCell.Tab.1.right" timestamp="1578214747508">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="344" key="GridCell.Tab.1.right/67.27.1853.1053@67.27.1853.1053" timestamp="1578214747508" />
+    <state x="482" y="187" key="SettingsEditor" timestamp="1578213419681">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="482" y="187" key="SettingsEditor/67.27.1853.1053@67.27.1853.1053" timestamp="1578213419681" />
+    <state x="722" y="286" width="540" height="524" key="StructurePopup" timestamp="1578197463316">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="722" y="286" width="540" height="524" key="StructurePopup/67.27.1853.1053@67.27.1853.1053" timestamp="1578197463316" />
+    <state width="926" height="527" key="XDebugger.FullValuePopup" timestamp="1578214619846">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="926" height="527" key="XDebugger.FullValuePopup/67.27.1853.1053@67.27.1853.1053" timestamp="1578214619846" />
+    <state x="649" y="380" key="com.intellij.ide.util.TipDialog" timestamp="1578213431507">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="649" y="380" key="com.intellij.ide.util.TipDialog/67.27.1853.1053@67.27.1853.1053" timestamp="1578213431507" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/com/opensds/HttpHandler.java</url>
+          <line>93</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
