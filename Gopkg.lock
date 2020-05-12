@@ -859,7 +859,7 @@
     "github.com/Azure/azure-storage-blob-go/azblob",
     "github.com/BurntSushi/toml",
     "github.com/Shopify/sarama",
-	"github.com/aliyun/aliyun-oss-go-sdk/oss",
+    "github.com/aliyun/aliyun-oss-go-sdk/oss",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",
