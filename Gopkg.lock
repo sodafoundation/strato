@@ -309,7 +309,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:cdb5ce76cd7af19e3d2d5ba9b6458a2ee804f0d376711215dd3df5f51100d423"
+  digest = "1:d0848e4ad994d76a989069e9dc4faeb8eee082c9d7c93aac3df960442d6a508a"
   name = "github.com/hashicorp/go-rootcerts"
   packages = ["."]
   pruneopts = "NUT"
@@ -488,14 +488,6 @@
   revision = "a581a57b513351792b9f21fc8b95d87b1c5a95da"
 
 [[projects]]
-  digest = "1:0677c96a609f7f255d0c65e743a92866518678f46955fd116e4f419f4b19a250"
-  name = "github.com/micro/go-web"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "8373ea64a8063743652142796015afdf090d98db"
-  version = "v0.4.0"
-
-[[projects]]
   digest = "1:326368d4e3f36fe1c74f7ce436529b7042c9190d4d3e50d4589156ae9f865aaa"
   name = "github.com/micro/h2c"
   packages = ["."]
@@ -513,11 +505,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:186721155e7aef08313eec7b1e9d74ccbe9f21a314a3167dbdb7cccd8978dce6"
+  digest = "1:366b59150c83c1b7c33818cb7b79123920d543d78bd23d80121a621776255139"
   name = "github.com/micro/util"
   packages = [
     "go/lib/addr",
-    "go/lib/http",
     "go/lib/net",
     "go/lib/tls",
   ]
@@ -570,14 +561,6 @@
   pruneopts = "NUT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
-
-[[projects]]
-  digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
-  name = "github.com/pborman/uuid"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
-  version = "v1.2"
 
 [[projects]]
   digest = "1:4e9827f31d4fc1ddd732a0e3af4e863d281dd405adb2bfb96a25cc5346a77caf"
@@ -698,7 +681,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:498d0b37a5c7f5664f2e21de8c85c5694ed197cb25ce245bf25cdd18930035e9"
+  digest = "1:371c5253208c059801b1d4b0b96a3dcb258aecb87c22476cdf8cc2b540a4b5a9"
   name = "github.com/ugorji/go"
   packages = ["codec"]
   pruneopts = "NUT"
@@ -889,7 +872,6 @@
     "github.com/micro/go-micro/client",
     "github.com/micro/go-micro/metadata",
     "github.com/micro/go-micro/server",
-    "github.com/micro/go-web",
     "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
