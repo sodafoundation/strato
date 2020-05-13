@@ -18,7 +18,7 @@ import (
 	"os"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-web"
+	"github.com/micro/go-micro/v2/web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
