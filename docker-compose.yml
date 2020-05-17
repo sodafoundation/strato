@@ -34,7 +34,7 @@ services:
       - MICRO_SERVER_ADDRESS=:8089
       - MICRO_REGISTRY=mdns
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://10.10.3.154/identity
+      - OS_AUTH_URL=http://192.168.20.163/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
@@ -55,7 +55,7 @@ services:
       - MICRO_SERVER_ADDRESS=:8090
       - MICRO_REGISTRY=mdns
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://10.10.3.154/identity
+      - OS_AUTH_URL=http://192.168.20.163/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
@@ -79,6 +79,22 @@ services:
     command: redis-server
     ports:
       - "6379:6379"
+
+
+  block:
+    image: opensdsio/multi-cloud-block
+    ports:
+      - 8091:8091
+    environment:
+      - MICRO_REGISTRY=mdns
+      - DB_HOST=datastore:27017
+      - SVC_FLAG=block
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
+      - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+    depends_on:
+      - s3
 
   s3:
     image: opensdsio/multi-cloud-s3
@@ -109,6 +125,20 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - LIFECYCLE_CRON_CONFIG=0 0 0 * * ?
     volumes:
+      - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
+      - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+    depends_on:
+      - zookeeper
+      - kafka
+      - s3
+
+  datamover:
+    image: opensdsio/multi-cloud-datamover
+    volumes:
+      - /etc/ssl/certs:/etc/ssl/certs
+      - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf

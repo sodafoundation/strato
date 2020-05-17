@@ -20,11 +20,11 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
              --always --dirty --abbrev=8)
 BUILD_TGT := opensds-multicloud-$(VERSION)-linux-amd64
 
-.PHONY: all build prebuild api backend s3 dataflow docker clean
+.PHONY: all build prebuild api backend s3 dataflow block docker clean
 
 all: build
 
-build: api backend s3 dataflow datamover
+build: api backend s3 dataflow datamover block
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -44,6 +44,9 @@ dataflow: prebuild
 datamover: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/multi-cloud/datamover/cmd
 
+block: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/block github.com/opensds/multi-cloud/block/cmd
+
 docker: build
 
 	cp $(BUILD_DIR)/api api
@@ -53,6 +56,10 @@ docker: build
 	cp $(BUILD_DIR)/backend backend
 	chmod 755 backend/backend
 	docker build backend -t opensdsio/multi-cloud-backend:latest
+
+	cp $(BUILD_DIR)/block block
+	chmod 755 block/block
+	docker build block -t opensdsio/multi-cloud-block:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3

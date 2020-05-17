@@ -1,0 +1,46 @@
+// Copyright 2020 The OpenSDS Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+service Block {
+    rpc ListVolumes (VolumeRequest) returns (ListVolumesResponse) {
+    }
+}
+
+message Volume {
+    string  name = 1;
+    string  volId = 2;
+    int64   volSize = 3;
+    string  volType = 4;
+    string  volStatus = 5;
+    bool    volMultiAttachEnabled = 6;
+    bool    volEncrypted = 7;
+
+    // TODO: Add more attributes to make it generic Volume structure
+}
+
+message ListVolumesResponse {
+    int32 errorCode = 1;
+    repeated Volume volumes = 2;
+}
+
+message VolumeRequest {
+    string backendId = 1;
+}
+
+message BaseRequest {
+    string id = 1;
+}
+
