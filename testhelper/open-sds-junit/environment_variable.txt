@@ -1,0 +1,4 @@
+// Set your provider details here
+src\main\resources\inputs\createbucket
+// Before test execute setup this variable in environment variable
+HOST_IP=***.***.*.***;INPUT_PATH=D:/SODA-TestProject/OpenSdsGradle;PORT_TENANT_ID=:****;PORT=:****

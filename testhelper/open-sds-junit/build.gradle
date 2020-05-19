@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+}
+
+group 'www.opensds.io'
+version '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation('junit:junit:4.13')
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation("com.squareup.okhttp3:okhttp:4.6.0")
+    compile group: 'org.json', name: 'json', version: '20090211'
+    implementation("com.google.guava:guava:29.0-jre")
+
+//    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.475')
+//    implementation 'com.amazonaws:aws-java-sdk-s3'
+    compile group: 'uk.co.lucasweb', name: 'aws-v4-signer-java', version: '1.2'
+}
