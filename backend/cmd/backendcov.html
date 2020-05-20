@@ -53,51 +53,51 @@
 		<div id="topbar">
 			<div id="nav">
 				<select id="files">
-				
+
 				<option value="file0">github.com/opensds/multi-cloud/api/pkg/common/common.go (0.0%)</option>
-				
+
 				<option value="file1">github.com/opensds/multi-cloud/api/pkg/context/context.go (0.0%)</option>
-				
+
 				<option value="file2">github.com/opensds/multi-cloud/api/pkg/utils/obs/auth.go (0.0%)</option>
-				
+
 				<option value="file3">github.com/opensds/multi-cloud/api/pkg/utils/obs/client.go (0.0%)</option>
-				
+
 				<option value="file4">github.com/opensds/multi-cloud/api/pkg/utils/obs/conf.go (0.0%)</option>
-				
+
 				<option value="file5">github.com/opensds/multi-cloud/api/pkg/utils/obs/convert.go (0.0%)</option>
-				
+
 				<option value="file6">github.com/opensds/multi-cloud/api/pkg/utils/obs/error.go (0.0%)</option>
-				
+
 				<option value="file7">github.com/opensds/multi-cloud/api/pkg/utils/obs/http.go (0.0%)</option>
-				
+
 				<option value="file8">github.com/opensds/multi-cloud/api/pkg/utils/obs/log.go (87.1%)</option>
-				
+
 				<option value="file9">github.com/opensds/multi-cloud/api/pkg/utils/obs/temporary.go (0.0%)</option>
-				
+
 				<option value="file10">github.com/opensds/multi-cloud/api/pkg/utils/obs/trait.go (0.0%)</option>
-				
+
 				<option value="file11">github.com/opensds/multi-cloud/api/pkg/utils/obs/util.go (0.0%)</option>
-				
+
 				<option value="file12">github.com/opensds/multi-cloud/backend/cmd/main.go (88.9%)</option>
-				
+
 				<option value="file13">github.com/opensds/multi-cloud/backend/pkg/db/db.go (57.1%)</option>
-				
+
 				<option value="file14">github.com/opensds/multi-cloud/backend/pkg/db/drivers/mongo/mongo.go (41.0%)</option>
-				
+
 				<option value="file15">github.com/opensds/multi-cloud/backend/pkg/service/service.go (35.6%)</option>
-				
+
 				<option value="file16">github.com/opensds/multi-cloud/backend/proto/backend.micro.go (11.8%)</option>
-				
+
 				<option value="file17">github.com/opensds/multi-cloud/backend/proto/backend.pb.go (11.7%)</option>
-				
+
 				</select>
 			</div>
 			<div id="legend">
 				<span>not tracked</span>
-			
+
 				<span class="cov0">not covered</span>
 				<span class="cov8">covered</span>
-			
+
 			</div>
 		</div>
 		<div id="content">
@@ -262,7 +262,7 @@ func InitCtxWithVal(request *restful.Request, md map[string]string) context.Cont
         return metadata.NewContext(context.Background(), md)
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file1" style="display: none">// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -391,7 +391,7 @@ func (ctx *Context) ToJson() string <span class="cov0" title="0">{
         <span class="cov0" title="0">return string(b)</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file2" style="display: none">package obs
 
 import (
@@ -745,7 +745,7 @@ func v4Auth(ak, sk, region, method, canonicalizedUrl, queryUrl string, headers m
         return ret</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file3" style="display: none">package obs
 
 import (
@@ -1556,7 +1556,7 @@ func (obsClient ObsClient) CopyPart(input *CopyPartInput) (output *CopyPartOutpu
         <span class="cov0" title="0">return</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file4" style="display: none">package obs
 
 import (
@@ -1912,7 +1912,7 @@ func getQueryUrl(key, value string) string <span class="cov0" title="0">{
         return queryUrl
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file5" style="display: none">package obs
 
 import (
@@ -2480,7 +2480,7 @@ func ParseResponseToObsError(resp *http.Response) error <span class="cov0" title
         return obsError
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file6" style="display: none">package obs
 
 import (
@@ -2503,7 +2503,7 @@ func (err ObsError) Error() string <span class="cov0" title="0">{
                 err.Status, err.Code, err.Message, err.RequestId)
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file7" style="display: none">package obs
 
 import (
@@ -2920,7 +2920,7 @@ func (delegate *connDelegate) SetWriteDeadline(t time.Time) error <span class="c
         return delegate.conn.SetWriteDeadline(t)
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file8" style="display: none">// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -3104,7 +3104,7 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) <span class="
         return []byte(output), nil</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file9" style="display: none">package obs
 
 import (
@@ -3772,7 +3772,7 @@ func (obsClient ObsClient) CopyPartWithSignedUrl(signedUrl string, actualSignedR
         <span class="cov0" title="0">return</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file10" style="display: none">package obs
 
 import (
@@ -4382,7 +4382,7 @@ type fileReaderWrapper struct {
         filePath string
 }
 </pre>
-		
+
 		<pre class="file" id="file11" style="display: none">package obs
 
 import (
@@ -4735,7 +4735,7 @@ func getTemporaryAuthorization(ak, sk, method, bucketName, objectKey, signature 
         <span class="cov0" title="0">return</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file12" style="display: none">// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -4784,7 +4784,7 @@ func main() <span class="cov8" title="1">{
         }</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file13" style="display: none">// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -4839,7 +4839,7 @@ func Exit() <span class="cov8" title="1">{
         Repo.Close()
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file14" style="display: none">// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -5023,7 +5023,7 @@ func (repo *mongoRepository) Close() <span class="cov8" title="1">{
         repo.session.Close()
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file15" style="display: none">// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -5233,6 +5233,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
                         Name:        constants.BackendTypeYIGS3,
                         Description: "YIG Storage",
                 },
+                {
+                        Name:        constants.BackendTypeAlibaba,
+                        Description: "Alibaba OSS Object Storage",
+                },
         }
 
         // Filter by name
@@ -5263,7 +5267,7 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
         return nil</span>
 }
 </pre>
-		
+
 		<pre class="file" id="file16" style="display: none">// Code generated by protoc-gen-micro. DO NOT EDIT.
 // source: backend.proto
 
@@ -5462,7 +5466,7 @@ func (h *backendHandler) ListType(ctx context.Context, in *ListTypeRequest, out 
         return h.BackendHandler.ListType(ctx, in, out)
 }</span>
 </pre>
-		
+
 		<pre class="file" id="file17" style="display: none">// Code generated by protoc-gen-go. DO NOT EDIT.
 // source: backend.proto
 
@@ -5960,7 +5964,7 @@ var fileDescriptor0 = []byte{
         0xe0, 0x3d, 0x23, 0x07, 0x00, 0x00,
 }
 </pre>
-		
+
 		</div>
 	</body>
 	<script>
