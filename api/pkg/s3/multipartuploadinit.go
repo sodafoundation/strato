@@ -26,7 +26,7 @@ import (
 func (s *APIService) MultiPartUploadInit(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
-	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
 
 	log.Infof("received request: multipart init, objectkey=%s, bucketName=%s\n:",
 		objectKey, bucketName)
