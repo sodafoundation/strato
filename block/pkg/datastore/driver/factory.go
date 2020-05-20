@@ -20,7 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type DriverFactory interface {
 	CreateDriver(detail *backendpb.BackendDetail) (StorageDriver, error)
 }
@@ -33,8 +32,8 @@ func RegisterDriverFactory(driverType string, factory DriverFactory) {
 }
 
 func CreateStorageDriver(driverType string, detail *backendpb.BackendDetail) (StorageDriver, error) {
-    log.Infof("Creating storage driver factory with driver type [%s]", driverType)
-    if factory, ok := driverFactoryMgr[driverType]; ok {
+	log.Infof("Creating storage driver factory with driver type [%s]", driverType)
+	if factory, ok := driverFactoryMgr[driverType]; ok {
 		return factory.CreateDriver(detail)
 	}
 	return nil, exp.NoSuchType.Error()

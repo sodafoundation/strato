@@ -17,15 +17,15 @@ package block
 import (
 	//"time"
 
+	"bytes"
+	"encoding/xml"
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	block "github.com/opensds/multi-cloud/block/proto"
 	log "github.com/sirupsen/logrus"
-        "bytes"
-        "strconv"
-	"encoding/xml"
-        "net/http"
+	"net/http"
+	"strconv"
 )
 
 func EncodeResponse(response interface{}) []byte {
@@ -48,21 +48,21 @@ func WriteSuccessResponse(response *restful.Response, data []byte) {
 	response.Flush()
 }
 
-func (s *APIService) VolumeList(request *restful.Request, response *restful.Response) {
+func (s *APIService) ListVolumes(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "volume:list") {
 		return
 	}
 	log.Infof("Received request to list volumes")
 
-    backend := request.PathParameter("backendId")
+	backend := request.PathParameter("backendId")
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.blockClient.ListVolumes(ctx, &block.VolumeRequest{BackendId: backend})
-	if (err != nil) {
-	    //TODO: Add proper log messages and log handling
-	    log.Errorf("List volumes failed with error=%v", err)
-            response.WriteError(http.StatusInternalServerError, err)
-            return
-        }
+	if err != nil {
+		//TODO: Add proper log messages and log handling
+		log.Errorf("List volumes failed with error=%v", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
 
 	// write response
 	log.Infoln("Listed Volumes successfully\n")

@@ -18,10 +18,10 @@ import (
 	"fmt"
 
 	"github.com/micro/go-micro"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	handler "github.com/opensds/multi-cloud/block/pkg/service"
 	pb "github.com/opensds/multi-cloud/block/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 )
 
 func main() {

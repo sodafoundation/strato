@@ -16,7 +16,7 @@ package common
 
 import (
 	_ "context"
-        //"github.com/opensds/multi-cloud/block/pkg/datastore/driver"
+	//"github.com/opensds/multi-cloud/block/pkg/datastore/driver"
 )
 
 func TrimQuot(in string) string {
@@ -34,4 +34,3 @@ func TrimQuot(in string) string {
 
 	return s
 }
-

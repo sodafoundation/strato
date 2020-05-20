@@ -22,5 +22,6 @@ import (
 //RegisterRouter - route request to appropriate method
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenanatId}/storages/{backendId}/volumes").To(handler.RouteVolumeList)).Doc("List all block devices")
+	ws.Route(ws.GET("/v1/{tenantId}/backend/{backendId}/volumes").To(handler.RouteVolumeList)).Doc("List all block devices")
+
 }

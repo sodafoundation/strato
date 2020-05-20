@@ -16,8 +16,8 @@ package driver
 
 import (
 	"context"
+	dscommon "github.com/opensds/multi-cloud/block/pkg/datastore/common"
 	_ "github.com/opensds/multi-cloud/block/proto"
-    dscommon "github.com/opensds/multi-cloud/block/pkg/datastore/common"
 )
 
 // define the common driver interface for io.

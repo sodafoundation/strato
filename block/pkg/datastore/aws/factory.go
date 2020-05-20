@@ -27,18 +27,18 @@ type AwsDriverFactory struct {
 }
 
 func (factory *AwsDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
-    log.Infof("Entered to create driver")
+	log.Infof("Entered to create driver")
 	AccessKeyID := backend.Access
 	AccessKeySecret := backend.Security
 	region := backend.Region
 
-    // Create AWS session with the AWS cloud credentials
+	// Create AWS session with the AWS cloud credentials
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(AccessKeyID, AccessKeySecret, ""),
 	})
 	if err != nil {
-        // TODO: Add AWSErrors
+		// TODO: Add AWSErrors
 		log.Errorf("Error in getting the Session")
 		return nil, err
 	}

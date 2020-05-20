@@ -20,15 +20,15 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
-	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/block"
+	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -56,8 +56,6 @@ func main() {
 		s3ws.Filter(context.FilterFactory())
 		s3ws.Filter(signer.FilterFactory())
 		s3.RegisterRouter(s3ws)
-        block.RegisterRouter(s3ws)
-
 		wc.Add(s3ws)
 	} else {
 		ws := new(restful.WebService)
@@ -68,7 +66,7 @@ func main() {
 
 		backend.RegisterRouter(ws)
 		dataflow.RegisterRouter(ws)
-        block.RegisterRouter(ws)
+		block.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())

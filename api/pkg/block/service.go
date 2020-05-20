@@ -15,25 +15,34 @@
 package block
 
 import (
+	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/client"
+	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/proto"
-	//log "github.com/sirupsen/logrus"
 )
 
 const (
-	blockService      = "block"
-	backendService    = "backend"
+	blockService   = "block"
+	backendService = "backend"
 )
 
 type APIService struct {
-	blockClient      block.BlockService
-        backendClient    backend.BackendService
+	blockClient   block.BlockService
+	backendClient backend.BackendService
 }
 
 func NewAPIService(c client.Client) *APIService {
 	return &APIService{
-		blockClient:      block.NewBlockService(blockService, c),
-                backendClient:    backend.NewBackendService(backendService, c),
+		blockClient:   block.NewBlockService(blockService, c),
+		backendClient: backend.NewBackendService(backendService, c),
 	}
+}
+
+func (s *APIService) RouteVolumeList(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "volume:list") {
+		return
+	}
+
+	s.ListVolumes(request, response)
 }

@@ -18,17 +18,16 @@ import (
 	"os"
 	_ "strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/client"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	_ "github.com/opensds/multi-cloud/block/pkg/datastore/aws"
+	pb "github.com/opensds/multi-cloud/block/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	_ "github.com/opensds/multi-cloud/block/pkg/datastore/aws"
-        pb "github.com/opensds/multi-cloud/block/proto"
-	backend "github.com/opensds/multi-cloud/backend/proto"
+	log "github.com/sirupsen/logrus"
 )
 
-
-type blockService struct{
+type blockService struct {
 	backendClient backend.BackendService
 }
 
@@ -39,6 +38,6 @@ func NewBlockService() pb.BlockHandler {
 
 	log.Infof("Init block service finished.\n")
 	return &blockService{
-	    backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		backendClient: backend.NewBackendService("backend", client.DefaultClient),
 	}
 }

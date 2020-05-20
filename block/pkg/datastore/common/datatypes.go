@@ -15,11 +15,11 @@
 package common
 
 type ListVolumes struct {
-    Name string
-    VolId string
-    VolSize int64
-    VolType string
-    VolStatus string
-    VolMultiAttachEnabled bool
-    VolEncrypted bool
+	Name                  string
+	VolId                 string
+	VolSize               int64
+	VolType               string
+	VolStatus             string
+	VolMultiAttachEnabled bool
+	VolEncrypted          bool
 }
