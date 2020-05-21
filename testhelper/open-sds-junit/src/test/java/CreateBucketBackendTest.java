@@ -102,7 +102,16 @@ class CreateBucketBackendTest {
         }
     }
 
-    public boolean testGetListBuckets(String bName, SignatureKey signatureKey)
+    /**
+     * Get bucket list.
+     *
+     * @param bName Bucket name
+     * @param signatureKey Signature key object
+     * @return boolean If bucket is exist return true else false
+     * @throws JSONException Json exception
+     * @throws IOException Io exception
+     */
+    private boolean testGetListBuckets(String bName, SignatureKey signatureKey)
             throws JSONException, IOException {
         Response listBucketResponse = getHttpHandler().getBuckets(signatureKey);
         int resCode = listBucketResponse.code();
@@ -270,6 +279,195 @@ class CreateBucketBackendTest {
                 inputHolder);
         Logger.logObject("Backend Input: "+content);
         assertEquals("Request body with empty value:Response code not matched:",code, 400);
+    }
+
+    @Test
+    @Order(7)
+    @DisplayName("Test uploading object in a bucket")
+    public void testUploadObject() throws IOException, JSONException {
+        // load input files for each type
+        for (Type t : getTypesHolder().getTypes()) {
+            List<File> listOfIInputsForType =
+                    Utils.listFilesMatchingBeginsWithPatternInPath(t.getName(),
+                            Constant.CREATE_BUCKET_PATH);
+            for (File file : listOfIInputsForType) {
+                String content = Utils.readFileContentsAsString(file);
+                assertNotNull(content);
+                List<File> listOfIBucketInputs =
+                        Utils.listFilesMatchingBeginsWithPatternInPath("bucket",
+                                Constant.CREATE_BUCKET_PATH);
+                // Get bucket name.
+                for (File bucketFile : listOfIBucketInputs) {
+                    String bucketContent = Utils.readFileContentsAsString(bucketFile);
+                    assertNotNull(bucketContent);
+                    String bucketName = bucketFile.getName().substring(bucketFile.getName().indexOf("_") + 1,
+                            bucketFile.getName().indexOf("."));
+                    // Get object for upload.
+                    File fileRawData = new File(Constant.RAW_DATA_PATH);
+                    File[] files = fileRawData.listFiles();
+                    String mFileName = null;
+                    File mFilePath = null;
+                    for (File fileName : files) {
+                        mFileName = fileName.getName();
+                        mFilePath = fileName;
+
+                        SignatureKey signatureKey = getHttpHandler().getAkSkList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                                getAuthTokenHolder().getToken().getProject().getId());
+                        int cbCode = getHttpHandler().uploadObject(signatureKey,
+                                bucketName, mFileName, mFilePath);
+                        assertEquals("Uploaded object failed", cbCode, 200);
+
+                        //Verifying object is uploaded in bucket.
+                        boolean isUploaded = testGetListOfObjectFromBucket(bucketName, mFileName, signatureKey);
+                        assertTrue(isUploaded,"Object is not uploaded");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Get List of object from bucket
+     *
+     * @param bucketName   bucket name
+     * @param fileName     file name
+     * @param signatureKey signature key object
+     * @return boolean object is upload then true else false
+     * @throws JSONException json exception
+     * @throws IOException   io exception
+     */
+    private boolean testGetListOfObjectFromBucket(String bucketName, String fileName,
+                                                  SignatureKey signatureKey)
+            throws JSONException, IOException {
+        Response listObjectResponse = getHttpHandler().getBucketObjects(bucketName, signatureKey);
+        int resCode = listObjectResponse.code();
+        String resBody = listObjectResponse.body().string();
+        Logger.logString("Response Code: " + resCode);
+        Logger.logString("Response: " + resBody);
+        assertEquals("Get list of object failed", resCode, 200);
+        JSONObject jsonObject = XML.toJSONObject(resBody);
+        JSONObject jsonObjectListBucket = jsonObject.getJSONObject("ListBucketResult");
+        boolean isUploaded = false;
+        if (jsonObjectListBucket.has("Contents")) {
+            if (jsonObjectListBucket.get("Contents") instanceof JSONArray) {
+                JSONArray objects = jsonObjectListBucket.getJSONArray("Contents");
+                for (int i = 0; i < objects.length(); i++) {
+                    if (!TextUtils.isEmpty(objects.getJSONObject(i).get("Key").toString())) {
+                        if (objects.getJSONObject(i).get("Key").toString().equals(fileName)) {
+                            isUploaded = true;
+                        }
+                    }
+                }
+            } else {
+                if (!TextUtils.isEmpty(jsonObjectListBucket.getJSONObject("Contents")
+                        .get("Key").toString())) {
+                    if (jsonObjectListBucket.getJSONObject("Contents").get("Key").toString()
+                            .equals(fileName)) {
+                        isUploaded = true;
+                    }
+                }
+            }
+        }
+        return isUploaded;
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("Test uploading object failed scenario")
+    public void testUploadObjectFailed(){
+        File fileRawData = new File(Constant.RAW_DATA_PATH);
+        File[] files = fileRawData.listFiles();
+        String mFileName = null;
+        File mFilePath = null;
+        for (File fileName : files) {
+            mFileName = fileName.getName();
+            mFilePath = fileName;
+        }
+        SignatureKey signatureKey = getHttpHandler().getAkSkList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                getAuthTokenHolder().getToken().getProject().getId());
+        int cbCode = getHttpHandler().uploadObject(signatureKey,
+                "bucketName", mFileName, mFilePath);
+        System.out.println("Verifying Upload object with non existing bucket");
+        assertEquals("Upload object with non existing bucket: Response code not matched", cbCode, 404);
+
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket",
+                        Constant.CREATE_BUCKET_PATH);
+        // Get bucket name.
+        for (File bucketFile : listOfIBucketInputs) {
+            String bucketName = bucketFile.getName().substring(bucketFile.getName().indexOf("_") + 1,
+                    bucketFile.getName().indexOf("."));
+            int code = getHttpHandler().uploadObject(signatureKey,
+                    bucketName, "", mFilePath);
+            System.out.println("Verifying upload object in existing bucket with file name is empty");
+            assertEquals("Upload object with existing bucket with file name empty: Response code not matched"
+                    , code, 400);
+        }
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("Test verifying download non exist file")
+    public void testDownloadNonExistFile() throws IOException {
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket",
+                        Constant.CREATE_BUCKET_PATH);
+        SignatureKey signatureKey = getHttpHandler().getAkSkList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                getAuthTokenHolder().getToken().getProject().getId());
+        for (File bucketFile : listOfIBucketInputs) {
+            String bucketContent = Utils.readFileContentsAsString(bucketFile);
+            assertNotNull(bucketContent);
+            String fileName = "download_image.jpg";
+            String bucketName = bucketFile.getName().substring(bucketFile.getName().indexOf("_") + 1,
+                    bucketFile.getName().indexOf("."));
+            Response response = getHttpHandler().downloadObject(signatureKey,
+                    bucketName, "23455", fileName);
+            int code = response.code();
+            String body = response.body().string();
+            Logger.logString("Response Code: " + code);
+            Logger.logString("Response: " + body);
+            assertEquals("Downloading non exist file: ", code, 404);
+        }
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("Test verifying download file from non exist bucket")
+    public void testDownloadFileFromNonExistBucket() throws IOException {
+        String dFileName = "download_image.jpg";
+        File fileRawData = new File(Constant.RAW_DATA_PATH);
+        File[] files = fileRawData.listFiles();
+        String mFileName = null;
+        for (File fileName : files) {
+            mFileName = fileName.getName();
+        }
+        SignatureKey signatureKey = getHttpHandler().getAkSkList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                getAuthTokenHolder().getToken().getProject().getId());
+        Response response = getHttpHandler().downloadObject(signatureKey,
+                "hfhfhd", mFileName, dFileName);
+        int code = response.code();
+        String body = response.body().string();
+        Logger.logString("Response Code: " + code);
+        Logger.logString("Response: " + body);
+        assertEquals("Downloading file from non exist bucket: ", code, 404);
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("Test verifying download file from non exist bucket and file name")
+    public void testDownloadNonExistBucketAndFile() throws IOException {
+        String fileName = "download_image.jpg";
+        System.out.println("Verifying download file from non exist bucket and file name");
+        SignatureKey signatureKey = getHttpHandler().getAkSkList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                getAuthTokenHolder().getToken().getProject().getId());
+        Response response = getHttpHandler().downloadObject(signatureKey,
+                "ghjhb", "yuyiyh", fileName);
+        int code = response.code();
+        String body = response.body().string();
+        Logger.logString("Response Code: " + code);
+        Logger.logString("Response: " + body);
+        assertEquals("Downloading file from non exist bucket and file name: ", code, 404);
+        assertEquals("Response message is not valid, bucket and filename not exist: ", body);
     }
 }
 

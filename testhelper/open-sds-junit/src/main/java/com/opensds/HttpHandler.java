@@ -12,28 +12,33 @@ import com.opensds.jsonmodels.logintokensrequests.*;
 import com.opensds.jsonmodels.tokensresponses.TokenHolder;
 import com.opensds.jsonmodels.typesresponse.TypesHolder;
 import com.opensds.utils.*;
+import com.opensds.utils.okhttputils.OkHttpRequests;
 import com.opensds.utils.signature.SodaV4Signer;
 import okhttp3.*;
+import okio.BufferedSink;
+import okio.Okio;
 import uk.co.lucasweb.aws.v4.signer.Header;
 
-public class HttpHandler {
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.opensds.utils.HeadersName.*;
+
+public class HttpHandler extends OkHttpRequests {
     private OkHttpClient client = new OkHttpClient();
 
-    public SignatureKey getAkSkList(String x_auth_token, String userId) {
+    public SignatureKey getAkSkList(String xAuthToken, String userId) {
         SignatureKey signatureKey = new SignatureKey();
         String url = ConstantUrl.getInstance().getAksList(userId);
         Logger.logString("URL: " + url);
         try {
             Gson gson = new Gson();
-            Request request = new Request.Builder()
-                    .url(url)
-                    .get()
-                    .addHeader(HeadersName.CONTENT_TYPE, HeadersName.CONTENT_TYPE_JSON)
-                    .addHeader(HeadersName.X_AUTH_TOKEN, x_auth_token)
-                    .build();
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            Response response = client.newCall(request).execute();
+            Map<String, String> headersMap = new HashMap<>();
+            headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+            headersMap.put(X_AUTH_TOKEN, xAuthToken);
+            Headers  headers = Headers.of(headersMap);
+            Response response = getCall(client, url, headers);
             String responseBody = response.body().string();
             Logger.logString("Response: " + responseBody);
             AKSKHolder akskHolder = gson.fromJson(responseBody, AKSKHolder.class);
@@ -62,12 +67,10 @@ public class HttpHandler {
             Auth auth = new Auth();
             auth.setIdentity(new Identity());
             auth.getIdentity().getMethods().add("password");
-
             auth.getIdentity().setPassword(new Password());
             auth.getIdentity().getPassword().setUser(new User());
             auth.getIdentity().getPassword().getUser().setName("admin");
             auth.getIdentity().getPassword().getUser().setPassword("opensds@123");
-
             auth.getIdentity().getPassword().getUser().setDomain(new Domain());
             auth.getIdentity().getPassword().getUser().getDomain().setName("Default");
 
@@ -75,23 +78,19 @@ public class HttpHandler {
             authHolder.setAuth(auth);
 
             Gson gson = new Gson();
-            RequestBody body = RequestBody.create(gson.toJson(authHolder),
+            RequestBody requestBody = RequestBody.create(gson.toJson(authHolder),
                     MediaType.parse("application/json; charset=utf-8"));
             String url = ConstantUrl.getInstance().getTokenLogin();
             Logger.logString("URL: " + url);
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(body)
-                    .addHeader(HeadersName.CONTENT_TYPE, HeadersName.CONTENT_TYPE_JSON)
-                    .build();
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            Response response = client.newCall(request).execute();
+            Map<String, String> headersMap = new HashMap<>();
+            headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+            Headers  headers = Headers.of(headersMap);
+            Response response = postCall(client, url, requestBody, headers);
             String responseBody = response.body().string();
             Logger.logString("Response code: " + response.code());
             Logger.logString("Response body: " + responseBody);
             tokenHolder = gson.fromJson(responseBody, TokenHolder.class);
-            tokenHolder.setResponseHeaderSubjectToken(response.header("X-Subject-Token"));
+            tokenHolder.setResponseHeaderSubjectToken(response.header(X_SUBJECT_TOKEN));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -116,24 +115,20 @@ public class HttpHandler {
             authHolder.setAuth(auth);
 
             Gson gson = new Gson();
-            RequestBody body = RequestBody.create(gson.toJson(authHolder),
-                    MediaType.parse("application/json; charset=utf-8"));
+            RequestBody requestBody = RequestBody.create(gson.toJson(authHolder),
+                    MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
             String url = ConstantUrl.getInstance().getTokenLogin();
             Logger.logString("URL: " + url);
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(body)
-                    .addHeader(HeadersName.CONTENT_TYPE, HeadersName.CONTENT_TYPE_JSON)
-                    .build();
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            Response response = client.newCall(request).execute();
+            Map<String, String> headersMap = new HashMap<>();
+            headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+            Headers  headers = Headers.of(headersMap);
+            Response response = postCall(client, url, requestBody, headers);
             String responseBody = response.body().string();
             Logger.logString("Response code: " + response.code());
             Logger.logString("Response body: " + responseBody);
             tokenHolder = new com.opensds.jsonmodels.authtokensresponses.AuthTokenHolder();
             tokenHolder = gson.fromJson(responseBody, com.opensds.jsonmodels.authtokensresponses.AuthTokenHolder.class);
-            tokenHolder.setResponseHeaderSubjectToken(response.header("X-Subject-Token"));
+            tokenHolder.setResponseHeaderSubjectToken(response.header(X_SUBJECT_TOKEN));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -146,14 +141,11 @@ public class HttpHandler {
             Gson gson = new Gson();
             String url = ConstantUrl.getInstance().getTypesUrl(projId);
             Logger.logString("URL: " + url);
-            Request request = new Request.Builder()
-                    .url(url)
-                    .addHeader(HeadersName.CONTENT_TYPE, HeadersName.CONTENT_TYPE_JSON)
-                    .addHeader(HeadersName.X_AUTH_TOKEN, x_auth_token)
-                    .build();
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            Response response = client.newCall(request).execute();
+            Map<String, String> headersMap = new HashMap<>();
+            headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+            headersMap.put(X_AUTH_TOKEN, x_auth_token);
+            Headers headers = Headers.of(headersMap);
+            Response response = getCall(client, url, headers);
             String responseBody = response.body().string();
             Logger.logString("Response code: " + response.code());
             Logger.logString("Response body: " + responseBody);
@@ -168,22 +160,17 @@ public class HttpHandler {
         int code = -1;
         try {
             Gson gson = new Gson();
-            RequestBody body = RequestBody.create(gson.toJson(inputHolder),
-                    MediaType.parse("application/json; charset=utf-8"));
+            RequestBody requestBody = RequestBody.create(gson.toJson(inputHolder),
+                    MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
             String url = ConstantUrl.getInstance().getAddBackendUrl(projId);
             Logger.logString("URL: " + url);
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(body)
-                    .addHeader(HeadersName.CONTENT_TYPE, HeadersName.CONTENT_TYPE_JSON)
-                    .addHeader(HeadersName.X_AUTH_TOKEN, x_auth_token)
-                    .build();
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            Response response = client.newCall(request).execute();
+            Map<String, String> headersMap = new HashMap<>();
+            headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+            headersMap.put(X_AUTH_TOKEN, x_auth_token);
+            Headers headers = Headers.of(headersMap);
+            Response response = postCall(client, url, requestBody, headers);
             code = response.code();
             Logger.logString("Response code: " + code);
-            Logger.logString("Response body: " + response.body().string());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -193,33 +180,11 @@ public class HttpHandler {
     public int createBucket(CreateBucketFileInput input, String bucketName, SignatureKey signatureKey) {
         int code = -1;
         try {
-            RequestBody body = RequestBody.create(input.getXmlPayload(),
-                    MediaType.parse("application/xml"));
-            String payload = BinaryUtils.toHex(BinaryUtils.hash(input.getXmlPayload()));
-            String date = Utils.getDate();
             String url = ConstantUrl.getInstance().getCreateBucketUrl(bucketName);
-            Logger.logString("URL: " + url);
-            String host = Utils.getHost(url);
-            Header[] headerList = new Header[]{new Header(HeadersName.HOST, host),
-                    new Header(HeadersName.X_AMZ_DATE, date),
-                    new Header(HeadersName.X_AMZ_CONTENT_SHA256, payload)};
-            String authorization = SodaV4Signer.getSignature("PUT", url, signatureKey.getAccessKey(),
-                    signatureKey.getSecretAccessKey(), payload, signatureKey.getRegionName(), headerList);
-            Logger.logString("Authorization: " + authorization);
-
-            Request request = new Request.Builder()
-                    .url(url)
-                    .put(body)
-                    .header(HeadersName.HOST, host)
-                    .header(HeadersName.AUTHORIZATION, authorization)
-                    .header(HeadersName.X_AMZ_CONTENT_SHA256, payload)
-                    .header(HeadersName.CONTENT_TYPE, HeadersName.CONTENT_TYPE_XML)
-                    .header(HeadersName.X_AMZ_DATE, date)
-                    .build();
-
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            Response response = client.newCall(request).execute();
+            RequestBody requestBody = RequestBody.create(input.getXmlPayload(),
+                    MediaType.parse(CONTENT_TYPE_XML));
+            String payload = BinaryUtils.toHex(BinaryUtils.hash(input.getXmlPayload()));
+            Response response = putCallResponse(client, url, payload, requestBody, signatureKey);
             code = response.code();
             Logger.logString("Response Code: " + code);
             Logger.logString("Response: " + response.body().string());
@@ -230,29 +195,43 @@ public class HttpHandler {
     }
 
     public Response getBuckets(SignatureKey signatureKey) {
-        Response response = null;
         String url = ConstantUrl.getInstance().getListBucketUrl();
-        String payload = BinaryUtils.toHex(BinaryUtils.hash(""));
-        String date = Utils.getDate();
-        Logger.logString("URL: " + url);
-        String host = Utils.getHost(url);
-        Header[] headerList = new Header[]{new Header(HeadersName.HOST, host),
-                new Header(HeadersName.X_AMZ_DATE, date),
-                new Header(HeadersName.X_AMZ_CONTENT_SHA256, payload)};
-        String authorization = SodaV4Signer.getSignature("GET", url, signatureKey.getAccessKey(),
-                signatureKey.getSecretAccessKey(), payload, signatureKey.getRegionName(), headerList);
-        Logger.logString("Authorization: " + authorization);
+        return getCallResponse(client, url, signatureKey);
+    }
+
+    public int uploadObject(SignatureKey signatureKey, String bucketName, String fileName, File mFilePath) {
+        int code = -1;
         try {
-            Request request = new Request.Builder()
-                    .url(url)
-                    .get()
-                    .addHeader(HeadersName.AUTHORIZATION, authorization)
-                    .addHeader(HeadersName.X_AMZ_CONTENT_SHA256, payload)
-                    .addHeader(HeadersName.X_AMZ_DATE, date)
-                    .build();
-            Logger.logString("Request Details: " + request.headers() + " " + request.body() + " " + request.method() + ""
-                    + request.url());
-            response = client.newCall(request).execute();
+            RequestBody requestBody = RequestBody.create(mFilePath,
+                    MediaType.parse(CONTENT_TYPE_XML));
+            String url = ConstantUrl.getInstance().getUploadObjectUrl(bucketName, fileName);
+            String payload = BinaryUtils.toHex(BinaryUtils.computeSHA256TreeHash(mFilePath));
+            Response response = putCallResponse(client, url, payload, requestBody, signatureKey);
+            code = response.code();
+            Logger.logString("Response Code: " + code);
+            Logger.logString("Response: " + response.body().string());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return code;
+    }
+
+    public Response getBucketObjects(String bucketName, SignatureKey signatureKey) {
+        String url = ConstantUrl.getInstance().getListOfBucketObjectUrl(bucketName);
+        return getCallResponse(client, url, signatureKey);
+    }
+
+    public Response downloadObject(SignatureKey signatureKey, String bucketName, String fileName, String downloadFileName) {
+        Response response = null;
+        try {
+            String url = ConstantUrl.getInstance().getDownloadObjectUrl(bucketName, fileName);
+            response = getCallResponse(client, url, signatureKey);
+            int code = response.code();
+            if (code == 200) {
+                BufferedSink sink = Okio.buffer(Okio.sink(new File(Constant.DOWNLOAD_FILES_PATH, downloadFileName)));
+                sink.writeAll(response.body().source());
+                sink.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

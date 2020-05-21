@@ -90,4 +90,33 @@ public class ConstantUrl {
     public String getListBucketUrl() {
         return URL+PORT+"/";
     }
+
+    /**
+     * Upload object
+     *
+     * @param bucketName bucket name.
+     * @param fileName file name.
+     */
+    public String getUploadObjectUrl(String bucketName, String fileName) {
+        return URL+PORT+"/"+ bucketName +"/"+ fileName;
+    }
+
+    /**
+     * Get list of bucket object.
+     *
+     * @param bucketName bucket name
+     */
+    public String getListOfBucketObjectUrl(String bucketName) {
+        return URL+PORT+"/"+bucketName;
+    }
+
+    /**
+     * Download object
+     *
+     * @param bucketName bucket name.
+     * @param fileName file name.
+     */
+    public String getDownloadObjectUrl(String bucketName, String fileName) {
+        return URL+PORT+"/"+ bucketName +"/"+ fileName;
+    }
 }
