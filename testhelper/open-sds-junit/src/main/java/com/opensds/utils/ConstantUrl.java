@@ -157,4 +157,14 @@ public class ConstantUrl {
     public String getDeleteBucketUrl(String bucketName) {
         return URL+PORT+"/"+ bucketName;
     }
+
+    /**
+     * Delete object
+     *
+     * @param bucketName bucket name.
+     * @param objectName object name.
+     */
+    public String getDeleteObjectUrl(String bucketName, String objectName) {
+        return URL+PORT+"/"+bucketName+"/"+objectName;
+    }
 }

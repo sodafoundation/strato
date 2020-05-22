@@ -156,6 +156,7 @@ public abstract class OkHttpRequests {
 
     protected static Response getCallWithXauth(OkHttpClient client, String url, String xAuthToken){
         Response response = null;
+        Logger.logString("URL: "+url);
         Map<String, String> headersMap = new HashMap<>();
         headersMap.put(X_AUTH_TOKEN, xAuthToken);
         headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
@@ -170,6 +171,7 @@ public abstract class OkHttpRequests {
 
     protected static Response deleteCallWithXauth(OkHttpClient client, String url, String xAuthToken){
         Response response = null;
+        Logger.logString("URL: "+url);
         Map<String, String> headersMap = new HashMap<>();
         headersMap.put(X_AUTH_TOKEN, xAuthToken);
         headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);

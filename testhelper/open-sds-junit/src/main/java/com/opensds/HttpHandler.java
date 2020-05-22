@@ -258,4 +258,14 @@ public class HttpHandler extends OkHttpRequests {
         String url = ConstantUrl.getInstance().getDeleteBucketUrl(bucketName);
         return deleteCallWithV4Sign(client, url, signatureKey);
     }
+
+    public Response deleteObject(SignatureKey signatureKey, String bucketName, String objectName) {
+        String url = ConstantUrl.getInstance().getDeleteObjectUrl(bucketName, objectName);
+        return deleteCallWithV4Sign(client, url, signatureKey);
+    }
+
+    public Response deleteBucket(SignatureKey signatureKey, String bucketName) {
+        String url = ConstantUrl.getInstance().getDeleteBucketUrl(bucketName);
+        return deleteCallWithV4Sign(client, url, signatureKey);
+    }
 }
