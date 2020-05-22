@@ -90,4 +90,71 @@ public class ConstantUrl {
     public String getListBucketUrl() {
         return URL+PORT+"/";
     }
+
+    /**
+     * Upload object
+     *
+     * @param bucketName bucket name.
+     * @param fileName file name.
+     */
+    public String getUploadObjectUrl(String bucketName, String fileName) {
+        return URL+PORT+"/"+ bucketName +"/"+ fileName;
+    }
+
+    /**
+     * Get list of bucket object.
+     *
+     * @param bucketName bucket name
+     */
+    public String getListOfBucketObjectUrl(String bucketName) {
+        return URL+PORT+"/"+bucketName;
+    }
+
+    /**
+     * Download object
+     *
+     * @param bucketName bucket name.
+     * @param fileName file name.
+     */
+    public String getDownloadObjectUrl(String bucketName, String fileName) {
+        return URL+PORT+"/"+ bucketName +"/"+ fileName;
+    }
+
+    /**
+     * Get Backend List
+     *
+     * @param tenantId tenant id.
+     */
+    public String getBackendsUrl(String tenantId) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/backends";
+    }
+
+    /**
+     * Get Backend
+     *
+     * @param tenantId tenant id.
+     * @param id admin tenant id.
+     */
+    public String getBackendUrl(String tenantId, String id) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/backends/"+id;
+    }
+
+    /**
+     * Delete Backend
+     *
+     * @param tenantId tenant id.
+     * @param id admin tenant id.
+     */
+    public String getDeleteBackendUrl(String tenantId, String id) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/backends/"+id;
+    }
+
+    /**
+     * Delete bucket
+     *
+     * @param bucketName bucket name.
+     */
+    public String getDeleteBucketUrl(String bucketName) {
+        return URL+PORT+"/"+ bucketName;
+    }
 }
