@@ -21,12 +21,12 @@ service Block {
 
 message Volume {
     string  name = 1;
-    string  volId = 2;
-    int64   volSize = 3;
-    string  volType = 4;
-    string  volStatus = 5;
-    bool    volMultiAttachEnabled = 6;
-    bool    volEncrypted = 7;
+    string  Id = 2;
+    int64   Size = 3;
+    string  Type = 4;
+    string  Status = 5;
+    bool    MultiAttachEnabled = 6;
+    bool    Encrypted = 7;
 
     // TODO: Add more attributes to make it generic Volume structure
 }

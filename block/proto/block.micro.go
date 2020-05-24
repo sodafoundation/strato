@@ -33,7 +33,6 @@ var _ server.Option
 
 // Api Endpoints for Block service
 
-
 // Client API for Block service
 
 type BlockService interface {

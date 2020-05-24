@@ -23,17 +23,14 @@ import (
 )
 
 func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, out *pb.ListVolumesResponse) error {
-	log.Infof("ListVolumes called in block service.[%v]", in.BackendId)
-	// get the access_info
+	log.Infof("ListVolumes called in block service for backend[%v]", in.BackendId)
+	// get the backedn access_info
 	backendResp, backendErr := b.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{
 		Id: in.BackendId})
 
-	log.Infof("backendErr is %v:", backendErr)
 	if backendErr != nil {
 		log.Infof("Get backend failed with error: %v\n.", backendErr)
 		return backendErr
-	} else {
-		log.Infof("backendRep=%+v\n", backendResp)
 	}
 
 	accessInfo := &backendpb.BackendDetail{
@@ -49,21 +46,11 @@ func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, ou
 	}
 	volResp, err := sd.List(ctx)
 	if err != nil {
-		log.Errorf("received error in getting volumes ", err)
+		log.Errorf("Received error in getting volumes ", err)
 		return err
 	}
 	// TODO: paging list
-	for _, vol := range volResp {
-		out.Volumes = append(out.Volumes, &pb.Volume{
-			Name:                  vol.Name,
-			VolId:                 vol.VolId,
-			VolSize:               vol.VolSize,
-			VolType:               vol.VolType,
-			VolStatus:             vol.VolStatus,
-			VolMultiAttachEnabled: vol.VolMultiAttachEnabled,
-			VolEncrypted:          vol.VolEncrypted,
-		})
-	}
+	out.Volumes = volResp.Volumes
 
 	log.Infof("List of Volumes:%+v\n", out.Volumes)
 	return nil
