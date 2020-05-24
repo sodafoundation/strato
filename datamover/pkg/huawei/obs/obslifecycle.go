@@ -17,9 +17,9 @@ package obsmover
 import (
 	"errors"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	log "github.com/sirupsen/logrus"
 )
 
 func (mover *ObsMover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {

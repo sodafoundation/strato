@@ -16,8 +16,8 @@ package cephs3mover
 
 import (
 	"errors"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	. "github.com/webrtcn/s3client"
 )
 

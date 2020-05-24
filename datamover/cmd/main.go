@@ -17,10 +17,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/micro/go-micro"
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	datamover "github.com/opensds/multi-cloud/datamover/pkg"
 	log "github.com/sirupsen/logrus"
+	"github.com/micro/go-micro"
+	datamover "github.com/opensds/multi-cloud/datamover/pkg"
+	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 )
 
 func main() {

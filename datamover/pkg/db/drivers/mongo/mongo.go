@@ -19,9 +19,9 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	log "github.com/sirupsen/logrus"
 	backend "github.com/opensds/multi-cloud/backend/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	log "github.com/sirupsen/logrus"
 )
 
 var adap = &adapter{}

@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	log "github.com/sirupsen/logrus"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 var (

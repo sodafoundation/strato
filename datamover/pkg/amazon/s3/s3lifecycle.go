@@ -19,8 +19,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
 func (mover *S3Mover) ChangeStorageClass(objKey *string, newClass *string, loca *BackendInfo) error {
