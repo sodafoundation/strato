@@ -16,3 +16,6 @@ build/
 
 # Tidb data
 tidb_data
+
+dataflow/
+datamover/
