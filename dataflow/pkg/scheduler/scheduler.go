@@ -20,7 +20,6 @@ import (
 	"os"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/micro/go-micro/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
@@ -29,6 +28,7 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/lifecycle"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 func LoadAllPlans() {

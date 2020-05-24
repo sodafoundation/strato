@@ -16,12 +16,11 @@ package driver
 
 import (
 	"context"
-	dscommon "github.com/opensds/multi-cloud/block/pkg/datastore/common"
-	_ "github.com/opensds/multi-cloud/block/proto"
+	pb "github.com/opensds/multi-cloud/block/proto"
 )
 
 // define the common driver interface for io.
 
 type StorageDriver interface {
-	List(ctx context.Context) ([]dscommon.ListVolumes, error)
+	List(ctx context.Context) (*pb.ListVolumesResponse, error)
 }

@@ -16,7 +16,7 @@ package driver
 
 import (
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	exp "github.com/opensds/multi-cloud/block/pkg/exception"
+	excep "github.com/opensds/multi-cloud/block/pkg/exception"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,5 +36,5 @@ func CreateStorageDriver(driverType string, detail *backendpb.BackendDetail) (St
 	if factory, ok := driverFactoryMgr[driverType]; ok {
 		return factory.CreateDriver(detail)
 	}
-	return nil, exp.NoSuchType.Error()
+	return nil, excep.NoSuchType.Error()
 }
