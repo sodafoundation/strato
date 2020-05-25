@@ -21,7 +21,7 @@ import (
 	"math"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/backend/proto"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
