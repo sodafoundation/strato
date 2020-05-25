@@ -21,6 +21,7 @@ import okio.BufferedSink;
 import okio.Okio;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -267,5 +268,57 @@ public class HttpHandler extends OkHttpRequests {
     public Response deleteBucket(SignatureKey signatureKey, String bucketName) {
         String url = ConstantUrl.getInstance().getDeleteBucketUrl(bucketName);
         return deleteCallWithV4Sign(client, url, signatureKey);
+    }
+
+    public Response createPlans(String xAuthToken, String body, String tenantId) {
+        Response response = null;
+        RequestBody requestBody = RequestBody.create(body,
+                MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
+        String url = ConstantUrl.getInstance().getCreatePlansUrl(tenantId);
+        Logger.logString("URL: "+url);
+        Map<String, String> headersMap = new HashMap<>();
+        headersMap.put(X_AUTH_TOKEN, xAuthToken);
+        headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+        Headers headers = Headers.of(headersMap);
+        try {
+            response = postCall(client, url, requestBody, headers);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public Response runPlans(String xAuthToken, String id, String tenantId) {
+        Response response = null;
+        RequestBody requestBody = RequestBody.create("",
+                MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
+        String url = ConstantUrl.getInstance().getRunPlanUrl(tenantId, id);
+        Logger.logString("URL: "+url);
+        Map<String, String> headersMap = new HashMap<>();
+        headersMap.put(X_AUTH_TOKEN, xAuthToken);
+        headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+        Headers headers = Headers.of(headersMap);
+        try {
+            response = postCall(client, url, requestBody, headers);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public Response getJob(String xAuthToken, String jobId, String tenantId) {
+        Response response = null;
+        String url = ConstantUrl.getInstance().getJobUrl(tenantId, jobId);
+        Logger.logString("URL: "+url);
+        Map<String, String> headersMap = new HashMap<>();
+        headersMap.put(X_AUTH_TOKEN, xAuthToken);
+        headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+        Headers headers = Headers.of(headersMap);
+        try {
+            return getCall(client, url, headers);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
     }
 }

@@ -98,4 +98,16 @@ public class Utils {
         }
         return host;
     }
+
+    /**
+     * Generate random name.
+     *
+     * @param name any name
+     * @return name
+     */
+    public static String getRandomName(String name){
+        Random rand = new Random();
+        int randInt = rand.nextInt(10000);
+        return name+randInt;
+    }
 }

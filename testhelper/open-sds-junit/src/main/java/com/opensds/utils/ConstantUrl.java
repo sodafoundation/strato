@@ -167,4 +167,33 @@ public class ConstantUrl {
     public String getDeleteObjectUrl(String bucketName, String objectName) {
         return URL+PORT+"/"+bucketName+"/"+objectName;
     }
+
+    /**
+     * Create plan.
+     *
+     * @param tenantId tenant id
+     */
+    public String getCreatePlansUrl(String tenantId) {
+        return URL +PORT_TENANT_ID+"/"+tenantId+"/plans";
+    }
+
+    /**
+     * Run plan.
+     *
+     * @param tenantId tenant id
+     * @param id id
+     */
+    public String getRunPlanUrl(String tenantId, String id) {
+        return URL +PORT_TENANT_ID+"/"+tenantId+"/plans/"+id+"/run";
+    }
+
+    /**
+     * Get job
+     *
+     * @param tenantId tenant id
+     * @param jobId job id
+     */
+    public String getJobUrl(String tenantId, String jobId) {
+        return URL +PORT_TENANT_ID+"/"+tenantId+"/jobs/"+jobId;
+    }
 }

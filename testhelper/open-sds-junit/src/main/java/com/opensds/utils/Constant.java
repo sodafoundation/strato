@@ -6,4 +6,5 @@ public class Constant {
     public static final  String EMPTY_FIELD_PATH = PATH+"emptyfield/";
     public static final  String RAW_DATA_PATH = PATH+"rawdata";
     public static final  String DOWNLOAD_FILES_PATH = PATH+"download";
+    public static final  String CREATE_MIGRATION_PATH = PATH+"createmigration";
 }
