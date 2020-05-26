@@ -632,7 +632,11 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.TenantId = tenantId
 	targetObject.UserId = srcBucket.UserId
 	// this is the default acl setting
-	targetObject.Acl = targetBucket.Acl
+	if in.Acl != nil {
+		targetObject.Acl = in.Acl
+	} else {
+		targetObject.Acl = targetBucket.Acl
+	}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	if validTier(in.TargetTier) {
