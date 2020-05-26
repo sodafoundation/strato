@@ -208,4 +208,20 @@ public abstract class OkHttpRequests {
         }
         return response;
     }
+
+    protected static Response postCallWithXauth(OkHttpClient client, String url,
+                                                 String xAuthToken, RequestBody requestBody) {
+        Response response = null;
+        Logger.logString("URL: " + url);
+        Map<String, String> headersMap = new HashMap<>();
+        headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
+        headersMap.put(X_AUTH_TOKEN, xAuthToken);
+        Headers headers = Headers.of(headersMap);
+        try {
+            response = postCall(client, url, requestBody, headers);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
 }

@@ -158,24 +158,14 @@ public class HttpHandler extends OkHttpRequests {
         return typesHolder;
     }
 
-    public int addBackend(String x_auth_token, String projId, AddBackendInputHolder inputHolder) {
-        int code = -1;
-        try {
-            Gson gson = new Gson();
-            RequestBody requestBody = RequestBody.create(gson.toJson(inputHolder),
-                    MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
-            String url = ConstantUrl.getInstance().getAddBackendUrl(projId);
-            Logger.logString("URL: " + url);
-            Map<String, String> headersMap = new HashMap<>();
-            headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
-            headersMap.put(X_AUTH_TOKEN, x_auth_token);
-            Headers headers = Headers.of(headersMap);
-            Response response = postCall(client, url, requestBody, headers);
-            code = response.code();
-            Logger.logString("Response code: " + code);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public int addBackend(String xAuthToken, String tenantId, AddBackendInputHolder inputHolder) {
+        Gson gson = new Gson();
+        RequestBody requestBody = RequestBody.create(gson.toJson(inputHolder),
+                MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
+        String url = ConstantUrl.getInstance().getAddBackendUrl(tenantId);
+        Response response = postCallWithXauth(client, url, xAuthToken, requestBody);
+        int code = response.code();
+        Logger.logString("Response code: " + code);
         return code;
     }
 
@@ -319,5 +309,21 @@ public class HttpHandler extends OkHttpRequests {
     public Response deletePlan(String xAuthToken, String tenantId, String id) {
         String url = ConstantUrl.getInstance().getDeletePlansUrl(tenantId, id);
         return deleteCallWithXauth(client, url, xAuthToken);
+    }
+
+    public Response getJobsList(String xAuthToken, String tenantId) {
+        String url = ConstantUrl.getInstance().getListJobUrl(tenantId);
+        return getCallWithXauth(client, url, xAuthToken);
+    }
+
+    public Response createPlanPolicies(String xAuthToken, String body, String tenantId) {
+        RequestBody requestBody = RequestBody.create(body, MediaType.parse(CONTENT_TYPE_JSON_CHARSET));
+        String url = ConstantUrl.getInstance().getPoliciesUrl(tenantId);
+        return postCallWithXauth(client, url, xAuthToken, requestBody);
+    }
+
+    public Response scheduleMigStatus(String xAuthToken, String tenantId, String planeName) {
+        String url = ConstantUrl.getInstance().getScheduleMigStatusUrl(tenantId, planeName);
+        return getCallWithXauth(client, url, xAuthToken);
     }
 }

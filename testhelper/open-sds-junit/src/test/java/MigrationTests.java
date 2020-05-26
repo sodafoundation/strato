@@ -1,12 +1,10 @@
 import com.google.gson.Gson;
 import com.opensds.jsonmodels.akskresponses.SignatureKey;
-import com.opensds.jsonmodels.inputs.createmigration.DestConnInput;
-import com.opensds.jsonmodels.inputs.createmigration.Filter;
-import com.opensds.jsonmodels.inputs.createmigration.PlaneRequestInput;
-import com.opensds.jsonmodels.inputs.createmigration.SourceConnInput;
+import com.opensds.jsonmodels.inputs.createmigration.*;
 import com.opensds.utils.Logger;
 import com.opensds.utils.Utils;
 import okhttp3.Response;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.*;
@@ -429,5 +427,240 @@ public class MigrationTests extends BaseTestClass {
                 assertFalse(downloadedFile.isFile(), "Downloaded Image is available");
             }
         }
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("Test get job list")
+    public void testGetJobList() throws IOException, JSONException {
+        Gson gson = new Gson();
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket", CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+        SourceConnInput sourceConnInput = new SourceConnInput();
+        sourceConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(0)));
+        sourceConnInput.setStorType("opensds-obj");
+        DestConnInput destConnInput = new DestConnInput();
+        destConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(1)));
+        destConnInput.setStorType("opensds-obj");
+        Filter filter = new Filter();
+        PlaneRequestInput planeRequestInput = new PlaneRequestInput();
+        planeRequestInput.setName(Utils.getRandomName("Plan_"));
+        planeRequestInput.setDescription("for test");
+        planeRequestInput.setType("migration");
+        planeRequestInput.setSourceConn(sourceConnInput);
+        planeRequestInput.setDestConn(destConnInput);
+        planeRequestInput.setFilter(filter);
+        planeRequestInput.setRemainSource(true);
+        String json = gson.toJson(planeRequestInput);
+        Logger.logString("Request Json: "+json);
+
+        Response response = getHttpHandler().createPlans(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), json, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response code: "+code);
+        assertEquals("Plan creation failed: Response code not matched: ", code, 200);
+        JSONObject jsonObject = new JSONObject(jsonRes);
+
+        String id  = jsonObject.getJSONObject("plan").get("id").toString();
+        assertNotNull(id,"Id is null: ");
+
+        Response responseRun = getHttpHandler().runPlans(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), id, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String jsonResRun = responseRun.body().string();
+        int codeRun = responseRun.code();
+        Logger.logString("Response: "+jsonResRun);
+        Logger.logString("Response code: "+codeRun);
+        assertEquals("Run plan creation failed: Response code not matched: ", codeRun, 200);
+        String jobId = new JSONObject(jsonResRun).get("jobId").toString();
+
+        Response responseJobList = getHttpHandler().getJobsList(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String jsonResJobList = responseJobList.body().string();
+        int codeJobList = responseJobList.code();
+        Logger.logString("Response: "+jsonResJobList);
+        Logger.logString("Response code: "+codeJobList);
+        assertEquals("Get Jobs List failed: Response code not matched: ", codeJobList, 200);
+        JSONArray jsonArray = new JSONObject(jsonResJobList).getJSONArray("jobs");
+        for (int i = 0; i < jsonArray.length(); i++) {
+            String jobid = jsonArray.getJSONObject(i).get("id").toString();
+            if (jobId.equals(jobid)){
+                assertEquals("Job Id not matched: ", jobid, jobId);
+            }
+        }
+
+        Response responseGetJob = getHttpHandler().getJob(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), jobId, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String jsonResGetJob = responseGetJob.body().string();
+        int codeGetJob = responseGetJob.code();
+        Logger.logString("Response: "+jsonResGetJob);
+        Logger.logString("Response code: "+codeGetJob);
+        assertEquals("Get job id failed: Response code not matched: ", codeGetJob, 200);
+        String status = new JSONObject(jsonResGetJob).getJSONObject("job").get("status").toString();
+        Logger.logString("Status: "+ status);
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("Test get plans list and delete")
+    public void testGetPlansListDelete() throws IOException, JSONException {
+        testGetPlansListAndDelete();
+    }
+
+    @Test
+    @Order(13)
+    @DisplayName("Test delete plan using invalid id")
+    public void testDeletePlanUsingInvalidId() throws IOException {
+        Response responseDeletePlan = getHttpHandler().deletePlan(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), getAuthTokenHolder().getToken().getProject().getId(), "1236456");
+        String deletePlanResponse = responseDeletePlan.body().string();
+        int deletePlanResponseCode = responseDeletePlan.code();
+        Logger.logString("Response: "+deletePlanResponse);
+        Logger.logString("Response Code: "+deletePlanResponseCode);
+        assertEquals("Plan id may be valid: Response code not matched: ", deletePlanResponseCode, 403);
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("Test creating plan with schedule")
+    public void testCreatePlanSchedule() throws IOException, JSONException {
+        Gson gson = new Gson();
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket", CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+
+        Schedule schedule = new Schedule();
+        schedule.setType("cron");
+        assertNotNull(SCHEDULE_TIME);
+        schedule.setTiggerProperties(SCHEDULE_TIME);
+        PoliciesRequestInput policiesRequestInput = new PoliciesRequestInput();
+        policiesRequestInput.setDescription("cron test function");
+        policiesRequestInput.setName("cron test");
+        policiesRequestInput.setTenant("all");
+        policiesRequestInput.setSchedule(schedule);
+
+        String jsonPolicies = gson.toJson(policiesRequestInput);
+        Logger.logString("Policies Json Req: "+jsonPolicies);
+
+        Response  response = getHttpHandler().createPlanPolicies(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), jsonPolicies, getAuthTokenHolder().getToken().getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response code: "+code);
+        assertEquals("Plan policies failed: Response code not matched: ", code, 200);
+        JSONObject jsonObject = new JSONObject(jsonRes);
+
+        String id  = jsonObject.getJSONObject("policy").get("id").toString();
+        assertNotNull(id,"PolicyId is null: ");
+
+        SourceConnInput sourceConnInput = new SourceConnInput();
+        sourceConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(1)));
+        sourceConnInput.setStorType("opensds-obj");
+        DestConnInput destConnInput = new DestConnInput();
+        destConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(0)));
+        destConnInput.setStorType("opensds-obj");
+        Filter filter = new Filter();
+        PlaneScheduleRequestInput  planeScheduleRequestInput = new PlaneScheduleRequestInput();
+        planeScheduleRequestInput.setName(listOfIBucketInputs.get(0).getName()+"-Plan");
+        planeScheduleRequestInput.setDescription("for test");
+        planeScheduleRequestInput.setType("migration");
+        planeScheduleRequestInput.setSourceConn(sourceConnInput);
+        planeScheduleRequestInput.setDestConn(destConnInput);
+        planeScheduleRequestInput.setFilter(filter);
+        planeScheduleRequestInput.setRemainSource(true);
+        planeScheduleRequestInput.setPolicyId(id);
+        planeScheduleRequestInput.setPolicyEnabled(true);
+        String json = gson.toJson(planeScheduleRequestInput);
+        Logger.logString("Plan Json Req: "+json);
+
+        Response responsePlan = getHttpHandler().createPlans(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), json, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String resPlan = responsePlan.body().string();
+        int resCode = responsePlan.code();
+        Logger.logString("Response: "+resPlan);
+        Logger.logString("Response code: "+resCode);
+        assertEquals("Plan creation failed: Response code not matched: ", resCode, 200);
+        String planName = new JSONObject(resPlan).getJSONObject("plan").get("name").toString();
+
+        Response responseSchedule = getHttpHandler().scheduleMigStatus(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), getAuthTokenHolder().getToken()
+                .getProject().getId(), planName);
+        int codeGetJob = responseSchedule.code();
+        String resGetJob = responseSchedule.body().string();
+        Logger.logString("Response: "+resGetJob);
+        Logger.logString("Response code: "+codeGetJob);
+        assertEquals("Schedule Mig Status failed: Response code not matched: ", codeGetJob, 200);
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("Test creating plan with schedule using same name")
+    public void testCreatePlanScheduleUsingSameName() throws IOException, JSONException {
+        Gson gson = new Gson();
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket", CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+
+        Schedule schedule = new Schedule();
+        schedule.setType("cron");
+        assertNotNull(SCHEDULE_TIME);
+        schedule.setTiggerProperties(SCHEDULE_TIME);
+        PoliciesRequestInput policiesRequestInput = new PoliciesRequestInput();
+        policiesRequestInput.setDescription("cron test function");
+        policiesRequestInput.setName("cron test");
+        policiesRequestInput.setTenant("all");
+        policiesRequestInput.setSchedule(schedule);
+
+        String jsonPolicies = gson.toJson(policiesRequestInput);
+        Logger.logString("Policies Json Req: "+jsonPolicies);
+
+        Response  response = getHttpHandler().createPlanPolicies(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), jsonPolicies, getAuthTokenHolder().getToken().getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response code: "+code);
+        assertEquals("Plan policies failed: Response code not matched: ", code, 200);
+        JSONObject jsonObject = new JSONObject(jsonRes);
+
+        String id  = jsonObject.getJSONObject("policy").get("id").toString();
+        assertNotNull(id,"PolicyId is null: ");
+
+        SourceConnInput sourceConnInput = new SourceConnInput();
+        sourceConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(1)));
+        sourceConnInput.setStorType("opensds-obj");
+        DestConnInput destConnInput = new DestConnInput();
+        destConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(0)));
+        destConnInput.setStorType("opensds-obj");
+        Filter filter = new Filter();
+        PlaneScheduleRequestInput  planeScheduleRequestInput = new PlaneScheduleRequestInput();
+        planeScheduleRequestInput.setName(listOfIBucketInputs.get(0).getName()+"-Plan");
+        planeScheduleRequestInput.setDescription("for test");
+        planeScheduleRequestInput.setType("migration");
+        planeScheduleRequestInput.setSourceConn(sourceConnInput);
+        planeScheduleRequestInput.setDestConn(destConnInput);
+        planeScheduleRequestInput.setFilter(filter);
+        planeScheduleRequestInput.setRemainSource(true);
+        planeScheduleRequestInput.setPolicyId(id);
+        planeScheduleRequestInput.setPolicyEnabled(true);
+        String json = gson.toJson(planeScheduleRequestInput);
+        Logger.logString("Plan Json Req: "+json);
+
+        Response responsePlan = getHttpHandler().createPlans(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), json, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String resPlan = responsePlan.body().string();
+        int resCode = responsePlan.code();
+        Logger.logString("Response: "+resPlan);
+        Logger.logString("Response code: "+resCode);
+        assertEquals("Plan creation failed using same name: Response code not matched: ", resCode, 409);
     }
 }

@@ -7,4 +7,8 @@ public class Constant {
     public static final  String RAW_DATA_PATH = PATH+"rawdata";
     public static final  String DOWNLOAD_FILES_PATH = PATH+"download";
     public static final  String CREATE_MIGRATION_PATH = PATH+"createmigration";
+    // https://savvytime.com/converter/utc-to-ist
+    // 00    56 UTC time     6       5          5             2
+    //sec   mint            hr      date       Monthcount  Day count
+    public static final  String SCHEDULE_TIME = System.getenv("SCHEDULE_TIME");
 }

@@ -215,4 +215,32 @@ public class ConstantUrl {
     public String getDeletePlansUrl(String tenantId, String id) {
         return URL+PORT_TENANT_ID+"/"+tenantId+"/plans/"+id;
     }
+
+    /**
+     * Get Job List
+     *
+     * @param tenantId tenant id
+     */
+    public String getListJobUrl(String tenantId) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/jobs";
+    }
+
+    /**
+     * Get policies.
+     *
+     * @param tenantId tenant id
+     */
+    public String getPoliciesUrl(String tenantId) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/policies";
+    }
+
+    /**
+     * Get Schedule Migration Status.
+     *
+     * @param tenantId tenant id
+     * @param planeName plan name
+     */
+    public String getScheduleMigStatusUrl(String tenantId, String planeName) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/jobs?planName="+planeName;
+    }
 }
