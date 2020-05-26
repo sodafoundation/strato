@@ -196,4 +196,23 @@ public class ConstantUrl {
     public String getJobUrl(String tenantId, String jobId) {
         return URL +PORT_TENANT_ID+"/"+tenantId+"/jobs/"+jobId;
     }
+
+    /**
+     * Get list of plans
+     *
+     * @param tenantId admin tenant id
+     */
+    public String getPlansListUrl(String tenantId) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/plans";
+    }
+
+    /**
+     * Delete plans
+     *
+     * @param tenantId admin tenant id
+     * @param id id
+     */
+    public String getDeletePlansUrl(String tenantId, String id) {
+        return URL+PORT_TENANT_ID+"/"+tenantId+"/plans/"+id;
+    }
 }

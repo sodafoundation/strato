@@ -307,18 +307,17 @@ public class HttpHandler extends OkHttpRequests {
     }
 
     public Response getJob(String xAuthToken, String jobId, String tenantId) {
-        Response response = null;
         String url = ConstantUrl.getInstance().getJobUrl(tenantId, jobId);
-        Logger.logString("URL: "+url);
-        Map<String, String> headersMap = new HashMap<>();
-        headersMap.put(X_AUTH_TOKEN, xAuthToken);
-        headersMap.put(CONTENT_TYPE, CONTENT_TYPE_JSON);
-        Headers headers = Headers.of(headersMap);
-        try {
-            return getCall(client, url, headers);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return response;
+        return getCallWithXauth(client, url, xAuthToken);
+    }
+
+    public Response getPlansList(String xAuthToken, String tenantId) {
+        String url = ConstantUrl.getInstance().getPlansListUrl(tenantId);
+        return getCallWithXauth(client, url, xAuthToken);
+    }
+
+    public Response deletePlan(String xAuthToken, String tenantId, String id) {
+        String url = ConstantUrl.getInstance().getDeletePlansUrl(tenantId, id);
+        return deleteCallWithXauth(client, url, xAuthToken);
     }
 }

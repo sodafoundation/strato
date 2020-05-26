@@ -161,6 +161,28 @@ public class BaseTestClass {
         }
     }
 
+    public void testGetPlansListAndDelete() throws IOException, JSONException {
+        Response  response = getHttpHandler().getPlansList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                getAuthTokenHolder().getToken().getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response Code: "+code);
+        assertEquals("Get plans list failed: Response code not matched: ", code, 200);
+        JSONArray jsonArray = new JSONObject(jsonRes).getJSONArray("plans");
+        for (int i = 0; i < jsonArray.length(); i++) {
+            String id = jsonArray.getJSONObject(i).get("id").toString();
+            Response responseDeletePlan = getHttpHandler().deletePlan(getAuthTokenHolder()
+                            .getResponseHeaderSubjectToken(), getAuthTokenHolder().getToken().getProject().getId(), id);
+            String deletePlanResponse = responseDeletePlan.body().string();
+            int deletePlanResponseCode = responseDeletePlan.code();
+            Logger.logString("Response: "+deletePlanResponse);
+            Logger.logString("Response Code: "+deletePlanResponseCode);
+            assertEquals("Get plans list failed: Response code not matched: ", deletePlanResponseCode,
+                    200);
+        }
+    }
+
     /**
      * Get bucket list.
      *
