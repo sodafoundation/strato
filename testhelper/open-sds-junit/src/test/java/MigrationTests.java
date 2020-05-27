@@ -663,4 +663,246 @@ public class MigrationTests extends BaseTestClass {
         Logger.logString("Response code: "+resCode);
         assertEquals("Plan creation failed using same name: Response code not matched: ", resCode, 409);
     }
+
+    @Test
+    @Order(16)
+    @DisplayName("Test creating plan with schedule using yesterday date time")
+    public void testCreatePlanScheduleUsingYesterdayDate() throws IOException {
+        Gson gson = new Gson();
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket", CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+
+        Schedule schedule = new Schedule();
+        schedule.setType("cron");
+        String dateTime = "00 56 6 5 5 2";
+        assertNotNull(dateTime);
+        schedule.setTiggerProperties(dateTime);
+        PoliciesRequestInput policiesRequestInput = new PoliciesRequestInput();
+        policiesRequestInput.setDescription("cron test function");
+        policiesRequestInput.setName("cron test");
+        policiesRequestInput.setTenant("all");
+        policiesRequestInput.setSchedule(schedule);
+        String jsonPolicies = gson.toJson(policiesRequestInput);
+        Logger.logString("Policies Json Req: "+jsonPolicies);
+
+        Response  response = getHttpHandler().createPlanPolicies(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), jsonPolicies, getAuthTokenHolder().getToken().getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response code: "+code);
+        assertEquals("Plan policies failed using yesterday date time: Response code not matched: ",
+                code, 403);
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("Test creating plan with schedule and delete the source objects after the migration is completed")
+    public void testCreatePlanScheduleDeleteSourceObject() throws IOException, JSONException {
+        testGetPlansListAndDelete();
+        Gson gson = new Gson();
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket", CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+
+        Schedule schedule = new Schedule();
+        schedule.setType("cron");
+        assertNotNull(SCHEDULE_TIME);
+        schedule.setTiggerProperties(SCHEDULE_TIME);
+        PoliciesRequestInput policiesRequestInput = new PoliciesRequestInput();
+        policiesRequestInput.setDescription("cron test function");
+        policiesRequestInput.setName("cron test");
+        policiesRequestInput.setTenant("all");
+        policiesRequestInput.setSchedule(schedule);
+
+        String jsonPolicies = gson.toJson(policiesRequestInput);
+        Logger.logString("Policies Json Req: "+jsonPolicies);
+
+        Response  response = getHttpHandler().createPlanPolicies(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), jsonPolicies, getAuthTokenHolder().getToken().getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response code: "+code);
+        assertEquals("Plan policies failed:delete the source objects: Response code not matched: ", code, 200);
+        JSONObject jsonObject = new JSONObject(jsonRes);
+
+        String id  = jsonObject.getJSONObject("policy").get("id").toString();
+        assertNotNull(id,"PolicyId is null: ");
+
+        SourceConnInput sourceConnInput = new SourceConnInput();
+        sourceConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(1)));
+        sourceConnInput.setStorType("opensds-obj");
+        DestConnInput destConnInput = new DestConnInput();
+        destConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(0)));
+        destConnInput.setStorType("opensds-obj");
+        Filter filter = new Filter();
+        PlaneScheduleRequestInput  planeScheduleRequestInput = new PlaneScheduleRequestInput();
+        planeScheduleRequestInput.setName(listOfIBucketInputs.get(0).getName()+"-Plan");
+        planeScheduleRequestInput.setDescription("for test");
+        planeScheduleRequestInput.setType("migration");
+        planeScheduleRequestInput.setSourceConn(sourceConnInput);
+        planeScheduleRequestInput.setDestConn(destConnInput);
+        planeScheduleRequestInput.setFilter(filter);
+        planeScheduleRequestInput.setRemainSource(false);
+        planeScheduleRequestInput.setPolicyId(id);
+        planeScheduleRequestInput.setPolicyEnabled(true);
+        String json = gson.toJson(planeScheduleRequestInput);
+        Logger.logString("Plan Json Req: "+json);
+
+        Response responsePlan = getHttpHandler().createPlans(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), json, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String resPlan = responsePlan.body().string();
+        int codePlan = responsePlan.code();
+        Logger.logString("Response: "+resPlan);
+        Logger.logString("Response code: "+codePlan);
+        assertEquals("Plan creation failed: delete the source objects: Response code not matched: ",
+                codePlan, 200);
+        String planName = new JSONObject(resPlan).getJSONObject("plan").get("name").toString();
+
+        Response responseSchedule = getHttpHandler().scheduleMigStatus(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), getAuthTokenHolder().getToken()
+                .getProject().getId(), planName);
+        int codeGetJob = responseSchedule.code();
+        String resGetJob = responseSchedule.body().string();
+        Logger.logString("Response: "+resGetJob);
+        Logger.logString("Response code: "+codeGetJob);
+        assertEquals("Schedule Mig Status failed:delete the source objects: Response code not matched: ",
+                codeGetJob, 200);
+    }
+
+    @Test
+    @Order(18)
+    @DisplayName("Test delete the source objects after schedule migration download image from destination bucket")
+    public void testScheduleMigDesBucketDownloadObject() throws IOException {
+        List<File> listOfIBucketInputs = Utils.listFilesMatchingBeginsWithPatternInPath("bucket",
+                CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+        for (File bucketFile: listOfIBucketInputs) {
+            String bucketContent = Utils.readFileContentsAsString(bucketFile);
+            assertNotNull(bucketContent);
+            String bucketName = bucketFile.getName().substring(bucketFile.getName().indexOf("_") + 1,
+                    bucketFile.getName().indexOf("."));
+            // Get object for upload.
+            File fileRawData = new File(RAW_DATA_PATH);
+            File[] files = fileRawData.listFiles();
+            String mFileName = null;
+            for (File fileName : files) {
+                mFileName = fileName.getName();
+            }
+            String fileName = "Schedule"+bucketName+"Migration_obj.jpg";
+            File filePath = new File(DOWNLOAD_FILES_PATH);
+            File downloadedFile = new File(DOWNLOAD_FILES_PATH, fileName);
+            if (filePath.exists()) {
+                if (downloadedFile.exists()) {
+                    System.out.println(" Download Image Path: "+downloadedFile);
+                    boolean isDownloadedFileDeleted = downloadedFile.delete();
+                    assertTrue(isDownloadedFileDeleted, "Image deleting is failed");
+                } else {
+                    assertFalse(downloadedFile.exists());
+                }
+            } else {
+                filePath.mkdirs();
+            }
+            SignatureKey signatureKey = getHttpHandler().getAkSkList(getAuthTokenHolder().getResponseHeaderSubjectToken(),
+                    getAuthTokenHolder().getToken().getProject().getId());
+            Response response = getHttpHandler().downloadObject(signatureKey, bucketName, mFileName, fileName);
+            int code = response.code();
+            String body = response.body().string();
+            Logger.logString("Response Code: " + code);
+            Logger.logString("Response: " + body);
+            assertTrue(code == 200 || code == 404, "Downloading failed: ");
+            Logger.logString("Bucket Name: "+bucketName+" Response Code: "+code);
+            if (code == 200) {
+                assertTrue(downloadedFile.isFile(), "Downloaded Image is not available");
+            }
+            if (code == 404){
+                assertFalse(downloadedFile.isFile(), "Downloaded Image is available");
+            }
+        }
+    }
+
+    @Test
+    @Order(19)
+    @DisplayName("Test creating plan with schedule using invalid policy id")
+    public void testCreatePlanScheduleInvalidPolicyId() throws IOException, JSONException {
+        Gson gson = new Gson();
+        List<File> listOfIBucketInputs =
+                Utils.listFilesMatchingBeginsWithPatternInPath("bucket",
+                        CREATE_MIGRATION_PATH);
+        assertNotNull(listOfIBucketInputs);
+
+        Schedule schedule = new Schedule();
+        schedule.setType("cron");
+        assertNotNull(SCHEDULE_TIME);
+        schedule.setTiggerProperties(SCHEDULE_TIME);
+        PoliciesRequestInput policiesRequestInput = new PoliciesRequestInput();
+        policiesRequestInput.setDescription("cron test function");
+        policiesRequestInput.setName("cron test");
+        policiesRequestInput.setTenant("all");
+        policiesRequestInput.setSchedule(schedule);
+
+        String jsonPolicies = gson.toJson(policiesRequestInput);
+        Logger.logString("Policies Json Req: "+jsonPolicies);
+
+        Response  response = getHttpHandler().createPlanPolicies(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), jsonPolicies, getAuthTokenHolder().getToken().getProject().getId());
+        String jsonRes = response.body().string();
+        int code = response.code();
+        Logger.logString("Response: "+jsonRes);
+        Logger.logString("Response code: "+code);
+        assertEquals("Plan policies failed: Response code not matched: ", code, 200);
+        JSONObject jsonObject = new JSONObject(jsonRes);
+
+        String id  = jsonObject.getJSONObject("policy").get("id").toString();
+        assertNotNull(id,"PolicyId is null: ");
+        id = "1238234hjsjfdd";
+
+        SourceConnInput sourceConnInput = new SourceConnInput();
+        sourceConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(1)));
+        sourceConnInput.setStorType("opensds-obj");
+        DestConnInput destConnInput = new DestConnInput();
+        destConnInput.setBucketName(Utils.getBucketName(listOfIBucketInputs.get(0)));
+        destConnInput.setStorType("opensds-obj");
+        Filter filter = new Filter();
+        PlaneScheduleRequestInput  planeScheduleRequestInput = new PlaneScheduleRequestInput();
+        planeScheduleRequestInput.setName(Utils.getRandomName("Plan_"));
+        planeScheduleRequestInput.setDescription("for test");
+        planeScheduleRequestInput.setType("migration");
+        planeScheduleRequestInput.setSourceConn(sourceConnInput);
+        planeScheduleRequestInput.setDestConn(destConnInput);
+        planeScheduleRequestInput.setFilter(filter);
+        planeScheduleRequestInput.setRemainSource(true);
+        planeScheduleRequestInput.setPolicyId(id);
+        planeScheduleRequestInput.setPolicyEnabled(true);
+        String json = gson.toJson(planeScheduleRequestInput);
+        Logger.logString("Plan Json Req: "+json);
+
+        Response responsePlan = getHttpHandler().createPlans(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), json, getAuthTokenHolder().getToken()
+                .getProject().getId());
+        String resPlan = responsePlan.body().string();
+        int codePlan = responsePlan.code();
+        Logger.logString("Response: "+resPlan);
+        Logger.logString("Response code: "+codePlan);
+        assertEquals("Plan creation failed:Invalid policy id: Response code not matched: ",
+                codePlan,403);
+    }
+
+    @Test
+    @Order(20)
+    @DisplayName("Test get schedule status using non exist plan name")
+    public void testGetScheduleStatusNonExistPlanName() throws IOException {
+        Response responseSchedule = getHttpHandler().scheduleMigStatus(getAuthTokenHolder()
+                .getResponseHeaderSubjectToken(), getAuthTokenHolder().getToken()
+                .getProject().getId(), "hufsfh387646634567565567");
+        int codeGetJob = responseSchedule.code();
+        String resGetJob = responseSchedule.body().string();
+        Logger.logString("Response: "+resGetJob);
+        Logger.logString("Response code: "+codeGetJob);
+        assertEquals("Schedule Mig Status failed:non exist plan name: Response code not matched: ",
+                codeGetJob, 404);
+    }
 }
