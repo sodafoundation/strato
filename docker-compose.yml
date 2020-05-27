@@ -83,8 +83,6 @@ services:
 
   block:
     image: opensdsio/multi-cloud-block
-    ports:
-      - 8091:8091
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -93,8 +91,6 @@ services:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
-    depends_on:
-      - s3
 
   s3:
     image: opensdsio/multi-cloud-s3
