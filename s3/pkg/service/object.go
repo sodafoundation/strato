@@ -518,7 +518,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return nil
 	}
 
-	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		log.Errorf("get credential faied, err:%v\n", err)
 		return nil
@@ -630,7 +630,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
-	targetObject.UserId = srcBucket.UserId
+	targetObject.UserId = userId
 	// this is the default acl setting
 	if in.Acl != nil {
 		targetObject.Acl = in.Acl
