@@ -4,7 +4,7 @@ sudo: required
 language: go
 go_import_path: github.com/opensds/multi-cloud
 go:
-  - 1.11.x
+  - 1.13
   - tip
 
 services:
