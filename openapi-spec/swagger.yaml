@@ -37,7 +37,7 @@ info:
   contact:
     name: SODA Support
     url: 'https://opensds.slack.com'
-    email: support@opensds.io
+    email: support@sodafoundation.io
   license:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
@@ -917,7 +917,7 @@ components:
         BucketName:
           type: string
           description: >-
-            The name of bucket which is created in OpenSDS. When the type of
+            The name of bucket which is created in SODA Multi-Cloud. When the type of
             connector is opensds-obj, this parameter should be provided.
           example: bucket001
     ConnType:
