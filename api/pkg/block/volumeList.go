@@ -15,31 +15,23 @@
 package block
 
 import (
-	//"time"
-
-	//"bytes"
-	//"encoding/xml"
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	block "github.com/opensds/multi-cloud/block/proto"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	//"strconv"
 )
 
 func (s *APIService) ListVolumes(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "volume:list") {
-		return
-	}
 	log.Infof("Received request to list volumes")
 
 	backend := request.PathParameter("backendId")
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.blockClient.ListVolumes(ctx, &block.VolumeRequest{BackendId: backend})
-	log.Infof("Volume resp is rsp =[%v]", rsp)
+	log.Infof("Volume resp is rsp =[%v]\n", rsp)
 	if err != nil {
-		log.Errorf("List volumes failed with error=%v", err)
+		log.Errorf("List volumes failed with error=%v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
