@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	log "github.com/sirupsen/logrus"
-        bus "github.com/opensds/multi-cloud/s3/pkg/messagebus"
+	"github.com/opensds/multi-cloud/s3/pkg/log"
+	bus "github.com/opensds/multi-cloud/s3/pkg/messagebus"
 	. "gopkg.in/check.v1"
 )
 
