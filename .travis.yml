@@ -14,6 +14,7 @@ services:
 env:
   matrix:
   - TARGET=amd64
+    GO111MODULE=on
   global:
   - secure: "IhEskTMEAsBNYTQCpDSlvDxIJK5cu1r2V"
 
