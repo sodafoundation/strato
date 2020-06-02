@@ -17,7 +17,6 @@ package block
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
 	block "github.com/opensds/multi-cloud/block/proto"
 	log "github.com/sirupsen/logrus"
 	"net/http"
