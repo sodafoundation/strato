@@ -3,16 +3,19 @@ package micro
 import (
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
-	"time"
 
-	"github.com/micro/cli"
-	"github.com/micro/go-log"
 	"github.com/micro/go-micro/client"
-	"github.com/micro/go-micro/cmd"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/config/cmd"
+	"github.com/micro/go-micro/debug/profile"
+	"github.com/micro/go-micro/debug/profile/pprof"
+	"github.com/micro/go-micro/debug/service/handler"
+	"github.com/micro/go-micro/plugin"
 	"github.com/micro/go-micro/server"
+	"github.com/micro/go-micro/util/log"
+	"github.com/micro/go-micro/util/wrapper"
 )
 
 type service struct {
@@ -24,37 +27,19 @@ type service struct {
 func newService(opts ...Option) Service {
 	options := newOptions(opts...)
 
-	options.Client = &clientWrapper{
-		options.Client,
-		metadata.Metadata{
-			HeaderPrefix + "From-Service": options.Server.Options().Name,
-		},
-	}
+	// service name
+	serviceName := options.Server.Options().Name
+
+	// wrap client to inject From-Service header on any calls
+	options.Client = wrapper.FromService(serviceName, options.Client)
 
 	return &service{
 		opts: options,
 	}
 }
 
-func (s *service) run(exit chan bool) {
-	if s.opts.RegisterInterval <= time.Duration(0) {
-		return
-	}
-
-	t := time.NewTicker(s.opts.RegisterInterval)
-
-	for {
-		select {
-		case <-t.C:
-			err := s.opts.Server.Register()
-			if err != nil {
-				log.Log("service run Server.Register error: ", err)
-			}
-		case <-exit:
-			t.Stop()
-			return
-		}
-	}
+func (s *service) Name() string {
+	return s.opts.Server.Options().Name
 }
 
 // Init initialises options. Additionally it calls cmd.Init
@@ -67,18 +52,22 @@ func (s *service) Init(opts ...Option) {
 	}
 
 	s.once.Do(func() {
-		// save user action
-		action := s.opts.Cmd.App().Action
-
-		// set service action
-		s.opts.Cmd.App().Action = func(c *cli.Context) {
-			// set register interval
-			if i := time.Duration(c.GlobalInt("register_interval")); i > 0 {
-				s.opts.RegisterInterval = i * time.Second
+		// setup the plugins
+		for _, p := range strings.Split(os.Getenv("MICRO_PLUGIN"), ",") {
+			if len(p) == 0 {
+				continue
 			}
 
-			// user action
-			action(c)
+			// load the plugin
+			c, err := plugin.Load(p)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// initialise the plugin
+			if err := plugin.Init(c); err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		// Initialise the command flags, overriding new service
@@ -105,7 +94,7 @@ func (s *service) Server() server.Server {
 }
 
 func (s *service) String() string {
-	return "go-micro"
+	return "micro"
 }
 
 func (s *service) Start() error {
@@ -116,10 +105,6 @@ func (s *service) Start() error {
 	}
 
 	if err := s.opts.Server.Start(); err != nil {
-		return err
-	}
-
-	if err := s.opts.Server.Register(); err != nil {
 		return err
 	}
 
@@ -141,10 +126,6 @@ func (s *service) Stop() error {
 		}
 	}
 
-	if err := s.opts.Server.Deregister(); err != nil {
-		return err
-	}
-
 	if err := s.opts.Server.Stop(); err != nil {
 		return err
 	}
@@ -159,16 +140,37 @@ func (s *service) Stop() error {
 }
 
 func (s *service) Run() error {
+	// register the debug handler
+	s.opts.Server.Handle(
+		s.opts.Server.NewHandler(
+			handler.DefaultHandler,
+			server.InternalHandler(true),
+		),
+	)
+
+	// start the profiler
+	// TODO: set as an option to the service, don't just use pprof
+	if prof := os.Getenv("MICRO_DEBUG_PROFILE"); len(prof) > 0 {
+		service := s.opts.Server.Options().Name
+		version := s.opts.Server.Options().Version
+		id := s.opts.Server.Options().Id
+		profiler := pprof.NewProfile(
+			profile.Name(service + "." + version + "." + id),
+		)
+		if err := profiler.Start(); err != nil {
+			return err
+		}
+		defer profiler.Stop()
+	}
+
 	if err := s.Start(); err != nil {
 		return err
 	}
 
-	// start reg loop
-	ex := make(chan bool)
-	go s.run(ex)
-
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	if s.opts.Signal {
+		signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	}
 
 	select {
 	// wait on kill signal
@@ -176,9 +178,6 @@ func (s *service) Run() error {
 	// wait on context cancel
 	case <-s.opts.Context.Done():
 	}
-
-	// exit reg loop
-	close(ex)
 
 	return s.Stop()
 }
