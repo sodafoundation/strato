@@ -7,9 +7,9 @@ import (
 	"github.com/micro/cli"
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-micro/client"
-	"github.com/micro/go-micro/cmd"
+	"github.com/micro/go-micro/client/selector"
+	"github.com/micro/go-micro/config/cmd"
 	"github.com/micro/go-micro/registry"
-	"github.com/micro/go-micro/selector"
 	"github.com/micro/go-micro/server"
 	"github.com/micro/go-micro/transport"
 )
@@ -22,9 +22,6 @@ type Options struct {
 	Registry  registry.Registry
 	Transport transport.Transport
 
-	// Register loop interval
-	RegisterInterval time.Duration
-
 	// Before and After funcs
 	BeforeStart []func() error
 	BeforeStop  []func() error
@@ -34,6 +31,8 @@ type Options struct {
 	// Other options for implementations of the interface
 	// can be stored in a context
 	Context context.Context
+
+	Signal bool
 }
 
 func newOptions(opts ...Option) Options {
@@ -45,6 +44,7 @@ func newOptions(opts ...Option) Options {
 		Registry:  registry.DefaultRegistry,
 		Transport: transport.DefaultTransport,
 		Context:   context.Background(),
+		Signal:    true,
 	}
 
 	for _, o := range opts {
@@ -81,6 +81,15 @@ func Client(c client.Client) Option {
 func Context(ctx context.Context) Option {
 	return func(o *Options) {
 		o.Context = ctx
+	}
+}
+
+// HandleSignal toggles automatic installation of the signal handler that
+// traps TERM, INT, and QUIT.  Users of this feature to disable the signal
+// handler, should control liveness of the service through the context.
+func HandleSignal(b bool) Option {
+	return func(o *Options) {
+		o.Signal = b
 	}
 }
 
@@ -125,6 +134,13 @@ func Transport(t transport.Transport) Option {
 
 // Convenience options
 
+// Address sets the address of the server
+func Address(addr string) Option {
+	return func(o *Options) {
+		o.Server.Init(server.Address(addr))
+	}
+}
+
 // Name of the service
 func Name(n string) Option {
 	return func(o *Options) {
@@ -168,12 +184,13 @@ func RegisterTTL(t time.Duration) Option {
 // RegisterInterval specifies the interval on which to re-register
 func RegisterInterval(t time.Duration) Option {
 	return func(o *Options) {
-		o.RegisterInterval = t
+		o.Server.Init(server.RegisterInterval(t))
 	}
 }
 
 // WrapClient is a convenience method for wrapping a Client with
 // some middleware component. A list of wrappers can be provided.
+// Wrappers are applied in reverse order so the last is executed first.
 func WrapClient(w ...client.Wrapper) Option {
 	return func(o *Options) {
 		// apply in reverse
