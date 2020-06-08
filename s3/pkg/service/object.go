@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	utils2 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
