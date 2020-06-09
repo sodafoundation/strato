@@ -25,7 +25,6 @@ require (
 	github.com/journeymidnight/radoshttpd v0.0.0-20190617133011-609666b51136
 	github.com/journeymidnight/yig v2.0.0+incompatible
 	github.com/micro/go-log v0.1.0
-	github.com/micro/go-micro v1.18.0
 	github.com/micro/go-micro/v2 v2.6.0
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/robfig/cron v1.2.0
