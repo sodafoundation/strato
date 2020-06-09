@@ -59,7 +59,7 @@ func main() {
 		wc.Add(s3ws)
 	} else {
 		ws := new(restful.WebService)
-		ws.Path("/")
+		ws.Path("/v1")
 		ws.Doc("OpenSDS Multi-Cloud API")
 		ws.Consumes(restful.MIME_JSON)
 		ws.Produces(restful.MIME_JSON)
