@@ -73,7 +73,7 @@ tags:
       description: Find out more
       url: 'https://sodafoundation.io/'
 paths:
-  '/{tenantId}/backends':
+  '/v1/{tenantId}/backends':
     parameters:
       - name: tenantId
         in: path
@@ -150,7 +150,7 @@ paths:
                     example: 1
         '401':
           description: Unauthorized. Token not found in header
-  '/{tenantId}/backends/{backendId}':
+  '/v1/{tenantId}/backends/{backendId}':
     parameters:
       - name: tenantId
         in: path
@@ -226,7 +226,7 @@ paths:
           description: The resource does not exist.
         '500':
           description: The backend can not be deleted. please delete bucket first
-  '/{tenantId}/types':
+  '/v1/{tenantId}/types':
     parameters:
       - name: tenantId
         in: path
@@ -265,7 +265,7 @@ paths:
                     example: 1
         '401':
           description: Unauthorized. Token not found in header
-  '/{tenantId}/plans':
+  '/v1/{tenantId}/plans':
     parameters:
       - name: tenantId
         in: path
@@ -334,7 +334,7 @@ paths:
                     example: 1
         '401':
           description: Unauthorized. Token not found in header
-  '/{tenantId}/plans/{planId}':
+  '/v1/{tenantId}/plans/{planId}':
     parameters:
       - name: tenantId
         in: path
@@ -429,7 +429,7 @@ paths:
           description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist i.e. Plan does not exist.
-  '/{tenantId}/jobs':
+  '/v1/{tenantId}/jobs':
     parameters:
       - name: tenantId
         in: path
@@ -473,7 +473,7 @@ paths:
                     example: 1
         '401':
           description: Unauthorized. Token not found in header
-  '/{tenantId}/jobs/{jobId}':
+  '/v1/{tenantId}/jobs/{jobId}':
     parameters:
       - name: tenantId
         in: path
@@ -510,7 +510,7 @@ paths:
           description: Forbidden
         '404':
           description: The resource does not exist.
-  '/{tenantId}/policies':
+  '/v1/{tenantId}/policies':
     parameters:
       - name: tenantId
         in: path
@@ -563,7 +563,7 @@ paths:
                     example: 1
         '401':
           description: Unauthorized. Token not found in header
-  '/{tenantId}/policies/{policyId}':
+  '/v1/{tenantId}/policies/{policyId}':
     parameters:
       - name: tenantId
         in: path
