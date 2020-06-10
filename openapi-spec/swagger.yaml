@@ -1,4 +1,4 @@
-# Copyright 2019 The OpenSDS Authors.
+# Copyright 2020 The OpenSDS Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SODA S3 API are updated for s3-compatibility, Some of the references are as follows:
+#
+# https://docs.aws.amazon.com/AmazonS3/latest/gsg/GetStartedWithS3.html
+#
+# New SODA s3 APIs are to be authenticated. The following explains request
+# authentication with the AWS Signature Version 4 algorithm.
+#
+# https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
+#
 openapi: 3.0.0
 servers:
   - description: SwaggerHub API Auto Mocking
@@ -18,16 +28,16 @@ servers:
   - url: 'http://virtserver.swaggerhub.com/opensds.io/OpenSDS-Multi-Cloud/1.0.0'
 info:
   description: |
-    OpenSDS Multi-cloud API to manage multi-cloud backend storages.
+    SODA Multi-cloud API to manage multi-cloud backend storages.
     You can find out more about Swagger at
-    [https://www.opensds.io](https://www.opensds.io)
+    [https://sodafoundation.io/](https://sodafoundation.io/)
   version: 1.0.0
-  title: OpenSDS Multi-Cloud API
+  title: SODA Multi-Cloud API
   termsOfService: '://www.linuxfoundation.org/terms'
   contact:
-    name: OpenSDS Support
+    name: SODA Support
     url: 'https://opensds.slack.com'
-    email: support@opensds.io
+    email: support@sodafoundation.io
   license:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
@@ -36,32 +46,32 @@ tags:
     description: Muli-cloud cloud storage backends
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'
-  - name: type
+      url: 'https://sodafoundation.io/'
+  - name: types
     description: Supported storage backends
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'
+      url: 'https://sodafoundation.io/'
   - name: plan
     description: Migration plan
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'
+      url: 'https://sodafoundation.io/'
   - name: job
     description: Migration job
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'
+      url: 'https://sodafoundation.io/'
   - name: policy
     description: Schedule policy of plan.
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'
+      url: 'https://sodafoundation.io/'
   - name: s3
     description: s3 interface of multi-cloud
     externalDocs:
       description: Find out more
-      url: 'https://opensds.io'
+      url: 'https://sodafoundation.io/'
 paths:
   '/v1/{tenantId}/backends':
     parameters:
@@ -83,6 +93,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Backend'
+        '415':
+          description: Unsupported Media Type
+        '401':
+          description: Unauthorized. Token not found in header
       requestBody:
         $ref: '#/components/requestBodies/Backend'
     get:
@@ -96,10 +110,16 @@ paths:
           description: Filter the backend by backend type.
           schema:
             type: string
-            enum:
+            enum: &CLOUD_BACKENDS
               - hw-obs
               - aws-s3
               - azure-blob
+              - ceph-s3
+              - gcp-s3
+              - fusionstorage-object
+              - ibm-cos
+              - yig
+            example: *CLOUD_BACKENDS
         - name: name
           in: query
           description: Filter the backend by name.
@@ -128,6 +148,38 @@ paths:
                   next:
                     type: integer
                     example: 1
+        '401':
+          description: Unauthorized. Token not found in header
+  '/v1/{tenantId}/backends/{backendId}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenantId UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+      - name: backendId
+        in: path
+        description: The backend ID.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - backend
+      summary: Get a backend information.
+      operationId: getBackend
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backend'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
     put:
       tags:
         - backend
@@ -140,6 +192,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Backend'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
       requestBody:
         content:
           application/json:
@@ -149,9 +205,11 @@ paths:
                 Access:
                   description: Updated the specified backend access Id
                   type: string
+                  example: 'AMIKJGNJLHUEBWTNDL6X'
                 Security:
                   description: Updated the specified backend security Id
                   type: string
+                  example: 'Fsgs5KHAcs12420yGHNDGne8x8i5naHvdf/xZbTH'
     delete:
       tags:
         - backend
@@ -162,33 +220,12 @@ paths:
           description: Delete success
         '400':
           description: Invalid ID supplied
-  '/v1/{tenantId}/backends/{backendId}':
-    parameters:
-      - name: tenantId
-        in: path
-        description: The tenantId UUID in a multi-tenancy environment.
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - backend
-      summary: Qurey a backend information.
-      operationId: getBackend
-      parameters:
-        - name: backendId
-          in: path
-          description: The backend ID.
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Backend'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+        '500':
+          description: The backend can not be deleted. please delete bucket first
   '/v1/{tenantId}/types':
     parameters:
       - name: tenantId
@@ -226,6 +263,8 @@ paths:
                   next:
                     type: integer
                     example: 1
+        '401':
+          description: Unauthorized. Token not found in header
   '/v1/{tenantId}/plans':
     parameters:
       - name: tenantId
@@ -245,7 +284,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Plan'
+                type: object
+                properties:
+                  plan:
+                    $ref: '#/components/schemas/Plan'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
       requestBody:
         $ref: '#/components/requestBodies/Plan'
     get:
@@ -279,13 +325,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  backends:
+                  plans:
                     type: array
                     items:
                       $ref: '#/components/schemas/Plan'
                   next:
                     type: integer
                     example: 1
+        '401':
+          description: Unauthorized. Token not found in header
   '/v1/{tenantId}/plans/{planId}':
     parameters:
       - name: tenantId
@@ -310,16 +358,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Plan'
+                type: object
+                properties:
+                  plan:
+                    $ref: '#/components/schemas/Plan'
           description: successful operation.
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '403':
           description: Forbidden
         '404':
-          description: The resource does not exist.
+          description: The resource does not exist i.e. Plan does not exist.
     put:
       tags:
         - plan
@@ -331,7 +382,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Plan'
+                type: object
+                properties:
+                  plan:
+                    $ref: '#/components/schemas/Plan'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist i.e. Plan does not exist.
       requestBody:
         $ref: '#/components/requestBodies/Plan'
     delete:
@@ -342,8 +400,14 @@ paths:
       responses:
         '200':
           description: Delete success
-        '400':
-          description: Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist i.e. Plan does not exist.
     post:
       tags:
         - plan
@@ -352,8 +416,19 @@ paths:
       responses:
         '200':
           description: Run success
-        '400':
-          description: Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: Id of the Job created for the Plan
+                    example: '5eaa86fe6f384d000116d1d5'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist i.e. Plan does not exist.
   '/v1/{tenantId}/jobs':
     parameters:
       - name: tenantId
@@ -375,8 +450,9 @@ paths:
             type will be added in the future.
           schema:
             type: string
-            enum:
+            enum: &JOBS
               - migration
+            example: migration
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/sort'
@@ -388,13 +464,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  backends:
+                  jobs:
                     type: array
                     items:
                       $ref: '#/components/schemas/Job'
                   next:
                     type: integer
                     example: 1
+        '401':
+          description: Unauthorized. Token not found in header
   '/v1/{tenantId}/jobs/{jobId}':
     parameters:
       - name: tenantId
@@ -419,12 +497,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Job'
+                type: object
+                properties:
+                  job:
+                    $ref: '#/components/schemas/Job'
           description: successful operation.
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '403':
           description: Forbidden
         '404':
@@ -448,7 +529,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Policy'
+                type: object
+                properties:
+                  policy:
+                    $ref: '#/components/schemas/Policy'
+        '401':
+          description: Unauthorized. Token not found in header
       requestBody:
         $ref: '#/components/requestBodies/Policy'
     get:
@@ -468,14 +554,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  backends:
+                  policies:
                     type: array
                     items:
                       $ref: '#/components/schemas/Policy'
                   next:
                     type: integer
                     example: 1
-  '/v1/{tenantId}/plans/{policyId}':
+        '401':
+          description: Unauthorized. Token not found in header
+  '/v1/{tenantId}/policies/{policyId}':
     parameters:
       - name: tenantId
         in: path
@@ -499,12 +587,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Policy'
+                type: object
+                properties:
+                  policy:
+                    $ref: '#/components/schemas/Policy'
           description: successful operation.
         '400':
           description: Bad Request
         '401':
-          description: Unauthorized
+          description: Unauthorized. Token not found in header
         '403':
           description: Forbidden
         '404':
@@ -520,7 +611,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Policy'
+                type: object
+                properties:
+                  policy:
+                    $ref: '#/components/schemas/Policy'
       requestBody:
         $ref: '#/components/requestBodies/Policy'
     delete:
@@ -531,9 +625,15 @@ paths:
       responses:
         '200':
           description: Delete success
+          content:
+            application/json:
+              schema:
+                type: object
         '400':
           description: Invalid ID supplied
-  '/v1/s3/{bucketName}':
+        '401':
+          description: Unauthorized. Token not found in header
+  '/':
     parameters:
       - name: bucketName
         in: path
@@ -541,10 +641,32 @@ paths:
         required: true
         schema:
           type: string
+    get:
+      tags:
+        - s3
+      summary: List Buckets.
+      operationId: listBuckets
+      responses:
+        '200':
+          description: successful operation list of buckets
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ListAllMyBucketsResult'
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+  '/{bucketName}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: The name of the bucket
+        required: true
+        schema:
+          type: string
     put:
       tags:
         - s3
-      summary: create a bucket.
+      summary: Create a bucket.
       operationId: bucketPut
       responses:
         '200':
@@ -553,27 +675,19 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '500':
+          description: GetBackend Failed
       requestBody:
         content:
           application/xml:
             schema:
               $ref: '#/components/schemas/CreateBucketConfiguration'
-    delete:
-      tags:
-        - s3
-      summary: delete a bucket.
-      operationId: bucketdelete
-      responses:
-        '200':
-          description: successful delete bucket
-          content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
     get:
       tags:
         - s3
-      summary: list objects
+      summary: Get Objects of the Bucket
       operationId: listObjects
       responses:
         '200':
@@ -581,28 +695,30 @@ paths:
           content:
             application/xml:
               schema:
-                $ref: '#/components/schemas/ListObjectResponse'
-  /v1/s3/:
-    parameters:
-      - name: bucketName
-        in: path
-        description: the name of bucket
-        required: true
-        schema:
-          type: string
-    get:
+                $ref: '#/components/schemas/ListBucketResult'
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Bucket
+    delete:
       tags:
         - s3
-      summary: list buckets.
-      operationId: listBuckets
+      summary: Delete a bucket.
+      operationId: bucketdelete
       responses:
-        '200':
-          description: successful delete bucket
+        '204':
+          description: No Content i.e. Successful Delete Bucket
           content:
             application/xml:
               schema:
-                $ref: '#/components/schemas/ListAllMyBucketsResult'
-  '/v1/s3/{bucketName}/{object}':
+                $ref: '#/components/schemas/BaseResponse'
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Bucket
+        '409':
+          description: Bucket Not Empty
+  '/{bucketName}/{object}':
     parameters:
       - name: bucketName
         in: path
@@ -626,7 +742,7 @@ paths:
           type: string
       - name: uploads
         in: query
-        description: 'the format is ''/{object}?uploads'',used for init multipartupload'
+        description: The format is ''/{object}?uploads'',used for init multipartupload
         required: false
         schema:
           type: string
@@ -650,40 +766,54 @@ paths:
     put:
       tags:
         - s3
-      summary: upload object.
+      summary: Upload Object.
       operationId: objectPut
       responses:
         '200':
-          description: successful upload a object
+          description: Successful Upload Object
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Bucket
     get:
       tags:
         - s3
-      summary: download object
+      summary: Download Object
       operationId: objectGet
       responses:
         '200':
-          description: successful download object
+          description: Successful Download Object
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Key
     delete:
       tags:
         - s3
-      summary: delete a object.
+      summary: Delete Object.
       operationId: objectdelete
       responses:
         '200':
-          description: successful delete object
+          description: Successful Deletion of Object
           content:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
-  '/v1/s3/storageClasses':
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Key
+  '/storageClasses':
     get:
       tags:
         - s3
-      summary: get supported storage classes
+      summary: Get Supported StorageClasses
       operationId: getStorageClasses
       responses:
         '200':
-          description: 'Get storage classes succesfully. There is a map between storage class name and stroage tier, as default the storage classes are compatible with aws s3.'
+          description: >-
+           Get storage classes succesfully. There is a map between storage class name
+           and stroage tier, as default the storage classes are compatible with aws s3.
           content:
             application/xml:
               schema:
@@ -722,16 +852,17 @@ components:
       type: object
       properties:
         Id:
-          description: 'The backend ID, generate by server'
+          description: The backend ID, generated by server
           type: string
-          example: 5bd6f273b0bdf90001dc91c2
+          example: '5ea809d2553b0f000116be32'
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6a
+          example: '94b280022d0c4401bcf3b0ea85870519'
         UserId:
-          description: User Id.
+          description: The user UUID in a multi-tenancy environment.
           type: string
+          example: '558057c4256545bd8a307c37464003c9'
         Name:
           description: The backend name specified by user.
           type: string
@@ -739,46 +870,45 @@ components:
         Type:
           description: The backend type.
           type: string
-          example: hw-obs
-          enum:
-            - hw-obs
-            - aws-s3
-            - azure-blob
+          example: aws-s3
+          enum: *CLOUD_BACKENDS
         Region:
           type: string
-          example: ap-southeast-1
+          example: ap-south-1
         Endpoint:
           type: string
-          example: obs.ap-southeast-1.myhwclouds.com
+          example: s3.amazonaws.com
         BucketName:
           type: string
           example: bucket001
         Access:
           type: string
-          example: 4X7JQDFTCYUNWFBRYZVC
+          example: '4X7JQDFTCYUNWFBRYZVC'
         Security:
           type: string
-          example: 9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn
+          example: '9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn'
     Type:
       type: object
       properties:
         name:
           description: The backend type name.
           type: string
-          example: hw-obs
+          example: aws-s3
         description:
           description: The backend type description.
           type: string
-          example: Huawei Object Storage Service(OBS)
+          example: AWS Simple Cloud Storage Service(S3)
     KV:
       type: object
       properties:
         key:
           description: Key of the Key-Value object.
           type: string
+          example: Image001.PNG
         Value:
           description: Value of the Key-Value object.
           type: string
+          example: '&#34;d97849a5d11d7f7f90e0c1609d091d0a&#34;'
     Connector:
       type: object
       properties:
@@ -787,52 +917,33 @@ components:
         BucketName:
           type: string
           description: >-
-            The name of bucket which is created in OpenSDS. When the type of
+            The name of bucket which is created in SODA Multi-Cloud. When the type of
             connector is opensds-obj, this parameter should be provided.
-        SelfConfig:
-          description: >-
-            When the type of connector is not opensds-obj, this parameter should
-            be provided. It is used for self-define connector.
-          type: array
-          items:
-            $ref: '#/components/schemas/KV'
-          example:
-            - key: region
-              value: ap-southeast-1
-            - key: endpoint
-              value: s3.amazonaws.com
-            - key: bucketname
-              value: test
-            - key: access
-              value: ABCDEFGHIJKLMNOPQRST
-            - key: security
-              value: ABCDEFGHIJKLMNOPQRSTABCDEFGHIJKLMNOPQRST
+          example: bucket001
     ConnType:
       type: string
       description: Connector type.
       example: opensds-obj
-      enum:
-        - opensds-obj
-        - aws-s3
-        - azure-blob
-        - hw-obs
+      enum: *CLOUD_BACKENDS
     Plan:
       type: object
       properties:
         Id:
-          description: 'The plan ID, generate by server'
+          description: The plan ID, generated by server
           type: string
-          example: 5bd6f273b0bdf90001dc91c3
+          example: '5eaa81fd6f384d000116d1d4'
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6b
+          example: '94b280022d0c4401bcf3b0ea85870519'
         UserId:
-          description: User Id.
+          description: The user UUID in a multi-tenancy environment.
           type: string
+          example: '558057c4256545bd8a307c37464003c9'
         Description:
           description: Plan description.
           type: string
+          example: AWS to HW OBS Bucket Migration
         Name:
           description: The plan name specified by user.
           type: string
@@ -855,6 +966,7 @@ components:
         RemainSource:
           description: Remain the source objects or not.
           type: boolean
+          example: true
         SourceConn:
           $ref: '#/components/schemas/Connector'
         DestConn:
@@ -867,95 +979,135 @@ components:
               description: >-
                 Prefix of object name, only those objects which name have this
                 prefix will be choosed.
+              example: photos/
+            Tag:
+              type: array
+              description: Tag of object name.
+              items:
+                $ref: '#/components/schemas/KV'
     Job:
       type: object
       properties:
         Id:
-          description: 'The plan ID, generate by server'
+          description: The plan ID, generated by server
           type: string
-          example: 5bd6f273b0bdf90001dc91c3
+          example: '5bd6f273b0bdf90001dc91c3'
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6b
+          example: '94b280022d0c4401bcf3b0ea85870519'
+        UserId:
+          description: The User UUID in a multi-tenancy environment.
+          type: string
+          example: '558057c4256545bd8a307c37464003c9'
+        TriggerType:
+          description: The migration triggering operation type.
+          type: string
+          example: manual
+          enum:
+            - auto
+            - manual
         Type:
           description: >-
             The plan type. Till now only migration support. New types will be
             added in the future.
           type: string
           example: migration
-          enum:
-            - migration
+          enum: *JOBS
         PlanName:
           description: The name of plan job belongs to.
           type: string
+          example: plan001
         PlanId:
           description: The id of plan job belongs to.
           type: string
+          example: '5eaa81fd6f384d000116d1d4'
         SourceLocation:
           description: The source data migrate or replicate from.
           type: string
+          example: bucket001
         DestLocation:
           description: The target data migrate or replicate to.
           type: string
+          example: bucket002
         CreateTime:
           description: The time job is created.
           type: integer
+          example: 1588233982
         StartTime:
           description: The time job started to run.
           type: integer
+          example: 158823398
         EndTime:
           description: The time job ended.
           type: integer
+          example: 1588233983
         Status:
           description: The status of job.
           type: string
           enum:
             - pending
-            - rnning
+            - running
             - succeed
             - failed
+          example: succeed
         TotalCapacity:
           description: The total capacity that should be migrated.
           type: integer
+          example: 287206
         PassedCapacity:
           description: The capacity that have been migrated.
           type: integer
+          example: 287206
+        MigratedCapacity:
+          description: The capacity that have been migrated till now.
+          type: integer
+          example: 287206
         TotalCount:
           description: The total count of objects that should be migrated.
           type: integer
+          example: 1
         PassedCount:
           description: The count that have been migrated.
           type: integer
+          example: 1
         Progress:
-          description: 'The progress of job, represented by percentage.'
+          description: The progress of job, represented by percentage.
           type: integer
+          example: 100
+        RemainSource:
+          description: Flag indicating whether to keep the content of source bucket
+          type: boolean
+          example: true
     Policy:
       type: object
       properties:
         Id:
-          description: 'The policy ID, generate by server'
+          description: The policy ID, generated by server
           type: string
-          example: 5bd6f273b0bdf90001dc91c3
+          example: '5bd6f273b0bdf90001dc91c3'
         TenantId:
           description: The tenant UUID in a multi-tenancy environment.
           type: string
-          example: 1ff92505-3efb-45bd-8e2d-764a1ce0fa6b
+          example: '94b280022d0c4401bcf3b0ea85870519'
         Name:
           description: Policy Name.
           type: string
+          example: policy001
         Description:
           description: Description of policy.
           type: string
+          example: Migration Policy
         Schedule:
           description: Schedule rules.
           type: object
           properties:
             Type:
               type: string
-              description: 'The type of scheduler, only cron support now.'
+              description: The type of scheduler, only cron support now.
               enum:
                 - cron
+              example: 'cron'
             TriggerProperties:
               type: string
               description: >-
@@ -970,6 +1122,7 @@ components:
                 #Month        | Yes        | 1-12 or JAN-DEC | * / , -
                 #Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
                 #See https://godoc.org/github.com/robfig/cron for details.
+              example: ''
 
     BaseResponse:
       type: object
@@ -982,55 +1135,162 @@ components:
           type: string
     CreateBucketConfiguration:
       type: object
+      xml:
+        namespace: http://s3.amazonaws.com/doc/2006-03-01/
       properties:
         LocationConstraint:
           description: The backend of Bucket
           type: string
+          example: backend001
     ListAllMyBucketsResult:
       type: object
+      xml:
+        namespace: http://s3.amazonaws.com/doc/2006-03-01/
       properties:
         Owner:
-          description: ''
+          description: Owner/Tenant of the bucket
           type: object
           properties:
             ID:
-              description: The owner id
+              description: The tenant UUID in a multi-tenancy environment.
               type: string
+              example: '94b280022d0c4401bcf3b0ea85870519'
             DisplayName:
-              description: ''
+              description: The tenant name in a multi-tenancy environment.
               type: string
+              example: ''
         Buckets:
           description: ''
           type: object
           properties:
-            name:
-              description: The name of bucket
-              type: string
-            CreationDate:
-              description: The date of create
-              type: string
-            LocationConstraint:
-              description: The backend of logic bucket
-              type: string
-    ListObjectResponse:
+            Bucket:
+              description: Bucket details
+              type: object
+              properties:
+                Name:
+                  description: The name of bucket
+                  type: string
+                  example: bucket001
+                CreationDate:
+                  description: The date of creation
+                  type: string
+                  example: '2020-04-29T15:37:28.000Z'
+                LocationConstraint:
+                  description: The backend of logical bucket
+                  type: string
+                  example: aws-backend
+                VersioningConfiguration:
+                  description: Versioning Configuration of the bucket
+                  type: object
+                  properties:
+                    Status:
+                      description: Status of the Versioning Bucket
+                      type: string
+                      enum:
+                        - Enabled
+                        - Disabled
+                        - Suspended
+                      example: Disabled
+                SSEConfiguration:
+                  description: SSE Configuration of the bucket
+                  type: object
+                  properties:
+                    SSE:
+                      description: SSE Configuration of the bucket
+                      type: object
+                      properties:
+                        enabled:
+                          description: Status of the SSE Bucket
+                          type: boolean
+                          example: false
+                    SSE-KMS:
+                      description: SSE KMS Configuration of the bucket
+                      type: object
+                      properties:
+                        enabled:
+                          description: Status of the SSE KMS Bucket
+                          type: boolean
+                          example: false
+                        DefaultKMSMasterKey:
+                          description: Master Key of the SSE KMS Bucket
+                          type: string
+                          example: ''
+    ListBucketResult:
       type: object
+      description: Bucket List Metadata
       properties:
-        ListObjects:
-          description: ''
+        Delimiter:
+          description: Delimiter is a character used to group keys
+          type: string
+          example: ''
+        IsTruncated:
+          description: Flag to indicate whether all of the results that satisfied the search criteria is returned
+          type: boolean
+          example: false
+        Marker:
+          description: Indicates where in the bucket listing begins.
+          type: string
+          example: ''
+        NextMarker:
+          description: When response is truncated, key name is used in this field as marker in the subsequent request to get next set of objects.
+          type: string
+          example: ''
+        MaxKeys:
+          description: Maximum number of keys returned in the response body.
+          type: integer
+          example: 1000
+        Name:
+          description: Bucket Name
+          type: string
+          example: bucket001
+        Prefix:
+          description: Keys that begin with the indicated prefix
+          type: string
+          example: ''
+        Contents:
+          description: Metadata about each object returned
           type: object
           properties:
-            ObjectKey:
-              description: The key of object
+            Key:
+              description: The name of the Object
               type: string
-            BucketName:
-              description: The name of bucket
+              example: SODA.PNG
+            LastModified:
+              description: The date the Object was Last Modified
               type: string
-            size:
-              description: The size of object
+              example: '2020-04-29T14:11:47.000Z'
+            ETag:
+              description: The entity tag is an MD5 hash of the object. ETag reflects only changes to the contents of an object, not its metadata.
               type: string
-            Backend:
+              example: '&#34;d97849a5d11d7f7f90e0c1609d091d0a&#34;'
+            Size:
+              description: Size in bytes of the object
+              type: integer
+              example: 287206
+            Owner:
+              description: The owner of the object
+              type: object
+              properties:
+                ID:
+                  description: The ID of the owner.
+                  type: string
+                  example: '94b280022d0c4401bcf3b0ea85870519'
+                DisplayName:
+                  description: The display name of the owner.
+                  type: string
+                  example: '94b280022d0c4401bcf3b0ea85870519'
+            StorageClass:
+              description: The class of storage used to store the object
+              type: string
+              example: STANDARD
+            Tier:
+              description: The storageclass tier for which the object belongs to
+              type: integer
+              example: 1
+            Location:
               description: The backend of object
               type: string
+              example: backend001
     ListStorageClasses:
       type: array
       xml:
@@ -1041,12 +1301,20 @@ components:
         type: object
         properties:
           Name:
-            description: 'The storage class name, as default, it is compatible with aws s3.'
+            description: The storage class name, as default, it is compatible with aws s3.
             type: string
+            enum: &STORAGE_CLASSES
+              - STANDARD
+              - STANDARD_IA
+              - GLACIER
             example: STANDARD
           Tier:
-            description: 'The storage tier, used in OpenSDS. Each tier is mapped to a specific name.'
+            description: The storage tier, used in Multi-Cloud. Each tier is mapped to a specific name.
             type: integer
+            enum: &STORAGE_TIERS
+              - 1
+              - 99
+              - 999
             example: 1
   requestBodies:
     Backend:
