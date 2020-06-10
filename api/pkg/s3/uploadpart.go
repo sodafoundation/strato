@@ -15,12 +15,14 @@
 package s3
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	. "github.com/opensds/multi-cloud/s3/error"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
@@ -88,10 +90,20 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	} else {
 		limitedDataReader = request.Request.Body
 	}
+	dataReader := limitedDataReader
+	// Build sha256sum if needed.
+	inputSh256Sum := request.Request.Header.Get("X-Amz-Content-Sha256")
+	sha256Writer := sha256.New()
+	needCheckSha256 := false
+	if inputSh256Sum != "" && inputSh256Sum != signature.UnsignedPayload {
+		needCheckSha256 = true
+		dataReader = io.TeeReader(limitedDataReader, sha256Writer)
+	}
+
 	buf := make([]byte, ChunkSize)
 	eof := false
 	for !eof {
-		n, err := limitedDataReader.Read(buf)
+		n, err := dataReader.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Errorf("read error:%v\n", err)
 			break
@@ -113,6 +125,16 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorln("unable to recv message. err:%v, errcode:%v", err, result.ErrorCode)
 		return
+	}
+
+	// Check if sha256sum match.
+	if needCheckSha256 {
+		sha256Sum := hex.EncodeToString(sha256Writer.Sum(nil))
+		if inputSh256Sum != sha256Sum {
+			log.Errorln("sha256Sum:", sha256Sum, ", received:",
+				request.Request.Header.Get("X-Amz-Content-Sha256"))
+			WriteErrorResponse(response, request, ErrContentSHA256Mismatch)
+		}
 	}
 
 	if result.ETag != "" {

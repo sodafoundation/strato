@@ -20,12 +20,8 @@
 package signature
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -127,29 +123,12 @@ func sumMD5(data []byte) []byte {
 
 // A helper function to verify if request has valid AWS Signature
 func IsReqAuthenticated(r *http.Request) (credential credentials.Value, e error) {
-	payload, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return credential, ErrInternalError
-	}
-	// Verify Content-Md5, if payload is set.
-	if r.Header.Get("Content-Md5") != "" {
-		// check if it is valid
-		_, err := base64.StdEncoding.DecodeString(r.Header.Get("Content-Md5"))
-		if err != nil {
-			return credential, ErrInvalidDigest
-		}
-		if r.Header.Get("Content-Md5") != base64.StdEncoding.EncodeToString(sumMD5(payload)) {
-			return credential, ErrBadDigest
-		}
-	}
-	// Populate back the payload.
-	r.Body = ioutil.NopCloser(bytes.NewReader(payload))
 	validateRegion := false // TODO: Validate region.
 	switch GetRequestAuthType(r) {
 	case AuthTypePresignedV4:
 		return DoesPresignedSignatureMatchV4(r, validateRegion)
 	case AuthTypeSignedV4:
-		return DoesSignatureMatchV4(hex.EncodeToString(sum256(payload)), r, validateRegion)
+		return DoesSignatureMatchV4(r.Header.Get("X-Amz-Content-Sha256"), r, validateRegion)
 	case AuthTypePresignedV2:
 		return DoesPresignedSignatureMatchV2(r)
 	case AuthTypeSignedV2:

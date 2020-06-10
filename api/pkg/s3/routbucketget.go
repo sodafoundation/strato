@@ -16,12 +16,14 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	. "github.com/opensds/multi-cloud/s3/error"
 )
 
 func (s *APIService) RouteBucketGet(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:get") {
+	err := signature.PayloadCheck(request, response)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
 		return
 	}
 	if IsQuery(request, "acl") {
