@@ -63,6 +63,7 @@ const (
 const (
 	REQUEST_PATH_BUCKET_NAME         = "bucketName"
 	REQUEST_PATH_OBJECT_KEY          = "objectKey"
+	REQUEST_PATH_BACKEND_ID          = "backendId"
 	REQUEST_HEADER_CONTENT_LENGTH    = "Content-Length"
 	REQUEST_HEADER_BACKEND           = "x-amz-meta-backend"
 	REQUEST_HEADER_STORAGE_CLASS     = "x-amz-storage-class"
@@ -134,6 +135,19 @@ func GetFilter(request *restful.Request, filterOpts []string) (map[string]string
 	filter := make(map[string]string)
 	for _, opt := range filterOpts {
 		v := request.QueryParameter(opt)
+		if v == "" {
+			continue
+		}
+		filter[opt] = v
+	}
+	return filter, nil
+}
+
+func GetFilterPathParams(request *restful.Request, filterOpts []string) (map[string]string, error) {
+
+	filter := make(map[string]string)
+	for _, opt := range filterOpts {
+		v := request.PathParameter(opt)
 		if v == "" {
 			continue
 		}
