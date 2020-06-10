@@ -15,14 +15,77 @@
 package service
 
 import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/micro/go-micro/v2/client"
+	"github.com/opensds/multi-cloud/file/pkg/db"
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
 )
 
-type fileService struct {}
+type fileService struct {
+	fileClient pb.FileService
+}
 
 func NewFileService() pb.FileHandler {
 
 	log.Infof("Init file service finished.\n")
-	return &fileService{}
+	return &fileService{
+		fileClient: pb.NewFileService("file", client.DefaultClient),
+	}
+}
+
+func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareRequest, out *pb.ListFileShareResponse) error {
+	log.Info("Received ListFileShare request.")
+
+	if in.Limit < 0 || in.Offset < 0 {
+		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
+		log.Info(msg)
+		return errors.New(msg)
+	}
+
+	res, err := db.DbAdapter.ListFileShare(ctx, int(in.Limit), int(in.Offset), in.Filter)
+	if err != nil {
+		log.Errorf("Failed to List FileShares: %v\n", err)
+		return err
+	}
+
+	var fileshares []*pb.FileShare
+	for _, fs := range res {
+		var tags []*pb.Tag
+		for _, tag := range fs.Tags {
+			tags = append(tags, &pb.Tag{
+				Key:   tag.Key,
+				Value: tag.Value,
+			})
+		}
+		fileshares = append(fileshares, &pb.FileShare{
+			Id:               fs.Id.Hex(),
+			CreatedAt:        fs.CreatedAt,
+			UpdatedAt:        fs.UpdatedAt,
+			Name:             fs.Name,
+			Description:      fs.Description,
+			TenantId:         fs.TenantId,
+			UserId:           fs.UserId,
+			BackendId:        fs.BackendId,
+			Backend:          fs.Backend,
+			Size:             fs.Size,
+			Type:             fs.Type,
+			Status:           fs.Status,
+			Region:           fs.Region,
+			AvailabilityZone: fs.AvailabilityZone,
+			Tags:             tags,
+			Protocols:        fs.Protocols,
+			SnapshotId:       fs.SnapshotId,
+			Encrypted:        fs.Encrypted,
+			Metadata:         fs.Metadata,
+		})
+	}
+	out.Fileshares = fileshares
+	out.Next = in.Offset + int32(len(res))
+
+	log.Infof("List File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
+	return nil
 }

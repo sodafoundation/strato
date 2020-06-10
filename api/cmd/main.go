@@ -21,6 +21,7 @@ import (
 	"github.com/micro/go-micro/v2/web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
+	"github.com/opensds/multi-cloud/api/pkg/file"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
@@ -66,6 +67,7 @@ func main() {
 
 		backend.RegisterRouter(ws)
 		dataflow.RegisterRouter(ws)
+		file.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())
