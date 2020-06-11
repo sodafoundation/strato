@@ -15,7 +15,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/micro/go-micro/v2"
 
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
@@ -36,6 +35,6 @@ func main() {
 
 	pb.RegisterFileHandler(service.Server(), handler.NewFileService())
 	if err := service.Run(); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 }
