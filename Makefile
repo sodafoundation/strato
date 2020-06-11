@@ -78,7 +78,7 @@ goimports:
 	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
 
 clean:
-	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3
+	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3 file/file
 
 version:
 	@echo ${VERSION}

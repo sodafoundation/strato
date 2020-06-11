@@ -23,7 +23,6 @@ import (
 func Test_Main(t *testing.T) {
 	var (
 		args []string
-		//run  bool
 		run = true
 	)
 
