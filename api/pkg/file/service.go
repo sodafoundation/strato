@@ -189,3 +189,27 @@ func (s *APIService) GetFileShare(request *restful.Request, response *restful.Re
 	log.Info("Get file share details successfully.")
 	response.WriteEntity(res.Fileshare)
 }
+
+func (s *APIService) DeleteFileShare(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "fileshare:delete") {
+		return
+	}
+
+	id := request.PathParameter("id")
+	log.Infof("Received request for deleting file share: %s\n", id)
+
+	ctx := common.InitCtxWithAuthInfo(request)
+
+	backendId := request.PathParameter(common.REQUEST_PATH_BACKEND_ID)
+	s.checkBackendExists(ctx, request, response, backendId)
+
+	res, err := s.fileClient.DeleteFileShare(ctx, &file.DeleteFileShareRequest{Id: id})
+	if err != nil {
+		log.Errorf("failed to delete file: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Delete file share successfully.")
+	response.WriteEntity(res)
+}
