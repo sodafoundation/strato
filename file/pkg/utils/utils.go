@@ -1,4 +1,4 @@
-// Copyright 2020 The SODA Authors.
+// Copyright 2019 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file
+package utils
 
-import (
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
+const (
+	// Bytes Conversion factor
+	GB_FACTOR = 1024 * 1024 * 1024
 )
 
-//RegisterRouter - route request to appropriate method
-func RegisterRouter(ws *restful.WebService) {
-	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenantId}/file/shares").To(handler.ListFileShare)).
-		Doc("List all file shares")
-	ws.Route(ws.GET("/{tenantId}/file/shares/{id}").To(handler.GetFileShare)).
-		Doc("Show file shares details")
-}

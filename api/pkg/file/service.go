@@ -181,3 +181,23 @@ func (s *APIService) listFileShareByBackend(ctx context.Context, request *restfu
 
 	return listFileShareRequest
 }
+
+func (s *APIService) GetFileShare(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "fileshare:get") {
+		return
+	}
+	log.Infof("Received request for file share details: %s\n", request.PathParameter("id"))
+	id := request.PathParameter("id")
+
+	ctx := common.InitCtxWithAuthInfo(request)
+
+	res, err := s.fileClient.GetFileShare(ctx, &file.GetFileShareRequest{Id: id})
+	if err != nil {
+		log.Errorf("failed to get file share details: %v\n", err)
+		response.WriteError(http.StatusNotFound, err)
+		return
+	}
+
+	log.Info("Get file share details successfully.")
+	response.WriteEntity(res.Fileshare)
+}
