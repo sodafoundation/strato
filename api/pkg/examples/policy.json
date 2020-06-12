@@ -36,5 +36,6 @@
   "bucketlifecycle:put": "",
   "bucketlifecycle:get": "",
   "bucketlifecycle:delete": "",
-  "fileshare:list": ""
+  "fileshare:list": "",
+  "fileshare:get": ""
 }
