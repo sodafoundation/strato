@@ -26,4 +26,6 @@ func RegisterRouter(ws *restful.WebService) {
 		Doc("List all file shares")
 	ws.Route(ws.GET("/{tenantId}/file/shares/{id}").To(handler.GetFileShare)).
 		Doc("Show file shares details")
+	ws.Route(ws.DELETE("/{tenantId}/file/shares/{id}").To(handler.DeleteFileShare)).
+		Doc("Delete file share")
 }
