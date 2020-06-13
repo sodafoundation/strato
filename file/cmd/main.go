@@ -15,13 +15,15 @@
 package main
 
 import (
-	"github.com/micro/go-micro/v2"
 	"os"
 
+	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	_ "github.com/opensds/multi-cloud/contrib/datastore"
 	"github.com/opensds/multi-cloud/file/pkg/db"
-	handler "github.com/opensds/multi-cloud/file/pkg/service"
 	"github.com/opensds/multi-cloud/file/pkg/utils/config"
+
+	handler "github.com/opensds/multi-cloud/file/pkg/service"
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
 )

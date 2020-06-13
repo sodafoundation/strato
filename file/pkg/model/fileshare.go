@@ -27,12 +27,12 @@ type FileShare struct {
 	// CreatedAt representing the server time when the object was created successfully.
 	// Now, it's represented as a time string in RFC8601 format.
 	// +readOnly
-	CreatedAt string `json:"createdAt" bson:"createdAt,omitempty"`
+	CreatedAt string `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 
 	// UpdatedAt representing the server time when the object was updated successfully.
 	// Now, it's represented as a time string in RFC8601 format.
 	// +readOnly
-	UpdatedAt string `json:"updatedAt" bson:"updatedAt,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty" bson:"updatedAt,omitempty"`
 
 	// The uuid of the project that the file share belongs to.
 	TenantId string `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
@@ -60,15 +60,15 @@ type FileShare struct {
 	// The size of the file share requested by the user.
 	// Default unit of file share Size is GB.
 	// +optional
-	Size int64 `json:"size,omitempty" bson:"size,omitempty"`
+	Size *int64 `json:"size,omitempty" bson:"size,omitempty"`
 
 	// The location that file share belongs to.
 	// +optional
-	Region string `json:"region,omitempty bson:"region,omitempty"`
+	Region string `json:"region,omitempty" bson:"region,omitempty"`
 
 	// The locality that file share belongs to.
 	// +optional
-	AvailabilityZone string `json:"availabilityZone,omitempty bson:"availabilityZone,omitempty"`
+	AvailabilityZone string `json:"availabilityZone,omitempty" bson:"availabilityZone,omitempty"`
 
 	// The status of the file share.
 	Status string `json:"status,omitempty" bson:"status,omitempty"`
@@ -83,25 +83,25 @@ type FileShare struct {
 
 	// The uuid of the snapshot from which the file share is created.
 	// +optional
-	SnapshotId string `json:"snapshotId,omitempty bson:"snapshotId,omitempty"`
+	SnapshotId string `json:"snapshotId,omitempty" bson:"snapshotId,omitempty"`
 
 	// Indicates whether the file share is encrypted.
 	// +optional
-	Encrypted bool `json:"encrypted,omitempty" bson:"encrypted,omitempty"`
+	Encrypted *bool `json:"encrypted,omitempty" bson:"encrypted,omitempty"`
 
 	// EncryptionSettings that was used to protect the file share encryption.
 	// +optional
-	EncryptionSettings map[string]string `json:"encryptionSettings,omitempty bson:"encryptionSettings,omitempty"`
+	EncryptionSettings map[string]string `json:"encryptionSettings,omitempty" bson:"encryptionSettings,omitempty"`
 
 	// Metadata should be kept until the semantics between file share and backend storage resource.
 	// +optional
-	Metadata map[string]string `json:"metadata,omitempty bson:"metadata,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 type Tag struct {
 	// The key of the tag.
-	Key string `json:"key,omitempty bson:"key,omitempty"`
+	Key string `json:"key,omitempty" bson:"key,omitempty"`
 
 	// The value of the tag.
-	Value string `json:"value,omitempty bson:"value,omitempty"`
+	Value string `json:"value,omitempty" bson:"value,omitempty"`
 }

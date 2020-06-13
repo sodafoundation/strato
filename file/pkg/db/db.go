@@ -49,6 +49,5 @@ func Exit(db *config.Database) {
 
 type DBAdapter interface {
 	ListFileShare(ctx context.Context, limit, offset int, query interface{}) ([]*model.FileShare, error)
-	GetFileShare(ctx context.Context, id string) (*model.FileShare, error)
-	DeleteFileShare(ctx context.Context, id string) error
+	CreateFileShare(ctx context.Context, fileshare *model.FileShare) (*model.FileShare, error)
 }

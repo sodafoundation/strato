@@ -12,18 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file
+package driver
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
+	"context"
+
+	pb "github.com/opensds/multi-cloud/file/proto"
 )
 
-//RegisterRouter - route request to appropriate method
-func RegisterRouter(ws *restful.WebService) {
-	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenantId}/file/shares").To(handler.ListFileShare)).
-		Doc("List all file shares")
-	ws.Route(ws.POST("/{tenantId}/file/shares").To(handler.CreateFileShare)).
-		Doc("Create file shares")
+// define the storage driver interface.
+type StorageDriver interface {
+	FileStorageDriver
+}
+
+// define the fileshare driver interface.
+type FileStorageDriver interface {
+	CreateFileShare(ctx context.Context, fs *pb.CreateFileShareRequest) (*pb.CreateFileShareResponse, error)
+	ListFileShare(ctx context.Context, fs *pb.ListFileShareRequest) (*pb.ListFileShareResponse, error)
+	// Close: cleanup when driver needs to be stopped.
+	Close() error
 }

@@ -23,8 +23,11 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/contrib/utils"
+	"github.com/opensds/multi-cloud/file/pkg/model"
 	"github.com/opensds/multi-cloud/file/proto"
 
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -46,7 +49,10 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func UpdateFilter(reqFilter map[string]string, filter map[string]string) error {
+	log.Debugf("Getting the filters updated for the request.")
+
 	for k, v := range filter {
+		log.Debugf("Filter Key = [%+v], Key = [%+v]\n", k, v)
 		reqFilter[k] = v
 	}
 	return nil
@@ -61,17 +67,21 @@ func WriteError(response *restful.Response, msg string, errCode int, err error) 
 	}
 }
 
-func (s *APIService) checkBackendExists(ctx context.Context, request *restful.Request, response *restful.Response,
-	backendId string){
+func (s *APIService) checkBackendExists(ctx context.Context, request *restful.Request,
+	response *restful.Response, backendId string) error{
+
 	backendResp, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
 	if err != nil {
 		WriteError(response, "Get Backend details failed: %v\n", http.StatusNotFound, err)
-		return
+		return err
 	}
 	log.Infof("Backend response = [%+v]\n", backendResp)
+
+	return nil
 }
 
-func (s *APIService) prepareFileShareRequest(request *restful.Request, response *restful.Response) *file.ListFileShareRequest {
+func (s *APIService) prepareFileShareRequest(request *restful.Request,
+	response *restful.Response) *file.ListFileShareRequest {
 
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
@@ -109,9 +119,23 @@ func (s *APIService) ListFileShare(request *restful.Request, response *restful.R
 
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	listfileshareRequest := s.prepareFileShareRequest(request, response)
+	backendId := request.QueryParameter(common.REQUEST_PATH_BACKEND_ID)
 
-	res, err := s.fileClient.ListFileShare(ctx, listfileshareRequest)
+	var listFileShareRequest *file.ListFileShareRequest
+
+	if backendId != "" {
+		//List fileshares for the backend.
+		listFileShareRequest = s.listFileShareByBackend(ctx, request, response, backendId)
+	} else {
+		//List all fileshares.
+		listFileShareRequest = s.listFileShareDefault(ctx, request, response)
+	}
+
+	if listFileShareRequest == nil {
+		return
+	}
+
+	res, err := s.fileClient.ListFileShare(ctx, listFileShareRequest)
 	if err != nil {
 		WriteError(response, "List FileShares failed: %v\n", http.StatusInternalServerError, err)
 		return
@@ -126,90 +150,110 @@ func (s *APIService) ListFileShare(request *restful.Request, response *restful.R
 	}
 }
 
-func (s *APIService) ListFileShareByBackend(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:list") {
-		return
+
+func (s *APIService) listFileShareDefault(ctx context.Context, request *restful.Request,
+	response *restful.Response) *file.ListFileShareRequest {
+
+	return s.prepareFileShareRequest(request, response)
+}
+
+func (s *APIService) listFileShareByBackend(ctx context.Context, request *restful.Request, response *restful.Response,
+	backendId string) *file.ListFileShareRequest {
+
+	if s.checkBackendExists(ctx, request, response, backendId) != nil {
+		return nil
 	}
-	log.Info("Received request for File Share List for a Backend.")
 
-	ctx := common.InitCtxWithAuthInfo(request)
-	backendId := request.PathParameter(common.REQUEST_PATH_BACKEND_ID)
-
-	s.checkBackendExists(ctx, request, response, backendId)
-
-	filterPathOpts := []string{"backendId"}
-	filterPath, err := common.GetFilterPathParams(request, filterPathOpts)
+	filterQueryOpts := []string{"backendId"}
+	filterQuery, err := common.GetFilter(request, filterQueryOpts)
 	if err != nil {
 		WriteError(response, "Get filter failed: %v\n", http.StatusBadRequest, err)
-		return
+		return nil
 	}
 
-	listfileshareRequest := s.prepareFileShareRequest(request, response)
+	listFileShareRequest := s.prepareFileShareRequest(request, response)
 
-	err = UpdateFilter(listfileshareRequest.Filter, filterPath)
-	if err != nil {
+	if listFileShareRequest == nil {
+		return nil
+	}
+
+	if UpdateFilter(listFileShareRequest.Filter, filterQuery) != nil {
 		log.Errorf("Update filter failed: %v\n", err)
-		return
+		return nil
 	}
 
-	res, err := s.fileClient.ListFileShare(ctx, listfileshareRequest)
-	if err != nil {
-		WriteError(response, "List FileShares failed: %v\n", http.StatusInternalServerError, err)
-		return
-	}
-
-	log.Info("List FileShares successfully.")
-
-	err = response.WriteEntity(res)
-	if err != nil {
-		WriteError(response, "Response write entity failed: %v\n", http.StatusInternalServerError, err)
-		return
-	}
+	return listFileShareRequest
 }
 
-func (s *APIService) GetFileShare(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:get") {
+func (s *APIService) CreateFileShare(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "fileshare:create") {
 		return
 	}
-	log.Infof("Received request for file share details: %s\n", request.PathParameter("id"))
-	id := request.PathParameter("id")
+	log.Info("Received request for creating file share.")
 
-	ctx := common.InitCtxWithAuthInfo(request)
+	fileshare := &model.FileShare{}
 
-	backendId := request.PathParameter(common.REQUEST_PATH_BACKEND_ID)
-	s.checkBackendExists(ctx, request, response, backendId)
-
-	res, err := s.fileClient.GetFileShare(ctx, &file.GetFileShareRequest{Id: id})
+	err := request.ReadEntity(&fileshare)
 	if err != nil {
-		log.Errorf("failed to get file share details: %v\n", err)
-		response.WriteError(http.StatusNotFound, err)
-		return
-	}
-
-	log.Info("Get file share details successfully.")
-	response.WriteEntity(res.Fileshare)
-}
-
-func (s *APIService) DeleteFileShare(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:delete") {
-		return
-	}
-
-	id := request.PathParameter("id")
-	log.Infof("Received request for deleting file share: %s\n", id)
-
-	ctx := common.InitCtxWithAuthInfo(request)
-
-	backendId := request.PathParameter(common.REQUEST_PATH_BACKEND_ID)
-	s.checkBackendExists(ctx, request, response, backendId)
-
-	res, err := s.fileClient.DeleteFileShare(ctx, &file.DeleteFileShareRequest{Id: id})
-	if err != nil {
-		log.Errorf("failed to delete file: %v\n", err)
+		log.Errorf("failed to read request body: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Delete file share successfully.")
-	response.WriteEntity(res)
+	var tags []*file.Tag
+	for _, tag := range fileshare.Tags {
+		tags = append(tags, &file.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+
+	metadata, err := utils.ConvertMapToStruct(fileshare.Metadata)
+
+	fs := &file.FileShare{
+		Name:                 fileshare.Name,
+		Description:          fileshare.Description,
+		Region:               fileshare.Region,
+		BackendId:            fileshare.BackendId,
+		AvailabilityZone:     fileshare.AvailabilityZone,
+		Tags:                 tags,
+		Metadata:             metadata,
+	}
+
+	//TODO: The following checks can be updated once we have swagger validation in place
+	if fileshare.Id !=""  {
+		fs.Id = fileshare.Id.Hex()
+	}
+
+	if fileshare.Size != nil {
+		fs.Size = *fileshare.Size
+	}
+
+	if fileshare.Encrypted != nil {
+		fs.Encrypted = *fileshare.Encrypted
+
+		if fs.Encrypted {
+			fs.EncryptionSettings = fileshare.EncryptionSettings
+		}
+	}
+
+	ctx := common.InitCtxWithAuthInfo(request)
+
+	if s.checkBackendExists(ctx, request, response, fs.BackendId) != nil {
+		return
+	}
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	fs.TenantId = actx.TenantId
+	fs.UserId = actx.UserId
+
+	res, err := s.fileClient.CreateFileShare(ctx, &file.CreateFileShareRequest{Fileshare:fs})
+	if err != nil {
+		log.Errorf("failed to create file share: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Create file share successfully.")
+	response.WriteEntity(res.Fileshare)
 }

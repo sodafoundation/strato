@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package constants
+package datastore
 
-const (
-	BackendTypeAws       = "aws-s3"
-	BackendTypeAwsFile   = "aws-file"
-	BackendTypeIBMCos    = "ibm-cos"
-	BackendTypeObs       = "hw-obs"
-	BackendTypeAzure     = "azure-blob"
-	BackendTypeCeph      = "ceph-s3"
-	BackendTypeGcs       = "gcp-s3"
-	BackendFusionStorage = "fusionstorage-object"
-	BackendTypeYIGS3     = "yig"
-	BackendTypeAlibaba   = "alibaba-oss"
+import (
+	_ "github.com/opensds/multi-cloud/contrib/datastore/file/aws"
 )
