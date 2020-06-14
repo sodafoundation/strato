@@ -65,6 +65,7 @@ const (
 	REQUEST_PATH_OBJECT_KEY          = "objectKey"
 	REQUEST_PATH_BACKEND_ID          = "backendId"
 	REQUEST_HEADER_CONTENT_LENGTH    = "Content-Length"
+	REQUEST_HEADER_BACKEND           = "x-amz-meta-backend"
 	REQUEST_HEADER_STORAGE_CLASS     = "x-amz-storage-class"
 	REQUEST_HEADER_COPY_SOURCE       = "X-Amz-Copy-Source"
 	REQUEST_HEADER_COPY_SOURCE_RANGE = "X-Amz-Copy-Source-Range"
