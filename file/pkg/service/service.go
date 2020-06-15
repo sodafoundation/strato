@@ -16,9 +16,6 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
-
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	pb "github.com/opensds/multi-cloud/file/proto"
@@ -39,12 +36,6 @@ func NewFileService() pb.FileHandler {
 
 func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareRequest, out *pb.ListFileShareResponse) error {
 	log.Info("Received ListFileShare request.")
-
-	if in.Limit < 0 || in.Offset < 0 {
-		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
-		log.Info(msg)
-		return errors.New(msg)
-	}
 
 	res, err := db.DbAdapter.ListFileShare(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
@@ -86,6 +77,6 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 	out.Fileshares = fileshares
 	out.Next = in.Offset + int32(len(res))
 
-	log.Infof("List File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
+	log.Debugf("Listed File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
 	return nil
 }

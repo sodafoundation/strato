@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -104,6 +105,13 @@ func GetPaginationParam(request *restful.Request) (int32, int32, error) {
 		}
 		offset = int32(offsetVal)
 	}
+
+	if limit < 0 || offset < 0 {
+		msg := fmt.Sprintf("Invalid pagination parameter, limit = %d and offset = %d.", limit, offset)
+		log.Errorf(msg)
+		return limit, offset, errors.New(msg)
+	}
+
 	return limit, offset, nil
 }
 

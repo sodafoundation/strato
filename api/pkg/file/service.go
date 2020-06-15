@@ -46,7 +46,10 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func UpdateFilter(reqFilter map[string]string, filter map[string]string) error {
+	log.Debugf("Getting the filters updated for the request.")
+
 	for k, v := range filter {
+		log.Debugf("Filter Key = [%+v], Key = [%+v]\n", k, v)
 		reqFilter[k] = v
 	}
 	return nil
@@ -62,13 +65,16 @@ func WriteError(response *restful.Response, msg string, errCode int, err error) 
 }
 
 func (s *APIService) checkBackendExists(ctx context.Context, request *restful.Request, response *restful.Response,
-	backendId string){
+	backendId string) error{
+
 	backendResp, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
 	if err != nil {
 		WriteError(response, "Get Backend details failed: %v\n", http.StatusNotFound, err)
-		return
+		return err
 	}
 	log.Infof("Backend response = [%+v]\n", backendResp)
+
+	return nil
 }
 
 func (s *APIService) prepareFileShareRequest(request *restful.Request, response *restful.Response) *file.ListFileShareRequest {
@@ -109,9 +115,13 @@ func (s *APIService) ListFileShare(request *restful.Request, response *restful.R
 
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	listfileshareRequest := s.prepareFileShareRequest(request, response)
+	listFileShareRequest := s.prepareFileShareRequest(request, response)
 
-	res, err := s.fileClient.ListFileShare(ctx, listfileshareRequest)
+	if listFileShareRequest == nil {
+		return
+	}
+
+	res, err := s.fileClient.ListFileShare(ctx, listFileShareRequest)
 	if err != nil {
 		WriteError(response, "List FileShares failed: %v\n", http.StatusInternalServerError, err)
 		return
@@ -135,7 +145,9 @@ func (s *APIService) ListFileShareByBackend(request *restful.Request, response *
 	ctx := common.InitCtxWithAuthInfo(request)
 	backendId := request.PathParameter(common.REQUEST_PATH_BACKEND_ID)
 
-	s.checkBackendExists(ctx, request, response, backendId)
+	if s.checkBackendExists(ctx, request, response, backendId) != nil {
+		return
+	}
 
 	filterPathOpts := []string{"backendId"}
 	filterPath, err := common.GetFilterPathParams(request, filterPathOpts)
@@ -144,15 +156,18 @@ func (s *APIService) ListFileShareByBackend(request *restful.Request, response *
 		return
 	}
 
-	listfileshareRequest := s.prepareFileShareRequest(request, response)
+	listFileShareRequest := s.prepareFileShareRequest(request, response)
 
-	err = UpdateFilter(listfileshareRequest.Filter, filterPath)
-	if err != nil {
+	if listFileShareRequest == nil {
+		return
+	}
+
+	if UpdateFilter(listFileShareRequest.Filter, filterPath) != nil {
 		log.Errorf("Update filter failed: %v\n", err)
 		return
 	}
 
-	res, err := s.fileClient.ListFileShare(ctx, listfileshareRequest)
+	res, err := s.fileClient.ListFileShare(ctx, listFileShareRequest)
 	if err != nil {
 		WriteError(response, "List FileShares failed: %v\n", http.StatusInternalServerError, err)
 		return
