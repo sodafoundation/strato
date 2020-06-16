@@ -80,6 +80,15 @@ services:
     ports:
       - "6379:6379"
 
+  file:
+    image: opensdsio/multi-cloud-file
+    environment:
+      - MICRO_REGISTRY=mdns
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
+      - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+      
   s3:
     image: opensdsio/multi-cloud-s3
     environment:

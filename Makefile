@@ -20,11 +20,11 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
              --always --dirty --abbrev=8)
 BUILD_TGT := opensds-multicloud-$(VERSION)-linux-amd64
 
-.PHONY: all build prebuild api backend s3 dataflow docker clean
+.PHONY: all build prebuild api backend s3 dataflow file docker clean
 
 all: build
 
-build: api backend s3 dataflow datamover
+build: api backend s3 dataflow datamover file
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -44,6 +44,9 @@ dataflow: prebuild
 datamover: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/multi-cloud/datamover/cmd
 
+file: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/file github.com/opensds/multi-cloud/file/cmd
+
 docker: build
 
 	cp $(BUILD_DIR)/api api
@@ -53,6 +56,10 @@ docker: build
 	cp $(BUILD_DIR)/backend backend
 	chmod 755 backend/backend
 	docker build backend -t opensdsio/multi-cloud-backend:latest
+
+	cp $(BUILD_DIR)/file file
+	chmod 755 file/file
+	docker build file -t opensdsio/multi-cloud-file:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
@@ -71,7 +78,7 @@ goimports:
 	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
 
 clean:
-	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3
+	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3 file/file
 
 version:
 	@echo ${VERSION}
