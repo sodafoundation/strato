@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	log "github.com/sirupsen/logrus"
 )
@@ -64,6 +64,7 @@ const (
 	REQUEST_PATH_BUCKET_NAME         = "bucketName"
 	REQUEST_PATH_OBJECT_KEY          = "objectKey"
 	REQUEST_HEADER_CONTENT_LENGTH    = "Content-Length"
+	REQUEST_HEADER_BACKEND           = "x-amz-meta-backend"
 	REQUEST_HEADER_STORAGE_CLASS     = "x-amz-storage-class"
 	REQUEST_HEADER_COPY_SOURCE       = "X-Amz-Copy-Source"
 	REQUEST_HEADER_COPY_SOURCE_RANGE = "X-Amz-Copy-Source-Range"
@@ -71,7 +72,7 @@ const (
 	REQUEST_HEADER_CONTENT_MD5       = "Content-Md5"
 	REQUEST_HEADER_CONTENT_TYPE      = "Content-Type"
 	REQUEST_HEADER_SSE_KEY           = "x-amz-server-side-encryption"
-	REQUEST_HEADER_SSE_VALUE_AES256	 = "AES256"
+	REQUEST_HEADER_SSE_VALUE_AES256  = "AES256"
 )
 
 const (

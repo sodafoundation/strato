@@ -1,25 +1,25 @@
 package log
 
 import (
+	"os"
+
 	golog "log"
-
-	"github.com/go-log/log"
 )
 
-type logLogger struct{}
-
-var (
-	_ log.Logger = New()
-)
+type logLogger struct {
+	log *golog.Logger
+}
 
 func (t *logLogger) Log(v ...interface{}) {
-	golog.Print(v...)
+	t.log.Print(v...)
 }
 
 func (t *logLogger) Logf(format string, v ...interface{}) {
-	golog.Printf(format, v...)
+	t.log.Printf(format, v...)
 }
 
 func New() *logLogger {
-	return &logLogger{}
+	return &logLogger{
+		log: golog.New(os.Stderr, "", golog.LstdFlags|golog.Lshortfile),
+	}
 }

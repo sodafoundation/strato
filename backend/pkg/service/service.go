@@ -207,6 +207,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Name:        constants.BackendTypeYIGS3,
 			Description: "YIG Storage",
 		},
+		{
+			Name:        constants.BackendTypeAlibaba,
+			Description: "Alibaba Object Storage Service(OSS)",
+		},
 	}
 
 	// Filter by name

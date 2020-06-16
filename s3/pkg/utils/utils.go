@@ -19,7 +19,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
@@ -56,6 +56,12 @@ const (
 	GCS_COLDLINE       = "COLDLINE"
 )
 
+const (
+	ALIBABA_STANDARD = "Standard"
+	ALIBABA_IA       = "IA"
+	ALIBABA_ARCHIVE  = "Archive"
+)
+
 //Object Storage Type
 const (
 	OSTYPE_OPENSDS       = "OpenSDS"
@@ -65,6 +71,7 @@ const (
 	OSTYPE_GCS           = "gcp-s3"
 	OSTYPE_CEPH          = "ceph-s3"
 	OSTYPE_FUSIONSTORAGE = "fusionstorage-object"
+	OSTYPE_ALIBABA       = "alibaba-oss"
 )
 
 const (

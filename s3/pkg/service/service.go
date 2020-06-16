@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -103,6 +103,20 @@ func loadAWSDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	n2t[AWS_STANDARD_IA] = Tier99
 	n2t[AWS_GLACIER] = Tier999
 	(*e2i)[OSTYPE_AWS] = &n2t
+}
+
+func loadAlibabaDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
+	t2n := make(Int2String)
+	t2n[Tier1] = ALIBABA_STANDARD
+	t2n[Tier99] = ALIBABA_IA
+	t2n[Tier999] = ALIBABA_ARCHIVE
+	(*i2e)[OSTYPE_ALIBABA] = &t2n
+
+	n2t := make(String2Int)
+	n2t[ALIBABA_STANDARD] = Tier1
+	n2t[ALIBABA_IA] = Tier99
+	n2t[ALIBABA_ARCHIVE] = Tier999
+	(*e2i)[OSTYPE_ALIBABA] = &n2t
 }
 
 func loadOpenSDSDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
@@ -215,6 +229,7 @@ func loadDefaultStorageClass() error {
 	loadGCPDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 	loadCephDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 	loadFusionStroageDefault(&Int2ExtTierMap, &Ext2IntTierMap)
+	loadAlibabaDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 
 	log.Infof("Int2ExtTierMap:%v\n", Int2ExtTierMap)
 	log.Infof("Ext2IntTierMap:%v\n", Ext2IntTierMap)

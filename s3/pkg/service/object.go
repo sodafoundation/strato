@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	utils2 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
@@ -518,7 +518,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 		return nil
 	}
 
-	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		log.Errorf("get credential faied, err:%v\n", err)
 		return nil
@@ -630,8 +630,13 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetObject.StorageMeta = res.Meta
 	targetObject.Location = targetBackendName
 	targetObject.TenantId = tenantId
+	targetObject.UserId = userId
 	// this is the default acl setting
-	targetObject.Acl = in.Acl
+	if in.Acl != nil {
+		targetObject.Acl = in.Acl
+	} else {
+		targetObject.Acl = targetBucket.Acl
+	}
 	// we only support copy data with sse but not support copy data without sse right now
 	targetObject.ServerSideEncryption = srcObject.ServerSideEncryption
 	if validTier(in.TargetTier) {

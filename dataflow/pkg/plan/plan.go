@@ -22,15 +22,14 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo/bson"
-	log "github.com/sirupsen/logrus"
-	//c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/opensds/multi-cloud/datamover/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 var tblConnector = "connector"
@@ -248,7 +247,7 @@ func getLocation(conn *Connector) (string, error) {
 	case STOR_TYPE_OPENSDS:
 		return conn.BucketName, nil
 	case STOR_TYPE_HW_OBS, STOR_TYPE_AWS_S3, STOR_TYPE_HW_FUSIONSTORAGE, STOR_TYPE_HW_FUSIONCLOUD,
-		STOR_TYPE_AZURE_BLOB, STOR_TYPE_CEPH_S3, STOR_TYPE_GCP_S3, STOR_TYPE_IBM_COS:
+		STOR_TYPE_AZURE_BLOB, STOR_TYPE_CEPH_S3, STOR_TYPE_GCP_S3, STOR_TYPE_IBM_COS, STOR_TYPE_ALIBABA_OSS:
 		cfg := conn.ConnConfig
 		for i := 0; i < len(cfg); i++ {
 			if cfg[i].Key == "bucketname" {
@@ -344,7 +343,7 @@ func Run(planId, tenantId, userId string) (bson.ObjectId, error) {
 		//This way send job is the temporary
 		filt := datamover.Filter{Prefix: plan.Filter.Prefix}
 		req := datamover.RunJobRequest{
-			Id: job.Id.Hex(), TenanId: tenantId, UserId:userId,
+			Id: job.Id.Hex(), TenanId: tenantId, UserId: userId,
 			RemainSource: plan.RemainSource, Filt: &filt,
 		}
 		srcConn := datamover.Connector{Type: plan.SourceConn.StorType}

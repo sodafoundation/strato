@@ -36,7 +36,7 @@ var ChunkSize int = 2048
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
-	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
 	url := request.Request.URL
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
