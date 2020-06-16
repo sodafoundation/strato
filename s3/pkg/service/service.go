@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"

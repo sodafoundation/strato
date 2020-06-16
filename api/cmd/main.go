@@ -18,7 +18,7 @@ import (
 	"os"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-web"
+	"github.com/micro/go-micro/v2/web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
@@ -26,8 +26,8 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -59,7 +59,7 @@ func main() {
 		wc.Add(s3ws)
 	} else {
 		ws := new(restful.WebService)
-		ws.Path("/")
+		ws.Path("/v1")
 		ws.Doc("OpenSDS Multi-Cloud API")
 		ws.Consumes(restful.MIME_JSON)
 		ws.Produces(restful.MIME_JSON)

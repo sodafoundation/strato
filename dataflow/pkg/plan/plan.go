@@ -22,15 +22,14 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo/bson"
-	log "github.com/sirupsen/logrus"
-	//c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/opensds/multi-cloud/datamover/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 var tblConnector = "connector"

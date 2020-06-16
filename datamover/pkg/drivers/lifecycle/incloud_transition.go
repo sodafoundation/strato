@@ -19,8 +19,8 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/micro/go-micro/client"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/client"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"

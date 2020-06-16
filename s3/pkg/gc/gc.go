@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/v2/client"
 	bkd "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
 
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
