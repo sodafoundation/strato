@@ -19,10 +19,10 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,10 +58,12 @@ func parseListBuckets(list *s3.ListBucketsResponse) ListBucketsResponse {
 }
 
 func (s *APIService) ListBuckets(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:list") {
+	log.Infof("Received request for all buckets")
+	err := signature.PayloadCheck(request, response)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
 		return
 	}
-	log.Infof("Received request for all buckets")
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})

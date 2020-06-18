@@ -15,17 +15,17 @@
 package s3
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"strconv"
+	"crypto/sha256"
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	. "github.com/opensds/multi-cloud/s3/error"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 )
 
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
@@ -92,10 +92,10 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	}
 	dataReader := limitedDataReader
 	// Build sha256sum if needed.
-	inputSh256Sum := request.Request.Header.Get("X-Amz-Content-Sha256")
+	inputSha256Sum := request.Request.Header.Get("X-Amz-Content-Sha256")
 	sha256Writer := sha256.New()
 	needCheckSha256 := false
-	if inputSh256Sum != "" && inputSh256Sum != signature.UnsignedPayload {
+	if inputSha256Sum != "" && inputSha256Sum != signature.UnsignedPayload {
 		needCheckSha256 = true
 		dataReader = io.TeeReader(limitedDataReader, sha256Writer)
 	}
@@ -130,7 +130,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	// Check if sha256sum match.
 	if needCheckSha256 {
 		sha256Sum := hex.EncodeToString(sha256Writer.Sum(nil))
-		if inputSh256Sum != sha256Sum {
+		if inputSha256Sum != sha256Sum {
 			log.Errorln("sha256Sum:", sha256Sum, ", received:",
 				request.Request.Header.Get("X-Amz-Content-Sha256"))
 			WriteErrorResponse(response, request, ErrContentSHA256Mismatch)
