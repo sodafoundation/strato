@@ -15,9 +15,69 @@
 syntax = "proto3";
 
 service File {
+    rpc ListFileShare(ListFileShareRequest) returns (ListFileShareResponse) {}
 }
 
-message BaseRequest {
+message FileShare {
+    //The uuid of the file share.
     string id = 1;
+    // The createdAt representing the server time when the file share was created.
+    string createdAt = 2;
+    // The updatedAt representing the server time when the file share was updated.
+    string updatedAt = 3;
+    // The name of the file share.
+    string name = 4;
+    // The description of the file share.
+    string description = 5;
+    // The uuid of the project that the file share belongs to.
+    string tenantId = 6;
+    // The uuid of the user that the file share belongs to.
+    string userId = 7;
+    // The uuid of the backend that the file share belongs to.
+    string backendId = 8;
+    // The name of the backend that the file share belongs to.
+    string backend = 9;
+    // The size of the file share requested by the user.
+    int64 size = 10;
+    // The type of the file share.
+    string type = 11;
+    // The location that file share belongs to.
+    string region = 12;
+    // The locality that file share belongs to.
+    string availabilityZone = 13;
+    // The status of the file share.
+    string status = 14;
+    // The uuid of the snapshot from which the file share is created
+    string snapshotId = 15;
+    // The protocol of the fileshare. e.g NFS, SMB etc.
+    repeated string protocols = 16;
+    // Any tags assigned to the file share.
+    repeated Tag tags = 17;
+    // Indicates whether the file share is encrypted.
+    bool encrypted = 18;
+    // EncryptionSettings that was used to protect the file share encryption.
+    map<string, string> encryptionSettings = 19;
+    // Metadata should be kept until the semantics between file share and backend storage resource.
+    map<string, string> metadata = 20;
+}
+
+message Tag {
+    // The key of the tag.
+    string key = 1;
+    // The value of the tag.
+    string value = 2;
+}
+
+message ListFileShareRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+    repeated string sortKeys = 3;
+    repeated string sortDirs = 4;
+    map<string, string> Filter = 5;
+}
+
+message ListFileShareResponse {
+    repeated FileShare fileshares = 1;
+    int32 next = 2;
 }
 
