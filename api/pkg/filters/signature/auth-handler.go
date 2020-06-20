@@ -29,6 +29,8 @@ import (
 	. "github.com/opensds/multi-cloud/s3/error"
 )
 
+const XAMZContentSha256 = "X-Amz-Content-Sha256"
+
 // Verify if request has AWS Signature
 // for v2, the Authorization header starts with "AWS ",
 // for v4, starts with "AWS4-HMAC-SHA256 " (notice the space after string)
@@ -128,7 +130,7 @@ func IsReqAuthenticated(r *http.Request) (credential credentials.Value, e error)
 	case AuthTypePresignedV4:
 		return DoesPresignedSignatureMatchV4(r, validateRegion)
 	case AuthTypeSignedV4:
-		return DoesSignatureMatchV4(r.Header.Get("X-Amz-Content-Sha256"), r, validateRegion)
+		return DoesSignatureMatchV4(r.Header.Get(XAMZContentSha256), r, validateRegion)
 	case AuthTypePresignedV2:
 		return DoesPresignedSignatureMatchV2(r)
 	case AuthTypeSignedV2:

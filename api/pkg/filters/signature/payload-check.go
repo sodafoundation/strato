@@ -33,11 +33,11 @@ func PayloadCheck(request *restful.Request, response *restful.Response) error {
 		}
 	}
 	// Verify Content-Sha256, this is normally used for authv4.
-	inputSha256Sum := r.Header.Get("X-Amz-Content-Sha256")
+	inputSha256Sum := r.Header.Get(XAMZContentSha256)
 	if inputSha256Sum != "" && inputSha256Sum != UnsignedPayload {
-		if r.Header.Get("X-Amz-Content-Sha256") != hex.EncodeToString(sum256(payload)) {
+		if r.Header.Get(XAMZContentSha256) != hex.EncodeToString(sum256(payload)) {
 			log.Errorln("hashedPayload:", hex.EncodeToString(sum256(payload)), ", received:",
-				r.Header.Get("X-Amz-Content-Sha256"))
+				r.Header.Get(XAMZContentSha256))
 			return ErrContentSHA256Mismatch
 		}
 	}
