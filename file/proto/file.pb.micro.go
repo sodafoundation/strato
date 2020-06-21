@@ -44,7 +44,10 @@ func NewFileEndpoints() []*api.Endpoint {
 
 type FileService interface {
 	ListFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error)
+	GetFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error)
 	CreateFileShare(ctx context.Context, in *CreateFileShareRequest, opts ...client.CallOption) (*CreateFileShareResponse, error)
+	PullAllFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error)
+	PullFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error)
 }
 
 type fileService struct {
@@ -69,9 +72,39 @@ func (c *fileService) ListFileShare(ctx context.Context, in *ListFileShareReques
 	return out, nil
 }
 
+func (c *fileService) GetFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error) {
+	req := c.c.NewRequest(c.name, "File.GetFileShare", in)
+	out := new(GetFileShareResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *fileService) CreateFileShare(ctx context.Context, in *CreateFileShareRequest, opts ...client.CallOption) (*CreateFileShareResponse, error) {
 	req := c.c.NewRequest(c.name, "File.CreateFileShare", in)
 	out := new(CreateFileShareResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileService) PullAllFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error) {
+	req := c.c.NewRequest(c.name, "File.PullAllFileShare", in)
+	out := new(ListFileShareResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileService) PullFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error) {
+	req := c.c.NewRequest(c.name, "File.PullFileShare", in)
+	out := new(GetFileShareResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -83,13 +116,19 @@ func (c *fileService) CreateFileShare(ctx context.Context, in *CreateFileShareRe
 
 type FileHandler interface {
 	ListFileShare(context.Context, *ListFileShareRequest, *ListFileShareResponse) error
+	GetFileShare(context.Context, *GetFileShareRequest, *GetFileShareResponse) error
 	CreateFileShare(context.Context, *CreateFileShareRequest, *CreateFileShareResponse) error
+	PullAllFileShare(context.Context, *ListFileShareRequest, *ListFileShareResponse) error
+	PullFileShare(context.Context, *GetFileShareRequest, *GetFileShareResponse) error
 }
 
 func RegisterFileHandler(s server.Server, hdlr FileHandler, opts ...server.HandlerOption) error {
 	type file interface {
 		ListFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error
+		GetFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error
 		CreateFileShare(ctx context.Context, in *CreateFileShareRequest, out *CreateFileShareResponse) error
+		PullAllFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error
+		PullFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error
 	}
 	type File struct {
 		file
@@ -106,6 +145,18 @@ func (h *fileHandler) ListFileShare(ctx context.Context, in *ListFileShareReques
 	return h.FileHandler.ListFileShare(ctx, in, out)
 }
 
+func (h *fileHandler) GetFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error {
+	return h.FileHandler.GetFileShare(ctx, in, out)
+}
+
 func (h *fileHandler) CreateFileShare(ctx context.Context, in *CreateFileShareRequest, out *CreateFileShareResponse) error {
 	return h.FileHandler.CreateFileShare(ctx, in, out)
+}
+
+func (h *fileHandler) PullAllFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error {
+	return h.FileHandler.PullAllFileShare(ctx, in, out)
+}
+
+func (h *fileHandler) PullFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error {
+	return h.FileHandler.PullFileShare(ctx, in, out)
 }

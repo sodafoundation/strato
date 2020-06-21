@@ -37,5 +37,8 @@
   "bucketlifecycle:get": "",
   "bucketlifecycle:delete": "",
   "fileshare:list": "",
-  "fileshare:create": ""
+  "fileshare:get": "",
+  "fileshare:create": "",
+  "fileshare:sync": "",
+  "fileshare:syncAll": ""
 }

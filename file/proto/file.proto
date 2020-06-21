@@ -18,7 +18,10 @@ import "google/protobuf/struct.proto";
 
 service File {
     rpc ListFileShare(ListFileShareRequest) returns (ListFileShareResponse) {}
+    rpc GetFileShare(GetFileShareRequest) returns (GetFileShareResponse) {}
     rpc CreateFileShare(CreateFileShareRequest) returns (CreateFileShareResponse) {}
+    rpc PullAllFileShare(ListFileShareRequest) returns (ListFileShareResponse) {}
+    rpc PullFileShare(GetFileShareRequest) returns (GetFileShareResponse) {}
 }
 
 message FileShare {
@@ -82,6 +85,15 @@ message ListFileShareRequest {
 message ListFileShareResponse {
     repeated FileShare fileshares = 1;
     int32 next = 2;
+}
+
+message GetFileShareRequest {
+    string id = 1;
+    FileShare fileshare = 2;
+}
+
+message GetFileShareResponse {
+    FileShare fileshare = 1;
 }
 
 message CreateFileShareRequest {

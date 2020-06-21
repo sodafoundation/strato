@@ -176,6 +176,32 @@ func (ad *AwsAdapter) CreateFileShare(ctx context.Context, fs *pb.CreateFileShar
 	}, nil
 }
 
+func (ad *AwsAdapter) GetFileShare(ctx context.Context, fs *pb.GetFileShareRequest) (*pb.GetFileShareResponse, error) {
+
+	input := &efs.DescribeFileSystemsInput{
+		FileSystemId: aws.String(fs.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
+	}
+
+	result, err := ad.DescribeFileShare(input)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	log.Infof("Get File share response = %+v", result)
+
+	fileShare, err := ad.ParseFileShare(result.FileSystems[0])
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &pb.GetFileShareResponse{
+		Fileshare: fileShare,
+	}, nil
+}
+
 func (ad *AwsAdapter) ListFileShare(ctx context.Context, in *pb.ListFileShareRequest) (*pb.ListFileShareResponse, error) {
 
 	input := &efs.DescribeFileSystemsInput{}
@@ -193,6 +219,7 @@ func (ad *AwsAdapter) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 			log.Error(err)
 			return nil, err
 		}
+		fs.Name = *fileshare.Name
 		fileshares = append(fileshares, fs)
 	}
 
