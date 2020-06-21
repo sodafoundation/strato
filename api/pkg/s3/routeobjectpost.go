@@ -19,19 +19,39 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
+)
+
+const (
+	TypePostFormData int = iota
+	TypeInitMultipartUpload
+	TypeCompleteMultipartUpload
 )
 
 func (s *APIService) RouteObjectPost(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:post") {
-		return
-	}
+	requestType := TypePutObj
 	if IsQuery(request, "uploads") {
-		s.MultiPartUploadInit(request, response)
+		requestType = TypeInitMultipartUpload
 	} else if IsQuery(request, "uploadId") {
+		requestType = TypeCompleteMultipartUpload
+	}
+
+	// Post object operation no need content check.
+	if requestType == TypeInitMultipartUpload || requestType == TypeCompleteMultipartUpload {
+		err := signature.PayloadCheck(request, response)
+		if err != nil {
+			WriteErrorResponse(response, request, err)
+			return
+		}
+	}
+
+	switch requestType {
+	case TypeInitMultipartUpload:
+		s.MultiPartUploadInit(request, response)
+	case TypeCompleteMultipartUpload:
 		s.CompleteMultipartUpload(request, response)
-	} else {
-		// check whether it is the post object operation.
+	default:
+		// Supposed to be post object operation, check validation.
 		contentType := request.HeaderParameter(common.REQUEST_HEADER_CONTENT_TYPE)
 		objectPostValidate := regexp.MustCompile("multipart/form-data*")
 		if contentType != "" && objectPostValidate.MatchString(contentType) {
