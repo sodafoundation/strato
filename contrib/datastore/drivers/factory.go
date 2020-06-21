@@ -15,8 +15,6 @@
 package driver
 
 import (
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	exp "github.com/opensds/multi-cloud/s3/pkg/exception"
 )
@@ -33,9 +31,7 @@ func RegisterDriverFactory(driverType string, factory DriverFactory) {
 
 func CreateStorageDriver(backend *backendpb.BackendDetail) (StorageDriver, error) {
 	if factory, ok := driverFactoryMgr[backend.Type]; ok {
-		if backend.Type == constants.BackendTypeAwsFile {
-			return factory.CreateFileStorageDriver(backend)
-		}
+		return factory.CreateFileStorageDriver(backend)
 	}
 	return nil, exp.NoSuchType.Error()
 }

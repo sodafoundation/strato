@@ -26,7 +26,11 @@ const (
 	// exactly precision to seconds.
 	TimeFormat = `2006-01-02T15:04:05`
 
-	GB_FACTOR = 1024 * 1024 * 1024
+	AZURE_FILESHARE_USAGE_BYTES = "Share-Usage-Bytes"
+
+	AZURE_X_MS_SHARE_QUOTA = "X-Ms-Share-Quota"
+
+	CONTENT_LENGTH = "Content-Length"
 )
 
 const (

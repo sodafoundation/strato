@@ -29,7 +29,7 @@ type AwsFSDriverFactory struct {
 }
 
 func (factory *AwsFSDriverFactory) CreateFileStorageDriver(backend *backendpb.BackendDetail) (driver.FileStorageDriver, error) {
-	log.Infof("Entered to create driver")
+	log.Infof("Entered to create aws file share driver")
 
 	// Create AWS session with the AWS cloud credentials
 	sess, err := session.NewSession(&aws.Config{

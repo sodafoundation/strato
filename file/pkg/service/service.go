@@ -18,12 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/globalsign/mgo/bson"
-	"github.com/opensds/multi-cloud/api/pkg/common"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/contrib/datastore/drivers"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/model"
@@ -64,7 +65,16 @@ func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}
 			valuesMap[key] = v.NumberValue
 		} else if v, ok := value.GetKind().(*pstruct.Value_StringValue); ok {
 			val := strings.Trim(v.StringValue, "\"")
-			valuesMap[key] = val
+			if key == utils.AZURE_FILESHARE_USAGE_BYTES || key == utils.AZURE_X_MS_SHARE_QUOTA || key == utils.CONTENT_LENGTH {
+				valInt, err :=  strconv.ParseInt(val, 10, 64)
+				if err != nil {
+					log.Errorf("Failed to parse string Fields = ", key)
+					return nil, err
+				}
+				valuesMap[key] = valInt
+			} else {
+				valuesMap[key] = val
+			}
 		} else if v, ok := value.GetKind().(*pstruct.Value_BoolValue); ok {
 			valuesMap[key] = v.BoolValue
 		} else if v, ok := value.GetKind().(*pstruct.Value_StructValue); ok {

@@ -215,6 +215,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Name:        constants.BackendTypeAwsFile,
 			Description: "AWS File Service",
 		},
+		{
+			Name:        constants.BackendTypeAzureFile,
+			Description: "Azure File Service",
+		},
 	}
 
 	// Filter by name

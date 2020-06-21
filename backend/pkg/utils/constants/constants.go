@@ -20,6 +20,7 @@ const (
 	BackendTypeIBMCos    = "ibm-cos"
 	BackendTypeObs       = "hw-obs"
 	BackendTypeAzure     = "azure-blob"
+	BackendTypeAzureFile = "azure-file"
 	BackendTypeCeph      = "ceph-s3"
 	BackendTypeGcs       = "gcp-s3"
 	BackendFusionStorage = "fusionstorage-object"
