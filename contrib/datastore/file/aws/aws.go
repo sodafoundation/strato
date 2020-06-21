@@ -80,6 +80,55 @@ func (ad *AwsAdapter) ParseFileShare(fsDesc *efs.FileSystemDescription) (*pb.Fil
 	return fileshare, nil
 }
 
+func (ad *AwsAdapter) ParseUpdateFileShare(fsUpdate *efs.UpdateFileSystemOutput) (*pb.FileShare, error) {
+	var tags []*pb.Tag
+	for _, tag := range fsUpdate.Tags {
+		tags = append(tags, &pb.Tag{
+			Key:   *tag.Key,
+			Value: *tag.Value,
+		})
+	}
+
+	meta := map[string]interface{}{
+		FileSystemName:        *fsUpdate.Name,
+		FileSystemId:          *fsUpdate.FileSystemId,
+		OwnerId:               *fsUpdate.OwnerId,
+		FileSystemSize:        *fsUpdate.SizeInBytes,
+		ThroughputMode:        *fsUpdate.ThroughputMode,
+		PerformanceMode:       *fsUpdate.PerformanceMode,
+		CreationToken:         *fsUpdate.CreationToken,
+		CreationTimeAtBackend: *fsUpdate.CreationTime,
+		LifeCycleState:        *fsUpdate.LifeCycleState,
+		NumberOfMountTargets:  *fsUpdate.NumberOfMountTargets,
+	}
+
+	if *fsUpdate.ThroughputMode == efs.ThroughputModeProvisioned {
+		meta[ProvisionedThroughputInMibps] = *fsUpdate.ProvisionedThroughputInMibps
+	}
+
+	metadata, err := utils.ConvertMapToStruct(meta)
+	if err != nil {
+		log.Errorf("failed to convert metadata = [%+v] to struct", metadata, err)
+		return nil, err
+	}
+
+	fileshare := &pb.FileShare{
+		Size:      *fsUpdate.SizeInBytes.Value,
+		Encrypted: *fsUpdate.Encrypted,
+		Status:    *fsUpdate.LifeCycleState,
+		Tags:      tags,
+		Metadata:  metadata,
+	}
+
+	if *fsUpdate.Encrypted {
+		fileshare.EncryptionSettings = map[string]string{
+			KmsKeyId: *fsUpdate.KmsKeyId,
+		}
+	}
+
+	return fileshare, nil
+}
+
 func (ad *AwsAdapter) DescribeFileShare(input *efs.DescribeFileSystemsInput) (*efs.DescribeFileSystemsOutput, error) {
 	// Create a EFS client from just a session.
 	svc := efs.New(ad.session)
@@ -227,6 +276,103 @@ func (ad *AwsAdapter) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 
 	return &pb.ListFileShareResponse{
 		Fileshares: fileshares,
+	}, nil
+}
+
+func (ad *AwsAdapter) UpdatefileShare(ctx context.Context, in *pb.UpdateFileShareRequest) (*pb.UpdateFileShareResponse, error) {
+	// Create a EFS client from just a session.
+	svc := efs.New(ad.session)
+
+	input := &efs.UpdateFileSystemInput{
+		FileSystemId:   aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
+		ThroughputMode: aws.String(in.Fileshare.Metadata.Fields[ThroughputMode].GetStringValue()),
+	}
+
+	if *input.ThroughputMode == efs.ThroughputModeProvisioned {
+		input.ProvisionedThroughputInMibps = aws.Float64(in.Fileshare.Metadata.Fields[ProvisionedThroughputInMibps].GetNumberValue())
+	}
+
+	result, err := svc.UpdateFileSystem(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case efs.ErrCodeBadRequest:
+				log.Errorf(efs.ErrCodeBadRequest, aerr.Error())
+			case efs.ErrCodeFileSystemNotFound:
+				log.Errorf(efs.ErrCodeFileSystemNotFound, aerr.Error())
+			case efs.ErrCodeIncorrectFileSystemLifeCycleState:
+				log.Errorf(efs.ErrCodeIncorrectFileSystemLifeCycleState, aerr.Error())
+			case efs.ErrCodeInsufficientThroughputCapacity:
+				log.Errorf(efs.ErrCodeInsufficientThroughputCapacity, aerr.Error())
+			case efs.ErrCodeInternalServerError:
+				log.Errorf(efs.ErrCodeInternalServerError, aerr.Error())
+			case efs.ErrCodeFileSystemLimitExceeded:
+				log.Errorf(efs.ErrCodeFileSystemLimitExceeded, aerr.Error())
+			case efs.ErrCodeThroughputLimitExceeded:
+				log.Errorf(efs.ErrCodeThroughputLimitExceeded, aerr.Error())
+			case efs.ErrCodeTooManyRequests:
+				log.Errorf(efs.ErrCodeTooManyRequests, aerr.Error())
+			default:
+				log.Errorf(aerr.Error())
+			}
+		} else {
+			log.Error(err)
+		}
+		return nil, err
+	}
+
+	log.Debugf("Update File share response = %+v", result)
+
+	fileShare, err := ad.ParseUpdateFileShare(result)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if in.Fileshare.Tags == nil || len(in.Fileshare.Tags) == 0 {
+		return &pb.UpdateFileShareResponse{
+			Fileshare: fileShare,
+		}, nil
+	}
+
+	var tags []*efs.Tag
+	for _, tag := range in.Fileshare.Tags {
+		tags = append(tags, &efs.Tag{
+			Key:   aws.String(tag.Key),
+			Value: aws.String(tag.Value),
+		})
+	}
+
+	tagInput := &efs.TagResourceInput{
+		ResourceId: aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
+		Tags: tags,
+	}
+
+	_, err = svc.TagResource(tagInput)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case efs.ErrCodeBadRequest:
+				log.Errorf(efs.ErrCodeBadRequest, aerr.Error())
+			case efs.ErrCodeFileSystemNotFound:
+				log.Errorf(efs.ErrCodeFileSystemNotFound, aerr.Error())
+			case efs.ErrCodeInternalServerError:
+				log.Errorf(efs.ErrCodeInternalServerError, aerr.Error())
+			case efs.ErrCodeAccessPointNotFound:
+				log.Errorf(efs.ErrCodeAccessPointNotFound, aerr.Error())
+			default:
+				log.Errorf(aerr.Error())
+			}
+		} else {
+			log.Error(err)
+		}
+		return nil, err
+	}
+
+	fileShare.Tags = in.Fileshare.Tags
+
+	return &pb.UpdateFileShareResponse{
+		Fileshare: fileShare,
 	}, nil
 }
 

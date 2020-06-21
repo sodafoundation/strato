@@ -39,6 +39,7 @@
   "fileshare:list": "",
   "fileshare:get": "",
   "fileshare:create": "",
+  "fileshare:put": "",
   "fileshare:sync": "",
   "fileshare:syncAll": ""
 }

@@ -181,7 +181,7 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 			UserId:             fs.UserId,
 			BackendId:          fs.BackendId,
 			Backend:            fs.Backend,
-			Size:               *fs.Size / utils.GB_FACTOR,
+			Size:               *fs.Size,
 			Type:               fs.Type,
 			Status:             fs.Status,
 			Region:             fs.Region,
@@ -240,7 +240,7 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 		UserId:             fs.UserId,
 		BackendId:          fs.BackendId,
 		Backend:            fs.Backend,
-		Size:               *fs.Size / utils.GB_FACTOR,
+		Size:               *fs.Size,
 		Type:               fs.Type,
 		Status:             fs.Status,
 		Region:             fs.Region,
@@ -366,7 +366,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 		UserId:             res.UserId,
 		BackendId:          res.BackendId,
 		Backend:            res.Backend,
-		Size:               *res.Size / utils.GB_FACTOR,
+		Size:               *res.Size,
 		Type:               res.Type,
 		Status:             res.Status,
 		Region:             res.Region,
@@ -433,6 +433,98 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 	return nil
 }
 
+func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShareRequest,
+	out *pb.UpdateFileShareResponse) error {
+
+	log.Info("Received UpdateFileShare request.")
+
+	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
+	if err != nil {
+		log.Errorf("failed to get fileshare: [%v] from db\n", res, err)
+		return err
+	}
+
+	backend, err := utils.GetBackend(ctx, f.backendClient, res.BackendId)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	sd, err := driver.CreateStorageDriver(backend.Backend)
+	if err != nil {
+		log.Errorln("Failed to create Storage driver err:", err)
+		return err
+	}
+
+	fs, err := sd.UpdatefileShare(ctx, in)
+	if err != nil {
+		log.Errorf("Received error in creating file shares at backend ", err)
+		fs.Fileshare.Status = utils.FileShareStateError
+	}
+
+	fileshare := &model.FileShare{
+		Id: 				res.Id,
+		Name:               res.Name,
+		Description:        in.Fileshare.Description,
+		TenantId:           res.TenantId,
+		UserId:             res.UserId,
+		BackendId:          res.BackendId,
+		Backend:            backend.Backend.Name,
+		CreatedAt:          res.CreatedAt,
+		UpdatedAt:          time.Now().Format(utils.TimeFormat),
+		Type:               res.Type,
+		Status:             fs.Fileshare.Status,
+		Region:             res.Region,
+		AvailabilityZone:   res.AvailabilityZone,
+		Protocols:          res.Protocols,
+		SnapshotId:         res.SnapshotId,
+		Size:               &fs.Fileshare.Size,
+		Encrypted:          res.Encrypted,
+		EncryptionSettings: res.EncryptionSettings,
+	}
+
+	if f.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
+		log.Errorf("Failed to update fileshare model: %v\n", fileshare, err)
+		return err
+	}
+	log.Debugf("Create File Share Model: %+v", fileshare)
+
+	upateRes, err := db.DbAdapter.UpdateFileShare(ctx, fileshare)
+	if err != nil {
+		log.Errorf("Failed to update file share: %v", err)
+		return err
+	}
+
+	out.Fileshare = &pb.FileShare{
+		Id:                 upateRes.Id.Hex(),
+		CreatedAt:          upateRes.CreatedAt,
+		UpdatedAt:          upateRes.UpdatedAt,
+		Name:               upateRes.Name,
+		Description:        upateRes.Description,
+		TenantId:           upateRes.TenantId,
+		UserId:             upateRes.UserId,
+		BackendId:          upateRes.BackendId,
+		Backend:            upateRes.Backend,
+		Size:               *upateRes.Size,
+		Type:               upateRes.Type,
+		Status:             upateRes.Status,
+		Region:             upateRes.Region,
+		AvailabilityZone:   upateRes.AvailabilityZone,
+		Protocols:          res.Protocols,
+		SnapshotId:         upateRes.SnapshotId,
+		Encrypted:          *upateRes.Encrypted,
+		EncryptionSettings: upateRes.EncryptionSettings,
+	}
+
+	if f.UpdateFileShareStruct(upateRes, out.Fileshare) != nil {
+		log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
+		return err
+	}
+
+	log.Info("Update file share successfully.")
+	return nil
+}
+
 func (f *fileService) PullFileShare(ctx context.Context, in *pb.GetFileShareRequest,
 	out *pb.GetFileShareResponse) error {
 
@@ -460,7 +552,7 @@ func (f *fileService) PullFileShare(ctx context.Context, in *pb.GetFileShareRequ
 		UserId:             res.UserId,
 		BackendId:          res.BackendId,
 		Backend:            res.Backend,
-		Size:               *res.Size / utils.GB_FACTOR,
+		Size:               *res.Size,
 		Type:               res.Type,
 		Status:             res.Status,
 		Region:             res.Region,
@@ -551,7 +643,7 @@ func (f *fileService) PullFileShare(ctx context.Context, in *pb.GetFileShareRequ
 		UserId:             fs.UserId,
 		BackendId:          fs.BackendId,
 		Backend:            fs.Backend,
-		Size:               *fs.Size / utils.GB_FACTOR,
+		Size:               *fs.Size,
 		Type:               fs.Type,
 		Status:             fs.Status,
 		Region:             fs.Region,
@@ -679,7 +771,7 @@ func (f *fileService) PullAllFileShare(ctx context.Context, in *pb.ListFileShare
 			UserId:             fs.UserId,
 			BackendId:          fs.BackendId,
 			Backend:            fs.Backend,
-			Size:               *fs.Size / utils.GB_FACTOR,
+			Size:               *fs.Size,
 			Type:               fs.Type,
 			Status:             fs.Status,
 			Region:             fs.Region,

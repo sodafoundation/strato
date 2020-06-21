@@ -278,6 +278,71 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 	response.WriteEntity(res.Fileshare)
 }
 
+func (s *APIService) UpdateFileShare(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "fileshare:put") {
+		return
+	}
+	log.Info("Received request for updating file share.")
+
+	fileshare := &model.FileShare{}
+
+	err := request.ReadEntity(&fileshare)
+	if err != nil {
+		log.Errorf("failed to read request body: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	fs := &file.FileShare{
+		Description:          fileshare.Description,
+	}
+
+	if fileshare.Metadata != nil || len(fileshare.Metadata) != 0 {
+		metadata, err := utils.ConvertMapToStruct(fileshare.Metadata)
+		if err != nil {
+			log.Errorf("failed to parse metadata: %v\n", fileshare.Metadata, err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+
+		fs.Metadata = metadata
+	}
+
+	if fileshare.Tags != nil {
+		var tags []*file.Tag
+		for _, tag := range fileshare.Tags {
+			tags = append(tags, &file.Tag{
+				Key:   tag.Key,
+				Value: tag.Value,
+			})
+		}
+		fs.Tags = tags
+	}
+
+	if fileshare.Size != nil {
+		fs.Size = *fileshare.Size
+	}
+
+	id := request.PathParameter("id")
+
+	ctx := common.InitCtxWithAuthInfo(request)
+
+	actx := request.Attribute(c.KContext).(*c.Context)
+	fs.TenantId = actx.TenantId
+	fs.UserId = actx.UserId
+
+	res, err := s.fileClient.UpdateFileShare(ctx, &file.UpdateFileShareRequest{Id: id, Fileshare:fs})
+	if err != nil {
+		log.Errorf("failed to create file share: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Create file share successfully.")
+	response.WriteEntity(res.Fileshare)
+}
+
+
 func (s *APIService) SyncFileShare(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "fileshare:sync") {
 		return

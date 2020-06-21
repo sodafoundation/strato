@@ -46,6 +46,7 @@ type FileService interface {
 	ListFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error)
 	GetFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error)
 	CreateFileShare(ctx context.Context, in *CreateFileShareRequest, opts ...client.CallOption) (*CreateFileShareResponse, error)
+	UpdateFileShare(ctx context.Context, in *UpdateFileShareRequest, opts ...client.CallOption) (*UpdateFileShareResponse, error)
 	PullAllFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error)
 	PullFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error)
 }
@@ -92,6 +93,16 @@ func (c *fileService) CreateFileShare(ctx context.Context, in *CreateFileShareRe
 	return out, nil
 }
 
+func (c *fileService) UpdateFileShare(ctx context.Context, in *UpdateFileShareRequest, opts ...client.CallOption) (*UpdateFileShareResponse, error) {
+	req := c.c.NewRequest(c.name, "File.UpdateFileShare", in)
+	out := new(UpdateFileShareResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *fileService) PullAllFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error) {
 	req := c.c.NewRequest(c.name, "File.PullAllFileShare", in)
 	out := new(ListFileShareResponse)
@@ -118,6 +129,7 @@ type FileHandler interface {
 	ListFileShare(context.Context, *ListFileShareRequest, *ListFileShareResponse) error
 	GetFileShare(context.Context, *GetFileShareRequest, *GetFileShareResponse) error
 	CreateFileShare(context.Context, *CreateFileShareRequest, *CreateFileShareResponse) error
+	UpdateFileShare(context.Context, *UpdateFileShareRequest, *UpdateFileShareResponse) error
 	PullAllFileShare(context.Context, *ListFileShareRequest, *ListFileShareResponse) error
 	PullFileShare(context.Context, *GetFileShareRequest, *GetFileShareResponse) error
 }
@@ -127,6 +139,7 @@ func RegisterFileHandler(s server.Server, hdlr FileHandler, opts ...server.Handl
 		ListFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error
 		GetFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error
 		CreateFileShare(ctx context.Context, in *CreateFileShareRequest, out *CreateFileShareResponse) error
+		UpdateFileShare(ctx context.Context, in *UpdateFileShareRequest, out *UpdateFileShareResponse) error
 		PullAllFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error
 		PullFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error
 	}
@@ -151,6 +164,10 @@ func (h *fileHandler) GetFileShare(ctx context.Context, in *GetFileShareRequest,
 
 func (h *fileHandler) CreateFileShare(ctx context.Context, in *CreateFileShareRequest, out *CreateFileShareResponse) error {
 	return h.FileHandler.CreateFileShare(ctx, in, out)
+}
+
+func (h *fileHandler) UpdateFileShare(ctx context.Context, in *UpdateFileShareRequest, out *UpdateFileShareResponse) error {
+	return h.FileHandler.UpdateFileShare(ctx, in, out)
 }
 
 func (h *fileHandler) PullAllFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error {

@@ -16,7 +16,6 @@ package driver
 
 import (
 	"context"
-
 	pb "github.com/opensds/multi-cloud/file/proto"
 )
 
@@ -30,6 +29,7 @@ type FileStorageDriver interface {
 	CreateFileShare(ctx context.Context, fs *pb.CreateFileShareRequest) (*pb.CreateFileShareResponse, error)
 	GetFileShare(ctx context.Context, fs *pb.GetFileShareRequest) (*pb.GetFileShareResponse, error)
 	ListFileShare(ctx context.Context, fs *pb.ListFileShareRequest) (*pb.ListFileShareResponse, error)
+	UpdatefileShare(ctx context.Context, fs *pb.UpdateFileShareRequest) (*pb.UpdateFileShareResponse, error)
 	// Close: cleanup when driver needs to be stopped.
 	Close() error
 }
