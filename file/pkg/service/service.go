@@ -16,8 +16,10 @@ package service
 
 import (
 	"context"
+
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/file/pkg/db"
+
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -78,5 +80,46 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 	out.Next = in.Offset + int32(len(res))
 
 	log.Debugf("Listed File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
+	return nil
+}
+
+func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareRequest, out *pb.GetFileShareResponse) error {
+	log.Info("Received GetFileShare request.")
+
+	fs, err := db.DbAdapter.GetFileShare(ctx, in.Id)
+	if err != nil {
+		log.Errorf("failed to get fileshare: %v\n", err)
+		return err
+	}
+	var tags []*pb.Tag
+	for _, tag := range fs.Tags {
+		tags = append(tags, &pb.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	out.Fileshare = &pb.FileShare{
+		Id:                 fs.Id.Hex(),
+		CreatedAt:          fs.CreatedAt,
+		UpdatedAt:          fs.UpdatedAt,
+		Name:               fs.Name,
+		Description:        fs.Description,
+		TenantId:           fs.TenantId,
+		UserId:             fs.UserId,
+		BackendId:          fs.BackendId,
+		Backend:            fs.Backend,
+		Size:               fs.Size,
+		Type:               fs.Type,
+		Status:             fs.Status,
+		Region:             fs.Region,
+		AvailabilityZone:   fs.AvailabilityZone,
+		Tags:               tags,
+		Protocols:          fs.Protocols,
+		SnapshotId:         fs.SnapshotId,
+		Encrypted:          fs.Encrypted,
+		EncryptionSettings: fs.EncryptionSettings,
+		Metadata:           fs.Metadata,
+	}
+	log.Info("Get file share successfully.")
 	return nil
 }
