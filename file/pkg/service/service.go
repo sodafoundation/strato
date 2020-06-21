@@ -19,7 +19,7 @@ import (
 
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/file/pkg/db"
-	"github.com/opensds/multi-cloud/file/pkg/utils"
+
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -108,7 +108,7 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 		UserId:             fs.UserId,
 		BackendId:          fs.BackendId,
 		Backend:            fs.Backend,
-		Size:               fs.Size / utils.GB_FACTOR,
+		Size:               fs.Size,
 		Type:               fs.Type,
 		Status:             fs.Status,
 		Region:             fs.Region,

@@ -58,7 +58,7 @@ type FileShare struct {
 	Type string `json:"type,omitempty" bson:"type,omitempty"`
 
 	// The size of the file share requested by the user.
-	// Default unit of file share Size is GB.
+	// Default unit of file share Size is Bytes.
 	// +optional
 	Size int64 `json:"size,omitempty" bson:"size,omitempty"`
 
