@@ -16,29 +16,58 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
+	"github.com/opensds/multi-cloud/s3/error"
+	log "github.com/sirupsen/logrus"
+)
+
+const (
+	TypePutObj int = iota
+	TypePutACL
+	TypeCopyObj
+	TypeCopyPart
+	TypeUploadPart
+	TypeTagging
 )
 
 func (s *APIService) RouteObjectPut(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "object:put") {
-		return
+	requestType := TypePutObj
+	if IsQuery(request, "acl") {
+		requestType = TypePutACL
+	} else if IsQuery(request, "tagging") {
+		requestType = TypeTagging
+	} else if IsQuery(request, "partNumber") && IsQuery(request, "uploadId") &&
+		HasHeader(request, "x-amz-copy-source") {
+		requestType = TypeCopyPart
+	} else if IsQuery(request, "partNumber") && IsQuery(request, "uploadId") {
+		requestType = TypeUploadPart
+	} else if HasHeader(request, "x-amz-copy-source") {
+		requestType = TypeCopyObj
 	}
 
-	if IsQuery(request, "acl") {
+	// For TypePutObj and TypeUploadPart, will check payload later.
+	if requestType != TypePutObj && requestType != TypeUploadPart {
+		err := signature.PayloadCheck(request, response)
+		if err != nil {
+			WriteErrorResponse(response, request, err)
+			return
+		}
+	}
+
+	switch requestType {
+	case TypePutACL:
 		s.ObjectAclPut(request, response)
-	} else if IsQuery(request, "tagging") {
-		//TODO
-	} else if IsQuery(request, "uploads") {
-		s.MultiPartUploadInit(request, response)
-	} else if IsQuery(request, "partNumber") && IsQuery(request, "uploadId") && HasHeader(request, "x-amz-copy-source") {
+	case TypeCopyPart:
 		s.ObjectPartCopy(request, response)
-	} else if IsQuery(request, "partNumber") && IsQuery(request, "uploadId") {
+	case TypeUploadPart:
 		s.UploadPart(request, response)
-	} else if IsQuery(request, "uploadId") {
-		s.CompleteMultipartUpload(request, response)
-	} else if HasHeader(request, "x-amz-copy-source") {
+	case TypeCopyObj:
 		s.ObjectCopy(request, response)
-	} else {
+	case TypePutObj:
 		s.ObjectPut(request, response)
+	default:
+		// Not support
+		log.Errorln("not implemented")
+		WriteErrorResponse(response, request, s3error.ErrNotImplemented)
 	}
 }
