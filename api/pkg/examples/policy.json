@@ -23,5 +23,6 @@
   "job:list": "",
   "job:get": "",
   "fileshare:list": "",
-  "fileshare:get": ""
+  "fileshare:get": "",
+  "fileshare:delete": ""
 }

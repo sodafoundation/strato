@@ -123,3 +123,14 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 	log.Info("Get file share successfully.")
 	return nil
 }
+
+func (f *fileService) DeleteFileShare(ctx  context.Context, in *pb.DeleteFileShareRequest, out *pb.DeleteFileShareResponse) error {
+	log.Info("Received DeleteFileShare request.")
+	err := db.DbAdapter.DeleteFileShare(ctx, in.Id)
+	if err != nil {
+		log.Errorf("failed to delete file share: %v\n", err)
+		return err
+	}
+	log.Info("Delete file share successfully.")
+	return nil
+}
