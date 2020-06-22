@@ -16,11 +16,13 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 )
 
 func (s *APIService) RouteBucketDelete(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "bucket:delete") {
+	err := signature.PayloadCheck(request, response)
+	if err != nil {
+		WriteErrorResponse(response, request, err)
 		return
 	}
 	if IsQuery(request, "acl") {

@@ -224,7 +224,8 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 	out.Fileshares = fileshares
 	out.Next = in.Offset + int32(len(res))
 
-	log.Infof("List File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
+	log.Debugf("Listed File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
+
 	return nil
 }
 

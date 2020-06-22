@@ -15,6 +15,7 @@
 package s3
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	"github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/proto"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -36,7 +38,7 @@ var ChunkSize int = 2048
 func (s *APIService) ObjectPut(request *restful.Request, response *restful.Response) {
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
-	backendName := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
 	url := request.Request.URL
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
@@ -149,8 +151,17 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}
+	dataReader := limitedDataReader
+	// Build sha256sum if needed.
+	inputSh256Sum := request.Request.Header.Get("X-Amz-Content-Sha256")
+	sha256Writer := sha256.New()
+	needCheckSha256 := false
+	if inputSh256Sum != "" && inputSh256Sum != signature.UnsignedPayload {
+		needCheckSha256 = true
+		dataReader = io.TeeReader(limitedDataReader, sha256Writer)
+	}
 	for !eof {
-		n, err := limitedDataReader.Read(buf)
+		n, err := dataReader.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Errorf("read error:%v\n", err)
 			break
@@ -179,6 +190,24 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		log.Errorf("stream receive message failed, err=%v, errCode=%d\n", err, rsp.GetErrorCode())
 		return
 	}
+
+	// Check if sha256sum match.
+	if needCheckSha256 {
+		sha256Sum := hex.EncodeToString(sha256Writer.Sum(nil))
+		if inputSh256Sum != sha256Sum {
+			log.Errorln("sha256Sum:", sha256Sum, ", received:",
+				request.Request.Header.Get("X-Amz-Content-Sha256"))
+			WriteErrorResponse(response, request, s3error.ErrContentSHA256Mismatch)
+			// Delete the object.
+			input := s3.DeleteObjectInput{Bucket: bucketName, Key: objectKey}
+			if len(rsp.VersionId) > 0 {
+				input.VersioId = rsp.VersionId
+			}
+			ctx := common.InitCtxWithAuthInfo(request)
+			s.s3Client.DeleteObject(ctx, &input)
+		}
+	}
+
 	log.Infoln("object etag:", rsp.Md5)
 	if rsp.Md5 != "" {
 		response.AddHeader("ETag", "\""+rsp.Md5+"\"")
