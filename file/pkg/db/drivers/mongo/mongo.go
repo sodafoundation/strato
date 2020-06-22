@@ -114,3 +114,36 @@ func (adapter *mongoAdapter) ListFileShare(ctx context.Context, limit, offset in
 
 	return fileshares, nil
 }
+
+func (adapter *mongoAdapter) GetFileShare(ctx context.Context, id string) (*model.FileShare,
+	error) {
+	session := adapter.session.Copy()
+	defer session.Close()
+
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+
+	var fileshare = &model.FileShare{}
+	collection := session.DB(DataBaseName).C(FileShareCollection)
+	err = collection.Find(m).One(fileshare)
+	if err != nil {
+		return nil, err
+	}
+	return fileshare, nil
+}
+
+func (adapter *mongoAdapter) DeleteFileShare(ctx context.Context, id string) error {
+	session := adapter.session.Copy()
+	defer session.Close()
+
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return err
+	}
+
+	return session.DB(DataBaseName).C(FileShareCollection).Remove(m)
+}

@@ -22,5 +22,7 @@
   "plan:run": "",
   "job:list": "",
   "job:get": "",
-  "fileshare:list": ""
+  "fileshare:list": "",
+  "fileshare:get": "",
+  "fileshare:delete": ""
 }
