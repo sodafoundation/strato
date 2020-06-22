@@ -22,6 +22,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/block"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
+	"github.com/opensds/multi-cloud/api/pkg/file"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
@@ -59,7 +60,7 @@ func main() {
 		wc.Add(s3ws)
 	} else {
 		ws := new(restful.WebService)
-		ws.Path("/")
+		ws.Path("/v1")
 		ws.Doc("OpenSDS Multi-Cloud API")
 		ws.Consumes(restful.MIME_JSON)
 		ws.Produces(restful.MIME_JSON)
@@ -67,6 +68,7 @@ func main() {
 		backend.RegisterRouter(ws)
 		dataflow.RegisterRouter(ws)
 		block.RegisterRouter(ws)
+		file.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())

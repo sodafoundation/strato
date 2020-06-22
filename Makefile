@@ -18,13 +18,13 @@ DIST_DIR := $(BASE_DIR)/build/dist
 VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
 	     git describe --match=$(git rev-parse --short=8 HEAD) \
              --always --dirty --abbrev=8)
-BUILD_TGT := opensds-multicloud-$(VERSION)-linux-amd64
+BUILD_TGT := soda-multicloud-$(VERSION)-linux-amd64
 
-.PHONY: all build prebuild api backend s3 dataflow block docker clean
+.PHONY: all build prebuild api backend s3 dataflow file block docker clean
 
 all: build
 
-build: api backend s3 dataflow datamover block
+build: api backend s3 dataflow datamover file block
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -47,6 +47,9 @@ datamover: prebuild
 block: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/block github.com/opensds/multi-cloud/block/cmd
 
+file: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/file github.com/opensds/multi-cloud/file/cmd
+
 docker: build
 
 	cp $(BUILD_DIR)/api api
@@ -60,6 +63,10 @@ docker: build
 	cp $(BUILD_DIR)/block block
 	chmod 755 block/block
 	docker build block -t opensdsio/multi-cloud-block:latest
+
+    cp $(BUILD_DIR)/file file
+	chmod 755 file/file
+	docker build file -t opensdsio/multi-cloud-file:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
@@ -78,7 +85,7 @@ goimports:
 	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
 
 clean:
-	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3
+	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3 file/file
 
 version:
 	@echo ${VERSION}

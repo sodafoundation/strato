@@ -22,10 +22,10 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	log "github.com/sirupsen/logrus"
-	"github.com/micro/go-micro/metadata"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	log "github.com/sirupsen/logrus"
 )
 
 var adap = &adapter{}
@@ -68,9 +68,9 @@ func setIndex(session *mgo.Session, colName string, keys []string, unique bool, 
 	}
 
 	index := mgo.Index{
-		Key:      keys, //index key
-		Unique:   unique,        //Prevent two documents from having the same index key
-		DropDups: dropDups,      //Drop documents with the same index key as a previously indexed one.
+		Key:      keys,     //index key
+		Unique:   unique,   //Prevent two documents from having the same index key
+		DropDups: dropDups, //Drop documents with the same index key as a previously indexed one.
 		// Invalid when Unique equals true.
 		Background: backgroudn, //If Background is true, other connections will be allowed to proceed
 		// using the collection without the index while it's being built.

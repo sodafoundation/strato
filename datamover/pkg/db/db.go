@@ -15,11 +15,11 @@
 package db
 
 import (
-	log "github.com/sirupsen/logrus"
 	backend "github.com/opensds/multi-cloud/backend/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db/drivers/mongo"
+	log "github.com/sirupsen/logrus"
 )
 
 // C is a global variable that controls database module.

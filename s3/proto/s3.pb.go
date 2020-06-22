@@ -5255,7 +5255,9 @@ func init() {
 	proto.RegisterType((*ListBucketUploadResponse)(nil), "ListBucketUploadResponse")
 }
 
-func init() { proto.RegisterFile("s3.proto", fileDescriptor_005e34be4304e022) }
+func init() {
+	proto.RegisterFile("s3.proto", fileDescriptor_005e34be4304e022)
+}
 
 var fileDescriptor_005e34be4304e022 = []byte{
 	// 4451 bytes of a gzipped FileDescriptorProto

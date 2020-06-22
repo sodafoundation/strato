@@ -86,7 +86,16 @@ services:
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
-      - SVC_FLAG=block
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - /var/log/multi-cloud:/var/log/multi-cloud
+      - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+  
+  file:
+    image: opensdsio/multi-cloud-file
+    environment:
+      - MICRO_REGISTRY=mdns
+      - DB_HOST=datastore:27017
     volumes:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud

@@ -18,10 +18,10 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	"github.com/opensds/multi-cloud/datamover/pkg/kafka"
+	log "github.com/sirupsen/logrus"
 )
 
 var dataMoverGroup = "datamover"

@@ -22,20 +22,8 @@
   "plan:run": "",
   "job:list": "",
   "job:get": "",
-  "bucket:delete": "",
-  "bucket:list": "",
-  "bucket:get": "",
-  "bucket:put": "",
-  "object:get": "",
-  "object:put": "",
-  "object:delete": "",
-  "object:post":"",
-  "routbucket:put": "",
-  "routobject:put": "",
-  "storageclass:get":"",
-  "bucketlifecycle:put": "",
-  "bucketlifecycle:get": "",
-  "bucketlifecycle:delete": "",
-
   "volume:list": ""
+  "fileshare:list": "",
+  "fileshare:get": "",
+  "fileshare:delete": ""
 }

@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/micro/go-micro"
+	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
