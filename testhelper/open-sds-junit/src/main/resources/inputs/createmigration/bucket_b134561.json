@@ -1,0 +1,5 @@
+{
+  "xmlRequestFalse":"<SSEConfiguration> <SSE> <enabled>false</enabled></SSE><SSE-KMS><enabled>false</enabled><DefaultKMSMasterKey>string</DefaultKMSMasterKey></SSE-KMS></SSEConfiguration>",
+  "xmlRequestTrue":"<SSEConfiguration> <SSE> <enabled>true</enabled></SSE><SSE-KMS><enabled>false</enabled><DefaultKMSMasterKey>string</DefaultKMSMasterKey></SSE-KMS></SSEConfiguration>",
+  "xmlPayload":"<CreateBucketConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><LocationConstraint>ibm-back123400</LocationConstraint></CreateBucketConfiguration>"
+}
