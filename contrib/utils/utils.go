@@ -26,8 +26,6 @@ import (
 
 const (
 
-	AZURE_FILESHARE_USAGE_BYTES = "Share-Usage-Bytes"
-
 	CharacterSet = "abcdefghijklmnopqrstuvwxyz" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"0123456789" +

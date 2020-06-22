@@ -294,7 +294,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 	}
 
 	fs := &file.FileShare{
-		Description:          fileshare.Description,
+		Description:  fileshare.Description,
 	}
 
 	if fileshare.Metadata != nil || len(fileshare.Metadata) != 0 {
