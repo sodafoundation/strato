@@ -40,6 +40,7 @@
   "fileshare:get": "",
   "fileshare:create": "",
   "fileshare:put": "",
+  "fileshare:delete": "",
   "fileshare:sync": "",
   "fileshare:syncAll": ""
 }

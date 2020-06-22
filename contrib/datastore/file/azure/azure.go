@@ -319,6 +319,23 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 	}, nil
 }
 
+func (ad *AzureAdapter) DeleteFileShare(ctx context.Context, fs *file.DeleteFileShareRequest) (*file.DeleteFileShareResponse, error) {
+	shareURL, err := ad.createFileShareURL(fs.Fileshare.Name)
+	if err != nil {
+		log.Infof("create Azure File Share URL failed, err:%v\n", err)
+		return nil, err
+	}
+
+	result, err := shareURL.Delete(ctx, "")
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	log.Infof("Update File share  Quota response = %+v", result.Response().Header)
+
+	return &file.DeleteFileShareResponse{}, nil
+}
+
 func (ad *AzureAdapter) Close() error {
 	// TODO:
 	return nil

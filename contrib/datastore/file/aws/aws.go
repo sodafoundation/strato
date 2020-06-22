@@ -376,6 +376,38 @@ func (ad *AwsAdapter) UpdatefileShare(ctx context.Context, in *pb.UpdateFileShar
 	}, nil
 }
 
+func (ad *AwsAdapter) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShareRequest) (*pb.DeleteFileShareResponse, error) {
+	svc := efs.New(ad.session)
+
+	input := &efs.DeleteFileSystemInput{FileSystemId: aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue())}
+
+	result, err := svc.DeleteFileSystem(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case efs.ErrCodeBadRequest:
+				log.Errorf(efs.ErrCodeBadRequest, aerr.Error())
+			case efs.ErrCodeInternalServerError:
+				log.Errorf(efs.ErrCodeInternalServerError, aerr.Error())
+			case efs.ErrCodeFileSystemNotFound:
+				log.Errorf(efs.ErrCodeFileSystemNotFound, aerr.Error())
+			case efs.ErrCodeFileSystemInUse:
+				log.Errorf(efs.ErrCodeFileSystemInUse, aerr.Error())
+			default:
+				log.Errorf(aerr.Error())
+			}
+		} else {
+			log.Error(err)
+		}
+		return nil, err
+	}
+
+	log.Debugf("Delete File share response = %+v", result)
+
+	return &pb.DeleteFileShareResponse{}, nil
+}
+
+
 func (ad *AwsAdapter) Close() error {
 	// TODO:
 	return nil

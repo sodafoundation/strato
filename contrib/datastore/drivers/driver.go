@@ -30,6 +30,7 @@ type FileStorageDriver interface {
 	GetFileShare(ctx context.Context, fs *pb.GetFileShareRequest) (*pb.GetFileShareResponse, error)
 	ListFileShare(ctx context.Context, fs *pb.ListFileShareRequest) (*pb.ListFileShareResponse, error)
 	UpdatefileShare(ctx context.Context, fs *pb.UpdateFileShareRequest) (*pb.UpdateFileShareResponse, error)
+	DeleteFileShare(ctx context.Context, in *pb.DeleteFileShareRequest) (*pb.DeleteFileShareResponse, error)
 	// Close: cleanup when driver needs to be stopped.
 	Close() error
 }

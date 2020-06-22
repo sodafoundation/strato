@@ -833,3 +833,53 @@ func (f *fileService) PullAllFileShare(ctx context.Context, in *pb.ListFileShare
 	log.Infof("List File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
 	return nil
 }
+
+func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShareRequest, out *pb.DeleteFileShareResponse) error {
+
+	log.Info("Received DeleteFileShare request.")
+
+	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
+	if err != nil {
+		log.Errorf("failed to get fileshare: [%v] from db\n", res, err)
+		return err
+	}
+
+	backend, err := utils.GetBackend(ctx, f.backendClient, res.BackendId)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	sd, err := driver.CreateStorageDriver(backend.Backend)
+	if err != nil {
+		log.Errorln("Failed to create Storage driver err:", err)
+		return err
+	}
+
+	fileshare := &pb.FileShare{
+		Name: res.Name,
+	}
+
+	metadata, err := driverutils.ConvertMapToStruct(res.Metadata)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	fileshare.Metadata = metadata
+
+	in.Fileshare = fileshare
+
+	_, err = sd.DeleteFileShare(ctx, in)
+	if err != nil {
+		log.Errorf("Received error in deleting file shares at backend ", err)
+		return err
+	}
+
+	err = db.DbAdapter.DeleteFileShare(ctx, in.Id)
+	if err != nil {
+		log.Errorf("failed to delete file share: %v\n", err)
+		return err
+	}
+	log.Info("Delete file share successfully.")
+	return nil
+}

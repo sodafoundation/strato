@@ -21,6 +21,7 @@ service File {
     rpc GetFileShare(GetFileShareRequest) returns (GetFileShareResponse) {}
     rpc CreateFileShare(CreateFileShareRequest) returns (CreateFileShareResponse) {}
     rpc UpdateFileShare(UpdateFileShareRequest) returns (UpdateFileShareResponse) {}
+    rpc DeleteFileShare(DeleteFileShareRequest) returns (DeleteFileShareResponse) {}
     rpc PullAllFileShare(ListFileShareRequest) returns (ListFileShareResponse) {}
     rpc PullFileShare(GetFileShareRequest) returns (GetFileShareResponse) {}
 }
@@ -112,4 +113,12 @@ message UpdateFileShareRequest {
 
 message UpdateFileShareResponse {
     FileShare fileshare = 1;
+}
+
+message DeleteFileShareRequest {
+    string id = 1;
+    FileShare fileshare = 2;
+}
+
+message DeleteFileShareResponse {
 }

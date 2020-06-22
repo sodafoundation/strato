@@ -30,6 +30,8 @@ func RegisterRouter(ws *restful.WebService) {
 		Doc("Create file shares")
 	ws.Route(ws.PUT("/{tenantId}/file/shares/{id}").To(handler.UpdateFileShare)).
 		Doc("Update a file share")
+	ws.Route(ws.DELETE("/{tenantId}/file/shares/{id}").To(handler.DeleteFileShare)).
+		Doc("Delete file share")
 	ws.Route(ws.GET("/{tenantId}/file/shares/{id}/sync").To(handler.SyncFileShare)).
 		Doc("Retrieve file share from specified cloud backend and synchronize with DB")
 	ws.Route(ws.GET("/{tenantId}/file/shares/sync").To(handler.SyncAllFileShare)).

@@ -53,4 +53,5 @@ type DBAdapter interface {
 	GetFileShareByName(ctx context.Context, id string) (*model.FileShare, error)
 	CreateFileShare(ctx context.Context, fileshare *model.FileShare) (*model.FileShare, error)
 	UpdateFileShare(ctx context.Context, fileshare *model.FileShare) (*model.FileShare, error)
+	DeleteFileShare(ctx context.Context, id string) error
 }
