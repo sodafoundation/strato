@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Reference: https://docs.aws.amazon.com/sdk-for-go/api/service/efs/
+
 package aws
 
 import (
@@ -64,6 +66,7 @@ func (ad *AwsAdapter) ParseFileShare(fsDesc *efs.FileSystemDescription) (*pb.Fil
 	}
 
 	fileshare := &pb.FileShare{
+		Name:      *fsDesc.Name,
 		Size:      *fsDesc.SizeInBytes.Value,
 		Encrypted: *fsDesc.Encrypted,
 		Status:    *fsDesc.LifeCycleState,
@@ -108,7 +111,7 @@ func (ad *AwsAdapter) ParseUpdateFileShare(fsUpdate *efs.UpdateFileSystemOutput)
 
 	metadata, err := utils.ConvertMapToStruct(meta)
 	if err != nil {
-		log.Errorf("failed to convert metadata = [%+v] to struct", metadata, err)
+		log.Errorf("Failed to convert metadata = [%+v] to struct", metadata, err)
 		return nil, err
 	}
 

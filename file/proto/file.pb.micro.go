@@ -48,8 +48,6 @@ type FileService interface {
 	CreateFileShare(ctx context.Context, in *CreateFileShareRequest, opts ...client.CallOption) (*CreateFileShareResponse, error)
 	UpdateFileShare(ctx context.Context, in *UpdateFileShareRequest, opts ...client.CallOption) (*UpdateFileShareResponse, error)
 	DeleteFileShare(ctx context.Context, in *DeleteFileShareRequest, opts ...client.CallOption) (*DeleteFileShareResponse, error)
-	PullAllFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error)
-	PullFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error)
 }
 
 type fileService struct {
@@ -114,26 +112,6 @@ func (c *fileService) DeleteFileShare(ctx context.Context, in *DeleteFileShareRe
 	return out, nil
 }
 
-func (c *fileService) PullAllFileShare(ctx context.Context, in *ListFileShareRequest, opts ...client.CallOption) (*ListFileShareResponse, error) {
-	req := c.c.NewRequest(c.name, "File.PullAllFileShare", in)
-	out := new(ListFileShareResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *fileService) PullFileShare(ctx context.Context, in *GetFileShareRequest, opts ...client.CallOption) (*GetFileShareResponse, error) {
-	req := c.c.NewRequest(c.name, "File.PullFileShare", in)
-	out := new(GetFileShareResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // Server API for File service
 
 type FileHandler interface {
@@ -142,8 +120,6 @@ type FileHandler interface {
 	CreateFileShare(context.Context, *CreateFileShareRequest, *CreateFileShareResponse) error
 	UpdateFileShare(context.Context, *UpdateFileShareRequest, *UpdateFileShareResponse) error
 	DeleteFileShare(context.Context, *DeleteFileShareRequest, *DeleteFileShareResponse) error
-	PullAllFileShare(context.Context, *ListFileShareRequest, *ListFileShareResponse) error
-	PullFileShare(context.Context, *GetFileShareRequest, *GetFileShareResponse) error
 }
 
 func RegisterFileHandler(s server.Server, hdlr FileHandler, opts ...server.HandlerOption) error {
@@ -153,8 +129,6 @@ func RegisterFileHandler(s server.Server, hdlr FileHandler, opts ...server.Handl
 		CreateFileShare(ctx context.Context, in *CreateFileShareRequest, out *CreateFileShareResponse) error
 		UpdateFileShare(ctx context.Context, in *UpdateFileShareRequest, out *UpdateFileShareResponse) error
 		DeleteFileShare(ctx context.Context, in *DeleteFileShareRequest, out *DeleteFileShareResponse) error
-		PullAllFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error
-		PullFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error
 	}
 	type File struct {
 		file
@@ -185,12 +159,4 @@ func (h *fileHandler) UpdateFileShare(ctx context.Context, in *UpdateFileShareRe
 
 func (h *fileHandler) DeleteFileShare(ctx context.Context, in *DeleteFileShareRequest, out *DeleteFileShareResponse) error {
 	return h.FileHandler.DeleteFileShare(ctx, in, out)
-}
-
-func (h *fileHandler) PullAllFileShare(ctx context.Context, in *ListFileShareRequest, out *ListFileShareResponse) error {
-	return h.FileHandler.PullAllFileShare(ctx, in, out)
-}
-
-func (h *fileHandler) PullFileShare(ctx context.Context, in *GetFileShareRequest, out *GetFileShareResponse) error {
-	return h.FileHandler.PullFileShare(ctx, in, out)
 }

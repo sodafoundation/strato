@@ -1,4 +1,4 @@
-// Copyright 2019 The SODA Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ type FileShare struct {
 	BackendId string `json:"backendId,omitempty" bson:"backendId,omitempty"`
 
 	// The name of the backend that the file share belongs to.
+	// +optional
 	Backend string `json:"backend,omitempty" bson:"backend,omitempty"`
 
 	// The name of the file share.
@@ -55,6 +56,7 @@ type FileShare struct {
 	Description string `json:"description,omitempty" bson:"description,omitempty"`
 
 	// The type of the file share.
+	// +optional
 	Type string `json:"type,omitempty" bson:"type,omitempty"`
 
 	// The size of the file share requested by the user.
@@ -94,7 +96,6 @@ type FileShare struct {
 	EncryptionSettings map[string]string `json:"encryptionSettings,omitempty" bson:"encryptionSettings,omitempty"`
 
 	// Metadata should be kept until the semantics between file share and backend storage resource.
-	// +optional
 	Metadata map[string]interface{} `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 

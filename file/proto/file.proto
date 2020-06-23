@@ -22,8 +22,6 @@ service File {
     rpc CreateFileShare(CreateFileShareRequest) returns (CreateFileShareResponse) {}
     rpc UpdateFileShare(UpdateFileShareRequest) returns (UpdateFileShareResponse) {}
     rpc DeleteFileShare(DeleteFileShareRequest) returns (DeleteFileShareResponse) {}
-    rpc PullAllFileShare(ListFileShareRequest) returns (ListFileShareResponse) {}
-    rpc PullFileShare(GetFileShareRequest) returns (GetFileShareResponse) {}
 }
 
 message FileShare {

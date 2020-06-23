@@ -18,26 +18,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
-	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/contrib/datastore/drivers"
+	"github.com/opensds/multi-cloud/contrib/datastore/file/aws"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/model"
 	"github.com/opensds/multi-cloud/file/pkg/utils"
 
-	pstruct "github.com/golang/protobuf/ptypes/struct"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
 )
-
-var listFields map[string]*pstruct.Value
 
 type fileService struct {
 	fileClient    pb.FileService
@@ -53,115 +49,6 @@ func NewFileService() pb.FileHandler {
 	}
 }
 
-func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}, error) {
-	log.Infof("Parsing struct fields = [%+v]", fields)
-
-	valuesMap := make(map[string]interface{})
-
-	for key, value := range fields {
-		if v, ok := value.GetKind().(*pstruct.Value_NullValue); ok {
-			valuesMap[key] = v.NullValue
-		} else if v, ok := value.GetKind().(*pstruct.Value_NumberValue); ok {
-			valuesMap[key] = v.NumberValue
-		} else if v, ok := value.GetKind().(*pstruct.Value_StringValue); ok {
-			val := strings.Trim(v.StringValue, "\"")
-			if key == utils.AZURE_FILESHARE_USAGE_BYTES || key == utils.AZURE_X_MS_SHARE_QUOTA || key == utils.CONTENT_LENGTH {
-				valInt, err :=  strconv.ParseInt(val, 10, 64)
-				if err != nil {
-					log.Errorf("Failed to parse string Fields = ", key)
-					return nil, err
-				}
-				valuesMap[key] = valInt
-			} else {
-				valuesMap[key] = val
-			}
-		} else if v, ok := value.GetKind().(*pstruct.Value_BoolValue); ok {
-			valuesMap[key] = v.BoolValue
-		} else if v, ok := value.GetKind().(*pstruct.Value_StructValue); ok {
-			var err error
-			valuesMap[key], err = ParseStructFields(v.StructValue.Fields)
-			if err != nil {
-				log.Errorf("Failed to parse struct Fields = [%+v]", v.StructValue.Fields)
-				return nil, err
-			}
-		} else if v, ok := value.GetKind().(*pstruct.Value_ListValue); ok {
-			listFields[key] = v.ListValue.Values[0]
-		} else {
-			msg := fmt.Sprintf("Failed to parse field for key = [%+v], value = [%+v]", key, value)
-			err := errors.New(msg)
-			log.Errorf(msg)
-			return nil, err
-		}
-	}
-	return valuesMap, nil
-}
-
-func (f *fileService) UpdateFileShareStruct(fsModel *model.FileShare, fs *pb.FileShare) error {
-	var tags []*pb.Tag
-	for _, tag := range fsModel.Tags {
-		tags = append(tags, &pb.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
-	}
-	fs.Tags = tags
-
-	metadata, err := driverutils.ConvertMapToStruct(fsModel.Metadata)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	fs.Metadata = metadata
-
-	return nil
-}
-
-func (f *fileService) UpdateFileShareModel(fs *pb.FileShare, fsModel *model.FileShare) error {
-	var tags []model.Tag
-	for _, tag := range fs.Tags {
-		tags = append(tags, model.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
-	}
-	fsModel.Tags = tags
-
-	metadata := make(map[string]interface{})
-	for k, v := range fsModel.Metadata {
-		metadata[k] = v
-	}
-	//log.Infof("First metadata : %v", metadata)
-
-	listFields = make(map[string]*pstruct.Value)
-
-	fields := fs.Metadata.GetFields()
-
-	metaStruct, err := ParseStructFields(fields)
-	if err != nil {
-		log.Errorf("Failed to get metadata: %v", err)
-		return err
-	}
-	//log.Infof("Struct metadata : %v", metaStruct)
-	if len(listFields) != 0 {
-		meta, err := ParseStructFields(listFields)
-		if err != nil {
-			log.Errorf("Failed to get array for metadata : %v", err)
-			return err
-		}
-		for k, v := range meta {
-			metaStruct[k] = v
-		}
-	}
-	//log.Infof("With List Struct metadata : %v", metaStruct)
-	for k, v := range metaStruct {
-		metadata[k] = v
-	}
-	fsModel.Metadata = metadata
-	//log.Infof("Final metadata : %v", fsModel.Metadata)
-
-	return nil
-}
-
 func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareRequest, out *pb.ListFileShareResponse) error {
 	log.Info("Received ListFileShare request.")
 
@@ -173,26 +60,12 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 
 	res, err := db.DbAdapter.ListFileShare(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Errorf("Failed to List FileShares: %v\n", err)
+		log.Errorf("Failed to List FileShares: \n", err)
 		return err
 	}
 
 	var fileshares []*pb.FileShare
 	for _, fs := range res {
-		/*
-		var tags []*pb.Tag
-		for _, tag := range fs.Tags {
-			tags = append(tags, &pb.Tag{
-				Key:   tag.Key,
-				Value: tag.Value,
-			})
-		}
-		metadata, err := driverutils.ConvertMapToStruct(fs.Metadata)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		*/
 		fileshare :=  &pb.FileShare{
 			Id:                 fs.Id.Hex(),
 			CreatedAt:          fs.CreatedAt,
@@ -214,7 +87,7 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 			EncryptionSettings: fs.EncryptionSettings,
 		}
 
-		if f.UpdateFileShareStruct(fs, fileshare) != nil {
+		if utils.UpdateFileShareStruct(fs, fileshare) != nil {
 			log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
 			return err
 		}
@@ -234,25 +107,10 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 
 	fs, err := db.DbAdapter.GetFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("failed to get fileshare: %v\n", err)
+		log.Errorf("Failed to get fileshare: \n", err)
 		return err
 	}
 
-	/*
-	var tags []*pb.Tag
-	for _, tag := range fs.Tags {
-		tags = append(tags, &pb.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
-	}
-
-	metadata, err := driverutils.ConvertMapToStruct(fs.Metadata)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	*/
 	fileshare :=  &pb.FileShare{
 		Id:                 fs.Id.Hex(),
 		CreatedAt:          fs.CreatedAt,
@@ -274,15 +132,15 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 		EncryptionSettings: fs.EncryptionSettings,
 	}
 
-	if f.UpdateFileShareStruct(fs, fileshare) != nil {
-		log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
+	if utils.UpdateFileShareStruct(fs, fileshare) != nil {
+		log.Errorf("Failed to update fileshare struct: %+v\n", fs, err)
 		return err
 	}
 	log.Debugf("Get File share response, fileshare: %+v\n", fileshare)
 
 	out.Fileshare = fileshare
 
-	log.Info("Get file share successfully.")
+	log.Info("Got file share successfully.")
 	return nil
 }
 
@@ -291,7 +149,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 
 	backend, err := utils.GetBackend(ctx, f.backendClient, in.Fileshare.BackendId)
 	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
+		log.Errorln("Failed to get backend client with err:", err)
 		return err
 	}
 
@@ -306,37 +164,26 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 		log.Errorf("Received error in creating file shares at backend ", err)
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
-		fs.Fileshare.Status = utils.FileShareStateCreating
-	}
-/*
-	var tags []model.Tag
-	for _, tag := range in.Fileshare.Tags {
-		tags = append(tags, model.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
-	}
+		if backend.Backend.Type == constants.BackendTypeAwsFile {
+			time.Sleep(4 * time.Second)
+		}
 
-	listFields = make(map[string]*pstruct.Value)
+		fsGetInput := &pb.GetFileShareRequest{Fileshare:fs.Fileshare}
 
-	fields := fs.Fileshare.Metadata.GetFields()
-
-	metadata, err := ParseStructFields(fields)
-	if err != nil {
-		log.Errorf("Failed to get metadata: %v", err)
-		return err
-	}
-	if len(listFields) != 0 {
-		meta, err := ParseStructFields(listFields)
+		getFs, err := sd.GetFileShare(ctx, fsGetInput)
 		if err != nil {
-			log.Errorf("Failed to get array for metadata : %v", err)
+			fs.Fileshare.Status = utils.FileShareStateError
+			log.Errorf("Received error in getting file shares at backend ", err)
 			return err
 		}
-		for k, v := range meta {
-			metadata[k] = v
+		log.Debugf("Get File share response = [%+v] from backend", getFs)
+
+		if utils.MergeFileShareData(getFs.Fileshare, fs.Fileshare) != nil {
+			log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v] %v\n", fs, err)
+			return err
 		}
 	}
-*/
+
 	fileshare := &model.FileShare{
 		Name:               in.Fileshare.Name,
 		Description:        in.Fileshare.Description,
@@ -357,8 +204,8 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 		EncryptionSettings: fs.Fileshare.EncryptionSettings,
 	}
 
-	if f.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
-		log.Errorf("Failed to update fileshare model: %v\n", fileshare, err)
+	if utils.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
+		log.Errorf("Failed to update fileshare model: %+v\n", fileshare, err)
 		return err
 	}
 
@@ -369,7 +216,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 
 	res, err := db.DbAdapter.CreateFileShare(ctx, fileshare)
 	if err != nil {
-		log.Errorf("Failed to create file share: %v", err)
+		log.Errorf("Failed to create file share: %+v in db", err)
 		return err
 	}
 
@@ -401,58 +248,9 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 		EncryptionSettings: res.EncryptionSettings,
 		Metadata:           metadataFS,
 	}
-	/*
-		//time.Sleep(4 * time.Second)
-		fsInput := &pb.GetFileShareRequest{Fileshare:out.Fileshare}
+	log.Debugf("Create File share response, fileshare: %+v\n", out.Fileshare)
 
-		getFs, err := sd.GetFileShare(ctx, fsInput)
-		if err != nil {
-			log.Errorf("Received error in getting file shares at backend ", err)
-			return err
-		}
-
-		log.Infof("Get File share response = [%+v]", getFs)
-
-		listFields = make(map[string]*pstruct.Value)
-
-		fields = getFs.Fileshare.Metadata.GetFields()
-
-		metadata, err = ParseStructFields(fields)
-		if err != nil {
-			log.Errorf("Failed to get metadata: %v", err)
-			return err
-		}
-
-		if len(listFields) != 0 {
-			meta, err := ParseStructFields(listFields)
-			if err != nil {
-				log.Errorf("Failed to get array for metadata : %v", err)
-				return err
-			}
-			for k, v := range meta {
-				metadata[k] = v
-			}
-		}
-
-		log.Infof("For Update FS Model Metadata: %+v", metadata)
-
-		fileshare.Id = res.Id
-		fileshare.Status = getFs.Fileshare.Status
-		fileshare.Size = &getFs.Fileshare.Size
-		fileshare.Encrypted = &getFs.Fileshare.Encrypted
-		fileshare.EncryptionSettings = getFs.Fileshare.EncryptionSettings
-		fileshare.Metadata = metadata
-		fileshare.UpdatedAt = time.Now().Format(utils.TimeFormat)
-
-		log.Infof("For Update FS Model: %+v", fileshare)
-
-		res, err = db.DbAdapter.UpdateFileShare(ctx, fileshare)
-		if err != nil {
-			log.Errorf("Failed to update file share: %v", err)
-			return err
-		}
-	*/
-	log.Info("Create file share successfully.")
+	log.Info("Created file share successfully.")
 	return nil
 }
 
@@ -463,13 +261,13 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 
 	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("failed to get fileshare: [%v] from db\n", res, err)
+		log.Errorf("Failed to get fileshare: [%v] from db\n", res, err)
 		return err
 	}
 
 	backend, err := utils.GetBackend(ctx, f.backendClient, res.BackendId)
 	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
+		log.Errorln("Failed to get backend client with err:", err)
 		return err
 	}
 
@@ -480,10 +278,43 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	}
 
 	in.Fileshare.Name = res.Name
+	if backend.Backend.Type == constants.BackendTypeAwsFile {
+		metaMap, err := utils.ConvertMetadataStructToMap(in.Fileshare.Metadata)
+		if err != nil {
+			log.Errorf("Failed to convert metaStruct: [%+v] to metaMap", in.Fileshare.Metadata, err)
+			return err
+		}
+		metaMap[aws.FileSystemId] = res.Metadata[aws.FileSystemId]
+		metaStruct, err := driverutils.ConvertMapToStruct(metaMap)
+		if err != nil {
+			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct\n", metaMap, err)
+			return err
+		}
+		in.Fileshare.Metadata = metaStruct
+	}
+
 	fs, err := sd.UpdatefileShare(ctx, in)
 	if err != nil {
 		log.Errorf("Received error in creating file shares at backend ", err)
 		fs.Fileshare.Status = utils.FileShareStateError
+	} else {
+		if backend.Backend.Type == constants.BackendTypeAwsFile {
+			time.Sleep(4 * time.Second)
+		}
+
+		fsGetInput := &pb.GetFileShareRequest{Fileshare:fs.Fileshare}
+
+		getFs, err := sd.GetFileShare(ctx, fsGetInput)
+		if err != nil {
+			log.Errorf("Received error in getting file shares at backend ", err)
+			return err
+		}
+		log.Debugf("Get File share response= [%+v] from backend", getFs)
+
+		if utils.MergeFileShareData(getFs.Fileshare, fs.Fileshare) != nil {
+			log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v] %v\n", fs, err)
+			return err
+		}
 	}
 
 	fileshare := &model.FileShare{
@@ -508,21 +339,16 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 		Tags: res.Tags,
 		Metadata: res.Metadata,
 	}
-/*
-	if f.SyncDataFromDB(ctx, res.Name, fileshare) != nil {
-		log.Errorf("Failed to sync data from db for file share model: %v\n", fileshare, err)
-		return err
-	}
-*/
-	if f.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
-		log.Errorf("Failed to update fileshare model: %v\n", fileshare, err)
+
+	if utils.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
+		log.Errorf("Failed to update fileshare model: %+v\n", fileshare, err)
 		return err
 	}
 	log.Debugf("Update File Share Model: %+v", fileshare)
 
 	upateRes, err := db.DbAdapter.UpdateFileShare(ctx, fileshare)
 	if err != nil {
-		log.Errorf("Failed to update file share: %v", err)
+		log.Errorf("Failed to update file share: %+v", fileshare, err)
 		return err
 	}
 
@@ -547,291 +373,13 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 		EncryptionSettings: upateRes.EncryptionSettings,
 	}
 
-	if f.UpdateFileShareStruct(upateRes, out.Fileshare) != nil {
+	if utils.UpdateFileShareStruct(upateRes, out.Fileshare) != nil {
 		log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
 		return err
 	}
+	log.Debugf("Update File share response, fileshare: %+v\n", out.Fileshare)
 
-	log.Info("Update file share successfully.")
-	return nil
-}
-
-func (f *fileService) PullFileShare(ctx context.Context, in *pb.GetFileShareRequest,
-	out *pb.GetFileShareResponse) error {
-
-	log.Info("Received PullFileShare request.")
-
-	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
-	if err != nil {
-		log.Errorf("failed to get fileshare: [%v] from db\n", res, err)
-		return err
-	}
-
-	metadataFS, err := driverutils.ConvertMapToStruct(res.Metadata)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	out.Fileshare = &pb.FileShare{
-		Id:                 res.Id.Hex(),
-		CreatedAt:          res.CreatedAt,
-		UpdatedAt:          res.UpdatedAt,
-		Name:               res.Name,
-		Description:        res.Description,
-		TenantId:           res.TenantId,
-		UserId:             res.UserId,
-		BackendId:          res.BackendId,
-		Backend:            res.Backend,
-		Size:               *res.Size,
-		Type:               res.Type,
-		Status:             res.Status,
-		Region:             res.Region,
-		AvailabilityZone:   res.AvailabilityZone,
-		Protocols:          res.Protocols,
-		SnapshotId:         res.SnapshotId,
-		Encrypted:          *res.Encrypted,
-		EncryptionSettings: res.EncryptionSettings,
-		Metadata:           metadataFS,
-	}
-
-	backend, err := utils.GetBackend(ctx, f.backendClient, out.Fileshare.BackendId)
-	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
-		return err
-	}
-
-	sd, err := driver.CreateStorageDriver(backend.Backend)
-	if err != nil {
-		log.Errorln("Failed to create Storage driver err:", err)
-		return err
-	}
-
-	fsInput := &pb.GetFileShareRequest{Fileshare:out.Fileshare}
-
-	getFs, err := sd.GetFileShare(ctx, fsInput)
-	if err != nil {
-		log.Errorf("Received error in getting file shares at backend ", err)
-		return err
-	}
-
-	log.Debugf("Get File share response= [%+v] from backend", getFs)
-/*
-	listFields = make(map[string]*pstruct.Value)
-
-	fields = getFs.Fileshare.Metadata.GetFields()
-
-	metadata, err = ParseStructFields(fields)
-	if err != nil {
-		log.Errorf("Failed to get metadata: %v", err)
-		return err
-	}
-
-	if len(listFields) != 0 {
-		meta, err := ParseStructFields(listFields)
-		if err != nil {
-			log.Errorf("Failed to get array for metadata : %v", err)
-			return err
-		}
-		for k, v := range meta {
-			metadata[k] = v
-		}
-	}
-   log.Infof("For Update FS Model Metadata: %+v", metadata)
-*/
-	if f.UpdateFileShareModel(getFs.Fileshare, res) != nil {
-		log.Errorf("Failed to update file share model: %v\n", res, err)
-		return err
-	}
-
-	res.Status = getFs.Fileshare.Status
-	res.Size = &getFs.Fileshare.Size
-	res.Encrypted = &getFs.Fileshare.Encrypted
-	res.EncryptionSettings = getFs.Fileshare.EncryptionSettings
-	res.UpdatedAt = time.Now().Format(utils.TimeFormat)
-
-	log.Infof("For Update FS Model: %+v", res)
-
-	res, err = db.DbAdapter.UpdateFileShare(ctx, res)
-	if err != nil {
-		log.Errorf("Failed to update file share: %v", err)
-		return err
-	}
-
-	fs, err := db.DbAdapter.GetFileShare(ctx, in.Id)
-	if err != nil {
-		log.Errorf("failed to get fileshare: %v\n", err)
-		return err
-	}
-
-	fileshare :=  &pb.FileShare{
-		Id:                 fs.Id.Hex(),
-		CreatedAt:          fs.CreatedAt,
-		UpdatedAt:          fs.UpdatedAt,
-		Name:               fs.Name,
-		Description:        fs.Description,
-		TenantId:           fs.TenantId,
-		UserId:             fs.UserId,
-		BackendId:          fs.BackendId,
-		Backend:            fs.Backend,
-		Size:               *fs.Size,
-		Type:               fs.Type,
-		Status:             fs.Status,
-		Region:             fs.Region,
-		AvailabilityZone:   fs.AvailabilityZone,
-		Protocols:          fs.Protocols,
-		SnapshotId:         fs.SnapshotId,
-		Encrypted:          *fs.Encrypted,
-		EncryptionSettings: fs.EncryptionSettings,
-	}
-
-	if f.UpdateFileShareStruct(fs, fileshare) != nil {
-		log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
-		return err
-	}
-	log.Debugf("Get File share response, fileshare: %+v\n", fileshare)
-
-	out.Fileshare = fileshare
-
-	log.Info("Get file share successfully.")
-	return nil
-}
-
-func (f *fileService) PullAllFileShare(ctx context.Context, in *pb.ListFileShareRequest,
-	out *pb.ListFileShareResponse) error {
-
-	log.Info("Received PullAllFileShare request.")
-
-	backend, err := utils.GetBackend(ctx, f.backendClient, in.Filter[common.REQUEST_PATH_BACKEND_ID])
-	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
-		return err
-	}
-
-	sd, err := driver.CreateStorageDriver(backend.Backend)
-	if err != nil {
-		log.Errorln("Failed to create Storage driver err:", err)
-		return err
-	}
-
-	listFs, err := sd.ListFileShare(ctx, in)
-	if err != nil {
-		log.Errorf("Received error in getting file shares at backend ", err)
-		return err
-	}
-
-	log.Debugf("Get File share response= [%+v] from backend", listFs)
-
-	if f.ListFileShare(ctx, in, out) != nil {
-		log.Errorf("Failed to List FileShares: %v\n", err)
-		return err
-	}
-
-	m := make(map[string]*pb.FileShare)
-	for _, fs := range listFs.Fileshares {
-		m[fs.Name] = fs
-	}
-
-	for _, fs := range out.Fileshares {
-
-		fsBackend := m[fs.Name]
-		if fsBackend == nil {
-			log.Errorf("Failed to retieve File share for Name = %s", fs.Name)
-			return err
-		}
-
-		fs.UpdatedAt = time.Now().Format(utils.TimeFormat)
-		fs.Status = fsBackend.Status
-		fs.Size = fsBackend.Size
-		fs.Encrypted = fsBackend.Encrypted
-		fs.EncryptionSettings = fsBackend.EncryptionSettings
-		fs.Tags = fsBackend.Tags
-		//fs.Metadata = fsBackend.Metadata
-
-		fileshare := &model.FileShare{
-			Id:                 bson.ObjectIdHex(fs.Id),
-			Name:               fs.Name,
-			Description:        fs.Description,
-			TenantId:           fs.TenantId,
-			UserId:             fs.UserId,
-			BackendId:          fs.BackendId,
-			Backend:            fs.Backend,
-			CreatedAt:          fs.CreatedAt,
-			UpdatedAt:          fs.UpdatedAt,
-			Type:               fs.Type,
-			Status:             fs.Status,
-			Region:             fs.Region,
-			AvailabilityZone:   fs.AvailabilityZone,
-			Protocols:          fs.Protocols,
-			SnapshotId:         fs.SnapshotId,
-			Size:               &fs.Size,
-			Encrypted:          &fs.Encrypted,
-			EncryptionSettings: fs.EncryptionSettings,
-		}
-/*
-		if f.SyncDataFromDB(ctx, fs.Name, fileshare) != nil {
-			log.Errorf("Failed to sync data from db for file share model: %v\n", fileshare, err)
-			return err
-		}
-*/
-		if f.UpdateFileShareModel(fs, fileshare) != nil {
-			log.Errorf("Failed to update fileshare model: %v\n", fileshare, err)
-			return err
-		}
-
-		if f.UpdateFileShareModel(fsBackend, fileshare) != nil {
-			log.Errorf("Failed to update fileshare model: %v\n", fileshare, err)
-			return err
-		}
-		log.Debugf("For Update FS Model: %+v", fileshare)
-
-		_, err = db.DbAdapter.UpdateFileShare(ctx, fileshare)
-		if err != nil {
-			log.Errorf("Failed to update file share: %v", err)
-			return err
-		}
-	}
-
-	res, err := db.DbAdapter.ListFileShare(ctx, int(in.Limit), int(in.Offset), in.Filter)
-	if err != nil {
-		log.Errorf("Failed to List FileShares: %v\n", err)
-		return err
-	}
-
-	var fileshares []*pb.FileShare
-	for _, fs := range res {
-		fileshare :=  &pb.FileShare{
-			Id:                 fs.Id.Hex(),
-			CreatedAt:          fs.CreatedAt,
-			UpdatedAt:          fs.UpdatedAt,
-			Name:               fs.Name,
-			Description:        fs.Description,
-			TenantId:           fs.TenantId,
-			UserId:             fs.UserId,
-			BackendId:          fs.BackendId,
-			Backend:            fs.Backend,
-			Size:               *fs.Size,
-			Type:               fs.Type,
-			Status:             fs.Status,
-			Region:             fs.Region,
-			AvailabilityZone:   fs.AvailabilityZone,
-			Protocols:          fs.Protocols,
-			SnapshotId:         fs.SnapshotId,
-			Encrypted:          *fs.Encrypted,
-			EncryptionSettings: fs.EncryptionSettings,
-		}
-
-		if f.UpdateFileShareStruct(fs, fileshare) != nil {
-			log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
-			return err
-		}
-
-		fileshares = append(fileshares,fileshare)
-	}
-	out.Fileshares = fileshares
-	out.Next = in.Offset + int32(len(res))
-
-	log.Infof("List File Share successfully, #num=%d, fileshares: %+v\n", len(fileshares), fileshares)
+	log.Info("Updated file share successfully.")
 	return nil
 }
 
@@ -841,13 +389,13 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 
 	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("failed to get fileshare: [%v] from db\n", res, err)
+		log.Errorf("Failed to get fileshare: [%v] from db\n", res, err)
 		return err
 	}
 
 	backend, err := utils.GetBackend(ctx, f.backendClient, res.BackendId)
 	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
+		log.Errorln("Failed to get backend client with err:", err)
 		return err
 	}
 
@@ -878,9 +426,9 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 
 	err = db.DbAdapter.DeleteFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("failed to delete file share: %v\n", err)
+		log.Errorf("Failed to delete file share err:\n", err)
 		return err
 	}
-	log.Info("Delete file share successfully.")
+	log.Info("Deleted file share successfully.")
 	return nil
 }

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -86,7 +86,6 @@ func (ad *AzureAdapter) createFileShareURL(fileshareName string) (azfile.ShareUR
 
 	//create fileShareURL
 	URL, _ := url.Parse(fmt.Sprintf("%s%s", ad.backend.Endpoint, fileshareName))
-	//URL.Query().Set("timeout","20")
 
 	return azfile.NewShareURL(*URL, ad.pipeline), nil
 }
@@ -95,13 +94,13 @@ func (ad *AzureAdapter) GetFileShareProperties(ctx context.Context, fileshareNam
 
 	shareURL, err := ad.createFileShareURL(fileshareName)
 	if err != nil {
-		log.Errorf("Create Azure File Share URL failed, err:%v\n", err)
+		log.Errorf("Create Azure File Share URL failed, err: \n", err)
 		return nil, err
 	}
 
 	result, err := shareURL.GetProperties(ctx)
 	if err != nil {
-		log.Errorf("Get Azure File Share Properties failed, err:%v\n", err)
+		log.Errorf("Get Azure File Share Properties failed, err: \n", err)
 		return nil, err
 	}
 	return result, nil
@@ -111,13 +110,13 @@ func (ad *AzureAdapter) GetFileShareStatistics(ctx context.Context, fileshareNam
 
 	shareURL, err := ad.createFileShareURL(fileshareName)
 	if err != nil {
-		log.Errorf("Create Azure File Share URL failed, err:%v\n", err)
+		log.Errorf("Create Azure File Share URL failed, err: \n", err)
 		return nil, err
 	}
 
 	result, err := shareURL.GetStatistics(ctx)
 	if err != nil {
-		log.Errorf("Get Azure File Share Statistics failed, err:%v\n", err)
+		log.Errorf("Get Azure File Share Statistics failed, err: \n", err)
 		return nil, err
 	}
 	return result, nil
@@ -127,13 +126,13 @@ func (ad *AzureAdapter) GetFileSharePermissions(ctx context.Context, fileshareNa
 
 	shareURL, err := ad.createFileShareURL(fileshareName)
 	if err != nil {
-		log.Errorf("Create Azure File Share URL failed, err:%v\n", err)
+		log.Errorf("Create Azure File Share URL failed, err: \n", err)
 		return nil, err
 	}
 
 	result, err := shareURL.GetPermissions(ctx)
 	if err != nil {
-		log.Errorf("Get Azure File Share Permissions failed, err:%v\n", err)
+		log.Errorf("Get Azure File Share Permissions failed, err: \n", err)
 		return nil, err
 	}
 	return result, nil
@@ -144,7 +143,7 @@ func (ad *AzureAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFile
 	shareURL, err := ad.createFileShareURL(fs.Fileshare.Name)
 
 	if err != nil {
-		log.Infof("create Azure File Share URL failed, err:%v\n", err)
+		log.Infof("Create Azure File Share URL failed, err: \n", err)
 		return nil, err
 	}
 
@@ -159,7 +158,7 @@ func (ad *AzureAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFile
 		log.Error(err)
 		return nil, err
 	}
-	log.Infof("Create File share response = %+v", result.Response().Header)
+	log.Debugf("Create File share response = %+v", result.Response().Header)
 
 
 	meta, err := ConvertHeaderToStruct(result.Response().Header)
@@ -167,8 +166,6 @@ func (ad *AzureAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFile
 		log.Error(err)
 		return nil, err
 	}
-
-	log.Infof("Create File share metadata = %+v", meta)
 
 	return &file.CreateFileShareResponse{
 		Fileshare: &file.FileShare{
@@ -194,16 +191,7 @@ func (ad *AzureAdapter) GetFileShare(ctx context.Context, fs *file.GetFileShareR
 		log.Error(err)
 		return nil, err
 	}
-	log.Infof("Get File share stats response = %+v", getFSstats.Response().Header)
-	log.Infof("Get File share stats response Bytes = %+v", getFSstats.ShareUsageBytes)
-/*
-	getFSperm, err := ad.GetFileSharePermissions(ctx, fs.Fileshare.Name)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	log.Infof("Get File share permission response = %+v", getFSperm.Response().Header)
-*/
+	log.Debugf("Get File share stats response = %+v", getFSstats.Response().Header)
 
 	getFS.Response().Header.Set(AZURE_FILESHARE_USAGE_BYTES, strconv.FormatInt(int64(getFSstats.ShareUsageBytes), 10))
 	meta, err := ConvertHeaderToStruct(getFS.Response().Header)
@@ -211,8 +199,6 @@ func (ad *AzureAdapter) GetFileShare(ctx context.Context, fs *file.GetFileShareR
 		log.Error(err)
 		return nil, err
 	}
-
-	log.Infof("Get File share metadata = %+v", meta)
 
 	return &file.GetFileShareResponse{
 		Fileshare: &file.FileShare{
@@ -237,7 +223,7 @@ func (ad *AzureAdapter) ListFileShare(ctx context.Context, fs *file.ListFileShar
 		fmt.Println("Error in response")
 		return nil, err
 	}
-	log.Infof("List File share response = %+v", result)
+	log.Debugf("List File share response = %+v", result)
 
 	var fileshares []*file.FileShare
 	for _, fileshare := range result.Shares {
@@ -259,7 +245,7 @@ func (ad *AzureAdapter) ListFileShare(ctx context.Context, fs *file.ListFileShar
 func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFileShareRequest) (*file.UpdateFileShareResponse, error) {
 	shareURL, err := ad.createFileShareURL(fs.Fileshare.Name)
 	if err != nil {
-		log.Infof("create Azure File Share URL failed, err:%v\n", err)
+		log.Infof("Create Azure File Share URL failed, err:%v\n", err)
 		return nil, err
 	}
 
@@ -268,15 +254,13 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 		log.Error(err)
 		return nil, err
 	}
-	log.Infof("Update File share  Quota response = %+v", result.Response().Header)
+	log.Infof("Update File share Quota response = %+v", result.Response().Header)
 
 	meta, err := ConvertHeaderToStruct(result.Response().Header)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-
-	log.Infof("Update File share metadata = %+v", meta)
 
 	fileshare := &file.FileShare{
 		Name:                 fs.Fileshare.Name,
@@ -302,16 +286,13 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 		log.Error(err)
 		return nil, err
 	}
-	log.Infof("Update File share Metadata response = %+v", metaRes.Response().Header)
+	log.Debugf("Update File share Metadata response = %+v", metaRes.Response().Header)
 
 	meta, err = ConvertHeaderToStruct(metaRes.Response().Header)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-
-	log.Infof("Update File share metadata = %+v for Azure backend", meta)
-
 	fileshare.Metadata = meta
 
 	return &file.UpdateFileShareResponse{
@@ -322,7 +303,7 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 func (ad *AzureAdapter) DeleteFileShare(ctx context.Context, fs *file.DeleteFileShareRequest) (*file.DeleteFileShareResponse, error) {
 	shareURL, err := ad.createFileShareURL(fs.Fileshare.Name)
 	if err != nil {
-		log.Infof("create Azure File Share URL failed, err:%v\n", err)
+		log.Infof("Create Azure File Share URL failed, err:%v\n", err)
 		return nil, err
 	}
 
@@ -331,7 +312,7 @@ func (ad *AzureAdapter) DeleteFileShare(ctx context.Context, fs *file.DeleteFile
 		log.Error(err)
 		return nil, err
 	}
-	log.Infof("Update File share  Quota response = %+v", result.Response().Header)
+	log.Debugf("Delete File share response = %+v", result.Response().Header)
 
 	return &file.DeleteFileShareResponse{}, nil
 }

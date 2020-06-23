@@ -196,12 +196,12 @@ func (s *APIService) GetFileShare(request *restful.Request, response *restful.Re
 
 	res, err := s.fileClient.GetFileShare(ctx, &file.GetFileShareRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to get file share details: %v\n", err)
+		log.Errorf("Failed to get file share details err: \n", err)
 		response.WriteError(http.StatusNotFound, err)
 		return
 	}
 
-	log.Info("Get file share details successfully.")
+	log.Info("Get FileShare details successfully.")
 	response.WriteEntity(res.Fileshare)
 }
 
@@ -215,7 +215,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	err := request.ReadEntity(&fileshare)
 	if err != nil {
-		log.Errorf("failed to read request body: %v\n", err)
+		log.Errorf("failed to read request body err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -229,6 +229,11 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 	}
 
 	metadata, err := utils.ConvertMapToStruct(fileshare.Metadata)
+	if err != nil {
+		log.Errorf("failed to convert metadata map to struct: %v\n", fileshare.Metadata, err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
 
 	fs := &file.FileShare{
 		Name:                 fileshare.Name,
@@ -269,7 +274,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	res, err := s.fileClient.CreateFileShare(ctx, &file.CreateFileShareRequest{Fileshare:fs})
 	if err != nil {
-		log.Errorf("failed to create file share: %v\n", err)
+		log.Errorf("Failed to create file share err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -288,7 +293,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 
 	err := request.ReadEntity(&fileshare)
 	if err != nil {
-		log.Errorf("failed to read request body: %v\n", err)
+		log.Errorf("Failed to read request body err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -300,7 +305,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 	if fileshare.Metadata != nil || len(fileshare.Metadata) != 0 {
 		metadata, err := utils.ConvertMapToStruct(fileshare.Metadata)
 		if err != nil {
-			log.Errorf("failed to parse metadata: %v\n", fileshare.Metadata, err)
+			log.Errorf("Failed to parse metadata: %v\n", fileshare.Metadata, err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
@@ -333,69 +338,13 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 
 	res, err := s.fileClient.UpdateFileShare(ctx, &file.UpdateFileShareRequest{Id: id, Fileshare:fs})
 	if err != nil {
-		log.Errorf("failed to create file share: %v\n", err)
+		log.Errorf("Failed to create file share err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Create file share successfully.")
+	log.Info("Create FileShare successfully.")
 	response.WriteEntity(res.Fileshare)
-}
-
-
-func (s *APIService) SyncFileShare(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:sync") {
-		return
-	}
-	log.Infof("Received request for file share details: %s\n", request.PathParameter("id"))
-
-	id := request.PathParameter("id")
-
-	ctx := common.InitCtxWithAuthInfo(request)
-
-	res, err := s.fileClient.PullFileShare(ctx, &file.GetFileShareRequest{Id: id})
-	if err != nil {
-		log.Errorf("failed to get file share details: %v\n", err)
-		response.WriteError(http.StatusNotFound, err)
-		return
-	}
-
-	log.Info("Get file share details successfully.")
-	response.WriteEntity(res.Fileshare)
-}
-
-func (s *APIService) SyncAllFileShare(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:syncAll") {
-		return
-	}
-	log.Info("Received request for File Share List.")
-
-	ctx := common.InitCtxWithAuthInfo(request)
-
-	backendId := request.QueryParameter(common.REQUEST_PATH_BACKEND_ID)
-	if backendId == "" {
-		return
-	}
-
-	listFileShareRequest := s.listFileShareByBackend(ctx, request, response, backendId)
-
-	if listFileShareRequest == nil {
-		return
-	}
-
-	res, err := s.fileClient.PullAllFileShare(ctx, listFileShareRequest)
-	if err != nil {
-		WriteError(response, "List FileShares failed: %v\n", http.StatusInternalServerError, err)
-		return
-	}
-
-	log.Info("List FileShares successfully.")
-
-	err = response.WriteEntity(res)
-	if err != nil {
-		log.Errorf("Response write entity failed: %v\n", err)
-		return
-	}
 }
 
 func (s *APIService) DeleteFileShare(request *restful.Request, response *restful.Response) {
@@ -410,7 +359,7 @@ func (s *APIService) DeleteFileShare(request *restful.Request, response *restful
 
 	res, err := s.fileClient.DeleteFileShare(ctx, &file.DeleteFileShareRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to delete file share: %v\n", err)
+		log.Errorf("Failed to delete file share err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
