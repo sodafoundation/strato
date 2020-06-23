@@ -22,7 +22,8 @@
   "plan:run": "",
   "job:list": "",
   "job:get": "",
-  "volume:list": ""
+  "volume:list": "",
+  "volume:create": "",
   "fileshare:list": "",
   "fileshare:get": "",
   "fileshare:delete": ""

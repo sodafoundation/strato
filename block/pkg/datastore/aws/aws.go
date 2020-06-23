@@ -16,10 +16,13 @@ package aws
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+    "github.com/aws/aws-sdk-go/aws/awserr"
 	awsec2 "github.com/aws/aws-sdk-go/service/ec2"
 	dscommon "github.com/opensds/multi-cloud/block/pkg/datastore/common"
 	pb "github.com/opensds/multi-cloud/block/proto"
+	"github.com/opensds/multi-cloud/block/pkg/model"
 	. "github.com/opensds/multi-cloud/s3/error"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,31 +31,103 @@ type AwsAdapter struct {
 	session *session.Session
 }
 
-func (ad *AwsAdapter) List(ctx context.Context) (*pb.ListVolumesResponse, error) {
-	getVolumesInput := &awsec2.DescribeVolumesInput{}
-	var result pb.ListVolumesResponse
-	log.Infof("Getting volumes list from AWS EC2 service")
+// Create EBS volume
+func (ad *AwsAdapter) Create(ctx context.Context, volume *model.Volume) (*pb.CreateVolumeResponse, error){
+    var result pb.CreateVolumeResponse
+    var tags []*awsec2.Tag
 
+    tagList := &awsec2.TagSpecification{
+        Tags:   append(tags, &awsec2.Tag{
+                        Key:   aws.String("Name"),
+                        Value: aws.String(volume.Name)}),
+        ResourceType: aws.String(awsec2.ResourceTypeVolume),
+    }
+
+    volCreationInput := &awsec2.CreateVolumeInput{
+        AvailabilityZone:   aws.String(volume.AvailabilityZone),
+        Size:               aws.Int64(volume.Size),
+        VolumeType:         aws.String(volume.Type),
+        TagSpecifications:   []*awsec2.TagSpecification{tagList},
+    }
+    if (volume.Type == "io1") {
+        // Iops is required only for io1 volumes
+        volCreationInput.Iops = aws.Int64(volume.Iops)
+    }
 	// Create a session of EC2
 	svc := awsec2.New(ad.session)
 
 	// Get the Volumes
-	volResponse, err := svc.DescribeVolumes(getVolumesInput)
+	volResponse, err := svc.CreateVolume(volCreationInput)
 	if err != nil {
-		log.Errorf("Errror in getting volumes list, err:%v", err)
+		log.Errorf("Errror in creating volume, err:%v", err)
+        if aerr, ok := err.(awserr.Error); ok {
+            switch aerr.Code() {
+            default:
+                log.Errorf(aerr.Error())
+            }
+        } else {
+            log.Errorf(err.Error())
+        }
 		return nil, ErrGetFromBackendFailed
 	}
-	log.Infof("Describe volumes from AWS succeeded")
-	for _, vol := range volResponse.Volumes {
-		result.Volumes = append(result.Volumes, &pb.Volume{
-			Id: *vol.VolumeId,
-			// Always report size in Bytes
-			Size:      (*vol.Size) * (dscommon.GB_FACTOR),
-			Type:      *vol.VolumeType,
-			Status:    *vol.State,
-			Encrypted: *vol.Encrypted,
-		})
-	}
-	log.Infof("Successfully got the volumes list")
+
+	log.Infof("Create volumes from AWS succeeded %v", volResponse)
+    var volName string
+    for _, tag := range volResponse.Tags {
+        if *tag.Key == "Name" {
+            volName = *tag.Value
+        }
+    }
+    result.Volume = &pb.Volume{
+        Type:               *volResponse.VolumeType,
+        Size:               (*volResponse.Size)*(dscommon.GB_FACTOR),
+        VolumeId:           *volResponse.VolumeId,
+        Encrypted:          *volResponse.Encrypted,
+        CreatedAt:          (*volResponse.CreateTime).String(),
+        AvailabilityZone:   *volResponse.AvailabilityZone,
+        State:              *volResponse.State,
+        Name:               volName,
+    }
+    if(*volResponse.VolumeType == "io1") {
+        result.Volume.Iops = *volResponse.Iops
+    }
+    return &result, nil
+}
+
+func (ad *AwsAdapter) List(ctx context.Context) (*pb.ListVolumesResponse, error) {
+    getVolumesInput := &awsec2.DescribeVolumesInput{}
+    var result pb.ListVolumesResponse
+    log.Infof("Getting volumes list from AWS EC2 service")
+
+    // Create a session of EC2
+    svc := awsec2.New(ad.session)
+
+    // Get the Volumes
+    volResponse, err := svc.DescribeVolumes(getVolumesInput)
+    if err != nil {
+        log.Errorf("Errror in getting volumes list, err:%v", err)
+        return nil, ErrGetFromBackendFailed
+    }
+    log.Infof("Describe volumes from AWS succeeded %v", volResponse)
+
+    for _, vol := range volResponse.Volumes {
+        var volName string
+        for _, tag := range vol.Tags {
+            if *tag.Key == "Name" {
+                volName = *tag.Value
+            }
+        }
+        result.Volumes = append(result.Volumes, &pb.Volume{
+            VolumeId:           *vol.VolumeId,
+            // Always report size in Bytes
+            Size:               (*vol.Size) * (dscommon.GB_FACTOR),
+            Type:               *vol.VolumeType,
+            State:              *vol.State,
+            AvailabilityZone:   *vol.AvailabilityZone,
+            CreatedAt:          (*vol.CreateTime).String(),
+            Name:               volName,
+        })
+    }
+    log.Infof("Successfully got the volumes list")
 	return &result, nil
 }

@@ -17,19 +17,38 @@ syntax = "proto3";
 service Block {
     rpc ListVolumes (VolumeRequest) returns (ListVolumesResponse) {
     }
+    rpc CreateVolume (CreateVolumeRequest) returns (CreateVolumeResponse) {
+    }
 }
 
 message Volume {
-    string  name = 1;
-    string  Id = 2;
-    int64   Size = 3;
-    string  Type = 4;
-    string  Status = 5;
-    bool    MultiAttachEnabled = 6;
-    bool    Encrypted = 7;
+    string  name                = 1;
+    string  id                  = 2;
+    int64   size                = 3;
+    string  type                = 4;
+    string  state               = 5;
+    string  volumeId            = 6;
+    bool    encrypted           = 7;
+    string  availabilityZone    = 8;
+    string  region              = 9;
+    string  tenantId            = 10;
+    string  userId              = 11;
+    string  createdAt           = 12;
+    string  updatedAt           = 13;
+    string  backendId           = 14;
+    int64   iops                = 15;
 
     // TODO: Add more attributes to make it generic Volume structure
 }
+
+message CreateVolumeRequest {
+    Volume volume = 1;
+}
+
+message CreateVolumeResponse {
+    Volume volume = 1;
+}
+
 
 message ListVolumesResponse {
     int32 errorCode = 1;

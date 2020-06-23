@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/micro/go-micro"
+	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	handler "github.com/opensds/multi-cloud/block/pkg/service"
 	pb "github.com/opensds/multi-cloud/block/proto"

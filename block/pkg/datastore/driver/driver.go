@@ -17,10 +17,12 @@ package driver
 import (
 	"context"
 	pb "github.com/opensds/multi-cloud/block/proto"
+	"github.com/opensds/multi-cloud/block/pkg/model"
 )
 
-// define the common driver interface for io.
+// define the common driver interface.
 
 type StorageDriver interface {
 	List(ctx context.Context) (*pb.ListVolumesResponse, error)
+    Create(ctx context.Context, volume *model.Volume) (*pb.CreateVolumeResponse, error)
 }

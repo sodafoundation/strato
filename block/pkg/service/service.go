@@ -18,7 +18,7 @@ import (
 	"os"
 	_ "strings"
 
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/v2/client"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	_ "github.com/opensds/multi-cloud/block/pkg/datastore/aws"
 	pb "github.com/opensds/multi-cloud/block/proto"

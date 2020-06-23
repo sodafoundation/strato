@@ -15,11 +15,15 @@
 package block
 
 import (
+    "net/http"
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/v2/client"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/proto"
+    c "github.com/opensds/multi-cloud/api/pkg/context"
+    log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -39,10 +43,56 @@ func NewAPIService(c client.Client) *APIService {
 	}
 }
 
-func (s *APIService) RouteVolumeList(request *restful.Request, response *restful.Response) {
+// Create Volume 
+func (s *APIService) CreateVolume(request *restful.Request, response *restful.Response) {
+    if !policy.Authorize(request, response, "volume:create") {
+        return
+    }
+    log.Info("Received request to create volume.")
+
+    volumeDetail := &block.Volume{}
+    err := request.ReadEntity(&volumeDetail)
+    if err != nil {
+        log.Errorf("failed to read request body: %v\n", err)
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+
+    ctx := common.InitCtxWithAuthInfo(request)
+    actx := request.Attribute(c.KContext).(*c.Context)
+    volumeDetail.TenantId = actx.TenantId
+    volumeDetail.UserId = actx.UserId
+
+    res, err := s.blockClient.CreateVolume(ctx, &block.CreateVolumeRequest{Volume: volumeDetail})
+    if err != nil {
+        log.Errorf("Failed to create volume: %v\n", err)
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+
+    log.Info("Create Volume successfully.")
+    response.WriteEntity(res.Volume)
+}
+
+// List all volumes
+func (s *APIService) ListVolumes(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "volume:list") {
 		return
 	}
+	log.Infof("Received request to list volumes")
 
-	s.ListVolumes(request, response)
+	backend := request.QueryParameter(common.REQUEST_PATH_BACKEND_ID)
+	ctx := common.InitCtxWithAuthInfo(request)
+	rsp, err := s.blockClient.ListVolumes(ctx, &block.VolumeRequest{BackendId: backend})
+	log.Infof("Volume resp is rsp =[%v]\n", rsp)
+	if err != nil {
+		log.Errorf("List volumes failed with error=%v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// write response
+	log.Infoln("Listed Volumes successfully\n")
+	response.WriteEntity(rsp)
 }
+

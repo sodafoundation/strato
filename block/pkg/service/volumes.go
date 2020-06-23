@@ -18,19 +18,19 @@ import (
 	"context"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/pkg/datastore/driver"
+	"github.com/opensds/multi-cloud/block/pkg/model"
 	pb "github.com/opensds/multi-cloud/block/proto"
 	log "github.com/sirupsen/logrus"
 )
 
-func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, out *pb.ListVolumesResponse) error {
-	log.Infof("ListVolumes called in block service for backend[%v]", in.BackendId)
+func (b *blockService) getAccessInfo(ctx context.Context, BackendId string) (*backendpb.BackendDetail, error){
 	// get the backedn access_info
 	backendResp, backendErr := b.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{
-		Id: in.BackendId})
+		Id: BackendId})
 
 	if backendErr != nil {
 		log.Infof("Get backend failed with error: %v\n.", backendErr)
-		return backendErr
+		return nil, backendErr
 	}
 
 	accessInfo := &backendpb.BackendDetail{
@@ -38,6 +38,18 @@ func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, ou
 		Access:   backendResp.Backend.Access,
 		Security: backendResp.Backend.Security,
 	}
+
+    return accessInfo, nil
+}
+
+func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, out *pb.ListVolumesResponse) error {
+	log.Infof("ListVolumes called in block service for backend")
+
+    accessInfo, accessErr := b.getAccessInfo(ctx, in.BackendId)
+    if accessErr != nil {
+        log.Errorf("Failed to get the Access info for the backend:", accessErr)
+        return accessErr
+    }
 
 	sd, err := driver.CreateStorageDriver("aws-block", accessInfo)
 	if err != nil {
@@ -55,3 +67,44 @@ func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, ou
 	log.Infof("List of Volumes:%+v\n", out.Volumes)
 	return nil
 }
+
+func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequest, out *pb.CreateVolumeResponse) error {
+	log.Infof("Create volume called in block service.")
+    volume := &model.Volume{
+        Name:               in.Volume.Name,
+        TenantId:           in.Volume.TenantId,
+        UserId:             in.Volume.UserId,
+        Type:               in.Volume.Type,
+        AvailabilityZone:   in.Volume.AvailabilityZone,
+        BackendId:          in.Volume.BackendId,
+        Size:               in.Volume.Size,
+        Iops:               in.Volume.Iops,
+    }
+
+    // Get the require access details
+    accessInfo, accessErr := b.getAccessInfo(ctx, in.Volume.BackendId)
+    if accessErr != nil {
+        log.Errorf("Failed to get the Access info for the backend:", accessErr)
+        return accessErr
+    }
+
+    // Create the specific driver. Here it is AWS
+	sd, err := driver.CreateStorageDriver("aws-block", accessInfo)
+	if err != nil {
+		log.Errorln("Failed to create Storage driver err:", err)
+		return err
+	}
+
+    // Create the volume
+	volResp, err := sd.Create(ctx, volume)
+	if err != nil {
+		log.Errorf("Received error in creating volumes ", err)
+		return err
+	}
+
+    out.Volume = volResp.Volume
+    log.Infof("Created volume is:%+v\n", out.Volume)
+    return nil
+}
+
+
