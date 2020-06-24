@@ -330,7 +330,7 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 		return ErrBackendAbortMultipartFailed
 	}
 
-	log.Infof("complete multipart upload[AWS S3] successfully, rsp:%v\n", rsp)
+	log.Infof("abort multipart upload[AWS S3] successfully, rsp:%v\n", rsp)
 	return nil
 }
 
