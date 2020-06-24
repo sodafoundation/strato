@@ -77,7 +77,7 @@ func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obj
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = calculatedMd5
+	result.Etag = hexEncoded
 	result.Written = length
 	log.Infof("upload object[Ceph S3] succeed, objectId:%s, UpdateTime is:%v, etag:\n", objectId,
 		result.UpdateTime, result.Etag)
