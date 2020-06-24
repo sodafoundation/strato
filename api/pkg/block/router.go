@@ -22,7 +22,15 @@ import (
 //RegisterRouter - route request to appropriate method
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenantId}/volumes").To(handler.ListVolumes)).Doc("List all block devices")
-	ws.Route(ws.POST("/{tenantId}/volumes").To(handler.CreateVolume)).Doc("Create Volume")
+	ws.Route(ws.GET("/{tenantId}/volumes").To(handler.ListVolumes)).
+		Doc("List all block devices")
+	ws.Route(ws.GET("/{tenantId}/volumes/{id}").To(handler.GetVolume)).
+		Doc("Show Volume details for a Backend")
+	ws.Route(ws.POST("/{tenantId}/volumes").To(handler.CreateVolume)).
+		Doc("Create Volume")
+	ws.Route(ws.PUT("/{tenantId}/volumes/{id}").To(handler.UpdateVolume)).
+		Doc("Update a Volume")
+	ws.Route(ws.DELETE("/{tenantId}/volumes/{id}").To(handler.DeleteVolume)).
+		Doc("Delete Volume")
 
 }

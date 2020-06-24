@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,8 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package common
 
-const (
-	GB_FACTOR = 1024 * 1024 * 1024
-)
+package driver
+
+type Closer interface {
+	Close()
+}
+
+var closers []Closer
+
+func AddCloser(closer Closer) {
+	closers = append(closers, closer)
+}
+
+func FreeCloser() {
+	for _, c := range closers {
+		c.Close()
+	}
+}

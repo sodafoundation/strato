@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,25 +16,22 @@ package driver
 
 import (
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	excep "github.com/opensds/multi-cloud/block/pkg/exception"
-	log "github.com/sirupsen/logrus"
+	exp "github.com/opensds/multi-cloud/s3/pkg/exception"
 )
 
 type DriverFactory interface {
-	CreateDriver(detail *backendpb.BackendDetail) (StorageDriver, error)
+	CreateBlockStorageDriver(backend *backendpb.BackendDetail) (BlockDriver, error)
 }
 
 var driverFactoryMgr = make(map[string]DriverFactory)
 
 func RegisterDriverFactory(driverType string, factory DriverFactory) {
-	log.Infof("Registering driver factory for driver type [%s]", driverType)
 	driverFactoryMgr[driverType] = factory
 }
 
-func CreateStorageDriver(driverType string, detail *backendpb.BackendDetail) (StorageDriver, error) {
-	log.Infof("Creating storage driver factory with driver type [%s]", driverType)
-	if factory, ok := driverFactoryMgr[driverType]; ok {
-		return factory.CreateDriver(detail)
+func CreateStorageDriver(backend *backendpb.BackendDetail) (BlockDriver, error) {
+	if factory, ok := driverFactoryMgr[backend.Type]; ok {
+		return factory.CreateBlockStorageDriver(backend)
 	}
-	return nil, excep.NoSuchType.Error()
+	return nil, exp.NoSuchType.Error()
 }

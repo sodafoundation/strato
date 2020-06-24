@@ -29,7 +29,7 @@ func RegisterDriverFactory(driverType string, factory DriverFactory) {
 	driverFactoryMgr[driverType] = factory
 }
 
-func CreateStorageDriver(backend *backendpb.BackendDetail) (StorageDriver, error) {
+func CreateStorageDriver(backend *backendpb.BackendDetail) (FileStorageDriver, error) {
 	if factory, ok := driverFactoryMgr[backend.Type]; ok {
 		return factory.CreateFileStorageDriver(backend)
 	}

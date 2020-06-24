@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package driver
+package config
 
-import (
-	"context"
-	pb "github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/block/pkg/model"
-)
-
-// define the common driver interface.
-
-type StorageDriver interface {
-	List(ctx context.Context) (*pb.ListVolumesResponse, error)
-    Create(ctx context.Context, volume *model.Volume) (*pb.CreateVolumeResponse, error)
+type Database struct {
+	Credential string `conf:"credential,username:password@tcp(ip:port)/dbname"`
+	Driver     string `conf:"driver,mongodb"`
+	Endpoint   string `conf:"endpoint,localhost:27017"`
 }
