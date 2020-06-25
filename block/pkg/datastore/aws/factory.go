@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ func (factory *AwsDriverFactory) CreateDriver(backend *backendpb.BackendDetail) 
 	})
 	if err != nil {
 		// TODO: Add AWSErrors
-		log.Errorf("Error in getting the Session")
+		log.Errorf("error in getting the Session: %v", err)
 		return nil, err
 	}
 

@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (b *blockService) getAccessInfo(ctx context.Context, BackendId string) (*backendpb.BackendDetail, error){
+func (b *blockService) getAccessInfo(ctx context.Context, BackendId string) (*backendpb.BackendDetail, error) {
 	// get the backedn access_info
 	backendResp, backendErr := b.backendClient.GetBackend(ctx, &backendpb.GetBackendRequest{
 		Id: BackendId})
 
 	if backendErr != nil {
-		log.Infof("Get backend failed with error: %v\n.", backendErr)
+		log.Errorf("get backend failed with error: %v\n.", backendErr)
 		return nil, backendErr
 	}
 
@@ -39,26 +39,26 @@ func (b *blockService) getAccessInfo(ctx context.Context, BackendId string) (*ba
 		Security: backendResp.Backend.Security,
 	}
 
-    return accessInfo, nil
+	return accessInfo, nil
 }
 
 func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, out *pb.ListVolumesResponse) error {
 	log.Infof("ListVolumes called in block service for backend")
 
-    accessInfo, accessErr := b.getAccessInfo(ctx, in.BackendId)
-    if accessErr != nil {
-        log.Errorf("Failed to get the Access info for the backend:", accessErr)
-        return accessErr
-    }
+	accessInfo, accessErr := b.getAccessInfo(ctx, in.BackendId)
+	if accessErr != nil {
+		log.Errorf("failed to get the Access info for the backend: %v", accessErr)
+		return accessErr
+	}
 
 	sd, err := driver.CreateStorageDriver("aws-block", accessInfo)
 	if err != nil {
-		log.Errorln("Failed to create Storage driver err:", err)
+		log.Errorln("failed to create Storage driver err: %v", err)
 		return err
 	}
 	volResp, err := sd.List(ctx)
 	if err != nil {
-		log.Errorf("Received error in getting volumes ", err)
+		log.Errorf("received error in getting volumes: %v", err)
 		return err
 	}
 	// TODO: paging list
@@ -70,41 +70,39 @@ func (b *blockService) ListVolumes(ctx context.Context, in *pb.VolumeRequest, ou
 
 func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequest, out *pb.CreateVolumeResponse) error {
 	log.Infof("Create volume called in block service.")
-    volume := &model.Volume{
-        Name:               in.Volume.Name,
-        TenantId:           in.Volume.TenantId,
-        UserId:             in.Volume.UserId,
-        Type:               in.Volume.Type,
-        AvailabilityZone:   in.Volume.AvailabilityZone,
-        BackendId:          in.Volume.BackendId,
-        Size:               in.Volume.Size,
-        Iops:               in.Volume.Iops,
-    }
+	volume := &model.Volume{
+		Name:             in.Volume.Name,
+		TenantId:         in.Volume.TenantId,
+		UserId:           in.Volume.UserId,
+		Type:             in.Volume.Type,
+		AvailabilityZone: in.Volume.AvailabilityZone,
+		BackendId:        in.Volume.BackendId,
+		Size:             in.Volume.Size,
+		Iops:             in.Volume.Iops,
+	}
 
-    // Get the require access details
-    accessInfo, accessErr := b.getAccessInfo(ctx, in.Volume.BackendId)
-    if accessErr != nil {
-        log.Errorf("Failed to get the Access info for the backend:", accessErr)
-        return accessErr
-    }
+	// Get the require access details
+	accessInfo, accessErr := b.getAccessInfo(ctx, in.Volume.BackendId)
+	if accessErr != nil {
+		log.Errorf("failed to get the Access info for the backend: %v", accessErr)
+		return accessErr
+	}
 
-    // Create the specific driver. Here it is AWS
+	// Create the specific driver. Here it is AWS
 	sd, err := driver.CreateStorageDriver("aws-block", accessInfo)
 	if err != nil {
-		log.Errorln("Failed to create Storage driver err:", err)
+		log.Errorln("failed to create Storage driver err: %v", err)
 		return err
 	}
 
-    // Create the volume
+	// Create the volume
 	volResp, err := sd.Create(ctx, volume)
 	if err != nil {
-		log.Errorf("Received error in creating volumes ", err)
+		log.Errorf("received error in creating volumes %v", err)
 		return err
 	}
 
-    out.Volume = volResp.Volume
-    log.Infof("Created volume is:%+v\n", out.Volume)
-    return nil
+	out.Volume = volResp.Volume
+	log.Infof("Created volume is:%+v\n", out.Volume)
+	return nil
 }
-
-

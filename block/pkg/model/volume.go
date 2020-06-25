@@ -19,19 +19,19 @@ import (
 )
 
 type Volume struct {
-    Id bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-    CreatedAt string `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
-    UpdatedAt string `json:"updatedAt,omitempty" bson:"updatedAt,omitempty"`
-    TenantId string `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
-    UserId string `json:"userId,omitempty" bson:"userId,omitempty"`
-    BackendId string `json:"backendId,omitempty" bson:"backendId,omitempty"`
-    Name string `json:"name,omitempty" bson:"name,omitempty"`
-    Type string `json:"type,omitempty" bson:"type,omitempty"`
-    AvailabilityZone string `json:"availabilityZone,omitempty" bson:"availabilityZone,omitempty"`
-    State string `json:"status,omitempty" bson:"status,omitempty"`
-    Size  int64 `json:"size,omitempty" bson:"size,omitempty"`
-    Region string `json:"region,omitempty" bson:"region,omitempty"`
-    VolumeId string `json:"region,omitempty" bson:"region,omitempty"`
-    Encrypted bool `json:"encrypted,omitempty" bson:"encrypted,omitempty"`
-    Iops  int64 `json:"size,omitempty" bson:"size,omitempty"`
+	Id               bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
+	CreatedAt        string        `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
+	UpdatedAt        string        `json:"updatedAt,omitempty" bson:"updatedAt,omitempty"`
+	TenantId         string        `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
+	UserId           string        `json:"userId,omitempty" bson:"userId,omitempty"`
+	BackendId        string        `json:"backendId,omitempty" bson:"backendId,omitempty"`
+	Name             string        `json:"name,omitempty" bson:"name,omitempty"`
+	Type             string        `json:"type,omitempty" bson:"type,omitempty"`
+	AvailabilityZone string        `json:"availabilityZone,omitempty" bson:"availabilityZone,omitempty"`
+	State            string        `json:"status,omitempty" bson:"status,omitempty"`
+	Size             int64         `json:"size,omitempty" bson:"size,omitempty"`
+	Region           string        `json:"region,omitempty" bson:"region,omitempty"`
+	VolumeId         string        `json:"region,omitempty" bson:"region,omitempty"`
+	Encrypted        bool          `json:"encrypted,omitempty" bson:"encrypted,omitempty"`
+	Iops             int64         `json:"size,omitempty" bson:"size,omitempty"`
 }
