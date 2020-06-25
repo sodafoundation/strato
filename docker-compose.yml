@@ -34,7 +34,7 @@ services:
       - MICRO_SERVER_ADDRESS=:8089
       - MICRO_REGISTRY=mdns
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://192.168.20.163/identity
+      - OS_AUTH_URL=http://10.10.3.154/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
@@ -55,7 +55,7 @@ services:
       - MICRO_SERVER_ADDRESS=:8090
       - MICRO_REGISTRY=mdns
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://192.168.20.163/identity
+      - OS_AUTH_URL=http://10.10.3.154/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
@@ -164,6 +164,8 @@ services:
     image: mongo
     ports:
       - 27017:27017
+    volumes:
+      - ./mongodb_data:/data/db
 
   tidb:
     image: pingcap/tidb:v2.1.16
