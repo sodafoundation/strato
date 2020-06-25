@@ -32,18 +32,18 @@ import (
 )
 
 const (
-	fileService   = "file"
+	fileService    = "file"
 	backendService = "backend"
 )
 
 type APIService struct {
-	fileClient   file.FileService
+	fileClient    file.FileService
 	backendClient backend.BackendService
 }
 
 func NewAPIService(c client.Client) *APIService {
 	return &APIService{
-		fileClient:   file.NewFileService(fileService, c),
+		fileClient:    file.NewFileService(fileService, c),
 		backendClient: backend.NewBackendService(backendService, c),
 	}
 }
@@ -68,7 +68,7 @@ func WriteError(response *restful.Response, msg string, errCode int, err error) 
 }
 
 func (s *APIService) checkBackendExists(ctx context.Context, request *restful.Request,
-	response *restful.Response, backendId string) error{
+	response *restful.Response, backendId string) error {
 
 	backendResp, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
 	if err != nil {
@@ -236,17 +236,17 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 	}
 
 	fs := &file.FileShare{
-		Name:                 fileshare.Name,
-		Description:          fileshare.Description,
-		Region:               fileshare.Region,
-		BackendId:            fileshare.BackendId,
-		AvailabilityZone:     fileshare.AvailabilityZone,
-		Tags:                 tags,
-		Metadata:             metadata,
+		Name:             fileshare.Name,
+		Description:      fileshare.Description,
+		Region:           fileshare.Region,
+		BackendId:        fileshare.BackendId,
+		AvailabilityZone: fileshare.AvailabilityZone,
+		Tags:             tags,
+		Metadata:         metadata,
 	}
 
 	//TODO: The following checks can be updated once we have swagger validation in place
-	if fileshare.Id !=""  {
+	if fileshare.Id != "" {
 		fs.Id = fileshare.Id.Hex()
 	}
 
@@ -272,7 +272,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 	fs.TenantId = actx.TenantId
 	fs.UserId = actx.UserId
 
-	res, err := s.fileClient.CreateFileShare(ctx, &file.CreateFileShareRequest{Fileshare:fs})
+	res, err := s.fileClient.CreateFileShare(ctx, &file.CreateFileShareRequest{Fileshare: fs})
 	if err != nil {
 		log.Errorf("Failed to create file share err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -299,7 +299,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 	}
 
 	fs := &file.FileShare{
-		Description:  fileshare.Description,
+		Description: fileshare.Description,
 	}
 
 	if fileshare.Metadata != nil || len(fileshare.Metadata) != 0 {
@@ -336,7 +336,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 	fs.TenantId = actx.TenantId
 	fs.UserId = actx.UserId
 
-	res, err := s.fileClient.UpdateFileShare(ctx, &file.UpdateFileShareRequest{Id: id, Fileshare:fs})
+	res, err := s.fileClient.UpdateFileShare(ctx, &file.UpdateFileShareRequest{Id: id, Fileshare: fs})
 	if err != nil {
 		log.Errorf("Failed to create file share err: \n", err)
 		response.WriteError(http.StatusInternalServerError, err)

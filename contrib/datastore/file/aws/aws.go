@@ -348,7 +348,7 @@ func (ad *AwsAdapter) UpdatefileShare(ctx context.Context, in *pb.UpdateFileShar
 
 	tagInput := &efs.TagResourceInput{
 		ResourceId: aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
-		Tags: tags,
+		Tags:       tags,
 	}
 
 	_, err = svc.TagResource(tagInput)
@@ -409,7 +409,6 @@ func (ad *AwsAdapter) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 
 	return &pb.DeleteFileShareResponse{}, nil
 }
-
 
 func (ad *AwsAdapter) Close() error {
 	// TODO:

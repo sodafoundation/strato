@@ -66,7 +66,7 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 
 	var fileshares []*pb.FileShare
 	for _, fs := range res {
-		fileshare :=  &pb.FileShare{
+		fileshare := &pb.FileShare{
 			Id:                 fs.Id.Hex(),
 			CreatedAt:          fs.CreatedAt,
 			UpdatedAt:          fs.UpdatedAt,
@@ -92,7 +92,7 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 			return err
 		}
 
-		fileshares = append(fileshares,fileshare)
+		fileshares = append(fileshares, fileshare)
 	}
 	out.Fileshares = fileshares
 	out.Next = in.Offset + int32(len(res))
@@ -111,7 +111,7 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 		return err
 	}
 
-	fileshare :=  &pb.FileShare{
+	fileshare := &pb.FileShare{
 		Id:                 fs.Id.Hex(),
 		CreatedAt:          fs.CreatedAt,
 		UpdatedAt:          fs.UpdatedAt,
@@ -168,7 +168,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 			time.Sleep(4 * time.Second)
 		}
 
-		fsGetInput := &pb.GetFileShareRequest{Fileshare:fs.Fileshare}
+		fsGetInput := &pb.GetFileShareRequest{Fileshare: fs.Fileshare}
 
 		getFs, err := sd.GetFileShare(ctx, fsGetInput)
 		if err != nil {
@@ -302,7 +302,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 			time.Sleep(4 * time.Second)
 		}
 
-		fsGetInput := &pb.GetFileShareRequest{Fileshare:fs.Fileshare}
+		fsGetInput := &pb.GetFileShareRequest{Fileshare: fs.Fileshare}
 
 		getFs, err := sd.GetFileShare(ctx, fsGetInput)
 		if err != nil {
@@ -318,7 +318,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	}
 
 	fileshare := &model.FileShare{
-		Id: 				res.Id,
+		Id:                 res.Id,
 		Name:               res.Name,
 		Description:        in.Fileshare.Description,
 		TenantId:           res.TenantId,
@@ -336,8 +336,8 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 		Size:               &fs.Fileshare.Size,
 		Encrypted:          res.Encrypted,
 		EncryptionSettings: res.EncryptionSettings,
-		Tags: res.Tags,
-		Metadata: res.Metadata,
+		Tags:               res.Tags,
+		Metadata:           res.Metadata,
 	}
 
 	if utils.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {

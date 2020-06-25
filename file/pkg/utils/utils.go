@@ -71,7 +71,7 @@ const (
 var listFields map[string]*pstruct.Value
 
 func GetBackend(ctx context.Context, backendClient backend.BackendService,
-	backendId string) (*backend.GetBackendResponse, error){
+	backendId string) (*backend.GetBackendResponse, error) {
 	backend, err := backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
 	if err != nil {
 		log.Errorf("get backend %s failed.", backendId)
@@ -94,7 +94,7 @@ func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}
 		} else if v, ok := value.GetKind().(*pstruct.Value_StringValue); ok {
 			val := strings.Trim(v.StringValue, "\"")
 			if key == AZURE_FILESHARE_USAGE_BYTES || key == AZURE_X_MS_SHARE_QUOTA || key == CONTENT_LENGTH {
-				valInt, err :=  strconv.ParseInt(val, 10, 64)
+				valInt, err := strconv.ParseInt(val, 10, 64)
 				if err != nil {
 					log.Errorf("Failed to parse string Field Key = %s", key, err)
 					return nil, err
@@ -210,10 +210,9 @@ func ConvertMetadataStructToMap(metaStruct *pstruct.Struct) (map[string]interfac
 	return metaMap, nil
 }
 
-
 func MergeFileShareData(fs *pb.FileShare, fsFinal *pb.FileShare) error {
 
-	if fs.Tags != nil || len(fs.Tags) != 0{
+	if fs.Tags != nil || len(fs.Tags) != 0 {
 		fsFinal.Tags = fs.Tags
 	}
 	var metaMapFinal map[string]interface{}

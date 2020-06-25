@@ -36,8 +36,8 @@ import (
 var MaxTimeForSingleHttpRequest = 50 * time.Minute
 
 type AzureAdapter struct {
-	backend      *backendpb.BackendDetail
-	pipeline      pipeline.Pipeline
+	backend  *backendpb.BackendDetail
+	pipeline pipeline.Pipeline
 }
 
 func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error) {
@@ -57,9 +57,9 @@ func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error
 		return nil, err
 	}
 	fileshare := &file.FileShare{
-		Name:                 fs.Name,
-		Size:                 int64(fs.Properties.Quota) * utils.GB_FACTOR,
-		Metadata:             metadata,
+		Name:     fs.Name,
+		Size:     int64(fs.Properties.Quota) * utils.GB_FACTOR,
+		Metadata: metadata,
 	}
 	return fileshare, nil
 }
@@ -153,13 +153,12 @@ func (ad *AzureAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFile
 		return nil, err
 	}
 
-	result, err := shareURL.Create(ctx, metadata, int32(fs.Fileshare.Size / utils.GB_FACTOR))
+	result, err := shareURL.Create(ctx, metadata, int32(fs.Fileshare.Size/utils.GB_FACTOR))
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 	log.Debugf("Create File share response = %+v", result.Response().Header)
-
 
 	meta, err := ConvertHeaderToStruct(result.Response().Header)
 	if err != nil {
@@ -169,10 +168,10 @@ func (ad *AzureAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFile
 
 	return &file.CreateFileShareResponse{
 		Fileshare: &file.FileShare{
-			Name:                 fs.Fileshare.Name,
-			Size:                 fs.Fileshare.Size,
-			Status:               fileUtils.FileShareStateCreating,
-			Metadata:             meta,
+			Name:     fs.Fileshare.Name,
+			Size:     fs.Fileshare.Size,
+			Status:   fileUtils.FileShareStateCreating,
+			Metadata: meta,
 		},
 	}, nil
 }
@@ -202,10 +201,10 @@ func (ad *AzureAdapter) GetFileShare(ctx context.Context, fs *file.GetFileShareR
 
 	return &file.GetFileShareResponse{
 		Fileshare: &file.FileShare{
-			Name:                 fs.Fileshare.Name,
-			Size:                 fs.Fileshare.Size,
-			Status:               fileUtils.FileShareStateAvailable,
-			Metadata:             meta,
+			Name:     fs.Fileshare.Name,
+			Size:     fs.Fileshare.Size,
+			Status:   fileUtils.FileShareStateAvailable,
+			Metadata: meta,
 		},
 	}, nil
 }
@@ -233,7 +232,7 @@ func (ad *AzureAdapter) ListFileShare(ctx context.Context, fs *file.ListFileShar
 			return nil, err
 		}
 		fs.Name = fileshare.Name
-		fs.Status =  fileUtils.FileShareStateAvailable
+		fs.Status = fileUtils.FileShareStateAvailable
 		fileshares = append(fileshares, fs)
 	}
 
@@ -249,7 +248,7 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 		return nil, err
 	}
 
-	result, err := shareURL.SetQuota(ctx, int32(fs.Fileshare.Size / utils.GB_FACTOR))
+	result, err := shareURL.SetQuota(ctx, int32(fs.Fileshare.Size/utils.GB_FACTOR))
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -263,9 +262,9 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 	}
 
 	fileshare := &file.FileShare{
-		Name:                 fs.Fileshare.Name,
-		Size:                 fs.Fileshare.Size,
-		Status:               fileUtils.FileShareStateUpdating,
+		Name:     fs.Fileshare.Name,
+		Size:     fs.Fileshare.Size,
+		Status:   fileUtils.FileShareStateUpdating,
 		Metadata: meta,
 	}
 

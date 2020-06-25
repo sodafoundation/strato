@@ -25,7 +25,6 @@ import (
 )
 
 const (
-
 	CharacterSet = "abcdefghijklmnopqrstuvwxyz" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"0123456789" +
