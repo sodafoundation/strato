@@ -164,6 +164,8 @@ services:
     image: mongo
     ports:
       - 27017:27017
+    volumes:
+      - ./mongodb_data:/data/db
 
   tidb:
     image: pingcap/tidb:v2.1.16
