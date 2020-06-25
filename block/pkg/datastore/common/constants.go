@@ -14,5 +14,6 @@
 package common
 
 const (
-	GB_FACTOR = 1024 * 1024 * 1024
+    GB_FACTOR = 1024 * 1024 * 1024
+    AWS_IO1_VOL = "io1"
 )

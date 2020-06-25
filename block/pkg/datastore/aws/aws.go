@@ -49,7 +49,7 @@ func (ad *AwsAdapter) Create(ctx context.Context, volume *model.Volume) (*pb.Cre
 		VolumeType:        aws.String(volume.Type),
 		TagSpecifications: []*awsec2.TagSpecification{tagList},
 	}
-	if volume.Type == "io1" {
+	if volume.Type == dscommon.AWS_IO1_VOL {
 		// Iops is required only for io1 volumes
 		volCreationInput.Iops = aws.Int64(volume.Iops)
 	}
@@ -88,7 +88,7 @@ func (ad *AwsAdapter) Create(ctx context.Context, volume *model.Volume) (*pb.Cre
 		State:            *volResponse.State,
 		Name:             volName,
 	}
-	if *volResponse.VolumeType == "io1" {
+	if *volResponse.VolumeType == dscommon.AWS_IO1_VOL {
 		result.Volume.Iops = *volResponse.Iops
 	}
 	return &result, nil
