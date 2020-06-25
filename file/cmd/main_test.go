@@ -23,7 +23,7 @@ import (
 func Test_Main(t *testing.T) {
 	var (
 		args []string
-		run = true
+		run  = true
 	)
 
 	for _, arg := range os.Args {
