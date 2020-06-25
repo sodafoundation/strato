@@ -26,5 +26,7 @@
   "volume:create": "",
   "fileshare:list": "",
   "fileshare:get": "",
+  "fileshare:create": "",
+  "fileshare:put": "",
   "fileshare:delete": ""
 }
