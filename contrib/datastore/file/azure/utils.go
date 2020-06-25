@@ -28,17 +28,15 @@ import (
 )
 
 const (
-
 	AZURE_FILESHARE_USAGE_BYTES = "Share-Usage-Bytes"
 
-    AZURE_ETAG = "Etag"
+	AZURE_ETAG = "Etag"
 
-    AZURE_LAST_MODIFIED = "Last-Modified"
+	AZURE_LAST_MODIFIED = "Last-Modified"
 
 	AZURE_URL = "URL"
 
-    AZURE_X_MS_SHARE_QUOTA = "X-Ms-Share-Quota"
-
+	AZURE_X_MS_SHARE_QUOTA = "X-Ms-Share-Quota"
 )
 
 func ConvertHeaderToStruct(msg map[string][]string) (*pstruct.Struct, error) {
