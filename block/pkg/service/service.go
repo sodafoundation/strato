@@ -329,7 +329,7 @@ func (f *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 		Backend:            backend.Backend.Name,
 		CreatedAt:          res.CreatedAt,
 		UpdatedAt:          time.Now().Format(utils.TimeFormat),
-		Type:               res.Type,
+		Type:               vol.Volume.Type,
 		Status:             vol.Volume.Status,
 		Iops:               vol.Volume.Iops,
 		Region:             res.Region,
