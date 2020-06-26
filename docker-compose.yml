@@ -22,7 +22,7 @@ services:
       - zookeeper
 
   api:
-    image: opensdsio/multi-cloud-api
+    image: sodafoundation/multi-cloud-api
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
@@ -43,7 +43,7 @@ services:
       - SVC_FLAG=ctrl
 
   s3api:
-    image: opensdsio/multi-cloud-api
+    image: sodafoundation/multi-cloud-api
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
@@ -64,7 +64,7 @@ services:
       - SVC_FLAG=s3
 
   backend:
-    image: opensdsio/multi-cloud-backend
+    image: sodafoundation/multi-cloud-backend
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -82,7 +82,7 @@ services:
 
 
   block:
-    image: opensdsio/multi-cloud-block
+    image: sodafoundation/multi-cloud-block
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -92,7 +92,7 @@ services:
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
   
   file:
-    image: opensdsio/multi-cloud-file
+    image: sodafoundation/multi-cloud-file
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -102,7 +102,7 @@ services:
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
 
   s3:
-    image: opensdsio/multi-cloud-s3
+    image: sodafoundation/multi-cloud-s3
     environment:
       - MICRO_REGISTRY=mdns
       #- DB_HOST=datastore:27017
@@ -123,7 +123,7 @@ services:
       - tidb
 
   dataflow:
-    image: opensdsio/multi-cloud-dataflow
+    image: sodafoundation/multi-cloud-dataflow
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
@@ -139,7 +139,7 @@ services:
       - s3
 
   datamover:
-    image: opensdsio/multi-cloud-datamover
+    image: sodafoundation/multi-cloud-datamover
     volumes:
       - /etc/ssl/certs:/etc/ssl/certs
       - /etc/localtime:/etc/localtime
