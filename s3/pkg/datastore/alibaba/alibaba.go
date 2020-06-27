@@ -84,14 +84,17 @@ func (ad *OSSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		storageClass = oss.StorageArchive
 
 	}
-	err = out.PutObject(objectId, dataReader, oss.ObjectStorageClass(storageClass))
-	if err != nil {
-		log.Info("Upload to alibaba failed:%v", err)
-		return result, ErrInternalError
+	if strings.HasSuffix(object.ObjectKey, "/") {
+		// Skip to add folder as Alibaba Go SDK of object upload do not support to create folder
 	} else {
-		object.LastModified = time.Now().Unix()
-		log.Info("LastModified is:%v\n", object.LastModified)
+		err = out.PutObject(objectId, dataReader, oss.ObjectStorageClass(storageClass))
+		if err != nil {
+			log.Info("Upload to alibaba failed:%v", err)
+			return result, ErrInternalError
+		}
 	}
+	object.LastModified = time.Now().Unix()
+	log.Info("LastModified is:%v\n", object.LastModified)
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	log.Debug("calculatedMd5:", calculatedMd5, ", userMd5:", userMd5)
 	if userMd5 != "" && userMd5 != calculatedMd5 {
@@ -190,8 +193,8 @@ func (ad *OSSAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 func (ad *OSSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 
 	bucket := ad.backend.BucketName
-	newObjectKey := object.BucketName + "/" + object.ObjectKey
-	log.Infof("bucket = %v,newObjectKey = %v\n", bucket, newObjectKey)
+	objectId := object.BucketName + "/" + object.ObjectKey
+	log.Infof("bucket = %v,objectId = %v\n", bucket, objectId)
 	multipartUpload := &pb.MultipartUpload{}
 	getBucket, err := ad.client.Bucket(bucket)
 	if err != nil {
@@ -199,7 +202,7 @@ func (ad *OSSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 		return nil, ErrInternalError
 
 	}
-	res, err := getBucket.InitiateMultipartUpload(newObjectKey)
+	res, err := getBucket.InitiateMultipartUpload(objectId)
 	if err != nil {
 		log.Infof("Init multipart upload failed, err:%v\n", err)
 		return nil, ErrBackendInitMultipartFailed
@@ -208,6 +211,7 @@ func (ad *OSSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 		multipartUpload.Bucket = object.BucketName
 		multipartUpload.Key = object.ObjectKey
 		multipartUpload.UploadId = res.UploadID
+		multipartUpload.ObjectId = objectId
 		return multipartUpload, nil
 	}
 }

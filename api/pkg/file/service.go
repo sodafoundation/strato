@@ -237,7 +237,6 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	fs := &file.FileShare{
 		Name:             fileshare.Name,
-		Description:      fileshare.Description,
 		Region:           fileshare.Region,
 		BackendId:        fileshare.BackendId,
 		AvailabilityZone: fileshare.AvailabilityZone,
@@ -252,6 +251,10 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	if fileshare.Size != nil {
 		fs.Size = *fileshare.Size
+	}
+
+	if fileshare.Description != "" {
+		fs.Description = fileshare.Description
 	}
 
 	if fileshare.Encrypted != nil {
@@ -298,8 +301,10 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 		return
 	}
 
-	fs := &file.FileShare{
-		Description: fileshare.Description,
+	fs := &file.FileShare{}
+
+	if fileshare.Description != "" {
+		fs.Description = fileshare.Description
 	}
 
 	if fileshare.Metadata != nil || len(fileshare.Metadata) != 0 {

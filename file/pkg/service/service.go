@@ -320,7 +320,6 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	fileshare := &model.FileShare{
 		Id:                 res.Id,
 		Name:               res.Name,
-		Description:        in.Fileshare.Description,
 		TenantId:           res.TenantId,
 		UserId:             res.UserId,
 		BackendId:          res.BackendId,
@@ -338,6 +337,10 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 		EncryptionSettings: res.EncryptionSettings,
 		Tags:               res.Tags,
 		Metadata:           res.Metadata,
+	}
+
+	if in.Fileshare.Description != "" {
+		fileshare.Description = in.Fileshare.Description
 	}
 
 	if utils.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
