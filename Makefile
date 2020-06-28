@@ -54,32 +54,32 @@ docker: build
 
 	cp $(BUILD_DIR)/api api
 	chmod 755 api/api
-	docker build api -t opensdsio/multi-cloud-api:latest
+	docker build api -t sodafoundation/multi-cloud-api:latest
 
 	cp $(BUILD_DIR)/backend backend
 	chmod 755 backend/backend
-	docker build backend -t opensdsio/multi-cloud-backend:latest
+	docker build backend -t sodafoundation/multi-cloud-backend:latest
 
 	cp $(BUILD_DIR)/file file
 	chmod 755 file/file
-	docker build file -t opensdsio/multi-cloud-file:latest
+	docker build file -t sodafoundation/multi-cloud-file:latest
 
 	cp $(BUILD_DIR)/block block
 	chmod 755 block/block
-	docker build block -t opensdsio/multi-cloud-block:latest
+	docker build block -t sodafoundation/multi-cloud-block:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
 	chmod 755 s3/initdb.sh
-	docker build s3 -t opensdsio/multi-cloud-s3:latest
+	docker build s3 -t sodafoundation/multi-cloud-s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
 	chmod 755 dataflow/dataflow
-	docker build dataflow -t opensdsio/multi-cloud-dataflow:latest
+	docker build dataflow -t sodafoundation/multi-cloud-dataflow:latest
 
 	cp $(BUILD_DIR)/datamover datamover
 	chmod 755 datamover/datamover
-	docker build datamover -t opensdsio/multi-cloud-datamover:latest
+	docker build datamover -t sodafoundation/multi-cloud-datamover:latest
 
 goimports:
 	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
