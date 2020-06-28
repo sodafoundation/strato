@@ -1,4 +1,4 @@
-# Copyright 2020 The OpenSDS Authors.
+# Copyright 2020 The SODA Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +73,12 @@ tags:
       description: Find out more
       url: 'https://sodafoundation.io/'
   - name: FileShare
-    description: Muli-cloud cloud file shares
+    description: Multi-cloud cloud file shares
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
+  - name: Volume
+    description: Multi-cloud cloud Volume
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
@@ -818,6 +823,63 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/ListStorageClasses'
+  '/v1/{tenantId}/volumes':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Volume
+      summary: Create a volume.
+      operationId: createVolume
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeResult'
+        '415':
+          description: Unsupported Media Type
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+      requestBody:
+        $ref: '#/components/requestBodies/Volume'
+    get:
+      tags:
+        - Volume
+      summary: List all volumes.
+      operationId: listVolumes
+      parameters:
+        - name: backendId
+          in: query
+          description: Filter the volumes by backend.
+          schema:
+            type: string
+            example: '5eea1a317d038300012f5bfc'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileshares:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VolumeResult'
+                  next:
+                    type: integer
   '/v1/{tenantId}/file/shares':
     parameters:
       - name: tenantId
@@ -1537,6 +1599,34 @@ components:
             PerformanceMode: 'maxIO'
             ThroughputMode: 'provisioned'
             ProvisionedThroughputInMibps: 1
+    Volume:
+      type: object
+      properties:
+        Name:
+          description: The user defiend name of the volume
+          type: string
+          example: sap_vol1
+        Size:
+          description: The size of the volume
+          type: integer
+          example: 1073741824
+        AvailabilityZone:
+          description: The availability zone associated with the volume
+          type: string
+          example: ap-south-1b
+        Type:
+          description: The type of the volume to be created
+          type: string
+          example: gp2
+        BackendId:
+          description: The multi-cloud registered backedn Id
+          type: string
+          example: 5ef26d79c5d1b20001308f69
+        iops:
+          description: The IOPS the required for the volume as per the cloud provider
+          type: integer
+          example: 100
+
     BaseResponse:
       type: object
       properties:
@@ -1738,11 +1828,11 @@ components:
           type: string
           example: '5ef1db51202b510001c3804c'
         CreatedAt:
-          description: The tenant UUID in a multi-tenancy environment.
+          description: The time of creation of the fileshare.
           type: string
           example: '2020-06-23T16:07:05'
         UpdatedAt:
-          description: The user UUID in a multi-tenancy environment.
+          description: The time at which the fileshare was updated.
           type: string
           example: '2020-06-23T16:07:05'
         TenantId:
@@ -1830,6 +1920,53 @@ components:
             fields:
               type: object
               $ref: '#/components/schemas/Fields'
+    VolumeResult:
+      type: object
+      description: Cloud Volume Response
+      properties:
+        volumeId:
+          description: The cloud volume ID
+          type: string
+          example: 'vol-0b1191d991f2bac3'
+        CreatedAt:
+          description: The time at which volume was created.
+          type: string
+          example: '2020-06-23T16:07:05'
+        BackendId:
+          description: The backend ID
+          type: string
+          example: '5ea809d2553b0f000116be32'
+        Name:
+          description: The volume name specified by user.
+          type: string
+          example: sap_vol01
+        Type:
+          description: The volume type. Like for aws gp2, sc1, io1, st1
+          type: string
+          example: gp2
+        Size:
+          description: The volume size required for the volume.
+          type: integer
+          example: 1073741824
+        Region:
+          description: The region in which the volume will be created.
+          type: string
+          example: ap-south-1
+        AvailabilityZone:
+          description: The availability zone associated with volume.
+          type: string
+          example: ap-south-1a
+        State:
+          description: The volume status.
+          type: string
+          enum: &VOL_STATUS
+            - available
+            - creating
+            - inUse
+            - error
+            - updating
+            - deleting
+            - errorDeleting
   requestBodies:
     Backend:
       content:
@@ -1865,4 +2002,11 @@ components:
           schema:
             $ref: '#/components/schemas/FileShareUpdate'
       description: Cloud FileShare Update configurations
+      required: true
+    Volume:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Volume'
+      description: Cloud volume configurations
       required: true
