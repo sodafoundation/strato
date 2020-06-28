@@ -100,6 +100,7 @@ dist: build
 	cp ../dataflow $(BUILD_TGT)/bin/ && \
 	cp ../datamover $(BUILD_TGT)/bin/ && \
 	cp ../block $(BUILD_TGT)/bin/ && \
+	cp ../file $(BUILD_TGT)/bin/ && \
 	cp $(BASE_DIR)/LICENSE $(BUILD_TGT) && \
 	zip -r $(DIST_DIR)/$(BUILD_TGT).zip $(BUILD_TGT) && \
 	tar zcvf $(DIST_DIR)/$(BUILD_TGT).tar.gz $(BUILD_TGT)
