@@ -1,4 +1,4 @@
-# Copyright 2020 The OpenSDS Authors.
+# Copyright 2020 The SODA Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +73,12 @@ tags:
       description: Find out more
       url: 'https://sodafoundation.io/'
   - name: FileShare
-    description: Muli-cloud cloud file shares
+    description: Multi-cloud cloud file shares
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
+  - name: Volume
+    description: Multi-cloud cloud Volume
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
@@ -812,12 +817,69 @@ paths:
       responses:
         '200':
           description: >-
-            Get storage classes succesfully. There is a map between storage class name
-            and stroage tier, as default the storage classes are compatible with aws s3.
+           Get storage classes succesfully. There is a map between storage class name
+           and stroage tier, as default the storage classes are compatible with aws s3.
           content:
             application/xml:
               schema:
                 $ref: '#/components/schemas/ListStorageClasses'
+  '/v1/{tenantId}/volumes':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Volume
+      summary: Create a volume.
+      operationId: createVolume
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeResult'
+        '415':
+          description: Unsupported Media Type
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+      requestBody:
+        $ref: '#/components/requestBodies/Volume'
+    get:
+      tags:
+        - Volume
+      summary: List all volumes.
+      operationId: listVolumes
+      parameters:
+        - name: backendId
+          in: query
+          description: Filter the volumes by backend.
+          schema:
+            type: string
+            example: '5eea1a317d038300012f5bfc'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileshares:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VolumeResult'
+                  next:
+                    type: integer
   '/v1/{tenantId}/file/shares':
     parameters:
       - name: tenantId
@@ -837,7 +899,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FileShare'
+                $ref: '#/components/schemas/FileShareResult'
         '415':
           description: Unsupported Media Type
         '400':
@@ -869,10 +931,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  backends:
+                  fileshares:
                     type: array
                     items:
-                      $ref: '#/components/schemas/FileShare'
+                      $ref: '#/components/schemas/FileShareResult'
                   next:
                     type: integer
                     example: 1
@@ -903,7 +965,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FileShare'
+                $ref: '#/components/schemas/FileShareResult'
         '401':
           description: Unauthorized. Token not found in header
         '404':
@@ -919,25 +981,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FileShare'
+                $ref: '#/components/schemas/FileShareResult'
         '401':
           description: Unauthorized. Token not found in header
         '404':
           description: The resource does not exist.
       requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                Access:
-                  description: Updated the specified backend access Id
-                  type: string
-                  example: 'AMIKJGNJLHUEBWTNDL6X'
-                Security:
-                  description: Updated the specified backend security Id
-                  type: string
-                  example: 'Fsgs5KHAcs12420yGHNDGne8x8i5naHvdf/xZbTH'
+        $ref: '#/components/requestBodies/FileShareUpdate'
     delete:
       tags:
         - FileShare
@@ -1049,6 +1099,172 @@ components:
           description: Value of the Key-Value object.
           type: string
           example: '&#34;d97849a5d11d7f7f90e0c1609d091d0a&#34;'
+    Tag:
+      type: object
+      properties:
+        key:
+          description: Key of the Tag object.
+          type: string
+          example: Name
+        Value:
+          description: Value of the Tag object.
+          type: string
+          example: sodafs
+      required:
+        - Name
+    Fields:
+      type: object
+      properties:
+        CreationTimeAtBackend:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: '2020-06-17T19:44:06Z'
+        CreationToken:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: 'J7UWp#KX7BPi#zC5]{0j2/I54ukWP?j~[d3H'
+        FileSystemId:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: 'fs-68e26cb9'
+        FileSystemSize:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StructValue:
+                  type: object
+                  properties:
+                    fields:
+                      type: object
+                      properties:
+                        Timestamp:
+                          type: object
+                          properties:
+                            kind:
+                              type: object
+                              properties:
+                                NumberValue:
+                                  type: integer
+                                  example: 0
+                        Value:
+                          type: object
+                          properties:
+                            kind:
+                              type: object
+                              properties:
+                                NumberValue:
+                                  type: integer
+                                  example: 6144
+                        ValueInIA:
+                          type: object
+                          properties:
+                            kind:
+                              type: object
+                              properties:
+                                NumberValue:
+                                  type: integer
+                                  example: 0
+                        ValueInStandard:
+                          type: object
+                          properties:
+                            kind:
+                              type: object
+                              properties:
+                                NumberValue:
+                                  type: integer
+                                  example: 6144
+        LifeCycleState:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  enum:
+                    - creating
+                    - available
+                    - updating
+                    - deleting
+                    - deleted
+                  example: 'available'
+        Name:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: 'sodafs'
+        NumberOfMountTargets:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                NumberValue:
+                  type: integer
+                  example: 0
+        OwnerId:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: '676599967111'
+        PerformanceMode:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  enum:
+                    - generalPurpose
+                    - maxIO
+                  example: 'maxIO'
+        ProvisionedThroughputInMibps:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                NumberValue:
+                  type: integer
+                  example: 1
+        ThroughputMode:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  enum:
+                    - bursting
+                    - provisioned
+                  example: 'provisioned'
     Connector:
       type: object
       properties:
@@ -1265,72 +1481,151 @@ components:
               example: ''
     FileShare:
       type: object
+      required:
+        - Name
+        - BackendId
+        - Metadata
       properties:
         Id:
-          description: The fileshare ID, generated by server
+          description: The fileshare ID, - Optional
           type: string
-          example: '5ea809d2553b0f000116be32'
-        TenantId:
-          description: The tenant UUID in a multi-tenancy environment.
-          type: string
-          example: '94b280022d0c4401bcf3b0ea85870519'
+          example: '5ef1db51202b510001c3804c'
         UserId:
-          description: The user UUID in a multi-tenancy environment.
+          description: The user UUID in a multi-tenancy environment, - Optional
           type: string
           example: '558057c4256545bd8a307c37464003c9'
         BackendId:
-          description: The backend ID
+          description: The backend ID, - Required
           type: string
           example: '5ea809d2553b0f000116be32'
         Backend:
-          description: The backend Name.
+          description: The backend Name, - Optional
+
           type: string
           example: backend001
         Name:
-          description: The fileshare name specified by user.
+          description: The fileshare name specified by user, - Required
           type: string
           example: fileshare001
+        Description:
+          description: The fileshare name specified by user, - Optional
+          type: string
+          example: 'AWS FileShare'
         Type:
-          description: The fileshare type.
+          description: The fileshare type, - Optional
           type: string
           example: generalPurpose
         Size:
-          description: The fileshare size.
-          type: string
-          example: ap-south-1
+          description: The fileshare size, - Optional
+          type: integer
+          example: 1073741824
         Region:
-          description: The region for the fileshare.
+          description: The region for the fileshare, - Optional
           type: string
           example: ap-south-1
         AvailabilityZone:
-          description: The availability for the fileshare.
+          description: The availability zone for the fileshare, - Optional
           type: string
           example: ap-south-1a
-        Status:
-          description: The fileshare status.
-          type: string
-          example: 'available'
         Protocols:
-          description: The fileshare supported protocols.
-          type: array
-          items:
-            $ref: '#/components/schemas/FileShare'
+          description: The fileshare supported protocols, - Optional
+          type: string
+          enum: &FILESHARE_PROTOCOL
+            - NFS
+            - SMB
+          example: *FILESHARE_PROTOCOL
         Tags:
+          description: The fileshare tags, - Optional
           type: array
           items:
-            $ref: '#/components/schemas/FileShare'
+            $ref: '#/components/schemas/Tag'
         SnapshotId:
+          description: The fileshare snapshot id, - Optional
           type: string
-          example: '9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn'
+          example: '5eea749a926e5300011a69d6'
         Encrypted:
+          description: Flag for encryted fileshare, - Optional
           type: boolean
-          example: '4X7JQDFTCYUNWFBRYZVC'
+          example: true
         EncryptedSettings:
-          type: string
-          example: '9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn'
+          description: Encryted fileshare Keys, - Optional
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            KmsKeyId: 'arn:aws:kms:ap-south-1:676589967111:key/a6e1716e-0e90-407b-b494-b8ef8de91fc'
         Metadata:
+          type: object
+          description: Metadata for cloud backend specific data, - Required
+          additionalProperties:
+            type: string
+          example:
+            PerformanceMode: 'maxIO'
+            ThroughputMode: 'provisioned'
+            ProvisionedThroughputInMibps: 1
+    FileShareUpdate:
+      type: object
+      properties:
+        Description:
+          description: The fileshare name specified by user, - Optional
           type: string
-          example: '9hr0ekZgg0vZHulEekTVfWuu1lnPFvpVAJQNHXdn'
+          example: 'AWS FileShare'
+        Size:
+          description: The fileshare size, - Optional
+          type: integer
+          example: 1073741824
+        Tags:
+          description: The fileshare tags, - Optional
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        Encrypted:
+          description: Flag for encryted fileshare, - Optional
+          type: boolean
+          example: true
+        EncryptedSettings:
+          description: Encryted fileshare Keys, - Optional
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            KmsKeyId: 'arn:aws:kms:ap-south-1:676589967111:key/a6e1716e-0e90-407b-b494-b8ef8de91fc'
+        Metadata:
+          type: object
+          description: Metadata for cloud backend specific data, - Required
+          additionalProperties:
+            type: string
+          example:
+            PerformanceMode: 'maxIO'
+            ThroughputMode: 'provisioned'
+            ProvisionedThroughputInMibps: 1
+    Volume:
+      type: object
+      properties:
+        Name:
+          description: The user defiend name of the volume
+          type: string
+          example: sap_vol1
+        Size:
+          description: The size of the volume
+          type: integer
+          example: 1073741824
+        AvailabilityZone:
+          description: The availability zone associated with the volume
+          type: string
+          example: ap-south-1b
+        Type:
+          description: The type of the volume to be created
+          type: string
+          example: gp2
+        BackendId:
+          description: The multi-cloud registered backedn Id
+          type: string
+          example: 5ef26d79c5d1b20001308f69
+        iops:
+          description: The IOPS the required for the volume as per the cloud provider
+          type: integer
+          example: 100
 
     BaseResponse:
       type: object
@@ -1524,6 +1819,154 @@ components:
               - 99
               - 999
             example: 1
+    FileShareResult:
+      type: object
+      description: FileShare Response
+      properties:
+        Id:
+          description: The fileshare ID, generated by server
+          type: string
+          example: '5ef1db51202b510001c3804c'
+        CreatedAt:
+          description: The time of creation of the fileshare.
+          type: string
+          example: '2020-06-23T16:07:05'
+        UpdatedAt:
+          description: The time at which the fileshare was updated.
+          type: string
+          example: '2020-06-23T16:07:05'
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: '94b280022d0c4401bcf3b0ea85870519'
+        UserId:
+          description: The user UUID in a multi-tenancy environment.
+          type: string
+          example: '5ea809d2553b0f000116be32'
+        BackendId:
+          description: The backend ID
+          type: string
+          example: '5ea809d2553b0f000116be32'
+        Backend:
+          description: The backend Name.
+          type: string
+          example: backend001
+        Name:
+          description: The fileshare name specified by user.
+          type: string
+          example: fileshare001
+        Description:
+          description: The fileshare description specified by user.
+          type: string
+          example: 'AWS FileShare'
+        Type:
+          description: The fileshare type.
+          type: string
+          example: generalPurpose
+        Size:
+          description: The fileshare size.
+          type: integer
+          example: 1073741824
+        Region:
+          description: The region for the fileshare.
+          type: string
+          example: ap-south-1
+        AvailabilityZone:
+          description: The availability zone for the fileshare.
+          type: string
+          example: ap-south-1a
+        Status:
+          description: The fileshare status.
+          type: string
+          enum: &FS_STATUS
+            - available
+            - creating
+            - inUse
+            - error
+            - updating
+            - deleting
+            - errorDeleting
+            - deleted
+          example: available
+        Protocols:
+          description: The fileshare supported protocols.
+          type: string
+          enum:
+            - NFS
+            - SMB
+          example: *FILESHARE_PROTOCOL
+        Tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        SnapshotId:
+          description: The fileshare snapshot id.
+          type: string
+          example: '5eea749a926e5300011a69d6'
+        Encrypted:
+          description: Flag for encryted fileshare.
+          type: boolean
+          example: true
+        EncryptedSettings:
+          description: Encryted fileshare Keys.
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            KmsKeyId: 'arn:aws:kms:ap-south-1:676589967111:key/a6e1716e-0e90-407b-b494-b8ef8de91fc'
+        Metadata:
+          type: object
+          properties:
+            fields:
+              type: object
+              $ref: '#/components/schemas/Fields'
+    VolumeResult:
+      type: object
+      description: Cloud Volume Response
+      properties:
+        volumeId:
+          description: The cloud volume ID
+          type: string
+          example: 'vol-0b1191d991f2bac3'
+        CreatedAt:
+          description: The time at which volume was created.
+          type: string
+          example: '2020-06-23T16:07:05'
+        BackendId:
+          description: The backend ID
+          type: string
+          example: '5ea809d2553b0f000116be32'
+        Name:
+          description: The volume name specified by user.
+          type: string
+          example: sap_vol01
+        Type:
+          description: The volume type. Like for aws gp2, sc1, io1, st1
+          type: string
+          example: gp2
+        Size:
+          description: The volume size required for the volume.
+          type: integer
+          example: 1073741824
+        Region:
+          description: The region in which the volume will be created.
+          type: string
+          example: ap-south-1
+        AvailabilityZone:
+          description: The availability zone associated with volume.
+          type: string
+          example: ap-south-1a
+        State:
+          description: The volume status.
+          type: string
+          enum: &VOL_STATUS
+            - available
+            - creating
+            - inUse
+            - error
+            - updating
+            - deleting
+            - errorDeleting
   requestBodies:
     Backend:
       content:
@@ -1551,5 +1994,19 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/FileShare'
-      description: Cloud Backend configurations
+      description: Cloud FileShare configurations
+      required: true
+    FileShareUpdate:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/FileShareUpdate'
+      description: Cloud FileShare Update configurations
+      required: true
+    Volume:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Volume'
+      description: Cloud volume configurations
       required: true
