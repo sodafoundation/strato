@@ -257,6 +257,10 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 		fs.Description = fileshare.Description
 	}
 
+	if fileshare.Type != "" {
+		fs.Type = fileshare.Type
+	}
+
 	if fileshare.Encrypted != nil {
 		fs.Encrypted = *fileshare.Encrypted
 

@@ -37,7 +37,6 @@ var MaxTimeForSingleHttpRequest = 50 * time.Minute
 
 type AzureAdapter struct {
 	backend  *backendpb.BackendDetail
-	pipeline pipeline.Pipeline
 }
 
 func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error) {
@@ -64,8 +63,8 @@ func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error
 	return fileshare, nil
 }
 
-func (ad *AzureAdapter) createPipeline(endpoint string, acountName string, accountKey string) (pipeline.Pipeline, error) {
-	credential, err := azfile.NewSharedKeyCredential(acountName, accountKey)
+func (ad *AzureAdapter) createPipeline1() (pipeline.Pipeline, error) {
+	credential, err := azfile.NewSharedKeyCredential(ad.backend.Access, ad.backend.Security)
 
 	if err != nil {
 		log.Infof("create credential[Azure File Share] failed, err:%v\n", err)
@@ -87,7 +86,12 @@ func (ad *AzureAdapter) createFileShareURL(fileshareName string) (azfile.ShareUR
 	//create fileShareURL
 	URL, _ := url.Parse(fmt.Sprintf("%s%s", ad.backend.Endpoint, fileshareName))
 
-	return azfile.NewShareURL(*URL, ad.pipeline), nil
+	pipeline, err := ad.createPipeline1()
+	if err != nil {
+		return azfile.ShareURL{}, err
+	}
+
+	return azfile.NewShareURL(*URL, pipeline), nil
 }
 
 func (ad *AzureAdapter) GetFileShareProperties(ctx context.Context, fileshareName string) (*azfile.ShareGetPropertiesResponse, error) {
