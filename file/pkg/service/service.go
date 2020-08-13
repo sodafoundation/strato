@@ -234,6 +234,8 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 	log.Debugf("Create File share response, fileshare: %+v\n", out.Fileshare)
 
 	log.Info("Created file share successfully.")
+
+	// SyncFileShare to Update the FileShare DB Model based on the Backend Resource in the background
 	go f.SyncFileShare(ctx, out.Fileshare, backend.Backend)
 	return nil
 }
@@ -351,6 +353,8 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	log.Debugf("Update File share response, fileshare: %+v\n", out.Fileshare)
 
 	log.Info("Updated file share successfully.")
+
+	// SyncFileShare to Update the FileShare DB Model based on the Backend Resource in the background
 	go f.SyncFileShare(ctx, out.Fileshare, backend.Backend)
 	return nil
 }
