@@ -16,7 +16,6 @@ package aws
 
 import (
 	"context"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -252,56 +251,18 @@ func (ad *AwsAdapter) ListVolume(ctx context.Context, volume *block.ListVolumeRe
 	}, nil
 }
 
-func (ad *AwsAdapter) UpdateVolume(ctx context.Context, volume *block.UpdateVolumeRequest) (*block.UpdateVolumeResponse, error) {
-
-	// Create a EC2 client from just a session.
-	svc := awsec2.New(ad.session)
-
-	input := &awsec2.ModifyVolumeInput{
-		VolumeId:   aws.String(volume.Volume.Metadata.Fields[VolumeId].GetStringValue()),
-		Size:       aws.Int64(volume.Volume.Size),
-		VolumeType: aws.String(volume.Volume.Type),
-		Iops:       aws.Int64(volume.Volume.Iops),
-	}
-
-	result, err := svc.ModifyVolume(input)
-	if err != nil {
-		log.Errorf("Error in updating volume: %+v", input, err)
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				log.Errorf(aerr.Error())
-			}
-		} else {
-			log.Errorf(err.Error())
-		}
-		return nil, ErrGetFromBackendFailed
-	}
-
-	log.Debugf("Update Volume response = %+v", result)
-
-	vol, err := ad.ParseUpdatedVolume(result.VolumeModification)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	if volume.Volume.Tags == nil || len(volume.Volume.Tags) == 0 {
-		return &block.UpdateVolumeResponse{
-			Volume: vol,
-		}, nil
-	}
+func (ad *AwsAdapter) UpdateVolumeTags(ctx context.Context, in *block.UpdateVolumeRequest, svc *awsec2.EC2) error {
 
 	var tags []*awsec2.Tag
 
-	for _, tag := range volume.Volume.Tags {
+	for _, tag := range in.Volume.Tags {
 		tags = append(tags, &awsec2.Tag{
 			Key:   aws.String(tag.Key),
 			Value: aws.String(tag.Value),
 		})
 	}
 
-	volumeId := aws.String(volume.Volume.Metadata.Fields[VolumeId].GetStringValue())
+	volumeId := aws.String(in.Volume.Metadata.Fields[VolumeId].GetStringValue())
 	resources := []*string{volumeId}
 
 	tagInput := &awsec2.CreateTagsInput{
@@ -309,9 +270,9 @@ func (ad *AwsAdapter) UpdateVolume(ctx context.Context, volume *block.UpdateVolu
 		Resources: resources,
 	}
 
-	_, err = svc.CreateTags(tagInput)
+	_, err := svc.CreateTags(tagInput)
 	if err != nil {
-		log.Errorf("Error in updating tags for volume: %+v", input, err)
+		log.Errorf("Error in updating tags for volume: %+v", tagInput, err)
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
@@ -320,12 +281,62 @@ func (ad *AwsAdapter) UpdateVolume(ctx context.Context, volume *block.UpdateVolu
 		} else {
 			log.Errorf(err.Error())
 		}
-		return nil, ErrGetFromBackendFailed
+		return err
 	}
-	vol.Tags = volume.Volume.Tags
+
+	return nil
+}
+
+func (ad *AwsAdapter) UpdateVolume(ctx context.Context, in *block.UpdateVolumeRequest) (*block.UpdateVolumeResponse, error) {
+
+	// Create a EC2 client from just a session.
+	svc := awsec2.New(ad.session)
+
+	var volume *block.Volume
+
+	if in.Volume.Tags != nil && len(in.Volume.Tags) != 0 {
+		err := ad.UpdateVolumeTags(ctx, in, svc)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		volume = &block.Volume{
+			Tags: in.Volume.Tags,
+		}
+	}
+
+	if in.Volume.Type != "" {
+		input := &awsec2.ModifyVolumeInput{
+			VolumeId:   aws.String(in.Volume.Metadata.Fields[VolumeId].GetStringValue()),
+			Size:       aws.Int64(in.Volume.Size),
+			VolumeType: aws.String(in.Volume.Type),
+			Iops:       aws.Int64(in.Volume.Iops),
+		}
+
+		result, err := svc.ModifyVolume(input)
+		if err != nil {
+			log.Errorf("Error in updating volume: %+v", input, err)
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				default:
+					log.Errorf(aerr.Error())
+				}
+			} else {
+				log.Errorf(err.Error())
+			}
+			return nil, ErrGetFromBackendFailed
+		}
+		log.Debugf("Update Volume response = %+v", result)
+
+		volume, err = ad.ParseUpdatedVolume(result.VolumeModification)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+	}
 
 	return &block.UpdateVolumeResponse{
-		Volume: vol,
+		Volume: volume,
 	}, nil
 }
 
@@ -338,7 +349,7 @@ func (ad *AwsAdapter) DeleteVolume(ctx context.Context, volume *block.DeleteVolu
 		VolumeId: aws.String(volume.Volume.Metadata.Fields[VolumeId].GetStringValue()),
 	}
 
-	result, err := svc.DeleteVolumeRequest(input)
+	result, err := svc.DeleteVolume(input)
 	if err != nil {
 		log.Errorf("Error in deleting volume: %+v", input, err)
 		return nil, ErrGetFromBackendFailed

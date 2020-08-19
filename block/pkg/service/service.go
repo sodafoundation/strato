@@ -166,24 +166,7 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 		log.Errorf("Received error in creating volume at backend ", err)
 		vol.Volume.Status = utils.VolumeStateError
 	} else {
-		if backend.Backend.Type == constants.BackendTypeAwsBlock {
-			time.Sleep(4 * time.Second)
-		}
-
-		volGetInput := &pb.GetVolumeRequest{Volume: vol.Volume}
-
-		getVol, err := sd.GetVolume(ctx, volGetInput)
-		if err != nil {
-			vol.Volume.Status = utils.VolumeStateError
-			log.Errorf("Received error in getting volume at backend ", err)
-			return err
-		}
-		log.Debugf("Get Volumee response = [%+v] from backend", getVol)
-
-		if utils.MergeVolumeData(getVol.Volume, vol.Volume) != nil {
-			log.Errorf("Failed to merge volume create data: [%+v] and get data: [%+v] %v\n", vol, err)
-			return err
-		}
+		vol.Volume.Status = utils.VolumeStateCreating
 	}
 
 	volume := &model.Volume{
@@ -198,7 +181,7 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 		Type:               in.Volume.Type,
 		Status:             vol.Volume.Status,
 		Iops:               vol.Volume.Iops,
-		Region:             in.Volume.Region,
+		Region:             backend.Backend.Region,
 		AvailabilityZone:   in.Volume.AvailabilityZone,
 		SnapshotId:         in.Volume.SnapshotId,
 		Size:               &vol.Volume.Size,
@@ -253,10 +236,12 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 	log.Debugf("Create Volume response, volume: %+v\n", out.Volume)
 
 	log.Info("Created volume successfully.")
+
+	go b.SyncVolume(ctx, out.Volume, backend.Backend)
 	return nil
 }
 
-func (f *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequest,
+func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequest,
 	out *pb.UpdateVolumeResponse) error {
 
 	log.Info("Received UpdateVolume request.")
@@ -267,7 +252,7 @@ func (f *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 		return err
 	}
 
-	backend, err := utils.GetBackend(ctx, f.backendClient, res.BackendId)
+	backend, err := utils.GetBackend(ctx, b.backendClient, res.BackendId)
 	if err != nil {
 		log.Errorln("Failed to get backend client with err:", err)
 		return err
@@ -300,23 +285,7 @@ func (f *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 		log.Errorf("Received error in updating volumes at backend ", err)
 		vol.Volume.Status = utils.VolumeStateError
 	} else {
-		if backend.Backend.Type == constants.BackendTypeAwsBlock {
-			time.Sleep(4 * time.Second)
-		}
-
-		volGetInput := &pb.GetVolumeRequest{Volume: vol.Volume}
-
-		getVol, err := sd.GetVolume(ctx, volGetInput)
-		if err != nil {
-			log.Errorf("Received error in getting volume at backend ", err)
-			return err
-		}
-		log.Debugf("Get Volume response= [%+v] from backend", getVol)
-
-		if utils.MergeVolumeData(getVol.Volume, vol.Volume) != nil {
-			log.Errorf("Failed to merge volume create data: [%+v] and get data: [%+v] %v\n", vol, err)
-			return err
-		}
+		vol.Volume.Status = utils.VolumeStateUpdating
 	}
 
 	volume := &model.Volume{
@@ -348,46 +317,49 @@ func (f *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 	}
 	log.Debugf("Update Volume Model: %+v", volume)
 
-	upateRes, err := db.DbAdapter.UpdateVolume(ctx, volume)
+	updateRes, err := db.DbAdapter.UpdateVolume(ctx, volume)
 	if err != nil {
 		log.Errorf("Failed to update volume: %+v", volume, err)
 		return err
 	}
 
 	out.Volume = &pb.Volume{
-		Id:                 upateRes.Id.Hex(),
-		CreatedAt:          upateRes.CreatedAt,
-		UpdatedAt:          upateRes.UpdatedAt,
-		Name:               upateRes.Name,
-		Description:        upateRes.Description,
-		TenantId:           upateRes.TenantId,
-		UserId:             upateRes.UserId,
-		BackendId:          upateRes.BackendId,
-		Backend:            upateRes.Backend,
-		Size:               *upateRes.Size,
-		Type:               upateRes.Type,
-		Status:             upateRes.Status,
-		Region:             upateRes.Region,
-		AvailabilityZone:   upateRes.AvailabilityZone,
-		SnapshotId:         upateRes.SnapshotId,
-		Encrypted:          *upateRes.Encrypted,
-		EncryptionSettings: upateRes.EncryptionSettings,
+		Id:                 updateRes.Id.Hex(),
+		CreatedAt:          updateRes.CreatedAt,
+		UpdatedAt:          updateRes.UpdatedAt,
+		Name:               updateRes.Name,
+		Description:        updateRes.Description,
+		TenantId:           updateRes.TenantId,
+		UserId:             updateRes.UserId,
+		BackendId:          updateRes.BackendId,
+		Backend:            updateRes.Backend,
+		Size:               *updateRes.Size,
+		Type:               updateRes.Type,
+		Iops:               updateRes.Iops,
+		Status:             updateRes.Status,
+		Region:             updateRes.Region,
+		AvailabilityZone:   updateRes.AvailabilityZone,
+		SnapshotId:         updateRes.SnapshotId,
+		Encrypted:          *updateRes.Encrypted,
+		EncryptionSettings: updateRes.EncryptionSettings,
 	}
 
-	if utils.UpdateVolumeStruct(upateRes, out.Volume) != nil {
-		log.Errorf("Failed to update volume struct: %v\n", upateRes, err)
+	if utils.UpdateVolumeStruct(updateRes, out.Volume) != nil {
+		log.Errorf("Failed to update volume struct: %v\n", updateRes, err)
 		return err
 	}
 	log.Debugf("Update Volume response, volume: %+v\n", out.Volume)
 
 	log.Info("Updated Volume successfully.")
+
+	go b.SyncVolume(ctx, out.Volume, backend.Backend)
 	return nil
 }
 
 func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequest, out *pb.DeleteVolumeResponse) error {
 
 	log.Info("Received DeleteVolume request.")
-/*
+
 	res, err := db.DbAdapter.GetVolume(ctx, in.Id)
 	if err != nil {
 		log.Errorf("Failed to get volume: [%v] from db\n", res, err)
@@ -424,12 +396,78 @@ func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequ
 		log.Errorf("Received error in deleting volume at backend ", err)
 		return err
 	}
-*/
-	err := db.DbAdapter.DeleteVolume(ctx, in.Id)
+
+	err = db.DbAdapter.DeleteVolume(ctx, in.Id)
 	if err != nil {
 		log.Errorf("Failed to delete volume err:\n", err)
 		return err
 	}
-	log.Info("Deleted Volume successfully.")
+	log.Info("Deleted volume successfully.")
 	return nil
+}
+
+func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *backend.BackendDetail) {
+	log.Info("Received SyncVolume request.")
+
+	sd, err := driver.CreateStorageDriver(backend)
+	if err != nil {
+		log.Errorln("Failed to create Storage driver err:", err)
+		return
+	}
+
+	time.Sleep(6 * time.Second)
+
+	ctxBg := context.Background()
+	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Second)
+
+	volGetInput := &pb.GetVolumeRequest{Volume:vol}
+
+	getVol, err := sd.GetVolume(ctxBg, volGetInput)
+	if err != nil {
+		vol.Status = utils.VolumeStateError
+		log.Errorf("Received error in getting volume at backend ", err)
+		return
+	}
+	log.Debugf("Get Volume response = [%+v] from backend", getVol)
+
+
+	if utils.MergeVolumeData(getVol.Volume, vol) != nil {
+		log.Errorf("Failed to merge volume create data: [%+v] and get data: [%+v] %v\n", vol, err)
+		return
+	}
+
+	volume := &model.Volume{
+		Id:                 bson.ObjectIdHex(vol.Id),
+		Name:               vol.Name,
+		Description:        vol.Description,
+		CreatedAt:          vol.CreatedAt,
+		UpdatedAt:          time.Now().Format(utils.TimeFormat),
+		TenantId:           vol.TenantId,
+		UserId:             vol.UserId,
+		BackendId:          vol.BackendId,
+		Backend:            vol.Backend,
+		Type:               vol.Type,
+		Iops:               vol.Iops,
+		Size:               &vol.Size,
+		Region:             vol.Region,
+		AvailabilityZone:   vol.AvailabilityZone,
+		Status:             vol.Status,
+		SnapshotId:         vol.SnapshotId,
+		Encrypted:          &vol.Encrypted,
+		EncryptionSettings: vol.EncryptionSettings,
+	}
+
+	if utils.UpdateVolumeModel(vol, volume) != nil {
+		log.Errorf("Failed to update volume model: %+v\n", vol, err)
+		return
+	}
+
+	res, err := db.DbAdapter.UpdateVolume(ctx, volume)
+	if err != nil {
+		log.Errorf("Failed to update volume: %+v in db", err)
+		return
+	}
+
+	log.Debugf("Sync volume: [%+v] to db successfully.", res)
+	return
 }
