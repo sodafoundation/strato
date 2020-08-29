@@ -164,24 +164,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 		log.Errorf("Received error in creating file shares at backend ", err)
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
-		if backend.Backend.Type == constants.BackendTypeAwsFile {
-			time.Sleep(4 * time.Second)
-		}
-
-		fsGetInput := &pb.GetFileShareRequest{Fileshare: fs.Fileshare}
-
-		getFs, err := sd.GetFileShare(ctx, fsGetInput)
-		if err != nil {
-			fs.Fileshare.Status = utils.FileShareStateError
-			log.Errorf("Received error in getting file shares at backend ", err)
-			return err
-		}
-		log.Debugf("Get File share response = [%+v] from backend", getFs)
-
-		if utils.MergeFileShareData(getFs.Fileshare, fs.Fileshare) != nil {
-			log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v] %v\n", fs, err)
-			return err
-		}
+		fs.Fileshare.Status = utils.FileShareStateCreating
 	}
 
 	fileshare := &model.FileShare{
@@ -195,7 +178,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 		UpdatedAt:          time.Now().Format(utils.TimeFormat),
 		Type:               in.Fileshare.Type,
 		Status:             fs.Fileshare.Status,
-		Region:             in.Fileshare.Region,
+		Region:             backend.Backend.Region,
 		AvailabilityZone:   in.Fileshare.AvailabilityZone,
 		Protocols:          in.Fileshare.Protocols,
 		SnapshotId:         in.Fileshare.SnapshotId,
@@ -251,6 +234,9 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 	log.Debugf("Create File share response, fileshare: %+v\n", out.Fileshare)
 
 	log.Info("Created file share successfully.")
+
+	// SyncFileShare to Update the FileShare DB Model based on the Backend Resource in the background
+	go f.SyncFileShare(ctx, out.Fileshare, backend.Backend)
 	return nil
 }
 
@@ -298,23 +284,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 		log.Errorf("Received error in creating file shares at backend ", err)
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
-		if backend.Backend.Type == constants.BackendTypeAwsFile {
-			time.Sleep(4 * time.Second)
-		}
-
-		fsGetInput := &pb.GetFileShareRequest{Fileshare: fs.Fileshare}
-
-		getFs, err := sd.GetFileShare(ctx, fsGetInput)
-		if err != nil {
-			log.Errorf("Received error in getting file shares at backend ", err)
-			return err
-		}
-		log.Debugf("Get File share response= [%+v] from backend", getFs)
-
-		if utils.MergeFileShareData(getFs.Fileshare, fs.Fileshare) != nil {
-			log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v] %v\n", fs, err)
-			return err
-		}
+		fs.Fileshare.Status = utils.FileShareStateUpdating
 	}
 
 	fileshare := &model.FileShare{
@@ -383,6 +353,9 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	log.Debugf("Update File share response, fileshare: %+v\n", out.Fileshare)
 
 	log.Info("Updated file share successfully.")
+
+	// SyncFileShare to Update the FileShare DB Model based on the Backend Resource in the background
+	go f.SyncFileShare(ctx, out.Fileshare, backend.Backend)
 	return nil
 }
 
@@ -434,4 +407,70 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 	}
 	log.Info("Deleted file share successfully.")
 	return nil
+}
+
+func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backend *backend.BackendDetail) {
+	log.Info("Received SyncFileShare request.")
+
+	sd, err := driver.CreateStorageDriver(backend)
+	if err != nil {
+		log.Errorln("Failed to create Storage driver err:", err)
+		return
+	}
+
+	time.Sleep(6 * time.Second)
+
+	ctxBg := context.Background()
+	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Second)
+
+	fsGetInput := &pb.GetFileShareRequest{Fileshare: fs}
+
+	getFs, err := sd.GetFileShare(ctxBg, fsGetInput)
+	if err != nil {
+		fs.Status = utils.FileShareStateError
+		log.Errorf("Received error in getting file shares at backend ", err)
+		return
+	}
+	log.Debugf("Get File share response = [%+v] from backend", getFs)
+
+
+	if utils.MergeFileShareData(getFs.Fileshare, fs) != nil {
+		log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v] %v\n", fs, err)
+		return
+	}
+
+	fileshare := &model.FileShare{
+		Id:                 bson.ObjectIdHex(fs.Id),
+		Name:               fs.Name,
+		Description:        fs.Description,
+		CreatedAt:          fs.CreatedAt,
+		UpdatedAt:          time.Now().Format(utils.TimeFormat),
+		TenantId:           fs.TenantId,
+		UserId:             fs.UserId,
+		BackendId:          fs.BackendId,
+		Backend:            fs.Backend,
+		Type:               fs.Type,
+		Size:               &fs.Size,
+		Region:             fs.Region,
+		AvailabilityZone:   fs.AvailabilityZone,
+		Status:             fs.Status,
+		Protocols:          fs.Protocols,
+		SnapshotId:         fs.SnapshotId,
+		Encrypted:          &fs.Encrypted,
+		EncryptionSettings: fs.EncryptionSettings,
+	}
+
+	if utils.UpdateFileShareModel(fs, fileshare) != nil {
+		log.Errorf("Failed to update fileshare model: %+v\n", fileshare, err)
+		return
+	}
+
+	res, err := db.DbAdapter.UpdateFileShare(ctx, fileshare)
+	if err != nil {
+		log.Errorf("Failed to update file share: %+v in db", err)
+		return
+	}
+
+	log.Debugf("Sync file share: [%+v] to db successfully.", res)
+	return
 }

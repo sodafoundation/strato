@@ -37,7 +37,6 @@ var MaxTimeForSingleHttpRequest = 50 * time.Minute
 
 type AzureAdapter struct {
 	backend  *backendpb.BackendDetail
-	pipeline pipeline.Pipeline
 }
 
 func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error) {
@@ -64,8 +63,8 @@ func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error
 	return fileshare, nil
 }
 
-func (ad *AzureAdapter) createPipeline(endpoint string, acountName string, accountKey string) (pipeline.Pipeline, error) {
-	credential, err := azfile.NewSharedKeyCredential(acountName, accountKey)
+func (ad *AzureAdapter) createPipeline() (pipeline.Pipeline, error) {
+	credential, err := azfile.NewSharedKeyCredential(ad.backend.Access, ad.backend.Security)
 
 	if err != nil {
 		log.Infof("create credential[Azure File Share] failed, err:%v\n", err)
@@ -87,7 +86,12 @@ func (ad *AzureAdapter) createFileShareURL(fileshareName string) (azfile.ShareUR
 	//create fileShareURL
 	URL, _ := url.Parse(fmt.Sprintf("%s%s", ad.backend.Endpoint, fileshareName))
 
-	return azfile.NewShareURL(*URL, ad.pipeline), nil
+	pipeline, err := ad.createPipeline()
+	if err != nil {
+		return azfile.ShareURL{}, err
+	}
+
+	return azfile.NewShareURL(*URL, pipeline), nil
 }
 
 func (ad *AzureAdapter) GetFileShareProperties(ctx context.Context, fileshareName string) (*azfile.ShareGetPropertiesResponse, error) {
@@ -241,12 +245,8 @@ func (ad *AzureAdapter) ListFileShare(ctx context.Context, fs *file.ListFileShar
 	}, nil
 }
 
-func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFileShareRequest) (*file.UpdateFileShareResponse, error) {
-	shareURL, err := ad.createFileShareURL(fs.Fileshare.Name)
-	if err != nil {
-		log.Infof("Create Azure File Share URL failed, err:%v\n", err)
-		return nil, err
-	}
+func (ad *AzureAdapter) UpdatefileShareQuota(ctx context.Context, fs *file.UpdateFileShareRequest,
+	fsMeta map[string][]string, shareURL azfile.ShareURL) (*file.FileShare, error) {
 
 	result, err := shareURL.SetQuota(ctx, int32(fs.Fileshare.Size/utils.GB_FACTOR))
 	if err != nil {
@@ -255,7 +255,14 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 	}
 	log.Infof("Update File share Quota response = %+v", result.Response().Header)
 
-	meta, err := ConvertHeaderToStruct(result.Response().Header)
+	headers := result.Response().Header
+	if fsMeta != nil {
+		for k, v  := range fsMeta {
+			headers[k] = v
+		}
+	}
+
+	meta, err := ConvertHeaderToStruct(headers)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -268,11 +275,11 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 		Metadata: meta,
 	}
 
-	if fs.Fileshare.Metadata == nil {
-		return &file.UpdateFileShareResponse{
-			Fileshare: fileshare,
-		}, nil
-	}
+	return fileshare, nil
+}
+
+func (ad *AzureAdapter) UpdatefileShareMetadata(ctx context.Context, fs *file.UpdateFileShareRequest,
+	shareURL azfile.ShareURL) (map[string][]string, error) {
 
 	metadata, err := ConvertStructToAzureMetadata(fs.Fileshare.Metadata)
 	if err != nil {
@@ -287,15 +294,36 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 	}
 	log.Debugf("Update File share Metadata response = %+v", metaRes.Response().Header)
 
-	meta, err = ConvertHeaderToStruct(metaRes.Response().Header)
+	return metaRes.Response().Header, nil
+}
+
+func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFileShareRequest) (*file.UpdateFileShareResponse, error) {
+
+	shareURL, err := ad.createFileShareURL(fs.Fileshare.Name)
 	if err != nil {
-		log.Error(err)
+		log.Infof("Create Azure File Share URL failed, err:%v\n", err)
 		return nil, err
 	}
-	fileshare.Metadata = meta
+	var fileShare *file.FileShare
+	var fsMeta map[string][]string
 
+	if fs.Fileshare.Metadata != nil {
+		fsMeta, err = ad.UpdatefileShareMetadata(ctx, fs, shareURL)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+	}
+
+	if  &fs.Fileshare.Size != nil {
+		fileShare, err = ad.UpdatefileShareQuota(ctx, fs, fsMeta, shareURL)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+	}
 	return &file.UpdateFileShareResponse{
-		Fileshare: fileshare,
+		Fileshare: fileShare,
 	}, nil
 }
 
