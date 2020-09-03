@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenSDS Authors.
+// Copyright 2020 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -131,6 +131,7 @@ func (s *APIService) ListVolumes(request *restful.Request, response *restful.Res
 	}
 
 	if listVolumeRequest == nil {
+		log.Errorf("List Volumes failed: %v\n", http.StatusBadRequest)
 		return
 	}
 
@@ -172,6 +173,7 @@ func (s *APIService) listVolumeByBackend(ctx context.Context, request *restful.R
 	listVolumeRequest := s.prepareVolumeRequest(request, response)
 
 	if listVolumeRequest == nil {
+		log.Errorf("List Volumes failed: %v\n", http.StatusBadRequest)
 		return nil
 	}
 

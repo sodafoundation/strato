@@ -16,7 +16,7 @@ package driver
 
 import (
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	exp "github.com/opensds/multi-cloud/s3/pkg/exception"
+	exp "github.com/opensds/multi-cloud/block/pkg/exception"
 )
 
 type DriverFactory interface {
