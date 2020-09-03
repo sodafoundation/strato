@@ -282,9 +282,46 @@ func (ad *AwsAdapter) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 	}, nil
 }
 
-func (ad *AwsAdapter) UpdatefileShare(ctx context.Context, in *pb.UpdateFileShareRequest) (*pb.UpdateFileShareResponse, error) {
-	// Create a EFS client from just a session.
-	svc := efs.New(ad.session)
+func (ad *AwsAdapter) UpdatefileShareTags(ctx context.Context, in *pb.UpdateFileShareRequest, svc *efs.EFS) error {
+
+	var tags []*efs.Tag
+	for _, tag := range in.Fileshare.Tags {
+		tags = append(tags, &efs.Tag{
+			Key:   aws.String(tag.Key),
+			Value: aws.String(tag.Value),
+		})
+	}
+
+	tagInput := &efs.TagResourceInput{
+		ResourceId: aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
+		Tags:       tags,
+	}
+
+	_, err := svc.TagResource(tagInput)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case efs.ErrCodeBadRequest:
+				log.Errorf(efs.ErrCodeBadRequest, aerr.Error())
+			case efs.ErrCodeFileSystemNotFound:
+				log.Errorf(efs.ErrCodeFileSystemNotFound, aerr.Error())
+			case efs.ErrCodeInternalServerError:
+				log.Errorf(efs.ErrCodeInternalServerError, aerr.Error())
+			case efs.ErrCodeAccessPointNotFound:
+				log.Errorf(efs.ErrCodeAccessPointNotFound, aerr.Error())
+			default:
+				log.Errorf(aerr.Error())
+			}
+		} else {
+			log.Error(err)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (ad *AwsAdapter) UpdatefileShareMetadata(ctx context.Context, in *pb.UpdateFileShareRequest, svc *efs.EFS) (*pb.FileShare, error) {
 
 	input := &efs.UpdateFileSystemInput{
 		FileSystemId:   aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
@@ -332,48 +369,34 @@ func (ad *AwsAdapter) UpdatefileShare(ctx context.Context, in *pb.UpdateFileShar
 		return nil, err
 	}
 
-	if in.Fileshare.Tags == nil || len(in.Fileshare.Tags) == 0 {
-		return &pb.UpdateFileShareResponse{
-			Fileshare: fileShare,
-		}, nil
-	}
+	return fileShare, nil
+}
 
-	var tags []*efs.Tag
-	for _, tag := range in.Fileshare.Tags {
-		tags = append(tags, &efs.Tag{
-			Key:   aws.String(tag.Key),
-			Value: aws.String(tag.Value),
-		})
-	}
+func (ad *AwsAdapter) UpdatefileShare(ctx context.Context, in *pb.UpdateFileShareRequest) (*pb.UpdateFileShareResponse, error) {
+	// Create a EFS client from just a session.
+	svc := efs.New(ad.session)
 
-	tagInput := &efs.TagResourceInput{
-		ResourceId: aws.String(in.Fileshare.Metadata.Fields[FileSystemId].GetStringValue()),
-		Tags:       tags,
-	}
+	var fileShare *pb.FileShare
+	var err error
 
-	_, err = svc.TagResource(tagInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case efs.ErrCodeBadRequest:
-				log.Errorf(efs.ErrCodeBadRequest, aerr.Error())
-			case efs.ErrCodeFileSystemNotFound:
-				log.Errorf(efs.ErrCodeFileSystemNotFound, aerr.Error())
-			case efs.ErrCodeInternalServerError:
-				log.Errorf(efs.ErrCodeInternalServerError, aerr.Error())
-			case efs.ErrCodeAccessPointNotFound:
-				log.Errorf(efs.ErrCodeAccessPointNotFound, aerr.Error())
-			default:
-				log.Errorf(aerr.Error())
-			}
-		} else {
+	if in.Fileshare.Tags != nil && len(in.Fileshare.Tags) != 0 {
+		err := ad.UpdatefileShareTags(ctx, in, svc)
+		if err != nil {
 			log.Error(err)
+			return nil, err
 		}
-		return nil, err
+		fileShare = &pb.FileShare{
+			Tags: in.Fileshare.Tags,
+		}
 	}
 
-	fileShare.Tags = in.Fileshare.Tags
-
+	if in.Fileshare.Metadata.Fields[ThroughputMode] != nil {
+		fileShare, err = ad.UpdatefileShareMetadata(ctx, in, svc)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+	}
 	return &pb.UpdateFileShareResponse{
 		Fileshare: fileShare,
 	}, nil
