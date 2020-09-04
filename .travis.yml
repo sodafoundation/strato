@@ -35,6 +35,10 @@ install:
   - make docker
   - docker-compose up -d
 
+script:
+- go test -v github.com/opensds/multi-cloud/api/pkg/policy/ -cover
+- go test -v github.com/opensds/multi-cloud/api/pkg/utils/ -cover
+
 after_success:
   # Clean OpenSDS multi-cloud built data
   - bash <(curl -s https://codecov.io/bash)
