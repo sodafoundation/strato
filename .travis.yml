@@ -2,7 +2,7 @@ dist: xenial
 sudo: required
 
 language: go
-go_import_path: github.com/sodafoundation/multi-cloud
+go_import_path: github.com/opensds/multi-cloud
 go:
   - 1.13
   - tip
