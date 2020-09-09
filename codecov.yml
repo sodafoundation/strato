@@ -1,0 +1,8 @@
+comment:
+  layout: "header, diff, tree"
+
+coverage:
+  token: "1ef00456-f764-424b-a91e-f7abbc2d5180"
+  status:
+    project: false
+    patch: false
