@@ -41,5 +41,5 @@ script:
 
 after_success:
   # Clean OpenSDS multi-cloud built data
-  - bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -t ebba498d-3be5-4622-b65b-8ea396497a1d
   - make clean
