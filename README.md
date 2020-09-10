@@ -2,6 +2,9 @@
 
 [![Releases](https://img.shields.io/github/release/sodafoundation/multi-cloud/all.svg?style=flat-square)](https://github.com/sodafoundation/multi-cloud/releases)
 [![LICENSE](https://img.shields.io/github/license/sodafoundation/multi-cloud.svg?style=flat-square)](https://github.com/sodafoundation/multi-cloud/blob/master/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sodafoundation/multi-cloud?branch=master)](https://goreportcard.com/report/github.com/sodafoundation/multi-cloud)
+[![Build Status](https://travis-ci.org/sodafoundation/multi-cloud.svg?branch=master)](https://travis-ci.org/sodafoundation/multi-cloud)
+[![codecov.io](https://codecov.io/github/sodafoundation/multi-cloud/coverage.svg?branch=master)](https://codecov.io/github/sodafoundation/multi-cloud?branch=master)
 
 <img src="https://sodafoundation.io/wp-content/uploads/2020/01/SODA_logo_outline_color_800x800.png" width="200" height="200">
 
