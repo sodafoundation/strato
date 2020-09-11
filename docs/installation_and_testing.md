@@ -31,9 +31,8 @@ go version go1.13.9 linux/amd64
 You can install golang by executing commands below:
 [Using 1.13.9 here for example]
 ```bash
-wget https://storage.googleapis.com/golang/go1.11.2.linux-amd64.tar.gz
+wget https://storage.googleapis.com/golang/go1.13.9.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.13.9.linux-amd64.tar.gz
-mkdir 
 echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
 echo 'export GOPATH=$HOME/gopath' >> /etc/profile
 source /etc/profile
