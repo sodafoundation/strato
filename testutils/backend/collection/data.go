@@ -1,4 +1,4 @@
-// Copyright 2017 The OpenSDS Authors.
+// Copyright 2020 The Sodafoundation Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 // limitations under the License.
 
 /*
-
 This package includes a collection of fake stuffs for testing work.
 */
 
@@ -23,35 +22,33 @@ import (
 	backendModel "github.com/opensds/multi-cloud/backend/pkg/model"
 )
 
-//=============================Mock Backend Data=====================================
-
 var (
 	SampleBackends = []backendModel.Backend{
 		{
 			Id:         "4769855c-a102-11e7-b772-17b880d2f530",
-			TenantId:   "backend-tenantID",
-			UserId:     "backend-userID",
-			Name:       "backend-name",
-			Type:       "backend-type",
-			Region:     "backend-region",
-			Endpoint:   "backend-endpoint",
-			BucketName: "backend-bucketname",
-			Access:     "backend-access",
-			Security:   "backend-security",
+			TenantId:   "sample-backend-tenantID",
+			UserId:     "sample-backend-userID",
+			Name:       "sample-backend-name",
+			Type:       "sample-backend-type",
+			Region:     "sample-backend-region",
+			Endpoint:   "sample-backend-endpoint",
+			BucketName: "sample-backend-bucketname",
+			Access:     "sample-backend-access",
+			Security:   "sample-backend-security",
 		},
 	}
 	SampleCreateBackend = []backendModel.Backend{
 		{
 			Id:         "",
-			TenantId:   "backend-tenantID",
-			UserId:     "backend-userID",
-			Name:       "backend-name",
-			Type:       "backend-type",
-			Region:     "backend-region",
-			Endpoint:   "backend-endpoint",
-			BucketName: "backend-bucketname",
-			Access:     "backend-access",
-			Security:   "backend-security",
+			TenantId:   "sample-backend-tenantID",
+			UserId:     "sample-backend-userID",
+			Name:       "sample-backend-name",
+			Type:       "sample-backend-type",
+			Region:     "sample-backend-region",
+			Endpoint:   "sample-backend-endpoint",
+			BucketName: "sample-backend-bucketname",
+			Access:     "sample-backend-access",
+			Security:   "sample-backend-security",
 		},
 	}
 )
