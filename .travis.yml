@@ -6,7 +6,6 @@ go_import_path: github.com/sodafoundation/multi-cloud
 
 go:
   - 1.13
-  - tip
 
 env:
   - TARGET=amd64
