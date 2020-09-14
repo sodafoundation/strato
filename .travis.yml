@@ -12,16 +12,6 @@ script:
   - ./install/CI/coverage
   - ./install/CI/test
 
-matrix:
-  fast_finish: true
-  allow_failures:
-  - go: tip
-
-install:
-  # Build OpenSDS multi-cloud container images
-  - make docker
-  - docker-compose up -d
-
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   # Clean OpenSDS multi-cloud built data
