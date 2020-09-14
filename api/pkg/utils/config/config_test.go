@@ -269,12 +269,12 @@ func TestOpensdsConfig(t *testing.T) {
 	if CONF.OsdsDock.EnabledBackends[0] != "ceph" {
 		t.Error("OsdsDock.EnabledBackends[0] error")
 	}
-/*	if CONF.OsdsDock.EnabledBackends[1] != "cinder" {
+	if CONF.OsdsDock.EnabledBackends[1] != "cinder" {
 		t.Error("Test OsdsDock.EnabledBackends[1] error")
 	}
 	if CONF.OsdsDock.EnabledBackends[2] != "sample" {
 		t.Error("Test OsdsDock.EnabledBackends[2] error")
-	}*/
+	}
 	if CONF.Database.Credential != "opensds:password@127.0.0.1:3306/dbname" {
 		t.Error("Test Database.Credential error")
 	}
