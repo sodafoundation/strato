@@ -96,7 +96,6 @@ func TestListFileShareHappy(t *testing.T) {
 			SnapshotId:         "snapshotid",
 			Encrypted:          false,
 			EncryptionSettings: map[string]string{"foo": "bar"},
-			//Metadata:           *structpb.Struct
 		},
 	}
 	var req = &pb.ListFileShareRequest{

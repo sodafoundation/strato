@@ -178,15 +178,15 @@ func TestCreateBackend(t *testing.T) {
 
 	mockBackendDetail := pb.BackendDetail{
 		Id:         "",
-		TenantId:   "backend-tenantID",
-		UserId:     "backend-userID",
-		Name:       "backend-name",
-		Type:       "backend-type",
-		Region:     "backend-region",
-		Endpoint:   "backend-endpoint",
-		BucketName: "backend-bucketname",
-		Access:     "backend-access",
-		Security:   "backend-security",
+		TenantId:   "sample-backend-tenantID",
+		UserId:     "sample-backend-userID",
+		Name:       "sample-backend-name",
+		Type:       "sample-backend-type",
+		Region:     "sample-backend-region",
+		Endpoint:   "sample-backend-endpoint",
+		BucketName: "sample-backend-bucketname",
+		Access:     "sample-backend-access",
+		Security:   "sample-backend-security",
 	}
 
 	var req = &pb.CreateBackendRequest{
@@ -276,7 +276,6 @@ func TestUpdateBackend(t *testing.T) {
 }
 
 func TestListTypes(t *testing.T) {
-	//var mockBackend = &collection.SampleBackends[0]
 	var req = &pb.ListTypeRequest{
 		Limit:                1,
 		Offset:               2,
@@ -311,12 +310,7 @@ func TestListTypes(t *testing.T) {
 	ctx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
 
-	/*mockRepoClient := new(mockrepo.Repository)
-	mockRepoClient.On("ListType", ctx, "Id").Return(mockBackend, nil)
-	db.Repo = mockRepoClient*/
-
 	testService := NewBackendService()
 	err := testService.ListType(ctx, req, resp)
 	fmt.Println(err)
-	//mockRepoClient.AssertExpectations(t)
 }
