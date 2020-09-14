@@ -3,16 +3,39 @@ sudo: required
 
 language: go
 go_import_path: github.com/sodafoundation/multi-cloud
+
 go:
   - 1.13
   - tip
-  - docker-compose up -d
+
+env:
+  - TARGET=amd64
+    GO111MODULE=on
+
+services:
+  - docker
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y build-essential gcc
+  - sudo apt-get install -y librados-dev librbd-dev
+  - sudo apt-get install -y lvm2 tgt open-iscsi
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - go: tip
+  exclude:
+
+install:
+  # Build SODA multi-cloud source code
+  - make all
 
 script:
   - ./install/CI/coverage
   - ./install/CI/test
 
 after_success:
-  # Clean OpenSDS multi-cloud built data
+  # Clean SODA multi-cloud built data
   - bash <(curl -s https://codecov.io/bash)
   - make clean
