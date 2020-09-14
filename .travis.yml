@@ -13,6 +13,5 @@ script:
   - ./install/CI/test
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
   # Clean OpenSDS multi-cloud built data
   - make clean
