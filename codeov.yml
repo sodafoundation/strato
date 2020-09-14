@@ -1,0 +1,10 @@
+comment:
+  layout: "header, diff, tree"
+
+codecov:
+  token: ebba498d-3be5-4622-b65b-8ea396497a1d
+
+coverage:
+  status:
+    project: false
+    patch: false
