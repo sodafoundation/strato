@@ -27,10 +27,6 @@ matrix:
     - go: tip
   exclude:
 
-install:
-  # Build SODA multi-cloud source code
-  - make all
-
 script:
   - ./install/CI/coverage
   - ./install/CI/test
