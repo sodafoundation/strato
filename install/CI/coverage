@@ -30,4 +30,6 @@ split_line(){
 split_line "Start unit test"
 go test -v github.com/opensds/multi-cloud/file/pkg/service/... -cover
 go test -v github.com/opensds/multi-cloud/backend/pkg/service/... -cover
+go test -v github.com/opensds/multi-cloud/s3/... -cover
+go test -v github.com/opensds/multi-cloud/api/... -cover
 
