@@ -16,7 +16,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/opensds/multi-cloud/backend/pkg/db"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
