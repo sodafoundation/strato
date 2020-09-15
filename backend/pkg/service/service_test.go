@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ func TestListBackend(t *testing.T) {
 
 	testService := NewBackendService()
 	err := testService.ListBackend(ctx, req, resp)
-	fmt.Println(err)
+	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
 }
 
@@ -207,7 +207,7 @@ func TestCreateBackend(t *testing.T) {
 
 	testService := NewBackendService()
 	err := testService.CreateBackend(ctx, req, resp)
-	fmt.Println(err)
+	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
 }
 
@@ -230,7 +230,7 @@ func TestDeleteBackend(t *testing.T) {
 
 	testService := NewBackendService()
 	err := testService.DeleteBackend(ctx, req, resp)
-	fmt.Println(err)
+	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
 }
 
@@ -271,7 +271,7 @@ func TestUpdateBackend(t *testing.T) {
 
 	testService := NewBackendService()
 	err := testService.UpdateBackend(ctx, req, resp)
-	fmt.Println(err)
+	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
 }
 
@@ -312,5 +312,5 @@ func TestListTypes(t *testing.T) {
 
 	testService := NewBackendService()
 	err := testService.ListType(ctx, req, resp)
-	fmt.Println(err)
+	t.Log(err)
 }
