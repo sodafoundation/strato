@@ -112,7 +112,7 @@ func TestGetBackend(t *testing.T) {
 
 	testService := NewBackendService()
 	err := testService.GetBackend(ctx, req, resp)
-	fmt.Println(err)
+	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
 }
 
