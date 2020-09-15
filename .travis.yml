@@ -43,3 +43,4 @@ after_success:
   # Clean SODA multi-cloud built data
   - bash <(curl -s https://codecov.io/bash)
   - make clean
+  -
