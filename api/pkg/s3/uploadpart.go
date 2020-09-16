@@ -123,7 +123,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	result := pb.UploadPartResponse{}
 	err = stream.RecvMsg(&result)
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
-		log.Errorln("unable to recv message. err:%v, errcode:%v", err, result.ErrorCode)
+		log.Errorln("unable to recv message. err:, errcode:", err, result.ErrorCode)
 		return
 	}
 

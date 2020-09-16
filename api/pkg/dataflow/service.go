@@ -192,7 +192,7 @@ func (s *APIService) DeletePolicy(request *restful.Request, response *restful.Re
 		return
 	}
 
-	log.Info("Delete policy end, err = %d.", err)
+	log.Info("Delete policy end, err = ", err)
 	response.WriteEntity(res)
 }
 

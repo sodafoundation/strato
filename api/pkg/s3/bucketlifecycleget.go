@@ -103,7 +103,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 	// marshall the array back to xml format
 	err = response.WriteAsXml(lifecycleConfXml)
 	if err != nil {
-		log.Infof("write lifecycle of bucket[%s] as xml failed, lifecycle =%s, err=%v.\n", bucketName,
+		log.Infof("write lifecycle of bucket as xml failed, lifecycle = , err=.\n", bucketName,
 			lifecycleConfXml, err)
 		WriteErrorResponse(response, request, ErrInternalError)
 		return

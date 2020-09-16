@@ -196,7 +196,7 @@ func (s *APIService) GetFileShare(request *restful.Request, response *restful.Re
 
 	res, err := s.fileClient.GetFileShare(ctx, &file.GetFileShareRequest{Id: id})
 	if err != nil {
-		log.Errorf("Failed to get file share details err: \n", err)
+		log.Errorf("Failed to get file share details err: %s\n", err)
 		response.WriteError(http.StatusNotFound, err)
 		return
 	}
@@ -206,7 +206,7 @@ func (s *APIService) GetFileShare(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) CreateFileShare(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:create") {
+	if !policy.Authorize(request, response, "fileshare:crea	te") {
 		return
 	}
 	log.Info("Received request for creating file share.")
@@ -215,7 +215,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	err := request.ReadEntity(&fileshare)
 	if err != nil {
-		log.Errorf("failed to read request body err: \n", err)
+		log.Errorf("failed to read request body err: %s \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -230,7 +230,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	metadata, err := utils.ConvertMapToStruct(fileshare.Metadata)
 	if err != nil {
-		log.Errorf("failed to convert metadata map to struct: %v\n", fileshare.Metadata, err)
+		log.Errorf("failed to convert metadata map to struct: %v error : %s\n", fileshare.Metadata, err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -281,7 +281,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 
 	res, err := s.fileClient.CreateFileShare(ctx, &file.CreateFileShareRequest{Fileshare: fs})
 	if err != nil {
-		log.Errorf("Failed to create file share err: \n", err)
+		log.Errorf("Failed to create file share err: %s\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -300,7 +300,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 
 	err := request.ReadEntity(&fileshare)
 	if err != nil {
-		log.Errorf("Failed to read request body err: \n", err)
+		log.Errorf("Failed to read request body err: %s \n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -314,7 +314,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 	if fileshare.Metadata != nil || len(fileshare.Metadata) != 0 {
 		metadata, err := utils.ConvertMapToStruct(fileshare.Metadata)
 		if err != nil {
-			log.Errorf("Failed to parse metadata: %v\n", fileshare.Metadata, err)
+			log.Errorf("Failed to parse metadata: %v , error : %s\n", fileshare.Metadata, err)
 			response.WriteError(http.StatusInternalServerError, err)
 			return
 		}
@@ -347,7 +347,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 
 	res, err := s.fileClient.UpdateFileShare(ctx, &file.UpdateFileShareRequest{Id: id, Fileshare: fs})
 	if err != nil {
-		log.Errorf("Failed to create file share err: \n", err)
+		log.Errorf("Failed to create file share err: %s\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -368,7 +368,7 @@ func (s *APIService) DeleteFileShare(request *restful.Request, response *restful
 
 	res, err := s.fileClient.DeleteFileShare(ctx, &file.DeleteFileShareRequest{Id: id})
 	if err != nil {
-		log.Errorf("Failed to delete file share err: \n", err)
+		log.Errorf("Failed to delete file share err: %s\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}

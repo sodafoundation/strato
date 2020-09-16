@@ -39,7 +39,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	acl, err := getAclFromHeader(request)
 	if err != nil {
-		log.Errorf("failed to get acl from http header, err:", err)
+		log.Errorf("failed to get acl from http header, err:%s", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
@@ -49,7 +49,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 
 	tier, err := getTierFromHeader(request)
 	if err != nil {
-		log.Errorf("failed to get storage class from http header. err:", err)
+		log.Errorf("failed to get storage class from http header. err:%s", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
@@ -73,7 +73,7 @@ func (s *APIService) MultiPartUploadInit(request *restful.Request, response *res
 		Location:   location,
 		Attrs:      attr})
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
-		log.Errorln("unable to init multipart. err:%v, errcode:%v", err, result.GetErrorCode())
+		log.Errorln("unable to init multipart. err:, errcode:", err, result.GetErrorCode())
 		return
 	}
 
