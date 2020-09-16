@@ -70,7 +70,7 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 
 	_, err = s.s3Client.UpdateBucket(ctx, bucket)
 	if err != nil {
-		log.Errorf("versioning configuration failed, errCode=\n", bucketName, err)
+		log.Errorf("versioning configuration failed, bucketName=%s , %s\n", bucketName, err)
 		return
 	}
 
