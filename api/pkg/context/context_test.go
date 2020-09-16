@@ -30,7 +30,7 @@ func TestContext(t *testing.T) {
 		"auth_token":       "token-123456789",
 		"user_id":          "ebf133af8beb474f962869ec0d362b1e",
 		"is_admin":         true,
-		"is_admin_tenant": false,
+		"is_admin_project": false,
 	}
 	result := ctx.ToPolicyValue()
 	if !reflect.DeepEqual(expect, result) {

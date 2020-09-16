@@ -206,7 +206,7 @@ func (s *APIService) GetFileShare(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) CreateFileShare(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "fileshare:crea	te") {
+	if !policy.Authorize(request, response, "fileshare:create") {
 		return
 	}
 	log.Info("Received request for creating file share.")
