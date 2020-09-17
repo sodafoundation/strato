@@ -21,7 +21,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/drivers"
+	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
