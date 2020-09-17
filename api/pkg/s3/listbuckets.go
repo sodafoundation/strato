@@ -80,5 +80,5 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	encodedResp := EncodeResponse(resp)
 	// write response
 	WriteSuccessResponse(response, encodedResp)
-	log.Infoln("List buckets successfully.\n")
+	log.Infoln("List buckets successfully.")
 }

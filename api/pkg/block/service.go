@@ -141,7 +141,7 @@ func (s *APIService) ListVolumes(request *restful.Request, response *restful.Res
 		return
 	}
 
-	log.Info("List Volumes successfully.")
+	log.Infoln("List Volumes successfully.")
 
 	err = response.WriteEntity(res)
 	if err != nil {

@@ -24,16 +24,39 @@ func TestContext(t *testing.T) {
 		AuthToken: "token-123456789",
 		UserId:    "ebf133af8beb474f962869ec0d362b1e",
 		IsAdmin:   true,
-		Uri:       "/version",
+		IsAdminTenant:       false,
 	}
 	expect := map[string]interface{}{
 		"auth_token":       "token-123456789",
 		"user_id":          "ebf133af8beb474f962869ec0d362b1e",
 		"is_admin":         true,
-		"is_admin_project": false,
+		"is_admin_tenant": false,
 	}
 	result := ctx.ToPolicyValue()
 	if !reflect.DeepEqual(expect, result) {
 		t.Errorf("Test Context ToPolicyValue failed, expected:%v, get:%v", expect, result)
 	}
+}
+
+func TestToJson(t *testing.T){
+	ctx := Context{
+		AuthToken: "token-123456789",
+		UserId:    "ebf133af8beb474f962869ec0d362b1e",
+		IsAdmin:   true,
+		IsAdminTenant:       false,
+	}
+
+	expect := Context{
+		IsAdmin:           true,
+		AuthToken:         "token-123456789",
+		UserId:            "ebf133af8beb474f962869ec0d362b1e",
+        IsAdminTenant:     false,
+	}
+
+	result := ctx.ToJson()
+
+	if !reflect.DeepEqual(expect , result){
+		t.Errorf("Test Context ToJson filed, expected :%v, get:%v", expect, result)
+	}
+
 }

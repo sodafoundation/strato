@@ -35,7 +35,7 @@ func (s *APIService) ListBucketUploadRecords(request *restful.Request, response 
 		UploadIdMarker: parameters.UploadIdMarker,
 	})
 	if err != nil || listMultipartsResponse.ErrorCode != int32(s3error.ErrNoErr) {
-		log.Errorf("Unable to list multipart uploads. err:", err)
+		log.Errorf("Unable to list multipart uploads. err:%s", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
