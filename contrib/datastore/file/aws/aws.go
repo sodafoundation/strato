@@ -186,7 +186,7 @@ func (ad *AwsAdapter) CreateFileShare(ctx context.Context, fs *pb.CreateFileShar
 	}
 
 	if *input.Encrypted {
-		input.KmsKeyId = aws.String(fs.Fileshare.EncryptionSettings["KmsKeyId"])
+		input.KmsKeyId = aws.String(fs.Fileshare.EncryptionSettings[KmsKeyId])
 	}
 
 	result, err := svc.CreateFileSystem(input)

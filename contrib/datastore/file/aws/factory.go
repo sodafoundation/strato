@@ -20,7 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/micro/go-micro/v2/util/log"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/drivers"
+	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
 
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 )

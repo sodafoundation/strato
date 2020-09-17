@@ -6,6 +6,7 @@ package block
 import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	_ "github.com/golang/protobuf/ptypes/struct"
 	math "math"
 )
 
@@ -42,8 +43,11 @@ func NewBlockEndpoints() []*api.Endpoint {
 // Client API for Block service
 
 type BlockService interface {
-	ListVolumes(ctx context.Context, in *VolumeRequest, opts ...client.CallOption) (*ListVolumesResponse, error)
+	ListVolume(ctx context.Context, in *ListVolumeRequest, opts ...client.CallOption) (*ListVolumeResponse, error)
+	GetVolume(ctx context.Context, in *GetVolumeRequest, opts ...client.CallOption) (*GetVolumeResponse, error)
 	CreateVolume(ctx context.Context, in *CreateVolumeRequest, opts ...client.CallOption) (*CreateVolumeResponse, error)
+	UpdateVolume(ctx context.Context, in *UpdateVolumeRequest, opts ...client.CallOption) (*UpdateVolumeResponse, error)
+	DeleteVolume(ctx context.Context, in *DeleteVolumeRequest, opts ...client.CallOption) (*DeleteVolumeResponse, error)
 }
 
 type blockService struct {
@@ -58,9 +62,19 @@ func NewBlockService(name string, c client.Client) BlockService {
 	}
 }
 
-func (c *blockService) ListVolumes(ctx context.Context, in *VolumeRequest, opts ...client.CallOption) (*ListVolumesResponse, error) {
-	req := c.c.NewRequest(c.name, "Block.ListVolumes", in)
-	out := new(ListVolumesResponse)
+func (c *blockService) ListVolume(ctx context.Context, in *ListVolumeRequest, opts ...client.CallOption) (*ListVolumeResponse, error) {
+	req := c.c.NewRequest(c.name, "Block.ListVolume", in)
+	out := new(ListVolumeResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blockService) GetVolume(ctx context.Context, in *GetVolumeRequest, opts ...client.CallOption) (*GetVolumeResponse, error) {
+	req := c.c.NewRequest(c.name, "Block.GetVolume", in)
+	out := new(GetVolumeResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -78,17 +92,43 @@ func (c *blockService) CreateVolume(ctx context.Context, in *CreateVolumeRequest
 	return out, nil
 }
 
+func (c *blockService) UpdateVolume(ctx context.Context, in *UpdateVolumeRequest, opts ...client.CallOption) (*UpdateVolumeResponse, error) {
+	req := c.c.NewRequest(c.name, "Block.UpdateVolume", in)
+	out := new(UpdateVolumeResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blockService) DeleteVolume(ctx context.Context, in *DeleteVolumeRequest, opts ...client.CallOption) (*DeleteVolumeResponse, error) {
+	req := c.c.NewRequest(c.name, "Block.DeleteVolume", in)
+	out := new(DeleteVolumeResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Block service
 
 type BlockHandler interface {
-	ListVolumes(context.Context, *VolumeRequest, *ListVolumesResponse) error
+	ListVolume(context.Context, *ListVolumeRequest, *ListVolumeResponse) error
+	GetVolume(context.Context, *GetVolumeRequest, *GetVolumeResponse) error
 	CreateVolume(context.Context, *CreateVolumeRequest, *CreateVolumeResponse) error
+	UpdateVolume(context.Context, *UpdateVolumeRequest, *UpdateVolumeResponse) error
+	DeleteVolume(context.Context, *DeleteVolumeRequest, *DeleteVolumeResponse) error
 }
 
 func RegisterBlockHandler(s server.Server, hdlr BlockHandler, opts ...server.HandlerOption) error {
 	type block interface {
-		ListVolumes(ctx context.Context, in *VolumeRequest, out *ListVolumesResponse) error
+		ListVolume(ctx context.Context, in *ListVolumeRequest, out *ListVolumeResponse) error
+		GetVolume(ctx context.Context, in *GetVolumeRequest, out *GetVolumeResponse) error
 		CreateVolume(ctx context.Context, in *CreateVolumeRequest, out *CreateVolumeResponse) error
+		UpdateVolume(ctx context.Context, in *UpdateVolumeRequest, out *UpdateVolumeResponse) error
+		DeleteVolume(ctx context.Context, in *DeleteVolumeRequest, out *DeleteVolumeResponse) error
 	}
 	type Block struct {
 		block
@@ -101,10 +141,22 @@ type blockHandler struct {
 	BlockHandler
 }
 
-func (h *blockHandler) ListVolumes(ctx context.Context, in *VolumeRequest, out *ListVolumesResponse) error {
-	return h.BlockHandler.ListVolumes(ctx, in, out)
+func (h *blockHandler) ListVolume(ctx context.Context, in *ListVolumeRequest, out *ListVolumeResponse) error {
+	return h.BlockHandler.ListVolume(ctx, in, out)
+}
+
+func (h *blockHandler) GetVolume(ctx context.Context, in *GetVolumeRequest, out *GetVolumeResponse) error {
+	return h.BlockHandler.GetVolume(ctx, in, out)
 }
 
 func (h *blockHandler) CreateVolume(ctx context.Context, in *CreateVolumeRequest, out *CreateVolumeResponse) error {
 	return h.BlockHandler.CreateVolume(ctx, in, out)
+}
+
+func (h *blockHandler) UpdateVolume(ctx context.Context, in *UpdateVolumeRequest, out *UpdateVolumeResponse) error {
+	return h.BlockHandler.UpdateVolume(ctx, in, out)
+}
+
+func (h *blockHandler) DeleteVolume(ctx context.Context, in *DeleteVolumeRequest, out *DeleteVolumeResponse) error {
+	return h.BlockHandler.DeleteVolume(ctx, in, out)
 }
