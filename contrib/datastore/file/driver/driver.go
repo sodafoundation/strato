@@ -19,11 +19,6 @@ import (
 	pb "github.com/opensds/multi-cloud/file/proto"
 )
 
-// define the storage driver interface.
-type StorageDriver interface {
-	FileStorageDriver
-}
-
 // define the fileshare driver interface.
 type FileStorageDriver interface {
 	CreateFileShare(ctx context.Context, fs *pb.CreateFileShareRequest) (*pb.CreateFileShareResponse, error)

@@ -16,13 +16,16 @@ package driver
 
 import (
 	"context"
-	"github.com/opensds/multi-cloud/block/pkg/model"
 	pb "github.com/opensds/multi-cloud/block/proto"
 )
 
-// define the common driver interface.
-
-type StorageDriver interface {
-	List(ctx context.Context) (*pb.ListVolumesResponse, error)
-	Create(ctx context.Context, volume *model.Volume) (*pb.CreateVolumeResponse, error)
+// define the block driver interface.
+type BlockDriver interface {
+	CreateVolume(ctx context.Context, volume *pb.CreateVolumeRequest) (*pb.CreateVolumeResponse, error)
+	GetVolume(ctx context.Context, volume *pb.GetVolumeRequest) (*pb.GetVolumeResponse, error)
+	ListVolume(ctx context.Context, volume *pb.ListVolumeRequest) (*pb.ListVolumeResponse, error)
+	UpdateVolume(ctx context.Context, volume *pb.UpdateVolumeRequest) (*pb.UpdateVolumeResponse, error)
+	DeleteVolume(ctx context.Context, volume *pb.DeleteVolumeRequest) (*pb.DeleteVolumeResponse, error)
+	// Close: cleanup when driver needs to be stopped.
+	Close() error
 }
