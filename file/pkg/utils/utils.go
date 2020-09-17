@@ -96,7 +96,7 @@ func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}
 			if key == AZURE_FILESHARE_USAGE_BYTES || key == AZURE_X_MS_SHARE_QUOTA || key == CONTENT_LENGTH {
 				valInt, err := strconv.ParseInt(val, 10, 64)
 				if err != nil {
-					log.Errorf("Failed to parse string Field Key = %s", key, err)
+					log.Errorf("Failed to parse string Field Key = %s , %s", key, err)
 					return nil, err
 				}
 				valuesMap[key] = valInt
@@ -109,7 +109,7 @@ func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}
 			var err error
 			valuesMap[key], err = ParseStructFields(v.StructValue.Fields)
 			if err != nil {
-				log.Errorf("Failed to parse struct Fields = [%+v]", v.StructValue.Fields, err)
+				log.Errorf("Failed to parse struct Fields = [%+v] , %s", v.StructValue.Fields, err)
 				return nil, err
 			}
 		} else if v, ok := value.GetKind().(*pstruct.Value_ListValue); ok {
@@ -148,7 +148,7 @@ func UpdateFileShareModel(fs *pb.FileShare, fsModel *model.FileShare) error {
 
 	tags, err := ConvertTags(fs.Tags)
 	if err != nil {
-		log.Errorf("Failed to get conversions for tags: %v", fs.Tags, err)
+		log.Errorf("Failed to get conversions for tags: %v , %s", fs.Tags, err)
 		return err
 	}
 	fsModel.Tags = tags
@@ -160,7 +160,7 @@ func UpdateFileShareModel(fs *pb.FileShare, fsModel *model.FileShare) error {
 
 	metaMap, err := ConvertMetadataStructToMap(fs.Metadata)
 	if err != nil {
-		log.Errorf("Failed to get metaMap: %+v", fs.Metadata, err)
+		log.Errorf("Failed to get metaMap: %+v , %s", fs.Metadata, err)
 		return err
 	}
 
@@ -193,14 +193,14 @@ func ConvertMetadataStructToMap(metaStruct *pstruct.Struct) (map[string]interfac
 
 	metaMap, err := ParseStructFields(fields)
 	if err != nil {
-		log.Errorf("Failed to get metadata: %+v", fields, err)
+		log.Errorf("Failed to get metadata: %+v, %s", fields, err)
 		return metaMap, err
 	}
 
 	if len(listFields) != 0 {
 		meta, err := ParseStructFields(listFields)
 		if err != nil {
-			log.Errorf("Failed to get array for metadata : %+v", listFields, err)
+			log.Errorf("Failed to get array for metadata : %+v , %s", listFields, err)
 			return metaMap, err
 		}
 		for k, v := range meta {
@@ -219,13 +219,13 @@ func MergeFileShareData(fs *pb.FileShare, fsFinal *pb.FileShare) error {
 
 	metaMapFinal, err := ConvertMetadataStructToMap(fsFinal.Metadata)
 	if err != nil {
-		log.Errorf("Failed to get metaMap: %+v", fsFinal.Metadata, err)
+		log.Errorf("Failed to get metaMap: %+v , %s", fsFinal.Metadata, err)
 		return err
 	}
 
 	metaMap, err := ConvertMetadataStructToMap(fs.Metadata)
 	if err != nil {
-		log.Errorf("Failed to get metaMap: %+v", fs.Metadata, err)
+		log.Errorf("Failed to get metaMap: %+v , %s", fs.Metadata, err)
 		return err
 	}
 
