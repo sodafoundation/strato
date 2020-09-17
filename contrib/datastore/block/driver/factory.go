@@ -16,11 +16,11 @@ package driver
 
 import (
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	exp "github.com/opensds/multi-cloud/s3/pkg/exception"
+	exp "github.com/opensds/multi-cloud/block/pkg/exception"
 )
 
 type DriverFactory interface {
-	CreateFileStorageDriver(backend *backendpb.BackendDetail) (FileStorageDriver, error)
+	CreateBlockStorageDriver(backend *backendpb.BackendDetail) (BlockDriver, error)
 }
 
 var driverFactoryMgr = make(map[string]DriverFactory)
@@ -29,9 +29,9 @@ func RegisterDriverFactory(driverType string, factory DriverFactory) {
 	driverFactoryMgr[driverType] = factory
 }
 
-func CreateStorageDriver(backend *backendpb.BackendDetail) (StorageDriver, error) {
+func CreateStorageDriver(backend *backendpb.BackendDetail) (BlockDriver, error) {
 	if factory, ok := driverFactoryMgr[backend.Type]; ok {
-		return factory.CreateFileStorageDriver(backend)
+		return factory.CreateBlockStorageDriver(backend)
 	}
 	return nil, exp.NoSuchType.Error()
 }

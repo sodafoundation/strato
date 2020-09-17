@@ -18,35 +18,33 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/micro/go-micro/v2/util/log"
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/block/pkg/datastore/driver"
-	log "github.com/sirupsen/logrus"
 )
 
-type AwsDriverFactory struct {
+type AwsBlockDriverFactory struct {
 }
 
-func (factory *AwsDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
-	log.Infof("Entered to create driver")
-	AccessKeyID := backend.Access
-	AccessKeySecret := backend.Security
-	region := backend.Region
+func (factory *AwsBlockDriverFactory) CreateBlockStorageDriver(backend *backendpb.BackendDetail) (driver.BlockDriver, error) {
+	log.Infof("Entered to create aws volume driver")
 
 	// Create AWS session with the AWS cloud credentials
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials(AccessKeyID, AccessKeySecret, ""),
+		Region:      aws.String(backend.Region),
+		Credentials: credentials.NewStaticCredentials(backend.Access, backend.Security, ""),
 	})
 	if err != nil {
-		// TODO: Add AWSErrors
-		log.Errorf("error in getting the Session: %v", err)
+		log.Errorf("Error in getting the Session")
 		return nil, err
 	}
 
-	adap := &AwsAdapter{session: sess}
-	return adap, nil
+	adapter := &AwsAdapter{session: sess}
+	return adapter, nil
 }
 
 func init() {
-	driver.RegisterDriverFactory("aws-block", &AwsDriverFactory{})
+	driver.RegisterDriverFactory(constants.BackendTypeAwsBlock, &AwsBlockDriverFactory{})
 }

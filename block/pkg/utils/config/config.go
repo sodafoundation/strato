@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datastore
+package config
 
-import (
-	_ "github.com/opensds/multi-cloud/contrib/datastore/block/aws"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/aws"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/azure"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/gcp"
-)
+type Database struct {
+	Credential string `conf:"credential,username:password@tcp(ip:port)/dbname"`
+	Driver     string `conf:"driver,mongodb"`
+	Endpoint   string `conf:"endpoint,localhost:27017"`
+}

@@ -11,9 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package common
 
-const (
-    GB_FACTOR = 1024 * 1024 * 1024
-    AWS_IO1_VOL = "io1"
-)
+package driver
+
+type Closer interface {
+	Close()
+}
+
+var closers []Closer
+
+func AddCloser(closer Closer) {
+	closers = append(closers, closer)
+}
+
+func FreeCloser() {
+	for _, c := range closers {
+		c.Close()
+	}
+}
