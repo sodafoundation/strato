@@ -26,6 +26,10 @@ split_line(){
     echo "================================================================================================"
 }
 
+# get the go lint pkg.
+go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.26.0
+golangci-lint run
+
 # Start unit test.
 split_line "Start unit test"
 # api tests
