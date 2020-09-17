@@ -16,6 +16,7 @@ env:
       GO111MODULE=on
 
 before_install:
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.24.0
   - wget -qO - https://packages.confluent.io/deb/5.3/archive.key | sudo apt-key add -
   - wget -q -O- "https://download.ceph.com/keys/release.asc" | sudo apt-key add -
   - sudo add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/5.3 stable main"
@@ -33,6 +34,7 @@ install:
   - docker-compose up -d
 
 script:
+  - golangci-lint run
   - ./install/CI/coverage
   - ./install/CI/test
 
