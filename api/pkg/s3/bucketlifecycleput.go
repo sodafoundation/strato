@@ -69,7 +69,7 @@ func (s *APIService) class2tier(name string) (int32, error) {
 	}
 	tier, ok := ClassAndTier[name]
 	if !ok {
-		log.Errorf("translate storage class name[%s] to tier failed: %s.\n", name)
+		log.Errorf("translate storage class name[%s] to tier failed\n", name)
 		return 0, fmt.Errorf("invalid storage class:%s", name)
 	}
 	log.Infof("class[%s] to tier[%d]\n", name, tier)

@@ -215,7 +215,7 @@ func attachHeaders(headers map[string][]string) string {
 
 func getV2StringToSign(method, canonicalizedUrl string, headers map[string][]string) string {
 	stringToSign := strings.Join([]string{method, "\n", attachHeaders(headers), "\n", canonicalizedUrl}, "")
-	log.Debug("The v2 auth stringToSign:\n%s", stringToSign)
+	log.Debug("The v2 auth stringToSign:\n", stringToSign)
 	return stringToSign
 }
 
@@ -257,7 +257,7 @@ func getV4StringToSign(method, canonicalizedUrl, queryUrl, scope, longDate, payl
 	canonicalRequest = append(canonicalRequest, payload)
 
 	_canonicalRequest := strings.Join(canonicalRequest, "")
-	log.Debug("The v4 auth canonicalRequest:\n%s", _canonicalRequest)
+	log.Debug("The v4 auth canonicalRequest:\n", _canonicalRequest)
 
 	stringToSign := make([]string, 0, 7)
 	stringToSign = append(stringToSign, V4_HASH_PREFIX)
@@ -270,7 +270,7 @@ func getV4StringToSign(method, canonicalizedUrl, queryUrl, scope, longDate, payl
 
 	_stringToSign := strings.Join(stringToSign, "")
 
-	log.Debug("The v4 auth stringToSign:\n%s", _stringToSign)
+	log.Debug("The v4 auth stringToSign:\n", _stringToSign)
 	return _stringToSign
 }
 

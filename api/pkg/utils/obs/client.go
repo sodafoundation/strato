@@ -44,7 +44,7 @@ func New(ak, sk, endpoint string, configurers ...configurer) (*ObsClient, error)
 	info[2] = fmt.Sprintf("Access Mode=%s]", accessMode)
 	log.Warn(strings.Join(info, "];["))
 
-	log.Debug("Create obsclient with config:\n%s\n", conf)
+	log.Debug("Create obsclient with config:\n", conf)
 	obsClient := &ObsClient{conf: conf, httpClient: &http.Client{Transport: transport, CheckRedirect: checkRedirectFunc}, transport: transport}
 	return obsClient, nil
 }

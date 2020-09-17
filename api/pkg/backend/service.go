@@ -166,7 +166,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 	if para != "" { //List those backends which support the specific tier.
 		tier, err := strconv.Atoi(para)
 		if err != nil {
-			log.Errorf("list backends with tier as filter, but tier[%s] is invalid\n", tier)
+			log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
 			response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
 			return
 		}

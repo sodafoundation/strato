@@ -92,6 +92,6 @@ func (s *APIService) ListVolumes(request *restful.Request, response *restful.Res
 	}
 
 	// write response
-	log.Infoln("Listed Volumes successfully\n")
+	log.Infoln("Listed Volumes successfully")
 	response.WriteEntity(rsp)
 }
