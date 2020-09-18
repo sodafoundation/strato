@@ -220,6 +220,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Description: "Azure File Service",
 		},
 		{
+			Name:        constants.BackendTypeGcsFile,
+			Description: "GCP File Service",
+                },
+                {
 			Name:        constants.BackendTypeAwsBlock,
 			Description: "AWS Block Service",
 		},

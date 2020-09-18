@@ -24,6 +24,7 @@ const (
 	BackendTypeAzureFile = "azure-file"
 	BackendTypeCeph      = "ceph-s3"
 	BackendTypeGcs       = "gcp-s3"
+	BackendTypeGcsFile   = "gcp-file"
 	BackendFusionStorage = "fusionstorage-object"
 	BackendTypeYIGS3     = "yig"
 	BackendTypeAlibaba   = "alibaba-oss"
