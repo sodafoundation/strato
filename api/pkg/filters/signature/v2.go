@@ -158,7 +158,7 @@ func DoesSignatureMatchV2(r *http.Request) (credential credentials.Value, err er
 	}
 	accessKey := splitSignature[0]
 	credential, e := keystonecredentials.NewCredentialsClient(accessKey).Get()
-	log.Debugln("[ %s ] cre1:%s,%s,%s", credential.TenantID, credential.DisplayName, credential.AccessKeyID, credential.SecretAccessKey)
+	log.Debugln("cre1:", credential.TenantID, credential.DisplayName, credential.AccessKeyID, credential.SecretAccessKey)
 	if e != nil {
 		return credential, ErrInvalidAccessKeyID
 	}

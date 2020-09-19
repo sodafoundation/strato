@@ -17,32 +17,37 @@ package service
 import (
 	"context"
 	"os"
-	_ "strings"
-
+	"errors"
+	"fmt"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/aws"
+	"time"
+	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	"github.com/opensds/multi-cloud/block/pkg/db"
+	"github.com/opensds/multi-cloud/block/pkg/model"
+	"github.com/opensds/multi-cloud/block/pkg/utils"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
+
 	backend "github.com/opensds/multi-cloud/backend/proto"
-	_ "github.com/opensds/multi-cloud/block/pkg/datastore/aws"
 	pb "github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
+	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type blockService struct {
+	blockClient   pb.BlockService
 	backendClient backend.BackendService
 }
 
 func NewBlockService() pb.BlockHandler {
-	host := os.Getenv("DB_HOST")
-	dbstor := utils.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: host}
-	db.Init(&dbstor)
 
 	log.Infof("Init block service finished.\n")
 	return &blockService{
+		blockClient:   pb.NewBlockService("block", client.DefaultClient),
 		backendClient: backend.NewBackendService("backend", client.DefaultClient),
 	}
 }
-
 
 func (b *blockService) ListVolume(ctx context.Context, in *pb.ListVolumeRequest, out *pb.ListVolumeResponse) error {
 	log.Info("Received ListVolume request.")
@@ -466,4 +471,3 @@ func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *
 	log.Debugf("Sync volume: [%+v] to db successfully.", res)
 	return
 }
-

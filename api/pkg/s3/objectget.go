@@ -107,7 +107,7 @@ func (s *APIService) ObjectGet(request *restful.Request, response *restful.Respo
 	opt := client.WithRequestTimeout(time.Duration(tmoutSec) * time.Second)
 	stream, err := s.s3Client.GetObject(ctx, &pb.GetObjectInput{Bucket: bucketName, Key: objectKey, Offset: startOffset, Length: length}, opt)
 	if err != nil {
-		log.Errorln("get object failed, err:%v", err)
+		log.Errorln("get object failed, err:", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}

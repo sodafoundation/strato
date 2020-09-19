@@ -46,13 +46,13 @@ func (s *APIService) BucketAclPut(request *restful.Request, response *restful.Re
 		// because we only support canned acl, the body of request must be not too big, and 1024 is enough
 		aclBuffer, err := ioutil.ReadAll(io.LimitReader(request.Request.Body, 1024))
 		if err != nil {
-			log.Errorf("unable to read acls body, err:", err)
+			log.Errorf("unable to read acls body, err: %s", err)
 			WriteErrorResponse(response, request, s3error.ErrInvalidAcl)
 			return
 		}
 		err = xml.Unmarshal(aclBuffer, &policy)
 		if err != nil {
-			log.Errorf("unable to parse acls xml body, err:", err)
+			log.Errorf("unable to parse acls xml body, err:%s", err)
 			WriteErrorResponse(response, request, s3error.ErrInternalError)
 			return
 		}
@@ -86,7 +86,7 @@ func (s *APIService) BucketAclGet(request *restful.Request, response *restful.Re
 	ctx := common.InitCtxWithAuthInfo(request)
 	bucket, err := s.getBucketMeta(ctx, bucketName)
 	if err != nil {
-		log.Error("failed to get bucket[%s] acl policy for bucket", bucketName)
+		log.Error("failed to get bucket acl policy for bucket", bucketName)
 		WriteErrorResponse(response, request, err)
 		return
 	}
@@ -102,7 +102,7 @@ func (s *APIService) BucketAclGet(request *restful.Request, response *restful.Re
 
 	aclBuffer, err := xmlFormat(policy)
 	if err != nil {
-		helper.ErrorIf(err, "failed to marshal acl XML for bucket", bucketName)
+		helper.ErrorIf(err, "failed to marshal acl XML for bucket %v", bucketName)
 		WriteErrorResponse(response, request, s3error.ErrInternalError)
 		return
 	}

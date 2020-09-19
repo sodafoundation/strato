@@ -117,7 +117,7 @@ func (s *APIService) ObjectPartCopy(request *restful.Request, response *restful.
 
 	// Verify before x-amz-copy-source preconditions before continuing with CopyObject.
 	if err = checkObjectPreconditions(response.ResponseWriter, request.Request, getObjMetaRes.Object); err != nil {
-		log.Infof("failed to check object preconditions. err:", err)
+		log.Infof("failed to check object preconditions. err:%s", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
@@ -130,7 +130,7 @@ func (s *APIService) ObjectPartCopy(request *restful.Request, response *restful.
 	} else {
 		copySourceRange, err := datatype.ParseRequestRange(copySourceRangeString, getObjMetaRes.Object.Size)
 		if err != nil {
-			helper.ErrorIf(err, "Invalid request range, err:", err)
+			helper.ErrorIf(err, "Invalid request range, err:%s", err)
 			WriteErrorResponse(response, request, ErrInvalidRange)
 			return
 		}

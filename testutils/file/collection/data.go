@@ -1,4 +1,4 @@
-// Copyright 2017 The OpenSDS Authors.
+// Copyright 2020 The Sodafoundation Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 	fileModel "github.com/opensds/multi-cloud/file/pkg/model"
 )
 
-//==============================Mock FileShare Data===================================
 var (
 	size        = int64(2000)
 	sizeptr     = &size
@@ -37,12 +36,12 @@ var (
 			UpdatedAt:          "UpdatedAt",
 			Name:               "sample-fileshare-01",
 			Description:        "This is first sample fileshare for testing",
-			UserId:             "UserID",
-			Backend:            "Backend",
-			BackendId:          "BackendId",
+			UserId:             "Sample-UserID",
+			Backend:            "Sample-Backend",
+			BackendId:          "Sample-BackendId",
 			Size:               sizeptr,
-			Type:               "Type",
-			TenantId:           "TenantId",
+			Type:               "Sample-Type",
+			TenantId:           "Sample-TenantId",
 			Status:             "available",
 			Region:             "asia",
 			AvailabilityZone:   "default",
@@ -59,12 +58,12 @@ var (
 		UpdatedAt:          "UpdatedAt",
 		Name:               "sample-fileshare-01",
 		Description:        "This is first sample fileshare for testing",
-		UserId:             "UserID",
-		Backend:            "Backend",
-		BackendId:          "BackendId",
+		UserId:             "Sample-UserID",
+		Backend:            "Sample-Backend",
+		BackendId:          "Sample-BackendId",
 		Size:               sizeptr,
-		Type:               "Type",
-		TenantId:           "TenantId",
+		Type:               "Sample-Type",
+		TenantId:           "Sample-TenantId",
 		Status:             "available",
 		Region:             "asia",
 		AvailabilityZone:   "default",
@@ -79,12 +78,12 @@ var (
 		UpdatedAt:          "UpdatedAt",
 		Name:               "sample-fileshare-01",
 		Description:        "This is first sample fileshare for testing",
-		UserId:             "UserID",
-		Backend:            "Backend",
-		BackendId:          "BackendId",
+		UserId:             "Sample-UserID",
+		Backend:            "Sample-Backend",
+		BackendId:          "Sample-BackendId",
 		Size:               sizeptr,
-		Type:               "Type",
-		TenantId:           "TenantId",
+		Type:               "Sample-Type",
+		TenantId:           "Sample-TenantId",
 		Status:             "available",
 		Region:             "asia",
 		AvailabilityZone:   "default",
@@ -94,27 +93,26 @@ var (
 		EncryptionSettings: map[string]string{"foo": "bar"},
 	}
 
-	// var userList []*Users = []*Users{&user1, &user2}
 	SampleListFileShares = []*fileModel.FileShare{
 		&SampleFileShare1,
 		&SampleFileShare2,
 	}
 )
 
-//=============================Mock Backend Data=====================================
+
 var (
 	SampleBackendDetails = []backendModel.Backend{
 		{
 			Id:         "4769855c-a102-11e7-b772-17b880d2f530",
-			TenantId:   "backend-tenantID",
-			UserId:     "backend-userID",
-			Name:       "backend-name",
-			Type:       "backend-type",
-			Region:     "backend-region",
-			Endpoint:   "backend-endpoint",
-			BucketName: "backend-bucketname",
-			Access:     "backend-access",
-			Security:   "backend-security",
+			TenantId:   "sample-backend-tenantID",
+			UserId:     "sample-backend-userID",
+			Name:       "sample-backend-name",
+			Type:       "sample-backend-type",
+			Region:     "sample-backend-region",
+			Endpoint:   "sample-backend-endpoint",
+			BucketName: "sample-backend-bucketname",
+			Access:     "sample-backend-access",
+			Security:   "sample-backend-security",
 		},
 	}
 )

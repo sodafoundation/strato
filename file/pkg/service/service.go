@@ -23,8 +23,8 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/drivers"
 	"github.com/opensds/multi-cloud/contrib/datastore/file/aws"
+	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/model"
 	"github.com/opensds/multi-cloud/file/pkg/utils"
@@ -60,7 +60,7 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 
 	res, err := db.DbAdapter.ListFileShare(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Errorf("Failed to List FileShares: \n", err)
+		log.Errorf("Failed to List FileShares: %s \n", err)
 		return err
 	}
 
@@ -88,7 +88,7 @@ func (f *fileService) ListFileShare(ctx context.Context, in *pb.ListFileShareReq
 		}
 
 		if utils.UpdateFileShareStruct(fs, fileshare) != nil {
-			log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
+			log.Errorf("Failed to update fileshare struct: %v , %s\n", fs, err)
 			return err
 		}
 
@@ -107,7 +107,7 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 
 	fs, err := db.DbAdapter.GetFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to get fileshare: \n", err)
+		log.Errorf("Failed to get fileshare: %s\n", err)
 		return err
 	}
 
@@ -133,10 +133,10 @@ func (f *fileService) GetFileShare(ctx context.Context, in *pb.GetFileShareReque
 	}
 
 	if utils.UpdateFileShareStruct(fs, fileshare) != nil {
-		log.Errorf("Failed to update fileshare struct: %+v\n", fs, err)
+		log.Errorf("Failed to update fileshare struct: %+v , %s\n", fs, err)
 		return err
 	}
-	log.Debugf("Get File share response, fileshare: %+v\n", fileshare)
+	log.Debugf("Get File share response, fileshare: %+v \n", fileshare)
 
 	out.Fileshare = fileshare
 
@@ -161,7 +161,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 
 	fs, err := sd.CreateFileShare(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in creating file shares at backend ", err)
+		log.Errorf("Received error in creating file shares at backend %s", err)
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
 		fs.Fileshare.Status = utils.FileShareStateCreating
@@ -188,7 +188,7 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 	}
 
 	if utils.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
-		log.Errorf("Failed to update fileshare model: %+v\n", fileshare, err)
+		log.Errorf("Failed to update fileshare model: %+v , %s\n", fileshare, err)
 		return err
 	}
 
@@ -247,19 +247,19 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 
 	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to get fileshare: [%v] from db\n", res, err)
+		log.Errorf("Failed to get fileshare: [%v] from db %s\n", res, err)
 		return err
 	}
 
 	backend, err := utils.GetBackend(ctx, f.backendClient, res.BackendId)
 	if err != nil {
-		log.Errorln("Failed to get backend client with err:", err)
+		log.Errorln("Failed to get backend client with err: ", err)
 		return err
 	}
 
 	sd, err := driver.CreateStorageDriver(backend.Backend)
 	if err != nil {
-		log.Errorln("Failed to create Storage driver err:", err)
+		log.Errorln("Failed to create Storage driver err: ", err)
 		return err
 	}
 
@@ -267,13 +267,13 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	if backend.Backend.Type == constants.BackendTypeAwsFile {
 		metaMap, err := utils.ConvertMetadataStructToMap(in.Fileshare.Metadata)
 		if err != nil {
-			log.Errorf("Failed to convert metaStruct: [%+v] to metaMap", in.Fileshare.Metadata, err)
+			log.Errorf("Failed to convert metaStruct: [%+v] to metaMap %s", in.Fileshare.Metadata, err)
 			return err
 		}
 		metaMap[aws.FileSystemId] = res.Metadata[aws.FileSystemId]
 		metaStruct, err := driverutils.ConvertMapToStruct(metaMap)
 		if err != nil {
-			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct\n", metaMap, err)
+			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct %s\n", metaMap, err)
 			return err
 		}
 		in.Fileshare.Metadata = metaStruct
@@ -281,7 +281,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 
 	fs, err := sd.UpdatefileShare(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in creating file shares at backend ", err)
+		log.Errorf("Received error in creating file shares at backend %s", err)
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
 		fs.Fileshare.Status = utils.FileShareStateUpdating
@@ -314,14 +314,14 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	}
 
 	if utils.UpdateFileShareModel(fs.Fileshare, fileshare) != nil {
-		log.Errorf("Failed to update fileshare model: %+v\n", fileshare, err)
+		log.Errorf("Failed to update fileshare model: %+v, %s\n", fileshare, err)
 		return err
 	}
 	log.Debugf("Update File Share Model: %+v", fileshare)
 
 	upateRes, err := db.DbAdapter.UpdateFileShare(ctx, fileshare)
 	if err != nil {
-		log.Errorf("Failed to update file share: %+v", fileshare, err)
+		log.Errorf("Failed to update file share: %+v, %s", fileshare, err)
 		return err
 	}
 
@@ -347,7 +347,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	}
 
 	if utils.UpdateFileShareStruct(upateRes, out.Fileshare) != nil {
-		log.Errorf("Failed to update fileshare struct: %v\n", fs, err)
+		log.Errorf("Failed to update fileshare struct: %v, %s\n", fs, err)
 		return err
 	}
 	log.Debugf("Update File share response, fileshare: %+v\n", out.Fileshare)
@@ -365,7 +365,7 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 
 	res, err := db.DbAdapter.GetFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to get fileshare: [%v] from db\n", res, err)
+		log.Errorf("Failed to get fileshare: [%v] from db %s\n", res, err)
 		return err
 	}
 
@@ -396,13 +396,13 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 
 	_, err = sd.DeleteFileShare(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in deleting file shares at backend ", err)
+		log.Errorf("Received error in deleting file shares at backend %s ", err)
 		return err
 	}
 
 	err = db.DbAdapter.DeleteFileShare(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to delete file share err:\n", err)
+		log.Errorf("Failed to delete file share err: %s \n", err)
 		return err
 	}
 	log.Info("Deleted file share successfully.")
@@ -428,14 +428,14 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 	getFs, err := sd.GetFileShare(ctxBg, fsGetInput)
 	if err != nil {
 		fs.Status = utils.FileShareStateError
-		log.Errorf("Received error in getting file shares at backend ", err)
+		log.Errorf("Received error in getting file shares at backend %s", err)
 		return
 	}
 	log.Debugf("Get File share response = [%+v] from backend", getFs)
 
 
 	if utils.MergeFileShareData(getFs.Fileshare, fs) != nil {
-		log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v] %v\n", fs, err)
+		log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v]\n", fs, err)
 		return
 	}
 
@@ -461,7 +461,7 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 	}
 
 	if utils.UpdateFileShareModel(fs, fileshare) != nil {
-		log.Errorf("Failed to update fileshare model: %+v\n", fileshare, err)
+		log.Errorf("Failed to update fileshare model: %+v , %s\n", fileshare, err)
 		return
 	}
 
