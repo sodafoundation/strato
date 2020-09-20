@@ -103,7 +103,6 @@ func TestListVolume(t *testing.T){
 
 	var filter = map[string]string{"k1":"val1", "k2":"val2"}
 	mockRepoClient := new(mockrepo.DBAdapter)
-	//ctx context.Context, limit int, offset int, query interface{})
 	mockRepoClient.On("ListVolume", ctx, 1, 10, filter ).Return(dbVols, nil)
 	db.DbAdapter = mockRepoClient
 
@@ -111,7 +110,6 @@ func TestListVolume(t *testing.T){
 	err := testService.ListVolume(ctx, volReq, volResp)
 	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
-
 
 }
 
