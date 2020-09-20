@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"context"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/pkg/model"
 	pb "github.com/opensds/multi-cloud/block/proto"
+	bkpb "github.com/opensds/multi-cloud/testutils/backend/proto"
 	"github.com/opensds/multi-cloud/testutils/block/collection"
 	"reflect"
 	"testing"
@@ -71,14 +74,27 @@ func TestConvertTags(t *testing.T) {
 		pbtags []*pb.Tag
 	}
 
+	pbtag1 := pb.Tag{
+		Key:   "T1",
+		Value: "v1",
+	}
+	pbtag2 := pb.Tag{
+		Key:   "T2",
+		Value: "v2",
+	}
+
+	wantTag1 := model.Tag{Key: "T1" , Value: "v1"}
+	wantTag2 := model.Tag{Key: "T2" , Value: "v2"}
+
+
 	tests := []struct {
 		name    string
 		args    args
 		want    []model.Tag
 		wantErr bool
 	}{
-		/*{name:"TestConvertTags 1", args:args{volModel: volModel1, volPb: volPb1}, wantErr: false},
-		{name:"TestConvertTags 2", args:args{volModel: volModel1, volPb: volPb2}, wantErr: false},*/
+		{name:"TestConvertTags 1", args:args{pbtags: []*pb.Tag{&pbtag1} }, want:[]model.Tag{wantTag1} ,  wantErr: false},
+		{name:"TestConvertTags 2", args:args{pbtags: []*pb.Tag{&pbtag2} }, want:[]model.Tag{wantTag2} ,  wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -146,18 +162,9 @@ func TestMergeVolumeData(t *testing.T) {
 	}
 }
 
-/*func TestGetBackend(t *testing.T) {
-
-	type args struct {
-		ctx           context.Context
-		backendClient backend.BackendService
-		backendId     string
-	}
+func TestGetBackend(t *testing.T) {
 
 	ctx := context.Background()
-	deadline := time.Now().Add(time.Duration(50) * time.Second)
-	ctx, cancel := context.WithDeadline(ctx, deadline)
-	defer cancel()
 
 	bkendDetail := backend.BackendDetail{
 		Id:                   "",
@@ -175,28 +182,17 @@ func TestMergeVolumeData(t *testing.T) {
 		XXX_sizecache:        0,
 	}
 
+	bkendReq := &backend.GetBackendRequest{
+		Id: "id",
+    }
+
 	bkendResp := backend.GetBackendResponse{
 		Backend: &bkendDetail,
 	}
 
-	tests := []struct {
-		name    string
-		args    args
-		want    *backend.GetBackendResponse
-		wantErr bool
-	}{		 }
+	mockBackendClient := new(bkpb.BackendService)
+	mockBackendClient.On("GetBackend", ctx, bkendReq ).Return(&bkendResp, nil)
 
+	GetBackend(ctx, mockBackendClient, "id")
 
-		for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetBackend(tt.args.ctx, tt.args.backendClient, tt.args.backendId)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetBackend() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetBackend() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}*/
+}
