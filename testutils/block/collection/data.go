@@ -103,7 +103,7 @@ var (
 			MultiAttach:        false,
 			Encrypted:          &isEncrypted,
 			EncryptionSettings: map[string]string{"key1":"val1"},
-			Metadata:           nil,
+			Metadata:           map[string]interface{}{"a": "a"},
 		},
 		{
 			Id:                 "sample2-Id",
