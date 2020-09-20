@@ -69,7 +69,7 @@ func (g GcpAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFileShar
 	}
 
 	log.Infof("Starting CreateInstance on cloud backend")
-	log.Infof("Creating instance %s: location %s, tier %s, capacity %s, labels %v", instanceName,
+	log.Debugf("Creating instance %s: location %s, tier %s, capacity %s, labels %v", instanceName,
 		fs.Fileshare.AvailabilityZone, instance.Tier, instance.FileShares[0].CapacityGb, instance.Labels)
 
 	op, err := g.instancesService.Create(g.locationURI(g.backend.Region,
