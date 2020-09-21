@@ -46,4 +46,5 @@ require (
 	google.golang.org/protobuf v1.22.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	k8s.io/apimachinery v0.18.5
 )

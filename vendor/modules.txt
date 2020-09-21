@@ -213,7 +213,7 @@ github.com/go-redis/redis/internal/proto
 github.com/go-redis/redis/internal/util
 # github.com/go-sql-driver/mysql v1.5.0
 github.com/go-sql-driver/mysql
-# github.com/gogo/protobuf v1.2.1
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
@@ -487,7 +487,7 @@ github.com/spf13/afero/mem
 github.com/spf13/cast
 # github.com/spf13/jwalterweatherman v1.1.0
 github.com/spf13/jwalterweatherman
-# github.com/spf13/pflag v1.0.3
+# github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
 # github.com/spf13/viper v1.6.3
 github.com/spf13/viper
@@ -743,7 +743,7 @@ gopkg.in/square/go-jose.v2/jwt
 gopkg.in/tomb.v1
 # gopkg.in/warnings.v0 v0.1.2
 gopkg.in/warnings.v0
-# gopkg.in/yaml.v2 v2.2.7
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
 # honnef.co/go/tools v0.0.1-2019.2.3
 honnef.co/go/tools/arg
@@ -771,3 +771,9 @@ honnef.co/go/tools/staticcheck/vrp
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
+# k8s.io/apimachinery v0.18.5
+k8s.io/apimachinery/pkg/util/clock
+k8s.io/apimachinery/pkg/util/runtime
+k8s.io/apimachinery/pkg/util/wait
+# k8s.io/klog v1.0.0
+k8s.io/klog
