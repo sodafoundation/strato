@@ -23,7 +23,9 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
 	"github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
@@ -42,6 +44,16 @@ type APIService struct {
 	backendClient  backend.BackendService
 	s3Client       s3.S3Service
 	dataflowClient dataflow.DataFlowService
+}
+
+type EnCrypter struct {
+	Algo      string `json:"algo,omitempty"`
+	Access    string `json:"access,omitempty"`
+	PlainText string `json:"plaintext,omitempty"`
+}
+
+type DeCrypter struct {
+	CipherText string `json:"ciphertext,omitempty"`
 }
 
 func NewAPIService(c client.Client) *APIService {
@@ -317,4 +329,34 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 
 	log.Info("List types successfully.")
 	response.WriteEntity(res)
+}
+
+func (s *APIService) EncryptData(request *restful.Request, response *restful.Response) {
+	if !policy.Authorize(request, response, "backend:encrypt") {
+		return
+	}
+	log.Info("Received request for encrypting data.")
+	encypter := &EnCrypter{}
+	err := request.ReadEntity(&encypter)
+	if err != nil {
+		log.Errorf("failed to read request body: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	credential, err := keystonecredentials.NewCredentialsClient(encypter.Access).Get()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	aes := cryptography.NewSymmetricKeyEncrypter(encypter.Algo)
+	cipherText, err := aes.Encrypter(encypter.PlainText, []byte(credential.SecretAccessKey))
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Info("Encrypt data successfully.")
+	response.WriteEntity(DeCrypter{CipherText: cipherText})
 }

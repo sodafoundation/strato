@@ -8,6 +8,7 @@
   "backend:create":"",
   "backend:update":"",
   "backend:delete":"",
+  "backend:encrypt":"",
   "type:list": "",
   "policy:create": "",
   "policy:list": "",
