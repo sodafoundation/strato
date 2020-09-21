@@ -264,6 +264,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 	}
 
 	in.Fileshare.Name = res.Name
+	in.Fileshare.AvailabilityZone = res.AvailabilityZone
 	if backend.Backend.Type == constants.BackendTypeAwsFile {
 		metaMap, err := utils.ConvertMetadataStructToMap(in.Fileshare.Metadata)
 		if err != nil {
@@ -274,6 +275,13 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 		metaStruct, err := driverutils.ConvertMapToStruct(metaMap)
 		if err != nil {
 			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct %s\n", metaMap, err)
+			return err
+		}
+		in.Fileshare.Metadata = metaStruct
+	} else if backend.Backend.Type == constants.BackendTypeGcsFile {
+		metaStruct, err := driverutils.ConvertMapToStruct(res.Metadata)
+		if err != nil {
+			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct %s\n", res.Metadata, err)
 			return err
 		}
 		in.Fileshare.Metadata = metaStruct
@@ -383,6 +391,7 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 
 	fileshare := &pb.FileShare{
 		Name: res.Name,
+		AvailabilityZone: res.AvailabilityZone,
 	}
 
 	metadata, err := driverutils.ConvertMapToStruct(res.Metadata)
@@ -421,7 +430,7 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 	time.Sleep(6 * time.Second)
 
 	ctxBg := context.Background()
-	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Second)
+	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Minute)
 
 	fsGetInput := &pb.GetFileShareRequest{Fileshare: fs}
 

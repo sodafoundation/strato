@@ -28,4 +28,22 @@ const (
 
 	// The IPv4 internet protocol mode for GCP.
 	InternetProtocolModeIpv4 = "MODE_IPV4"
+
+	// The Unique name of the instance resource in GCP.
+	InstanceResourceName = "InstanceResourceName"
+
+	// The time that the file system was created in GCP.
+	CreationTimeAtBackend = "CreationTimeAtBackend"
+
+	// Server-specified ETag in GCP.
+	Etag = "Etag"
+
+	// Networks: VPC networks to which the instance is connected, in GCP.
+	Networks = "Networks"
+
+	// FileStore Instance State, in GCP.
+	State = "State"
+
+	// FileStore Instance Status about its State, in GCP.
+	StatusMessage = "StatusMessage"
 )
