@@ -336,22 +336,22 @@ func (s *APIService) EncryptData(request *restful.Request, response *restful.Res
 		return
 	}
 	log.Info("Received request for encrypting data.")
-	encypter := &EnCrypter{}
-	err := request.ReadEntity(&encypter)
+	encrypter := &EnCrypter{}
+	err := request.ReadEntity(&encrypter)
 	if err != nil {
 		log.Errorf("failed to read request body: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	credential, err := keystonecredentials.NewCredentialsClient(encypter.Access).Get()
+	credential, err := keystonecredentials.NewCredentialsClient(encrypter.Access).Get()
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	aes := cryptography.NewSymmetricKeyEncrypter(encypter.Algo)
-	cipherText, err := aes.Encrypter(encypter.PlainText, []byte(credential.SecretAccessKey))
+	aes := cryptography.NewSymmetricKeyEncrypter(encrypter.Algo)
+	cipherText, err := aes.Encrypter(encrypter.PlainText, []byte(credential.SecretAccessKey))
 	if err != nil {
 		log.Error(err)
 		return
