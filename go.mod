@@ -3,7 +3,10 @@ module github.com/opensds/multi-cloud
 go 1.13
 
 require (
+	github.com/Azure/azure-pipeline-go v0.2.1
+	github.com/Azure/azure-sdk-for-go v32.4.0+incompatible
 	github.com/Azure/azure-storage-blob-go v0.8.0
+	github.com/Azure/azure-storage-file-go v0.7.0
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Shopify/sarama v1.19.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.8+incompatible
@@ -38,6 +41,10 @@ require (
 	github.com/xxtea/xxtea-go v0.0.0-20170828040851-35c4b17eecf6
 	go.uber.org/automaxprocs v1.3.0
 	golang.org/x/net v0.0.0-20200506145744-7e3656a0809f
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	google.golang.org/api v0.14.0
+	google.golang.org/protobuf v1.22.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	k8s.io/apimachinery v0.18.5
 )

@@ -76,7 +76,7 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = calculatedMd5
+	result.Etag = hexEncoded
 	result.Written = size
 	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v\n", objectId, result.UpdateTime)
 

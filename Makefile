@@ -18,13 +18,13 @@ DIST_DIR := $(BASE_DIR)/build/dist
 VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
 	     git describe --match=$(git rev-parse --short=8 HEAD) \
              --always --dirty --abbrev=8)
-BUILD_TGT := opensds-multicloud-$(VERSION)-linux-amd64
+BUILD_TGT := soda-multicloud-$(VERSION)-linux-amd64
 
-.PHONY: all build prebuild api backend s3 dataflow docker clean
+.PHONY: all build prebuild api backend s3 dataflow block file docker clean
 
 all: build
 
-build: api backend s3 dataflow datamover
+build: api backend s3 dataflow datamover block file
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -44,34 +44,48 @@ dataflow: prebuild
 datamover: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/multi-cloud/datamover/cmd
 
+file: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/file github.com/opensds/multi-cloud/file/cmd
+
+block: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/block github.com/opensds/multi-cloud/block/cmd
+
 docker: build
 
 	cp $(BUILD_DIR)/api api
 	chmod 755 api/api
-	docker build api -t opensdsio/multi-cloud-api:latest
+	docker build api -t sodafoundation/multi-cloud-api:latest
 
 	cp $(BUILD_DIR)/backend backend
 	chmod 755 backend/backend
-	docker build backend -t opensdsio/multi-cloud-backend:latest
+	docker build backend -t sodafoundation/multi-cloud-backend:latest
+
+	cp $(BUILD_DIR)/file file
+	chmod 755 file/file
+	docker build file -t sodafoundation/multi-cloud-file:latest
+
+	cp $(BUILD_DIR)/block block
+	chmod 755 block/block
+	docker build block -t sodafoundation/multi-cloud-block:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
 	chmod 755 s3/initdb.sh
-	docker build s3 -t opensdsio/multi-cloud-s3:latest
+	docker build s3 -t sodafoundation/multi-cloud-s3:latest
 
 	cp $(BUILD_DIR)/dataflow dataflow
 	chmod 755 dataflow/dataflow
-	docker build dataflow -t opensdsio/multi-cloud-dataflow:latest
+	docker build dataflow -t sodafoundation/multi-cloud-dataflow:latest
 
 	cp $(BUILD_DIR)/datamover datamover
 	chmod 755 datamover/datamover
-	docker build datamover -t opensdsio/multi-cloud-datamover:latest
+	docker build datamover -t sodafoundation/multi-cloud-datamover:latest
 
 goimports:
 	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
 
 clean:
-	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3
+	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3 block/block file/file
 
 version:
 	@echo ${VERSION}
@@ -85,6 +99,8 @@ dist: build
 	cp ../s3 $(BUILD_TGT)/bin/ && \
 	cp ../dataflow $(BUILD_TGT)/bin/ && \
 	cp ../datamover $(BUILD_TGT)/bin/ && \
+	cp ../block $(BUILD_TGT)/bin/ && \
+	cp ../file $(BUILD_TGT)/bin/ && \
 	cp $(BASE_DIR)/LICENSE $(BUILD_TGT) && \
 	zip -r $(DIST_DIR)/$(BUILD_TGT).zip $(BUILD_TGT) && \
 	tar zcvf $(DIST_DIR)/$(BUILD_TGT).tar.gz $(BUILD_TGT)

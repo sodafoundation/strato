@@ -20,7 +20,9 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/web"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
+	"github.com/opensds/multi-cloud/api/pkg/block"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
+	"github.com/opensds/multi-cloud/api/pkg/file"
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
@@ -48,14 +50,13 @@ func main() {
 	if flag == "s3" {
 		s3ws := new(restful.WebService)
 		s3ws.Path("/")
-		s3ws.Doc("OpenSDS Multi-Cloud API")
+		s3ws.Doc("OpenSDS Multi-Cloud S3 API")
 		s3ws.Produces(restful.MIME_XML)
 
 		s3ws.Filter(logging.FilterFactory())
 		s3ws.Filter(context.FilterFactory())
 		s3ws.Filter(signer.FilterFactory())
 		s3.RegisterRouter(s3ws)
-
 		wc.Add(s3ws)
 	} else {
 		ws := new(restful.WebService)
@@ -66,6 +67,8 @@ func main() {
 
 		backend.RegisterRouter(ws)
 		dataflow.RegisterRouter(ws)
+		block.RegisterRouter(ws)
+		file.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())

@@ -33,4 +33,6 @@ func RegisterRouter(ws *restful.WebService) {
 		Doc("Delete backend")
 	ws.Route(ws.GET("/{tenantId}/types").To(handler.ListType)).
 		Doc("Get backend types")
+	ws.Route(ws.POST("/{tenantId}/encrypt").To(handler.EncryptData)).
+		Doc("Encrypt the data")
 }

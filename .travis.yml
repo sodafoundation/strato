@@ -9,14 +9,11 @@ go:
 
 services:
   - docker
-  - docker-compose
 
 env:
   matrix:
-  - TARGET=amd64
-    GO111MODULE=on
-  global:
-  - secure: "IhEskTMEAsBNYTQCpDSlvDxIJK5cu1r2V"
+    - TARGET=amd64
+      GO111MODULE=on
 
 before_install:
   - wget -qO - https://packages.confluent.io/deb/5.3/archive.key | sudo apt-key add -
@@ -28,13 +25,18 @@ before_install:
 matrix:
   fast_finish: true
   allow_failures:
-  - go: tip
+    - go: tip
 
 install:
-  # Build OpenSDS multi-cloud container images
+  # Build SODA multi-cloud container images
   - make docker
   - docker-compose up -d
 
+script:
+  - ./install/CI/coverage
+  - ./install/CI/test
+
 after_success:
-  # Clean OpenSDS multi-cloud built data
+  # Clean SODA multi-cloud built data
+  - bash <(curl -s https://codecov.io/bash)
   - make clean

@@ -78,7 +78,7 @@ func (obsClient ObsClient) doAction(action, method, bucketName, objectKey string
 
 	var resp *http.Response
 	var respError error
-	log.Info("Enter method %s...", action)
+	log.Info("Enter method ...", action)
 	start := GetCurrentTimestamp()
 
 	params, headers, data := input.trans()
@@ -110,13 +110,13 @@ func (obsClient ObsClient) doAction(action, method, bucketName, objectKey string
 	if respError == nil && output != nil {
 		respError = ParseResponseToBaseModel(resp, output, xmlResult)
 		if respError != nil {
-			log.Warn("Parse response to BaseModel with error: %v", respError)
+			log.Warn("Parse response to BaseModel with error: ", respError)
 		}
 	} else {
-		log.Warn("Do http request with error: %v", respError)
+		log.Warn("Do http request with error: ", respError)
 	}
 
-	log.Debug("End method %s, obsclient cost %d ms", action, (GetCurrentTimestamp() - start))
+	log.Debug("End method obsclient cost ms", action, (GetCurrentTimestamp() - start))
 
 	return respError
 }
@@ -159,7 +159,7 @@ func (obsClient ObsClient) doHttpWithSignedUrl(action, method string, signedUrl 
 
 	var resp *http.Response
 
-	log.Info("Do %s with signedUrl %s...", action, signedUrl)
+	log.Info("Do  with signedUrl ...", action, signedUrl)
 
 	req.Header = actualSignedRequestHeaders
 	if value, ok := req.Header[HEADER_HOST_CAMEL]; ok {
@@ -181,14 +181,14 @@ func (obsClient ObsClient) doHttpWithSignedUrl(action, method string, signedUrl 
 	req.Header[HEADER_USER_AGENT_CAMEL] = []string{USER_AGENT}
 	start := GetCurrentTimestamp()
 	resp, err = obsClient.httpClient.Do(req)
-	log.Info("Do http request cost %d ms", (GetCurrentTimestamp() - start))
+	log.Info("Do http request cost ms", (GetCurrentTimestamp() - start))
 
 	var msg interface{}
 	if err != nil {
 		respError = err
 		resp = nil
 	} else {
-		log.Debug("Response headers: %v", resp.Header)
+		log.Debug("Response headers: ", resp.Header)
 		if resp.StatusCode >= 300 {
 			respError = ParseResponseToObsError(resp)
 			msg = resp.Status
@@ -198,16 +198,16 @@ func (obsClient ObsClient) doHttpWithSignedUrl(action, method string, signedUrl 
 				respError = ParseResponseToBaseModel(resp, output, xmlResult)
 			}
 			if respError != nil {
-				log.Warn("Parse response to BaseModel with error: %v", respError)
+				log.Warn("Parse response to BaseModel with error: ", respError)
 			}
 		}
 	}
 
 	if msg != nil {
-		log.Error("Failed to send request with reason:%v", msg)
+		log.Error("Failed to send request with reason:", msg)
 	}
 
-	log.Debug("End method %s, obsclient cost %d ms", action, (GetCurrentTimestamp() - start))
+	log.Debug("End method obsclient cost ms", action, (GetCurrentTimestamp() - start))
 
 	return
 }
@@ -228,7 +228,7 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 	var _data io.Reader
 	if data != nil {
 		if dataStr, ok := data.(string); ok {
-			log.Debug("Do http request with string: %s", dataStr)
+			log.Debug("Do http request with string: ", dataStr)
 			headers["Content-Length"] = []string{IntToString(len(dataStr))}
 			_data = strings.NewReader(dataStr)
 		} else if dataByte, ok := data.([]byte); ok {
@@ -266,11 +266,11 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 		if err != nil {
 			return nil, err
 		}
-		log.Debug("Do request with url [%s] and method [%s]", requestUrl, method)
+		log.Debug("Do request with url and method ", requestUrl, method)
 
 		auth := headers[HEADER_AUTH_CAMEL]
 		delete(headers, HEADER_AUTH_CAMEL)
-		log.Debug("Request headers: %v", headers)
+		log.Debug("Request headers: ", headers)
 		headers[HEADER_AUTH_CAMEL] = auth
 
 		for key, value := range headers {
@@ -289,7 +289,7 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 
 		start := GetCurrentTimestamp()
 		resp, err = obsClient.httpClient.Do(req)
-		log.Info("Do http request cost %d ms", (GetCurrentTimestamp() - start))
+		log.Info("Do http request cost ms", (GetCurrentTimestamp() - start))
 
 		var msg interface{}
 		if err != nil {
@@ -297,7 +297,7 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 			respError = err
 			resp = nil
 		} else {
-			log.Debug("Response headers: %v", resp.Header)
+			log.Debug("Response headers: ", resp.Header)
 			if resp.StatusCode < 300 {
 				break
 			} else if !repeatable || (resp.StatusCode >= 400 && resp.StatusCode < 500) || resp.StatusCode == 304 {
@@ -307,7 +307,7 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 			} else if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 				if location := resp.Header.Get(HEADER_LOCATION_CAMEL); location != "" {
 					redirectUrl = location
-					log.Warn("Redirect request to %s", redirectUrl)
+					log.Warn("Redirect request to: ", redirectUrl)
 					msg = resp.Status
 					maxRetryCount++
 				} else {
@@ -327,7 +327,7 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 			if _, ok := headers[HEADER_AUTH_CAMEL]; ok {
 				delete(headers, HEADER_AUTH_CAMEL)
 			}
-			log.Warn("Failed to send request with reason:%v, will try again", msg)
+			log.Warn("Failed to send request with reason: , will try again", msg)
 			if r, ok := _data.(*strings.Reader); ok {
 				r.Seek(0, 0)
 			} else if r, ok := _data.(*bytes.Reader); ok {
@@ -349,7 +349,7 @@ func (obsClient ObsClient) doHttp(method, bucketName, objectKey string, params m
 			}
 			time.Sleep(time.Duration(float64(i+2) * rand.Float64() * float64(time.Second)))
 		} else {
-			log.Error("Failed to send request with reason:%v", msg)
+			log.Error("Failed to send request with reason: ", msg)
 			if resp != nil {
 				respError = ParseResponseToObsError(resp)
 				resp = nil

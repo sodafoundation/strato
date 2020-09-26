@@ -20,18 +20,16 @@
 package signature
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	. "github.com/opensds/multi-cloud/s3/error"
 )
+
+const XAMZContentSha256 = "X-Amz-Content-Sha256"
 
 // Verify if request has AWS Signature
 // for v2, the Authorization header starts with "AWS ",
@@ -127,29 +125,12 @@ func sumMD5(data []byte) []byte {
 
 // A helper function to verify if request has valid AWS Signature
 func IsReqAuthenticated(r *http.Request) (credential credentials.Value, e error) {
-	payload, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return credential, ErrInternalError
-	}
-	// Verify Content-Md5, if payload is set.
-	if r.Header.Get("Content-Md5") != "" {
-		// check if it is valid
-		_, err := base64.StdEncoding.DecodeString(r.Header.Get("Content-Md5"))
-		if err != nil {
-			return credential, ErrInvalidDigest
-		}
-		if r.Header.Get("Content-Md5") != base64.StdEncoding.EncodeToString(sumMD5(payload)) {
-			return credential, ErrBadDigest
-		}
-	}
-	// Populate back the payload.
-	r.Body = ioutil.NopCloser(bytes.NewReader(payload))
 	validateRegion := false // TODO: Validate region.
 	switch GetRequestAuthType(r) {
 	case AuthTypePresignedV4:
 		return DoesPresignedSignatureMatchV4(r, validateRegion)
 	case AuthTypeSignedV4:
-		return DoesSignatureMatchV4(hex.EncodeToString(sum256(payload)), r, validateRegion)
+		return DoesSignatureMatchV4(r.Header.Get(XAMZContentSha256), r, validateRegion)
 	case AuthTypePresignedV2:
 		return DoesPresignedSignatureMatchV2(r)
 	case AuthTypeSignedV2:

@@ -1,0 +1,131 @@
+// Copyright 2020 The SODA Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+option go_package = ".;block";
+
+import "google/protobuf/struct.proto";
+
+service Block {
+    rpc ListVolume(ListVolumeRequest) returns (ListVolumeResponse) {}
+    rpc GetVolume(GetVolumeRequest) returns (GetVolumeResponse) {}
+    rpc CreateVolume(CreateVolumeRequest) returns (CreateVolumeResponse) {}
+    rpc UpdateVolume(UpdateVolumeRequest) returns (UpdateVolumeResponse) {}
+    rpc DeleteVolume(DeleteVolumeRequest) returns (DeleteVolumeResponse) {}
+}
+
+message Volume {
+    //The uuid of the volume.
+    string id = 1;
+    // The createdAt representing the server time when the volume was created.
+    string createdAt = 2;
+    // The updatedAt representing the server time when the volume was updated.
+    string updatedAt = 3;
+    // The name of the volume.
+    string name = 4;
+    // The description of the volume.
+    string description = 5;
+    // The uuid of the project that the volume belongs to.
+    string tenantId = 6;
+    // The uuid of the user that the volume belongs to.
+    string userId = 7;
+    // The uuid of the backend that the volume belongs to.
+    string backendId = 8;
+    // The uuid of the backend that the volume belongs to.
+    string backend = 9;
+    // The size of the volume requested by the user.
+    int64  size = 10;
+    // The type of the volume.
+    string type = 11;
+    // The location that volume belongs to.
+    string region = 12;
+    // The locality that volume belongs to.
+    string availabilityZone = 13;
+    // The status of the volume.
+    string status = 14;
+    // The iops of the volume.
+    int64 iops = 15;
+    // The uuid of the snapshot which the volume is created
+    string snapshotId = 16;
+    // Any tags assigned to the volume.
+    repeated Tag tags = 17;
+    // Indicates whether Multi-Attach is enabled.
+    bool multiAttachEnabled = 18;
+    // Indicates whether the volume is encrypted.
+    bool encrypted = 19;
+    // EncryptionSettings that was used to protect the volume encryption.
+    map<string, string> encryptionSettings = 20;
+    // Metadata should be kept until the semantics between volume and backend storage resource.
+    google.protobuf.Struct metadata = 21;
+}
+
+message Tag {
+    // The key of the tag.
+    string key = 1;
+    // The value of the tag.
+    string value = 2;
+}
+
+message ListVolumeRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+    repeated string sortKeys = 3;
+    repeated string sortDirs = 4;
+    map<string, string> Filter = 5;
+}
+
+message ListVolumeResponse {
+    repeated Volume volumes = 1;
+    int32 next = 2;
+}
+
+message GetVolumeRequest {
+    string id = 1;
+    Volume volume = 2;
+}
+
+message GetVolumeResponse {
+    Volume volume = 1;
+}
+
+message CreateVolumeRequest {
+    Volume volume = 1;
+}
+
+message CreateVolumeResponse {
+    Volume volume = 1;
+}
+
+message DeleteVolumeRequest {
+    string id = 1;
+    Volume volume = 2;
+}
+
+message UpdateVolumeRequest {
+    string id = 1;
+    Volume volume = 2;
+}
+
+message UpdateVolumeResponse {
+    Volume volume = 1;
+}
+
+message DeleteVolumeResponse {
+}
+
+message BaseRequest {
+    string id = 1;
+}
+
