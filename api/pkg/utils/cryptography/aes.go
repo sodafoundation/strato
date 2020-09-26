@@ -30,7 +30,7 @@ func NewAES() *AES {
 }
 
 func (*AES) Encrypter(password string, key []byte) (string, error) {
-	if len(key) != 16 || len(key) != 24 || len(key) != 32{
+	if len(key) != 16 && len(key) != 24 && len(key) != 32{
 		return "", errors.New("length of the key must be either 16, 24, or 32")
 	}
 
