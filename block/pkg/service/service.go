@@ -60,7 +60,7 @@ func (b *blockService) ListVolume(ctx context.Context, in *pb.ListVolumeRequest,
 
 	res, err := db.DbAdapter.ListVolume(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
-		log.Errorf("Failed to List Volumes: \n", err)
+		log.Errorf("Failed to List Volumes, error: %s\n", err)
 		return err
 	}
 
@@ -89,7 +89,7 @@ func (b *blockService) ListVolume(ctx context.Context, in *pb.ListVolumeRequest,
 		}
 
 		if utils.UpdateVolumeStruct(vol, volume) != nil {
-			log.Errorf("Failed to update volume struct: %v\n", vol, err)
+			log.Errorf("Failed to update volume struct: %v , error: %s\n", vol, err)
 			return err
 		}
 
@@ -108,7 +108,7 @@ func (b *blockService) GetVolume(ctx context.Context, in *pb.GetVolumeRequest, o
 
 	vol, err := db.DbAdapter.GetVolume(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to get volume: \n", err)
+		log.Errorf("Failed to get volume: , error: %s\n", err)
 		return err
 	}
 
@@ -135,7 +135,7 @@ func (b *blockService) GetVolume(ctx context.Context, in *pb.GetVolumeRequest, o
 	}
 
 	if utils.UpdateVolumeStruct(vol, volume) != nil {
-		log.Errorf("Failed to update volume struct: %+v\n", vol, err)
+		log.Errorf("Failed to update volume struct: %+v , error: %s\n", vol, err)
 		return err
 	}
 	log.Debugf("Get Volume response, volume: %+v\n", volume)
@@ -163,7 +163,7 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 
 	vol, err := sd.CreateVolume(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in creating volume at backend ", err)
+		log.Errorf("Received error in creating volume at backend , error: %s ", err)
 		vol.Volume.Status = utils.VolumeStateError
 	} else {
 		vol.Volume.Status = utils.VolumeStateCreating
@@ -190,7 +190,7 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 	}
 
 	if utils.UpdateVolumeModel(vol.Volume, volume) != nil {
-		log.Errorf("Failed to update volume model: %+v\n", volume, err)
+		log.Errorf("Failed to update volume model: %+v , error: %s\n", volume, err)
 		return err
 	}
 
@@ -248,7 +248,7 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 
 	res, err := db.DbAdapter.GetVolume(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to get volume: [%v] from db\n", res, err)
+		log.Errorf("Failed to get volume: [%v] from db , error: %s\n", res, err)
 		return err
 	}
 
@@ -268,13 +268,13 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 	if backend.Backend.Type == constants.BackendTypeAwsBlock {
 		metaMap, err := utils.ConvertMetadataStructToMap(in.Volume.Metadata)
 		if err != nil {
-			log.Errorf("Failed to convert metaStruct: [%+v] to metaMap", in.Volume.Metadata, err)
+			log.Errorf("Failed to convert metaStruct: [%+v] to metaMap , error: %s", in.Volume.Metadata, err)
 			return err
 		}
 		metaMap[aws.VolumeId] = res.Metadata[aws.VolumeId]
 		metaStruct, err := driverutils.ConvertMapToStruct(metaMap)
 		if err != nil {
-			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct\n", metaMap, err)
+			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct, error: %s\n", metaMap, err)
 			return err
 		}
 		in.Volume.Metadata = metaStruct
@@ -282,7 +282,7 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 
 	vol, err := sd.UpdateVolume(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in updating volumes at backend ", err)
+		log.Errorf("Received error in updating volumes at backend, error: %s ", err)
 		vol.Volume.Status = utils.VolumeStateError
 	} else {
 		vol.Volume.Status = utils.VolumeStateUpdating
@@ -312,14 +312,14 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 	}
 
 	if utils.UpdateVolumeModel(vol.Volume, volume) != nil {
-		log.Errorf("Failed to update volume model: %+v\n", volume, err)
+		log.Errorf("Failed to update volume model: %+v, error: %s\n", volume, err)
 		return err
 	}
 	log.Debugf("Update Volume Model: %+v", volume)
 
 	updateRes, err := db.DbAdapter.UpdateVolume(ctx, volume)
 	if err != nil {
-		log.Errorf("Failed to update volume: %+v", volume, err)
+		log.Errorf("Failed to update volume: %+v, error: %s", volume, err)
 		return err
 	}
 
@@ -345,7 +345,7 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 	}
 
 	if utils.UpdateVolumeStruct(updateRes, out.Volume) != nil {
-		log.Errorf("Failed to update volume struct: %v\n", updateRes, err)
+		log.Errorf("Failed to update volume struct: %v, error: %s\n", updateRes, err)
 		return err
 	}
 	log.Debugf("Update Volume response, volume: %+v\n", out.Volume)
@@ -362,7 +362,7 @@ func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequ
 
 	res, err := db.DbAdapter.GetVolume(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to get volume: [%v] from db\n", res, err)
+		log.Errorf("Failed to get volume: [%v] from db, error: %s\n", res, err)
 		return err
 	}
 
@@ -393,13 +393,13 @@ func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequ
 
 	_, err = sd.DeleteVolume(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in deleting volume at backend ", err)
+		log.Errorf("Received error in deleting volume at backend , error: %s", err)
 		return err
 	}
 
 	err = db.DbAdapter.DeleteVolume(ctx, in.Id)
 	if err != nil {
-		log.Errorf("Failed to delete volume err:\n", err)
+		log.Errorf("Failed to delete volume err:%s\n", err)
 		return err
 	}
 	log.Info("Deleted volume successfully.")
@@ -425,14 +425,14 @@ func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *
 	getVol, err := sd.GetVolume(ctxBg, volGetInput)
 	if err != nil {
 		vol.Status = utils.VolumeStateError
-		log.Errorf("Received error in getting volume at backend ", err)
+		log.Errorf("Received error in getting volume at backend, error: %s ", err)
 		return
 	}
 	log.Debugf("Get Volume response = [%+v] from backend", getVol)
 
 
 	if utils.MergeVolumeData(getVol.Volume, vol) != nil {
-		log.Errorf("Failed to merge volume create data: [%+v] and get data: [%+v] %v\n", vol, err)
+		log.Errorf("Failed to merge volume create data: [%+v] and get data: [%+v]\n", vol, err)
 		return
 	}
 
@@ -458,7 +458,7 @@ func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *
 	}
 
 	if utils.UpdateVolumeModel(vol, volume) != nil {
-		log.Errorf("Failed to update volume model: %+v\n", vol, err)
+		log.Errorf("Failed to update volume model: %+v, error: %s\n", vol, err)
 		return
 	}
 

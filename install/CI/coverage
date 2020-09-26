@@ -31,7 +31,8 @@ split_line "Start unit test"
 # api tests
 go test -v github.com/opensds/multi-cloud/api/pkg/utils/... -cover
 go test -v github.com/opensds/multi-cloud/api/pkg/policy/... -cover
-
+#block test
+go test -v github.com/opensds/multi-cloud/block/pkg/... -cover
 #file and backend tests
 go test -v github.com/opensds/multi-cloud/file/pkg/service/... -cover
 go test -v github.com/opensds/multi-cloud/backend/pkg/service/... -cover

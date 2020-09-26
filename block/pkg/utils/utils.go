@@ -92,7 +92,7 @@ func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}
 			var err error
 			valuesMap[key], err = ParseStructFields(v.StructValue.Fields)
 			if err != nil {
-				log.Errorf("Failed to parse struct Fields = [%+v]", v.StructValue.Fields, err)
+				log.Errorf("Failed to parse struct Fields = [%+v], error: %s", v.StructValue.Fields, err)
 				return nil, err
 			}
 		} else if v, ok := value.GetKind().(*pstruct.Value_ListValue); ok {
@@ -131,7 +131,7 @@ func UpdateVolumeModel(volPb *pb.Volume, volModel *model.Volume) error {
 
 	tags, err := ConvertTags(volPb.Tags)
 	if err != nil {
-		log.Errorf("Failed to get conversions for tags: %v", volPb.Tags, err)
+		log.Errorf("Failed to get conversions for tags: %v, error: %s", volPb.Tags, err)
 		return err
 	}
 	volModel.Tags = tags
@@ -143,7 +143,7 @@ func UpdateVolumeModel(volPb *pb.Volume, volModel *model.Volume) error {
 
 	metaMap, err := ConvertMetadataStructToMap(volPb.Metadata)
 	if err != nil {
-		log.Errorf("Failed to get metaMap: %+v", volPb.Metadata, err)
+		log.Errorf("Failed to get metaMap: %+v, error: %s", volPb.Metadata, err)
 		return err
 	}
 
@@ -176,14 +176,14 @@ func ConvertMetadataStructToMap(metaStruct *pstruct.Struct) (map[string]interfac
 
 	metaMap, err := ParseStructFields(fields)
 	if err != nil {
-		log.Errorf("Failed to get metadata: %+v", fields, err)
+		log.Errorf("Failed to get metadata: %+v, error: %s", fields, err)
 		return metaMap, err
 	}
 
 	if len(listFields) != 0 {
 		meta, err := ParseStructFields(listFields)
 		if err != nil {
-			log.Errorf("Failed to get array for metadata : %+v", listFields, err)
+			log.Errorf("Failed to get array for metadata : %+v, error: %s", listFields, err)
 			return metaMap, err
 		}
 		for k, v := range meta {
@@ -202,13 +202,13 @@ func MergeVolumeData(vol *pb.Volume, volFinal *pb.Volume) error {
 
 	metaMapFinal, err := ConvertMetadataStructToMap(volFinal.Metadata)
 	if err != nil {
-		log.Errorf("Failed to get metaMap: %+v", volFinal.Metadata, err)
+		log.Errorf("Failed to get metaMap: %+v, error: %s", volFinal.Metadata, err)
 		return err
 	}
 
 	metaMap, err := ConvertMetadataStructToMap(vol.Metadata)
 	if err != nil {
-		log.Errorf("Failed to get metaMap: %+v", vol.Metadata, err)
+		log.Errorf("Failed to get metaMap: %+v, error: %s", vol.Metadata, err)
 		return err
 	}
 
