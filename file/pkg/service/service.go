@@ -292,7 +292,10 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 
 	fs, err := sd.UpdatefileShare(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in creating file shares at backend %s", err)
+		log.Errorf("Received error in updating file shares at backend %s", err)
+		if fs == nil {
+			return err
+		}
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
 		fs.Fileshare.Status = utils.FileShareStateUpdating
