@@ -162,6 +162,9 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 	fs, err := sd.CreateFileShare(ctx, in)
 	if err != nil {
 		log.Errorf("Received error in creating file shares at backend %s", err)
+		if fs == nil {
+			return err
+		}
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
 		fs.Fileshare.Status = utils.FileShareStateCreating

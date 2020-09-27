@@ -817,8 +817,8 @@ paths:
       responses:
         '200':
           description: >-
-           Get storage classes succesfully. There is a map between storage class name
-           and stroage tier, as default the storage classes are compatible with aws s3.
+            Get storage classes successfully. There is a map between storage class name
+            and storage tier, as default the storage classes are compatible with aws s3.
           content:
             application/xml:
               schema:
