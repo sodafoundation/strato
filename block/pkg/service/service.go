@@ -163,7 +163,10 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 
 	vol, err := sd.CreateVolume(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in creating volume at backend , error: %s ", err)
+		log.Errorf("received error in creating volume at backend , error: %s ", err)
+		if vol == nil {
+			return err
+		}
 		vol.Volume.Status = utils.VolumeStateError
 	} else {
 		vol.Volume.Status = utils.VolumeStateCreating
@@ -282,7 +285,10 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 
 	vol, err := sd.UpdateVolume(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in updating volumes at backend, error: %s ", err)
+		log.Errorf("received error in updating volumes at backend, error: %s ", err)
+		if vol == nil {
+			return err
+		}
 		vol.Volume.Status = utils.VolumeStateError
 	} else {
 		vol.Volume.Status = utils.VolumeStateUpdating
