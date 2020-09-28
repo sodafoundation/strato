@@ -21,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/opensds/multi-cloud/block/proto"
 	"github.com/opensds/multi-cloud/contrib/utils"
-	. "github.com/opensds/multi-cloud/s3/error"
 
 	awsec2 "github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
