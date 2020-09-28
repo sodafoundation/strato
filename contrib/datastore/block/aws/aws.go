@@ -21,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/opensds/multi-cloud/block/proto"
 	"github.com/opensds/multi-cloud/contrib/utils"
-	. "github.com/opensds/multi-cloud/s3/error"
 
 	awsec2 "github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -120,7 +119,7 @@ func (ad *AwsAdapter) DescribeVolume(input *awsec2.DescribeVolumesInput) (*awsec
 	result, err := svc.DescribeVolumes(input)
 	if err != nil {
 		log.Errorf("Error in retrieving volume list, err:%v", err)
-		return nil, ErrGetFromBackendFailed
+		return nil, err
 	}
 
 	log.Debugf("Describe AWS Volume response = %+v", result)
@@ -180,7 +179,7 @@ func (ad *AwsAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 		} else {
 			log.Errorf(err.Error())
 		}
-		return nil, ErrGetFromBackendFailed
+		return nil, err
 	}
 
 	log.Debugf("Create Volume response = %+v", result)
@@ -324,7 +323,7 @@ func (ad *AwsAdapter) UpdateVolume(ctx context.Context, in *block.UpdateVolumeRe
 			} else {
 				log.Errorf(err.Error())
 			}
-			return nil, ErrGetFromBackendFailed
+			return nil, err
 		}
 		log.Debugf("Update Volume response = %+v", result)
 
@@ -352,7 +351,7 @@ func (ad *AwsAdapter) DeleteVolume(ctx context.Context, volume *block.DeleteVolu
 	result, err := svc.DeleteVolume(input)
 	if err != nil {
 		log.Errorf("Error in deleting volume: %+v", input, err)
-		return nil, ErrGetFromBackendFailed
+		return nil, err
 	}
 
 	log.Debugf("Delete Volume response = %+v", result)
