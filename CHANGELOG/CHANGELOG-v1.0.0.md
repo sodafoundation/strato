@@ -1,4 +1,4 @@
-# Changelog
+# Changelog since Faroe(v1.0.0) release
 
 ## [v1.1.0](https://github.com/sodafoundation/multi-cloud/tree/v1.1.0) (2020-09-29)
 
