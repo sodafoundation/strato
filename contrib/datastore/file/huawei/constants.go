@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datastore
+package huawei
 
-import (
-	_ "github.com/opensds/multi-cloud/contrib/datastore/block/aws"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/aws"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/azure"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/gcp"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/huawei"
+const (
+	HwSFSType = "HwSFSType"
+	HwSFS     = "SFS"
 )

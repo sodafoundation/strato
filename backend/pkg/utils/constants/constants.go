@@ -20,6 +20,7 @@ const (
 	BackendTypeAwsBlock  = "aws-block"
 	BackendTypeIBMCos    = "ibm-cos"
 	BackendTypeObs       = "hw-obs"
+	BackendTypeHwSFS     = "hw-file"
 	BackendTypeAzure     = "azure-blob"
 	BackendTypeAzureFile = "azure-file"
 	BackendTypeCeph      = "ceph-s3"
