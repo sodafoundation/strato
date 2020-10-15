@@ -25,6 +25,7 @@ require (
 	github.com/golang/protobuf v1.4.1
 	github.com/gophercloud/gophercloud v0.10.0
 	github.com/hashicorp/vault/api v1.0.5-0.20190814205542-3b036e58e950
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.0.16-beta
 	github.com/journeymidnight/radoshttpd v0.0.0-20190617133011-609666b51136
 	github.com/journeymidnight/yig v2.0.0+incompatible
 	github.com/micro/go-log v0.1.0

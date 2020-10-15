@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/aws"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
 	"time"
 
 	"github.com/globalsign/mgo/bson"
@@ -267,14 +267,18 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 		return err
 	}
 
-	in.Volume.Name = res.Name
-	if backend.Backend.Type == constants.BackendTypeAwsBlock {
+	updatedName := res.Name
+	if in.Volume.Name != "" {
+		updatedName = in.Volume.Name
+	}
+	if backend.Backend.Type == constants.BackendTypeAwsBlock ||
+		backend.Backend.Type == constants.BackendTypeHpcBlock {
 		metaMap, err := utils.ConvertMetadataStructToMap(in.Volume.Metadata)
 		if err != nil {
 			log.Errorf("Failed to convert metaStruct: [%+v] to metaMap , error: %s", in.Volume.Metadata, err)
 			return err
 		}
-		metaMap[aws.VolumeId] = res.Metadata[aws.VolumeId]
+		metaMap[common.VolumeId] = res.Metadata[common.VolumeId]
 		metaStruct, err := driverutils.ConvertMapToStruct(metaMap)
 		if err != nil {
 			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct, error: %s\n", metaMap, err)
@@ -296,7 +300,7 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 
 	volume := &model.Volume{
 		Id:                 res.Id,
-		Name:               res.Name,
+		Name:               updatedName,
 		Description:        in.Volume.Description,
 		TenantId:           res.TenantId,
 		UserId:             res.UserId,
@@ -424,9 +428,9 @@ func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *
 	time.Sleep(6 * time.Second)
 
 	ctxBg := context.Background()
-	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Second)
+	ctxBg, _ = context.WithTimeout(ctxBg, 10*time.Second)
 
-	volGetInput := &pb.GetVolumeRequest{Volume:vol}
+	volGetInput := &pb.GetVolumeRequest{Volume: vol}
 
 	getVol, err := sd.GetVolume(ctxBg, volGetInput)
 	if err != nil {
@@ -435,7 +439,6 @@ func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *
 		return
 	}
 	log.Debugf("Get Volume response = [%+v] from backend", getVol)
-
 
 	if utils.MergeVolumeData(getVol.Volume, vol) != nil {
 		log.Errorf("Failed to merge volume create data: [%+v] and get data: [%+v]\n", vol, err)
