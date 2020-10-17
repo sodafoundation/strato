@@ -20,6 +20,7 @@ import (
 	"github.com/opensds/multi-cloud/block/pkg/db"
 	"github.com/opensds/multi-cloud/block/pkg/utils"
 	pb "github.com/opensds/multi-cloud/block/proto"
+	_ "github.com/opensds/multi-cloud/contrib/datastore/block/aws"
 	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
 	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	bkpb "github.com/opensds/multi-cloud/testutils/backend/proto"
@@ -29,27 +30,25 @@ import (
 	"time"
 )
 
-
 func TestGetVolume(t *testing.T) {
 	var vol = pb.Volume{
-		Id:                 "sample-Id",
-		CreatedAt:          "sample-CreatedAt",
-		UpdatedAt:          "sample-UpdatedAt",
-		Name:               "sample-Name",
-		Description:        "sample-Description",
-		TenantId:           "sample-TenantId",
-		UserId:             "sample-UserId",
-		BackendId:          "sample-BackendId",
-		Backend:            "sample-Backend",
-		Size:               0,
-		Type:               "sample-Type",
-		Region:             "sample-Region",
-		AvailabilityZone:   "sample-AvailabilityZone",
-		Status:             "sample-Status",
-		Iops:               0,
-		SnapshotId:         "sample-snapshotID",
-		Tags:               nil,
-
+		Id:               "sample-Id",
+		CreatedAt:        "sample-CreatedAt",
+		UpdatedAt:        "sample-UpdatedAt",
+		Name:             "sample-Name",
+		Description:      "sample-Description",
+		TenantId:         "sample-TenantId",
+		UserId:           "sample-UserId",
+		BackendId:        "sample-BackendId",
+		Backend:          "sample-Backend",
+		Size:             0,
+		Type:             "sample-Type",
+		Region:           "sample-Region",
+		AvailabilityZone: "sample-AvailabilityZone",
+		Status:           "sample-Status",
+		Iops:             0,
+		SnapshotId:       "sample-snapshotID",
+		Tags:             nil,
 	}
 
 	var volReq = &pb.GetVolumeRequest{
@@ -79,15 +78,14 @@ func TestGetVolume(t *testing.T) {
 
 }
 
-
-func TestListVolume(t *testing.T){
+func TestListVolume(t *testing.T) {
 
 	var volReq = &pb.ListVolumeRequest{
 		Limit:    1,
 		Offset:   10,
 		SortKeys: []string{"k1", "k2"},
 		SortDirs: []string{"dir1", "dir2"},
-		Filter:   map[string]string{"k1":"val1", "k2":"val2"},
+		Filter:   map[string]string{"k1": "val1", "k2": "val2"},
 	}
 
 	var volResp = &pb.ListVolumeResponse{
@@ -102,9 +100,9 @@ func TestListVolume(t *testing.T){
 	ctx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
 
-	var filter = map[string]string{"k1":"val1", "k2":"val2"}
+	var filter = map[string]string{"k1": "val1", "k2": "val2"}
 	mockRepoClient := new(mockrepo.DBAdapter)
-	mockRepoClient.On("ListVolume", ctx, 1, 10, filter ).Return(dbVols, nil)
+	mockRepoClient.On("ListVolume", ctx, 1, 10, filter).Return(dbVols, nil)
 	db.DbAdapter = mockRepoClient
 
 	testService := NewBlockService()
@@ -114,26 +112,25 @@ func TestListVolume(t *testing.T){
 
 }
 
-
 func TestDeleteVolume(t *testing.T) {
 	var vol = pb.Volume{
-		Id:                 "sample-Id",
-		CreatedAt:          "sample-CreatedAt",
-		UpdatedAt:          "sample-UpdatedAt",
-		Name:               "sample-Name",
-		Description:        "sample-Description",
-		TenantId:           "sample-TenantId",
-		UserId:             "sample-UserId",
-		BackendId:          "sample-BackendId",
-		Backend:            "sample-Backend",
-		Size:               0,
-		Type:               "aws-block",
-		Region:             "sample-Region",
-		AvailabilityZone:   "sample-AvailabilityZone",
-		Status:             "sample-Status",
-		Iops:               0,
-		SnapshotId:         "sample-snapshotID",
-		Tags:               nil,
+		Id:               "sample-Id",
+		CreatedAt:        "sample-CreatedAt",
+		UpdatedAt:        "sample-UpdatedAt",
+		Name:             "sample-Name",
+		Description:      "sample-Description",
+		TenantId:         "sample-TenantId",
+		UserId:           "sample-UserId",
+		BackendId:        "sample-BackendId",
+		Backend:          "sample-Backend",
+		Size:             0,
+		Type:             "aws-block",
+		Region:           "sample-Region",
+		AvailabilityZone: "sample-AvailabilityZone",
+		Status:           "sample-Status",
+		Iops:             0,
+		SnapshotId:       "sample-snapshotID",
+		Tags:             nil,
 	}
 
 	var volReq = &pb.DeleteVolumeRequest{
@@ -141,7 +138,7 @@ func TestDeleteVolume(t *testing.T) {
 		Volume: &vol,
 	}
 
-	var volResp = &pb.DeleteVolumeResponse{	}
+	var volResp = &pb.DeleteVolumeResponse{}
 	var dbVol = &collection.SampleVolumes[0]
 
 	ctx := context.Background()
@@ -152,16 +149,16 @@ func TestDeleteVolume(t *testing.T) {
 	testService := NewBlockService()
 
 	bkendDetail := backend.BackendDetail{
-		Id:                   "sampleVolume-Id",
-		TenantId:             "sampleVolume-TenantId",
-		UserId:               "sampleVolume-UserId",
-		Name:                 "sampleVolume-Name",
-		Type:                 "aws-block",
-		Region:               "sampleVolume-Region",
-		Endpoint:             "sampleVolume-Endpoint",
-		BucketName:           "sampleVolume-BucketName",
-		Access:               "sampleVolume-Access",
-		Security:             "sampleVolume-Security",
+		Id:         "sampleVolume-Id",
+		TenantId:   "sampleVolume-TenantId",
+		UserId:     "sampleVolume-UserId",
+		Name:       "sampleVolume-Name",
+		Type:       "aws-block",
+		Region:     "sampleVolume-Region",
+		Endpoint:   "sampleVolume-Endpoint",
+		BucketName: "sampleVolume-BucketName",
+		Access:     "sampleVolume-Access",
+		Security:   "sampleVolume-Security",
 	}
 
 	bkendReq := &backend.GetBackendRequest{
@@ -175,8 +172,8 @@ func TestDeleteVolume(t *testing.T) {
 	mockBackendClient := new(bkpb.BackendService)
 
 	mockRepoClient := new(mockrepo.DBAdapter)
-	mockRepoClient.On("GetVolume", context.Background(), "id").Return( dbVol,nil)
-	mockBackendClient.On("GetBackend", ctx, bkendReq ).Return(&bkendResp, nil)
+	mockRepoClient.On("GetVolume", context.Background(), "id").Return(dbVol, nil)
+	mockBackendClient.On("GetBackend", ctx, bkendReq).Return(&bkendResp, nil)
 	db.DbAdapter = mockRepoClient
 
 	err := testService.DeleteVolume(context.Background(), volReq, volResp)
@@ -200,23 +197,23 @@ func TestDeleteVolume(t *testing.T) {
 
 func TestUpdateVolume(t *testing.T) {
 	var vol = pb.Volume{
-		Id:                 "sample-Id",
-		CreatedAt:          "sample-CreatedAt",
-		UpdatedAt:          "sample-UpdatedAt",
-		Name:               "sample-Name",
-		Description:        "sample-Description",
-		TenantId:           "sample-TenantId",
-		UserId:             "sample-UserId",
-		BackendId:          "sample-BackendId",
-		Backend:            "sample-Backend",
-		Size:               0,
-		Type:               "aws-block",
-		Region:             "sample-Region",
-		AvailabilityZone:   "sample-AvailabilityZone",
-		Status:             "sample-Status",
-		Iops:               0,
-		SnapshotId:         "sample-snapshotID",
-		Tags:               nil,
+		Id:               "sample-Id",
+		CreatedAt:        "sample-CreatedAt",
+		UpdatedAt:        "sample-UpdatedAt",
+		Name:             "sample-Name",
+		Description:      "sample-Description",
+		TenantId:         "sample-TenantId",
+		UserId:           "sample-UserId",
+		BackendId:        "sample-BackendId",
+		Backend:          "sample-Backend",
+		Size:             0,
+		Type:             "aws-block",
+		Region:           "sample-Region",
+		AvailabilityZone: "sample-AvailabilityZone",
+		Status:           "sample-Status",
+		Iops:             0,
+		SnapshotId:       "sample-snapshotID",
+		Tags:             nil,
 	}
 
 	var volReq = &pb.UpdateVolumeRequest{
@@ -224,7 +221,7 @@ func TestUpdateVolume(t *testing.T) {
 		Volume: &vol,
 	}
 
-	var volResp = &pb.UpdateVolumeResponse{	}
+	var volResp = &pb.UpdateVolumeResponse{}
 	var dbVol = &collection.SampleVolumes[0]
 
 	ctx := context.Background()
@@ -235,16 +232,16 @@ func TestUpdateVolume(t *testing.T) {
 	testService := NewBlockService()
 
 	bkendDetail := backend.BackendDetail{
-		Id:                   "sampleVolume-Id",
-		TenantId:             "sampleVolume-TenantId",
-		UserId:               "sampleVolume-UserId",
-		Name:                 "sampleVolume-Name",
-		Type:                 "aws-block",
-		Region:               "sampleVolume-Region",
-		Endpoint:             "sampleVolume-Endpoint",
-		BucketName:           "sampleVolume-BucketName",
-		Access:               "sampleVolume-Access",
-		Security:             "sampleVolume-Security",
+		Id:         "sampleVolume-Id",
+		TenantId:   "sampleVolume-TenantId",
+		UserId:     "sampleVolume-UserId",
+		Name:       "sampleVolume-Name",
+		Type:       "aws-block",
+		Region:     "sampleVolume-Region",
+		Endpoint:   "sampleVolume-Endpoint",
+		BucketName: "sampleVolume-BucketName",
+		Access:     "sampleVolume-Access",
+		Security:   "sampleVolume-Security",
 	}
 
 	bkendReq := &backend.GetBackendRequest{
@@ -258,8 +255,8 @@ func TestUpdateVolume(t *testing.T) {
 	mockBackendClient := new(bkpb.BackendService)
 
 	mockRepoClient := new(mockrepo.DBAdapter)
-	mockRepoClient.On("GetVolume", context.Background(), "id").Return( dbVol,nil)
-	mockBackendClient.On("GetBackend", ctx, bkendReq ).Return(&bkendResp, nil)
+	mockRepoClient.On("GetVolume", context.Background(), "id").Return(dbVol, nil)
+	mockBackendClient.On("GetBackend", ctx, bkendReq).Return(&bkendResp, nil)
 	db.DbAdapter = mockRepoClient
 
 	err := testService.UpdateVolume(context.Background(), volReq, volResp)
@@ -281,26 +278,25 @@ func TestUpdateVolume(t *testing.T) {
 
 }
 
-
 func TestCreateVolume(t *testing.T) {
 	var vol = pb.Volume{
-		Id:                 "sample-Id",
-		CreatedAt:          "sample-CreatedAt",
-		UpdatedAt:          "sample-UpdatedAt",
-		Name:               "sample-Name",
-		Description:        "sample-Description",
-		TenantId:           "sample-TenantId",
-		UserId:             "sample-UserId",
-		BackendId:          "sample-BackendId",
-		Backend:            "sample-Backend",
-		Size:               0,
-		Type:               "aws-block",
-		Region:             "sample-Region",
-		AvailabilityZone:   "sample-AvailabilityZone",
-		Status:             "sample-Status",
-		Iops:               0,
-		SnapshotId:         "sample-snapshotID",
-		Tags:               nil,
+		Id:               "sample-Id",
+		CreatedAt:        "sample-CreatedAt",
+		UpdatedAt:        "sample-UpdatedAt",
+		Name:             "sample-Name",
+		Description:      "sample-Description",
+		TenantId:         "sample-TenantId",
+		UserId:           "sample-UserId",
+		BackendId:        "sample-BackendId",
+		Backend:          "sample-Backend",
+		Size:             0,
+		Type:             "aws-block",
+		Region:           "sample-Region",
+		AvailabilityZone: "sample-AvailabilityZone",
+		Status:           "sample-Status",
+		Iops:             0,
+		SnapshotId:       "sample-snapshotID",
+		Tags:             nil,
 	}
 
 	var volReq = &pb.CreateVolumeRequest{
@@ -321,16 +317,16 @@ func TestCreateVolume(t *testing.T) {
 	testService := NewBlockService()
 
 	bkendDetail := backend.BackendDetail{
-		Id:                   "sampleVolume-Id",
-		TenantId:             "sampleVolume-TenantId",
-		UserId:               "sampleVolume-UserId",
-		Name:                 "sampleVolume-Name",
-		Type:                 "aws-block",
-		Region:               "sampleVolume-Region",
-		Endpoint:             "sampleVolume-Endpoint",
-		BucketName:           "sampleVolume-BucketName",
-		Access:               "sampleVolume-Access",
-		Security:             "sampleVolume-Security",
+		Id:         "sampleVolume-Id",
+		TenantId:   "sampleVolume-TenantId",
+		UserId:     "sampleVolume-UserId",
+		Name:       "sampleVolume-Name",
+		Type:       "aws-block",
+		Region:     "sampleVolume-Region",
+		Endpoint:   "sampleVolume-Endpoint",
+		BucketName: "sampleVolume-BucketName",
+		Access:     "sampleVolume-Access",
+		Security:   "sampleVolume-Security",
 	}
 
 	bkendReq := &backend.GetBackendRequest{
@@ -344,8 +340,8 @@ func TestCreateVolume(t *testing.T) {
 	mockBackendClient := new(bkpb.BackendService)
 
 	mockRepoClient := new(mockrepo.DBAdapter)
-	mockRepoClient.On("GetVolume", context.Background(), "id").Return( dbVol,nil)
-	mockBackendClient.On("GetBackend", ctx, bkendReq ).Return(&bkendResp, nil)
+	mockRepoClient.On("GetVolume", context.Background(), "id").Return(dbVol, nil)
+	mockBackendClient.On("GetBackend", ctx, bkendReq).Return(&bkendResp, nil)
 	db.DbAdapter = mockRepoClient
 
 	err := testService.CreateVolume(context.Background(), volReq, volResp)

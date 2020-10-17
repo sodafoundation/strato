@@ -244,7 +244,6 @@ func (s *APIService) UpdateVolume(request *restful.Request, response *restful.Re
 	log.Info("Received request for updating volume.")
 
 	volume := &model.Volume{}
-
 	err := request.ReadEntity(&volume)
 	if err != nil {
 		log.Errorf("Failed to read request body err: \n", err)
@@ -282,6 +281,7 @@ func (s *APIService) UpdateVolume(request *restful.Request, response *restful.Re
 		vol.Size = *volume.Size
 	}
 
+	vol.Name = volume.Name
 	if volume.Encrypted != nil && *volume.Encrypted {
 		vol.Encrypted = *volume.Encrypted
 		vol.EncryptionSettings = volume.EncryptionSettings

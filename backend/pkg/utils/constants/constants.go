@@ -29,4 +29,5 @@ const (
 	BackendFusionStorage = "fusionstorage-object"
 	BackendTypeYIGS3     = "yig"
 	BackendTypeAlibaba   = "alibaba-oss"
+	BackendTypeHpcBlock  = "hw-block"
 )
