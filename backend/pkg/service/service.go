@@ -228,6 +228,10 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 			Description: "AWS Block Service",
 		},
 		{
+      Name:        constants.BackendTypeHwSFS,
+			Description: "Huawei File Service",
+    },
+    {
 			Name:        constants.BackendTypeHpcBlock,
 			Description: "HPC Block Service",
 		},

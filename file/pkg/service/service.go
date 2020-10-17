@@ -281,7 +281,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 			return err
 		}
 		in.Fileshare.Metadata = metaStruct
-	} else if backend.Backend.Type == constants.BackendTypeGcsFile {
+	} else if backend.Backend.Type == constants.BackendTypeGcsFile || backend.Backend.Type == constants.BackendTypeHwSFS {
 		metaStruct, err := driverutils.ConvertMapToStruct(res.Metadata)
 		if err != nil {
 			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct %s\n", res.Metadata, err)

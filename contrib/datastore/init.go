@@ -20,4 +20,5 @@ import (
 	_ "github.com/opensds/multi-cloud/contrib/datastore/file/aws"
 	_ "github.com/opensds/multi-cloud/contrib/datastore/file/azure"
 	_ "github.com/opensds/multi-cloud/contrib/datastore/file/gcp"
+	_ "github.com/opensds/multi-cloud/contrib/datastore/file/huawei"
 )

@@ -241,6 +241,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 		BackendId:        fileshare.BackendId,
 		AvailabilityZone: fileshare.AvailabilityZone,
 		Tags:             tags,
+		Protocols:        fileshare.Protocols,
 		Metadata:         metadata,
 	}
 
