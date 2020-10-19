@@ -17,6 +17,7 @@ package file
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
@@ -118,6 +119,7 @@ func (s *APIService) ListFileShare(request *restful.Request, response *restful.R
 	log.Info("Received request for File Share List.")
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	ctx, _ = context.WithTimeout(ctx, 5 * time.Minute)
 
 	backendId := request.QueryParameter(common.REQUEST_PATH_BACKEND_ID)
 
@@ -193,6 +195,7 @@ func (s *APIService) GetFileShare(request *restful.Request, response *restful.Re
 	id := request.PathParameter("id")
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	ctx, _ = context.WithTimeout(ctx, 5 * time.Minute)
 
 	res, err := s.fileClient.GetFileShare(ctx, &file.GetFileShareRequest{Id: id})
 	if err != nil {
@@ -271,6 +274,7 @@ func (s *APIService) CreateFileShare(request *restful.Request, response *restful
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	ctx, _ = context.WithTimeout(ctx, 5 * time.Minute)
 
 	if s.checkBackendExists(ctx, request, response, fs.BackendId) != nil {
 		return
@@ -341,6 +345,7 @@ func (s *APIService) UpdateFileShare(request *restful.Request, response *restful
 	id := request.PathParameter("id")
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	ctx, _ = context.WithTimeout(ctx, 5 * time.Minute)
 
 	actx := request.Attribute(c.KContext).(*c.Context)
 	fs.TenantId = actx.TenantId
@@ -366,6 +371,7 @@ func (s *APIService) DeleteFileShare(request *restful.Request, response *restful
 	log.Infof("Received request for deleting file share: %s\n", id)
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	ctx, _ = context.WithTimeout(ctx, 5 * time.Minute)
 
 	res, err := s.fileClient.DeleteFileShare(ctx, &file.DeleteFileShareRequest{Id: id})
 	if err != nil {
