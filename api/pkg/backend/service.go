@@ -227,6 +227,16 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	response.WriteEntity(res.Backend)
 }
 
+func typeExists(slice []*backend.TypeDetail, inputType string) (int, bool) {
+        for i, item := range slice {
+                if item.Name == inputType {
+                        return i, true
+                }
+        }
+        return -1, false
+}
+
+
 func (s *APIService) UpdateBackend(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "backend:update") {
 		return
