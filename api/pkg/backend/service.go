@@ -18,7 +18,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -192,11 +191,11 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	if !policy.Authorize(request, response, "backend:create") {
 		return
 	}
-	log.Info("Received request for creating backend.")
+	log.Info("Received request for creating backend")
 	backendDetail := &backend.BackendDetail{}
 	err := request.ReadEntity(&backendDetail)
 	if err != nil {
-		log.Errorf("failed to read request body: %v\n", err)
+		log.Errorf("Failed to read request body: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -205,15 +204,33 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	actx := request.Attribute(c.KContext).(*c.Context)
 	backendDetail.TenantId = actx.TenantId
 	backendDetail.UserId = actx.UserId
+
+	storageTypes,_:= s.listStorageType(ctx,request,response)
+
+	_, foundType := typeExists(storageTypes.Types, backendDetail.Type)
+	if !foundType {
+		log.Errorf("Failed to retrieve backend type: %v\n", err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
 	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
 	if err != nil {
-		log.Errorf("failed to create backend: %v\n", err)
+		log.Errorf("Failed to create backend: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Create backend successfully.")
+	log.Info("Created backend successfully.")
 	response.WriteEntity(res.Backend)
+}
+
+func typeExists(slice []*backend.TypeDetail, inputType string) (int, bool) {
+	for i, item := range slice {
+		if item.Name == inputType {
+			return i, true
+		}
+	}
+	return -1, false
 }
 
 func (s *APIService) UpdateBackend(request *restful.Request, response *restful.Response) {
@@ -289,47 +306,13 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	if !policy.Authorize(request, response, "type:list") {
 		return
 	}
-	log.Info("Received request for backend type list.")
-	listTypeRequest := &backend.ListTypeRequest{}
-
-	limit, offset, err := common.GetPaginationParam(request)
-	if err != nil {
-		log.Errorf("get pagination parameters failed: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-	listTypeRequest.Limit = limit
-	listTypeRequest.Offset = offset
-
-	sortKeys, sortDirs, err := common.GetSortParam(request)
-	if err != nil {
-		log.Errorf("get sort parameters failed: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-	listTypeRequest.SortKeys = sortKeys
-	listTypeRequest.SortDirs = sortDirs
-
-	filterOpts := []string{"name"}
-	filter, err := common.GetFilter(request, filterOpts)
-	if err != nil {
-		log.Errorf("get filter failed: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-	listTypeRequest.Filter = filter
-
+	log.Info("Received request for backends type list.")
 	ctx := context.Background()
-	res, err := s.backendClient.ListType(ctx, listTypeRequest)
-	if err != nil {
-		log.Errorf("failed to list types: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-
+	storageTypes,_:=s.listStorageType(ctx,request,response)
 	log.Info("List types successfully.")
-	response.WriteEntity(res)
+	response.WriteEntity(storageTypes)
 }
+
 
 func (s *APIService) EncryptData(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "backend:encrypt") {
@@ -360,3 +343,45 @@ func (s *APIService) EncryptData(request *restful.Request, response *restful.Res
 	log.Info("Encrypt data successfully.")
 	response.WriteEntity(DeCrypter{CipherText: cipherText})
 }
+
+
+func (s *APIService) listStorageType(ctx context.Context,request *restful.Request, response *restful.Response)(* backend.ListTypeResponse,error){
+        listTypeRequest := &backend.ListTypeRequest{}
+
+        limit, offset, err := common.GetPaginationParam(request)
+        if err != nil {
+                log.Errorf("get pagination parameters failed: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return nil,err
+        }
+        listTypeRequest.Limit = limit
+        listTypeRequest.Offset = offset
+
+        sortKeys, sortDirs, err := common.GetSortParam(request)
+        if err != nil {
+                log.Errorf("get sort parameters failed: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return nil,err
+        }
+        listTypeRequest.SortKeys = sortKeys
+        listTypeRequest.SortDirs = sortDirs
+
+        filterOpts := []string{"name"}
+        filter, err := common.GetFilter(request, filterOpts)
+        if err != nil {
+                log.Errorf("get filter failed: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return nil,err
+        }
+        listTypeRequest.Filter = filter
+
+        storageTypes, err := s.backendClient.ListType(ctx,listTypeRequest)
+        if err != nil {
+                log.Errorf("Failed to list types: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return nil,err
+        }
+	return storageTypes,nil
+}
+
+
