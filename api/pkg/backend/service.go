@@ -207,7 +207,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 
 	storageTypes,err:= s.listStorageType(ctx,request,response)
 	if err != nil {
-		log.Errorf("failed to create backend: %v\n", err)
+		log.Errorf("failed to list backend storage type: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -224,14 +224,15 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 		return
 	}
 
-	log.Info("Create backend successfully.")
+	log.Info("Created backend successfully.")
 	response.WriteEntity(res.Backend)
 }
 
 func typeExists(slice []*backend.TypeDetail, inputType string) (bool) {
 	for _, item := range slice {
 		if item.Name == inputType {
-			return  true
+		log.Info("backend type is valid")
+		return  true
 		}
 	}
 	return false
