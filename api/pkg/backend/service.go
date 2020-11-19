@@ -231,7 +231,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 func typeExists(slice []*backend.TypeDetail, inputType string) (bool) {
 	for _, item := range slice {
 		if item.Name == inputType {
-		log.Info("backend type is valid")
+		log.Debug("backend type is valid")
 		return  true
 		}
 	}
