@@ -205,7 +205,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	backendDetail.TenantId = actx.TenantId
 	backendDetail.UserId = actx.UserId
 
-	storageTypes,err:= s.listStorageType(ctx,request,response)
+	storageTypes, err:= s.listStorageType(ctx,request,response)
 	if err != nil {
 		log.Errorf("failed to list backend storage type: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -313,7 +313,7 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	}
 	log.Info("Received request for backends type list.")
 	ctx := context.Background()
-	storageTypes,err:=s.listStorageType(ctx,request,response)
+	storageTypes, err:=s.listStorageType(ctx,request,response)
 	if err != nil {
 		log.Errorf("failed to list types of backend: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
