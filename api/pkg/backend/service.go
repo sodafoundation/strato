@@ -16,8 +16,6 @@ package backend
 
 import (
 	"errors"
-	"net/http"
-	"strconv"
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -31,6 +29,8 @@ import (
 	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"net/http"
+	"strconv"
 )
 
 const (
@@ -205,7 +205,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	backendDetail.TenantId = actx.TenantId
 	backendDetail.UserId = actx.UserId
 
-	storageTypes, err:= s.listStorageType(ctx,request,response)
+	storageTypes, err := s.listStorageType(ctx, request, response)
 	if err != nil {
 		log.Errorf("failed to list backend storage type: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -228,11 +228,11 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	response.WriteEntity(res.Backend)
 }
 
-func typeExists(slice []*backend.TypeDetail, inputType string) (bool) {
+func typeExists(slice []*backend.TypeDetail, inputType string) bool {
 	for _, item := range slice {
 		if item.Name == inputType {
-		log.Debug("backend type is valid")
-		return  true
+			log.Debug("backend type is valid")
+			return true
 		}
 	}
 	return false
@@ -313,7 +313,7 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	}
 	log.Info("Received request for backends type list.")
 	ctx := context.Background()
-	storageTypes, err:=s.listStorageType(ctx,request,response)
+	storageTypes, err := s.listStorageType(ctx, request, response)
 	if err != nil {
 		log.Errorf("failed to list types of backend: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -322,7 +322,6 @@ func (s *APIService) ListType(request *restful.Request, response *restful.Respon
 	log.Info("List types successfully.")
 	response.WriteEntity(storageTypes)
 }
-
 
 func (s *APIService) EncryptData(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "backend:encrypt") {
@@ -354,38 +353,36 @@ func (s *APIService) EncryptData(request *restful.Request, response *restful.Res
 	response.WriteEntity(DeCrypter{CipherText: cipherText})
 }
 
+func (s *APIService) listStorageType(ctx context.Context, request *restful.Request, response *restful.Response) (*backend.ListTypeResponse, error) {
+	listTypeRequest := &backend.ListTypeRequest{}
 
-func (s *APIService) listStorageType(ctx context.Context,request *restful.Request, response *restful.Response)(* backend.ListTypeResponse,error){
-        listTypeRequest := &backend.ListTypeRequest{}
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Errorf("get pagination parameters failed: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return nil, err
+	}
+	listTypeRequest.Limit = limit
+	listTypeRequest.Offset = offset
 
-        limit, offset, err := common.GetPaginationParam(request)
-        if err != nil {
-                log.Errorf("get pagination parameters failed: %v\n", err)
-                response.WriteError(http.StatusInternalServerError, err)
-                return nil,err
-        }
-        listTypeRequest.Limit = limit
-        listTypeRequest.Offset = offset
+	sortKeys, sortDirs, err := common.GetSortParam(request)
+	if err != nil {
+		log.Errorf("get sort parameters failed: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return nil, err
+	}
+	listTypeRequest.SortKeys = sortKeys
+	listTypeRequest.SortDirs = sortDirs
 
-        sortKeys, sortDirs, err := common.GetSortParam(request)
-        if err != nil {
-                log.Errorf("get sort parameters failed: %v\n", err)
-                response.WriteError(http.StatusInternalServerError, err)
-                return nil,err
-        }
-        listTypeRequest.SortKeys = sortKeys
-        listTypeRequest.SortDirs = sortDirs
+	filterOpts := []string{"name"}
+	filter, err := common.GetFilter(request, filterOpts)
+	if err != nil {
+		log.Errorf("get filter failed: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return nil, err
+	}
+	listTypeRequest.Filter = filter
 
-        filterOpts := []string{"name"}
-        filter, err := common.GetFilter(request, filterOpts)
-        if err != nil {
-                log.Errorf("get filter failed: %v\n", err)
-                response.WriteError(http.StatusInternalServerError, err)
-                return nil,err
-        }
-        listTypeRequest.Filter = filter
-
-        storageTypes, err := s.backendClient.ListType(ctx,listTypeRequest)
-	return storageTypes,err
+	storageTypes, err := s.backendClient.ListType(ctx, listTypeRequest)
+	return storageTypes, err
 }
-
