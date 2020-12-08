@@ -331,6 +331,10 @@ func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListP
 	return nil, ErrNotImplemented
 }
 
+func (ad *AzureAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+	return ErrNotImplemented
+}
+
 func (ad *AzureAdapter) Close() error {
 	// TODO:
 	return nil

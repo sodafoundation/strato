@@ -39,6 +39,15 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
+	storageClass := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	// Save metadata.
+	metadata := extractMetadataFromHeader(request.Request.Header)
+	if storageClass == "" {
+		log.Infof("The storage class is not provided")
+	} else {
+		log.Infof("Storage class to be set for object is [%s]", storageClass)
+		metadata["storageClass"] = storageClass
+	}
 	url := request.Request.URL
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
@@ -69,8 +78,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	// Save metadata.
-	metadata := extractMetadataFromHeader(request.Request.Header)
 	// Get Content-Md5 sent by client and verify if valid
 	if _, ok := request.Request.Header["Content-Md5"]; !ok {
 		metadata["md5Sum"] = ""

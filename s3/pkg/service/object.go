@@ -52,6 +52,58 @@ func (s *s3Service) UpdateObject(ctx context.Context, in *pb.Object, out *pb.Bas
 	return nil
 }
 
+func (s *s3Service) RestoreObject(ctx context.Context, req *pb.RestoreObjectRequest, out *pb.BaseResponse) error {
+	log.Infoln("RestoreObject is called in s3 service.")
+	bucketName := req.Restore.BucketName
+	objectName := req.Restore.ObjectKey
+
+	var err error
+
+	object, err := s.MetaStorage.GetObject(ctx, bucketName, objectName, "", true)
+	if err != nil {
+		log.Errorln("failed to get object info from meta storage. err:", err)
+		return err
+	}
+
+	bucket, err := s.MetaStorage.GetBucket(ctx, bucketName, true)
+	if err != nil {
+		log.Errorln("failed to get bucket from meta storage. err:", err)
+		return err
+	}
+
+	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
+	if err != nil && isAdmin == false {
+		log.Error("get tenant id failed")
+		err = ErrInternalError
+		return nil
+	}
+
+	backendName := bucket.DefaultLocation
+	if object.Location != "" {
+		backendName = object.Location
+	}
+	// incase get backend failed
+	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
+	// if this object has only one part
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("unable to get backend. err:", err)
+		return err
+	}
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage driver. err:", err)
+		return err
+	}
+	reserr := sd.Restore(ctx, req.Restore)
+	if reserr != nil {
+		log.Errorln("failed to restore object from archival storage. err:", err)
+		return reserr
+	}
+
+	return nil
+}
+
 type DataStreamRecv interface {
 	Recv() (*pb.PutDataStream, error)
 }
@@ -225,6 +277,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	bodyMd5 := req.Attrs["md5Sum"]
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, req.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_STORAGE_CLASS, req.Attrs["storageClass"])
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)

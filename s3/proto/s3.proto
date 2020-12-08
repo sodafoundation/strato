@@ -101,6 +101,8 @@ service S3 {
     }
     rpc HeadBucket (BaseRequest) returns (Bucket) {
     }
+    rpc Restore (RestoreObjectRequest) returns (BaseResponse) {
+    }
 }
 
 message ListObjectPartsRequest {
@@ -705,4 +707,14 @@ message ListBucketUploadResult {
 message ListBucketUploadResponse {
     int32 errorCode = 1;
     ListBucketUploadResult result = 2;
+}
+
+message Restore{
+    int64 days          = 1;
+    string bucketName   = 2;
+    string objectKey    = 3;
+}
+
+message RestoreObjectRequest {
+    restore = 1;
 }
