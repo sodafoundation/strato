@@ -352,6 +352,7 @@ func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
 		RestoreRequest: &awss3.RestoreRequest{
 			Days: aws.Int64(input.Days),
 			GlacierJobParameters: &awss3.GlacierJobParameters{
+				// TODO: change to take as param
 				Tier: aws.String("Expedited"),
 			},
 		},
