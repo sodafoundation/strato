@@ -217,6 +217,13 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 		response.WriteError(http.StatusBadRequest, err)
 		return
 	}
+
+	err=backendCheck(ctx,backendDetail)
+	if err != nil {
+                log.Errorf("wrong credentials: %v\n", err)
+                return
+        }
+
 	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
 	if err != nil {
 		log.Errorf("failed to create backend: %v\n", err)
