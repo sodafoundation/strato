@@ -277,7 +277,8 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	bodyMd5 := req.Attrs["md5Sum"]
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_SIZE, req.Size)
 	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_MD5, bodyMd5)
-	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_STORAGE_CLASS, req.Attrs["storageClass"])
+	storClass := req.Attrs["storageClass"]
+	ctx = context.WithValue(ctx, dscommon.CONTEXT_KEY_STORAGE_CLASS, storClass)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
@@ -307,6 +308,14 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	obj.CustomAttributes = req.Attrs
 	obj.Type = meta.ObjectTypeNormal
 	obj.Tier = utils.Tier1 // Currently only support tier1
+	if storClass != "" {
+		var tier int32
+		if GetTierFromName(storClass, backend.Type, &tier) != nil {
+			log.Errorf("error getting tier for storage class [%s]", storClass)
+		} else {
+			obj.Tier = tier
+		}
+	}
 	obj.StorageMeta = res.Meta
 	obj.EncSize = req.Size
 	obj.Location = backendName

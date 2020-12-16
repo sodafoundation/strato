@@ -318,7 +318,7 @@ func (ad *OBSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 }
 
 func (ad *OBSAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
-    return nil
+    return ErrNotImplemented
 }
 
 func (ad *OBSAdapter) Close() error {

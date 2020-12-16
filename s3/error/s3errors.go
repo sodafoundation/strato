@@ -726,7 +726,7 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 	ErrRestoreInProgress: {
 		AwsErrorCode:   "RestoreAlreadyInProgress",
 		Description:    "Restore for the object from archival is in progress",
-		HttpStatusCode: http.StatusInternalServerError,
+		HttpStatusCode: http.StatusConflict,
 	},
 	ErrRestoreObjectFailed: {
 		AwsErrorCode:   "ErrCodeObjectAlreadyInActiveTierError",

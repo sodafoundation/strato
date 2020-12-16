@@ -40,7 +40,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
 	storageClass := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
-	// Save metadata.
+	// Save metadata
 	metadata := extractMetadataFromHeader(request.Request.Header)
 	if storageClass == "" {
 		log.Infof("The storage class is not provided")
@@ -52,7 +52,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
-	log.Infof("received request: PUT object, objectkey=%s, bucketName=%s\n:",
+	log.Infof("Received request: PUT object, objectkey=%s, bucketName=%s:",
 		objectKey, bucketName)
 
 	//var authType = signature.GetRequestAuthType(r)

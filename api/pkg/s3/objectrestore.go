@@ -34,11 +34,12 @@ func (s *APIService) RestoreObject(request *restful.Request, response *restful.R
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
-	log.Infof("received request: restore object, objectkey=%s, bucketName=%s [%v]\n:",
+	log.Debugf("Received request: restore object, objectkey=%s, bucketName=%s [%v]:",
 		objectKey, bucketName, request)
 
 	var err error
 	if !isValidObjectName(objectKey) {
+		log.Errorf("invalid object name")
 		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
 		return
 	}
@@ -49,24 +50,25 @@ func (s *APIService) RestoreObject(request *restful.Request, response *restful.R
 	restoreObjDetail := &model.Restore{}
 	err = request.ReadEntity(&restoreObjDetail)
 	if err != nil {
-		log.Errorf("failed to invoke restore object: %v\n", err)
+		log.Errorf("failed to invoke restore object: %v", err)
 		WriteErrorResponse(response, request, err)
 		return
 	}
 
 	resObj := &s3.Restore{
 		Days:       restoreObjDetail.Days,
+		Tier:       restoreObjDetail.Tier,
 		BucketName: bucketName,
 		ObjectKey:  objectKey,
 	}
 
 	res, restoreErr := s.s3Client.RestoreObject(ctx, &s3.RestoreObjectRequest{Restore: resObj})
 	if err != nil {
-		log.Errorf("failed to restore object %v\n", restoreErr)
+		log.Errorf("failed to restore object %v", restoreErr)
 		WriteErrorResponse(response, request, restoreErr)
 		return
 	}
 
-	log.Info("POST restore object successfully.i[%v]", res)
+	log.Info("POST restore object successfully.[%v]", res)
 	WriteSuccessResponse(response, nil)
 }

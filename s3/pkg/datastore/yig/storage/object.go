@@ -401,5 +401,5 @@ func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {
 }
 
 func (yig *YigStorage) Restore(ctx context.Context, target *pb.Restore) error {
-    return nil
+    return ErrNotImplemented
 }
