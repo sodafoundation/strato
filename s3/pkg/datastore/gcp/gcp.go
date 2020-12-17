@@ -280,6 +280,10 @@ func (ad *GcsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 	return
 }
 
+func (ad *GcsAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+    return ErrNotImplemented
+}
+
 func (ad *GcsAdapter) Close() error {
 	//TODO
 	return nil

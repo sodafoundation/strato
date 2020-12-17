@@ -27,6 +27,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
@@ -66,7 +67,8 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
-	log.Infof("put object[OBS], objectId:%s, bucket:%s, size=%d, userMd5=%s\n", objectId, bucket, size, userMd5)
+	storageClass := dscommon.GetStorClassFromCtx(ctx)
+	log.Infof("put object, objectId:%s, bucket:%s, size=%d, storageClass=%s userMd5=%s", objectId, bucket, size, storageClass, userMd5)
 
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
@@ -78,16 +80,23 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	md5Writer := md5.New()
 	dataReader := io.TeeReader(limitedDataReader, md5Writer)
 
-	if object.Tier == 0 {
-		// default
-		object.Tier = utils.Tier1
-	}
-	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
-	if err != nil {
-		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
-		return result, ErrInternalError
-	}
+	// If the Storage Class is defined from the API request Header, set it else define defaults
+	var storClass string
+	var err error
 
+	if storageClass != "" {
+		storClass = storageClass
+	} else {
+		if object.Tier == 0 {
+			// default
+			object.Tier = utils.Tier1
+		}
+		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
+		if err != nil {
+			log.Infof("translate tier[%d] to aws storage class failed", object.Tier)
+			return result, ErrInternalError
+		}
+	}
 	uploader := s3manager.NewUploader(ad.session)
 	input := &s3manager.UploadInput{
 		Body:         dataReader,
@@ -332,6 +341,40 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 
 	log.Infof("abort multipart upload[AWS S3] successfully, rsp:%v\n", rsp)
 	return nil
+}
+
+func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
+	bucket := ad.backend.BucketName
+	objectId := input.BucketName + "/" + input.ObjectKey
+	resInput := &awss3.RestoreObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(objectId),
+		RestoreRequest: &awss3.RestoreRequest{
+			Days: aws.Int64(input.Days),
+			GlacierJobParameters: &awss3.GlacierJobParameters{
+				Tier: aws.String(input.Tier),
+			},
+		},
+	}
+
+	svc := awss3.New(ad.session)
+	result, err := svc.RestoreObject(resInput)
+	if err != nil {
+		log.Errorf("error while restoring object in AWS bucket")
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case awss3.ErrCodeObjectAlreadyInActiveTierError:
+				return ErrRestoreObjectFailed
+			default:
+				return ErrRestoreInProgress
+			}
+		} else {
+			return ErrRestoreObjectFailed
+		}
+	}
+	log.Infof("Result returned by Restore object [%v]", result)
+	return nil
+
 }
 
 func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {

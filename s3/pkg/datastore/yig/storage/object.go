@@ -399,3 +399,7 @@ func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {
 
 	return objMeta, nil
 }
+
+func (yig *YigStorage) Restore(ctx context.Context, target *pb.Restore) error {
+    return ErrNotImplemented
+}

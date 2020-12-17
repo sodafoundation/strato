@@ -310,6 +310,10 @@ func (ad *CephAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPa
 	return nil, ErrNotImplemented
 }
 
+func (ad *CephAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+	return ErrNotImplemented
+}
+
 func (ad *CephAdapter) Close() error {
 	// TODO
 	return nil

@@ -317,6 +317,10 @@ func (ad *OBSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 	return nil, nil
 }
 
+func (ad *OBSAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+    return ErrNotImplemented
+}
+
 func (ad *OBSAdapter) Close() error {
 	//TODO
 	return nil
