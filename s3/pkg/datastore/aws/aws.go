@@ -68,7 +68,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
 	storageClass := dscommon.GetStorClassFromCtx(ctx)
-	log.Infof("put object[OBS], objectId:%s, bucket:%s, size=%d, storageClass=%s userMd5=%s\n", objectId, bucket, size, storageClass, userMd5)
+	log.Infof("put object, objectId:%s, bucket:%s, size=%d, storageClass=%s userMd5=%s", objectId, bucket, size, storageClass, userMd5)
 
 	// Limit the reader to its provided size if specified.
 	var limitedDataReader io.Reader
@@ -93,7 +93,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		}
 		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
 		if err != nil {
-			log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+			log.Infof("translate tier[%d] to aws storage class failed", object.Tier)
 			return result, ErrInternalError
 		}
 	}
@@ -372,7 +372,7 @@ func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
 			return ErrRestoreObjectFailed
 		}
 	}
-	log.Infof("Result returned by Restore object [%v]\n", result)
+	log.Infof("Result returned by Restore object [%v]", result)
 	return nil
 
 }
