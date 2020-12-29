@@ -218,11 +218,24 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 		return
 	}
 
-	err=backendCheck(ctx,backendDetail)
+	backendDetailtry := &s3.BackendDetailS3{}
+	backendDetailtry.Id = backendDetail.Id
+	backendDetailtry.Name = backendDetail.Name
+	backendDetailtry.Type = backendDetail.Type
+	backendDetailtry.Region = backendDetail.Region
+	backendDetailtry.Endpoint = backendDetail.Endpoint
+	backendDetailtry.BucketName = backendDetail.BucketName
+	backendDetailtry.Access = backendDetail.Access
+	backendDetailtry.Security = backendDetail.Security
+
+	_, err = s.s3Client.BackendCheck(ctx, backendDetailtry)
+	err1 := errors.New("failed to create backend due to invalid credentials")
+
 	if err != nil {
-                log.Errorf("wrong credentials: %v\n", err)
-                return
-        }
+		log.Errorf("failed to create backend due to wrong credentials: %v\n", err)
+		response.WriteError(http.StatusBadRequest, err1)
+		return
+	}
 
 	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
 	if err != nil {

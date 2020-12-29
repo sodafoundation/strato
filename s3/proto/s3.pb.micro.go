@@ -91,6 +91,7 @@ type S3Service interface {
 	GetBucketPolicy(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteBucketPolicy(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	HeadBucket(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*Bucket, error)
+	BackendCheck(ctx context.Context, in *BackendDetailS3, opts ...client.CallOption) (*Null, error)
 }
 
 type s3Service struct {
@@ -686,6 +687,16 @@ func (c *s3Service) HeadBucket(ctx context.Context, in *BaseRequest, opts ...cli
 	return out, nil
 }
 
+func (c *s3Service) BackendCheck(ctx context.Context, in *BackendDetailS3, opts ...client.CallOption) (*Null, error) {
+	req := c.c.NewRequest(c.name, "S3.BackendCheck", in)
+	out := new(Null)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for S3 service
 
 type S3Handler interface {
@@ -738,6 +749,7 @@ type S3Handler interface {
 	GetBucketPolicy(context.Context, *BaseRequest, *BaseResponse) error
 	DeleteBucketPolicy(context.Context, *BaseRequest, *BaseResponse) error
 	HeadBucket(context.Context, *BaseRequest, *Bucket) error
+	BackendCheck(context.Context, *BackendDetailS3, *Null) error
 }
 
 func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOption) error {
@@ -790,6 +802,7 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		GetBucketPolicy(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		DeleteBucketPolicy(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		HeadBucket(ctx context.Context, in *BaseRequest, out *Bucket) error
+		BackendCheck(ctx context.Context, in *BackendDetailS3, out *Null) error
 	}
 	type S3 struct {
 		s3
@@ -1100,4 +1113,8 @@ func (h *s3Handler) DeleteBucketPolicy(ctx context.Context, in *BaseRequest, out
 
 func (h *s3Handler) HeadBucket(ctx context.Context, in *BaseRequest, out *Bucket) error {
 	return h.S3Handler.HeadBucket(ctx, in, out)
+}
+
+func (h *s3Handler) BackendCheck(ctx context.Context, in *BackendDetailS3, out *Null) error {
+	return h.S3Handler.BackendCheck(ctx, in, out)
 }

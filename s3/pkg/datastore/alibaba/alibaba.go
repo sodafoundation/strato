@@ -370,6 +370,10 @@ func (ad *OSSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 
 }
 
+func (ad *OSSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	return nil
+}
+
 func (ad *OSSAdapter) Close() error {
 	//TODO
 	return nil

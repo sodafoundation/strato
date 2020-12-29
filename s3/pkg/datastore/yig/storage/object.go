@@ -399,3 +399,7 @@ func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {
 
 	return objMeta, nil
 }
+
+func (yig *YigStorage) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	return nil
+}

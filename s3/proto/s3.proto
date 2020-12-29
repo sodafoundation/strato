@@ -101,6 +101,9 @@ service S3 {
     }
     rpc HeadBucket (BaseRequest) returns (Bucket) {
     }
+    rpc BackendCheck (BackendDetailS3) returns (Null) {
+    }
+
 }
 
 message ListObjectPartsRequest {
@@ -706,3 +709,18 @@ message ListBucketUploadResponse {
     int32 errorCode = 1;
     ListBucketUploadResult result = 2;
 }
+
+message BackendDetailS3 {
+	string id = 1;
+	string tenantId = 2;
+	string userId = 3;
+	string name = 4;
+	string type = 5;
+	string region = 6;
+	string endpoint = 7;
+	string bucketName = 8;
+	string access = 9;
+	string security = 10;
+}
+
+message Null {}

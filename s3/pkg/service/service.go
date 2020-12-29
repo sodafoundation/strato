@@ -34,6 +34,7 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 )
 
 type Int2String map[int32]string
@@ -520,6 +521,22 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	out.Size = rsp.Size
 
 	return nil
+}
+
+func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3, Null *pb.Null) error {
+	log.Info("backendCheck is called in s3 service.")
+	backendDetailtry := &backend.BackendDetail{}
+	backendDetailtry.Id = backendDetail.Id
+	backendDetailtry.Name = backendDetail.Name
+	backendDetailtry.Type = backendDetail.Type
+	backendDetailtry.Region = backendDetail.Region
+	backendDetailtry.Endpoint = backendDetail.Endpoint
+	backendDetailtry.BucketName = backendDetail.BucketName
+	backendDetailtry.Access = backendDetail.Access
+	backendDetailtry.Security = backendDetail.Security
+	sd, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailtry)
+	err = sd.BackendCheck(ctx, backendDetail)
+	return err
 }
 
 func GetErrCode(err error) (errCode int32) {

@@ -280,6 +280,10 @@ func (ad *GcsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 	return
 }
 
+func (ad *GcsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	return nil
+}
+
 func (ad *GcsAdapter) Close() error {
 	//TODO
 	return nil
