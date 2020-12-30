@@ -382,7 +382,6 @@ func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPar
 }
 
 func (ad *AwsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	log.Debug("Error in creating the session %v", ctx)
 	Region := aws.String(backendDetail.Region)
 	Endpoint := aws.String(backendDetail.Endpoint)
 	Credentials := credentials.NewStaticCredentials(backendDetail.Access, backendDetail.Security, "")

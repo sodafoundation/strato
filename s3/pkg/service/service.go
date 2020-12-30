@@ -542,17 +542,17 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 }
 
 func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3, out *pb.BaseResponse) error {
-	log.Info("backendCheck is called in s3 service.")
-	backendDetailtry := &backend.BackendDetail{}
-	backendDetailtry.Id = backendDetail.Id
-	backendDetailtry.Name = backendDetail.Name
-	backendDetailtry.Type = backendDetail.Type
-	backendDetailtry.Region = backendDetail.Region
-	backendDetailtry.Endpoint = backendDetail.Endpoint
-	backendDetailtry.BucketName = backendDetail.BucketName
-	backendDetailtry.Access = backendDetail.Access
-	backendDetailtry.Security = backendDetail.Security
-	sd, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailtry)
+	log.Info("BackendCheck is called in s3 service.")
+	backendDetailS3 := &backend.BackendDetail{}
+	backendDetailS3.Id = backendDetail.Id
+	backendDetailS3.Name = backendDetail.Name
+	backendDetailS3.Type = backendDetail.Type
+	backendDetailS3.Region = backendDetail.Region
+	backendDetailS3.Endpoint = backendDetail.Endpoint
+	backendDetailS3.BucketName = backendDetail.BucketName
+	backendDetailS3.Access = backendDetail.Access
+	backendDetailS3.Security = backendDetail.Security
+	sd, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailS3)
 	if err != nil {
 		log.Errorf("adapter creation failed, err:%v\n", err)
 		return err
