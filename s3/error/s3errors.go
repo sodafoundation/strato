@@ -159,6 +159,8 @@ const (
 	ErrUnmarshalFailed
 	ErrGetBucketFailed
 	ErrDBError
+	ErrRestoreObjectFailed
+	ErrRestoreInProgress
 )
 
 // error code to APIError structure, these fields carry respective
@@ -719,6 +721,16 @@ var ErrorCodeResponse = map[S3ErrorCode]S3ErrorStruct{
 	ErrGetBucketFailed: {
 		AwsErrorCode:   "GetBucketFailed",
 		Description:    "Bucket is not exist, or get it failed.",
+		HttpStatusCode: http.StatusInternalServerError,
+	},
+	ErrRestoreInProgress: {
+		AwsErrorCode:   "RestoreAlreadyInProgress",
+		Description:    "Restore for the object from archival is in progress",
+		HttpStatusCode: http.StatusConflict,
+	},
+	ErrRestoreObjectFailed: {
+		AwsErrorCode:   "ErrCodeObjectAlreadyInActiveTierError",
+		Description:    "Restore from archival storage failed",
 		HttpStatusCode: http.StatusInternalServerError,
 	},
 	ErrDBError: {

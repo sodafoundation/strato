@@ -101,9 +101,10 @@ service S3 {
     }
     rpc HeadBucket (BaseRequest) returns (Bucket) {
     }
-    rpc BackendCheck (BackendDetailS3) returns (Null) {
+    rpc RestoreObject (RestoreObjectRequest) returns (BaseResponse) {
     }
-
+    rpc BackendCheck (BackendDetailS3) returns (BaseResponse) {
+    }
 }
 
 message ListObjectPartsRequest {
@@ -710,6 +711,16 @@ message ListBucketUploadResponse {
     ListBucketUploadResult result = 2;
 }
 
+message Restore{
+    int64 days          = 1;
+    string tier  = 2;
+    string bucketName   = 3;
+    string objectKey    = 4;
+}
+
+message RestoreObjectRequest {
+    Restore restore = 1;
+}
 message BackendDetailS3 {
 	string id = 1;
 	string tenantId = 2;
@@ -723,4 +734,4 @@ message BackendDetailS3 {
 	string security = 10;
 }
 
-message Null {}
+

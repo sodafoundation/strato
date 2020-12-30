@@ -403,3 +403,7 @@ func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {
 func (yig *YigStorage) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
 	return ErrNotImplemented
 }
+
+func (yig *YigStorage) Restore(ctx context.Context, target *pb.Restore) error {
+    return ErrNotImplemented
+}

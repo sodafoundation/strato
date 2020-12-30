@@ -321,6 +321,10 @@ func (ad *OBSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Backen
 	return ErrNotImplemented
 }
 
+func (ad *OBSAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+    return ErrNotImplemented
+}
+
 func (ad *OBSAdapter) Close() error {
 	//TODO
 	return nil

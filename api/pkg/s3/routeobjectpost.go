@@ -26,6 +26,7 @@ const (
 	TypePostFormData int = iota
 	TypeInitMultipartUpload
 	TypeCompleteMultipartUpload
+	RestoreObject
 )
 
 func (s *APIService) RouteObjectPost(request *restful.Request, response *restful.Response) {
@@ -34,10 +35,12 @@ func (s *APIService) RouteObjectPost(request *restful.Request, response *restful
 		requestType = TypeInitMultipartUpload
 	} else if IsQuery(request, "uploadId") {
 		requestType = TypeCompleteMultipartUpload
+	} else if IsQuery(request, "restore") {
+		requestType = RestoreObject
 	}
 
 	// Post object operation no need content check.
-	if requestType == TypeInitMultipartUpload || requestType == TypeCompleteMultipartUpload {
+	if requestType == TypeInitMultipartUpload || requestType == TypeCompleteMultipartUpload || requestType == RestoreObject {
 		err := signature.PayloadCheck(request, response)
 		if err != nil {
 			WriteErrorResponse(response, request, err)
@@ -50,6 +53,8 @@ func (s *APIService) RouteObjectPost(request *restful.Request, response *restful
 		s.MultiPartUploadInit(request, response)
 	case TypeCompleteMultipartUpload:
 		s.CompleteMultipartUpload(request, response)
+	case RestoreObject:
+		s.RestoreObject(request, response)
 	default:
 		// Supposed to be post object operation, check validation.
 		contentType := request.HeaderParameter(common.REQUEST_HEADER_CONTENT_TYPE)

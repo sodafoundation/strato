@@ -311,6 +311,10 @@ func (ad *CephAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPa
 }
 
 func (ad *CephAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+    return ErrNotImplemented
+}
+
+func (ad *CephAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
 	return ErrNotImplemented
 }
 

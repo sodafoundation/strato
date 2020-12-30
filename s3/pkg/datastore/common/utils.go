@@ -13,6 +13,14 @@ func GetMd5FromCtx(ctx context.Context) (md5val string) {
 	return
 }
 
+func GetStorClassFromCtx(ctx context.Context) (storClass string) {
+	// StorageClass Provided by user for object PUT
+	if val := ctx.Value(CONTEXT_KEY_STORAGE_CLASS); val != nil {
+		return val.(string)
+	}
+	return ""
+}
+
 func TrimQuot(in string) string {
 	s := in
 	l := len(s)

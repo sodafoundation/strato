@@ -284,6 +284,10 @@ func (ad *GcsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Backen
 	return ErrNotImplemented
 }
 
+func (ad *GcsAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+    return ErrNotImplemented
+}
+
 func (ad *GcsAdapter) Close() error {
 	//TODO
 	return nil

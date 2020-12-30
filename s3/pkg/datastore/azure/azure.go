@@ -360,7 +360,10 @@ func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Back
 	}
 	log.Debug("create and delete object is successful\n")
 	return nil
+}
 
+func (ad *AzureAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+	return ErrNotImplemented
 }
 
 func (ad *AzureAdapter) Close() error {

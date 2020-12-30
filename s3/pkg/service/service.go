@@ -91,6 +91,25 @@ func GetNameFromTier(tier int32, backendType string) (string, error) {
 	return v2, nil
 }
 
+// This function returns the OSDS tier fromt the backend Storage Class
+func GetTierFromName(name string, backendType string, tier *int32) error {
+	v, ok := Ext2IntTierMap[backendType]
+	if !ok {
+		log.Errorf("get storage class of failed, no such backend type:%s", backendType)
+		return ErrInternalError
+	}
+
+	v2, ok := (*v)[name]
+	if !ok {
+		log.Errorf("get tier of storage class[%s] failed, backendType=%s", name, backendType)
+		return ErrInternalError
+	}
+
+	*tier = v2
+	log.Infof("Tier of storage class[%s] for backend type[%s] is %d", name, backendType, v2)
+	return nil
+}
+
 func loadAWSDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	t2n := make(Int2String)
 	t2n[Tier1] = AWS_STANDARD
@@ -522,7 +541,7 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	return nil
 }
 
-func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3, Null *pb.Null) error {
+func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3, out *pb.BaseResponse) error {
 	log.Info("backendCheck is called in s3 service.")
 	backendDetailtry := &backend.BackendDetail{}
 	backendDetailtry.Id = backendDetail.Id
