@@ -17,24 +17,23 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	"os"
-	"strconv"
-
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	"github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
+	"os"
+	"strconv"
 )
 
 type Int2String map[int32]string
@@ -486,7 +485,7 @@ func (s *s3Service) UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaReque
 
 func (s *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendTypeByTierRequest, out *pb.GetBackendTypeByTierResponse) error {
 	for k, v := range Int2ExtTierMap {
-		for k1, _ := range *v {
+		for k1 := range *v {
 			if k1 == in.Tier {
 				out.Types = append(out.Types, k)
 			}
@@ -535,8 +534,18 @@ func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendD
 	backendDetailtry.Access = backendDetail.Access
 	backendDetailtry.Security = backendDetail.Security
 	sd, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailtry)
+	if err != nil {
+		log.Errorf("adapter creation failed, err:%v\n", err)
+		return err
+	}
+
 	err = sd.BackendCheck(ctx, backendDetail)
-	return err
+	if err != nil {
+		log.Errorf("failed due to wrong backend details, err:%v\n", err)
+		return err
+	}
+
+	return nil
 }
 
 func GetErrCode(err error) (errCode int32) {
@@ -557,7 +566,7 @@ func GetErrCode(err error) (errCode int32) {
 func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, string, error) {
 	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
-		log.Errorf("get credential faied, err:%v\n", err)
+		log.Errorf("get credential failed, err:%v\n", err)
 		return isAdmin, tenantId, userId, ErrInternalError
 	}
 	if !isAdmin && tenantId != tenantId4Source {

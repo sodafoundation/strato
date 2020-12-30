@@ -371,7 +371,7 @@ func (ad *OSSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 }
 
 func (ad *OSSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (ad *OSSAdapter) Close() error {

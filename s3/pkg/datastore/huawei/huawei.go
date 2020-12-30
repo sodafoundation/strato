@@ -318,7 +318,7 @@ func (ad *OBSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 }
 
 func (ad *OBSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (ad *OBSAdapter) Close() error {

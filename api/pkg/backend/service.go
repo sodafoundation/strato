@@ -229,8 +229,7 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	backendDetailtry.Security = backendDetail.Security
 
 	_, err = s.s3Client.BackendCheck(ctx, backendDetailtry)
-	err1 := errors.New("failed to create backend due to invalid credentials")
-
+	err1 := errors.New("failed to create backend due to invalid credentials\n")
 	if err != nil {
 		log.Errorf("failed to create backend due to wrong credentials: %v\n", err)
 		response.WriteError(http.StatusBadRequest, err1)

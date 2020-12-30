@@ -311,7 +311,7 @@ func (ad *CephAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPa
 }
 
 func (ad *CephAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (ad *CephAdapter) Close() error {

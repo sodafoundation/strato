@@ -281,7 +281,7 @@ func (ad *GcsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 }
 
 func (ad *GcsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (ad *GcsAdapter) Close() error {

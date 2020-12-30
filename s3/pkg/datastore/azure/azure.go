@@ -30,7 +30,6 @@ import (
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -334,67 +333,29 @@ func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListP
 
 func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
 
-	driver.RegisterDriverFactory(backendDetail.Type, &AzureBlobDriverFactory{})
-	backendDetailtry := &backendpb.BackendDetail{}
-	backendDetailtry.Id = backendDetail.Id
-	backendDetailtry.Name = backendDetail.Name
-	backendDetailtry.Type = backendDetail.Type
-	backendDetailtry.Region = backendDetail.Region
-	backendDetailtry.Endpoint = backendDetail.Endpoint
-	backendDetailtry.BucketName = backendDetail.BucketName
-	backendDetailtry.Access = backendDetail.Access
-	backendDetailtry.Security = backendDetail.Security
-
-	adap, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailtry)
-	if err != nil {
-		log.Debug("failed to create storage. err:", err)
-		return err
-	}
-
-	endpoint := backendDetail.Endpoint
-	AccessKeyID := backendDetail.Access
-	AccessKeySecret := backendDetail.Security
-
-	credential, err := azblob.NewSharedKeyCredential(AccessKeyID, AccessKeySecret)
-
-	if err != nil {
-		log.Debug("create credential[Azure Blob] failed, err:%v\n", err)
-		return err
-	}
-
-	//create containerURL
-	p := azblob.NewPipeline(credential, azblob.PipelineOptions{
-		Retry: azblob.RetryOptions{
-			TryTimeout: MaxTimeForSingleHttpRequest,
-		},
-	})
-	URL, _ := url.Parse(endpoint)
-
-	containerURL := azblob.NewContainerURL(*URL, p)
-
-	object := pb.Object{
+	object := &pb.Object{
 		BucketName: backendDetail.BucketName,
 		ObjectKey:  "emptyContainer/",
 	}
-	objectId := object.BucketName + "/" + object.ObjectKey
-	blobURL := containerURL.NewBlockBlobURL(objectId)
+
 	bs := []byte{0}
 	stream := bytes.NewReader(bs)
-	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
-	_, err = azblob.UploadStreamToBlockBlob(ctx, stream, blobURL, options)
+
+	_, err := ad.Put(ctx, stream, object)
+
 	if err != nil {
-		log.Debug("failed to put object[Azure Blob], objectId:%s, err:%v\n", objectId, err)
+		log.Debug("failed to put object[Azure Blob]:", err)
 		return err
 	}
-	//delete bucket
+
 	input := &pb.DeleteObjectInput{
 		Bucket: backendDetail.BucketName,
 		Key:    "EmptyContainer/",
 	}
 
-	err = adap.Delete(ctx, input)
+	err = ad.Delete(ctx, input)
 	if err != nil {
-		log.Debug("failed to delete object[Azure Blob], objectId:%s, err:%v\n", objectId, err)
+		log.Debug("failed to delete object[Azure Blob],\n", err)
 		return err
 	}
 	log.Debug("create and delete object is successful\n")
