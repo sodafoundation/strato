@@ -17,23 +17,23 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	"os"
-	"strconv"
-
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	"github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"strconv"
 )
 
 type Int2String map[int32]string
@@ -504,7 +504,7 @@ func (s *s3Service) UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaReque
 
 func (s *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendTypeByTierRequest, out *pb.GetBackendTypeByTierResponse) error {
 	for k, v := range Int2ExtTierMap {
-		for k1, _ := range *v {
+		for k1 := range *v {
 			if k1 == in.Tier {
 				out.Types = append(out.Types, k)
 			}
@@ -541,6 +541,32 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	return nil
 }
 
+func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3, out *pb.BaseResponse) error {
+	log.Info("BackendCheck is called in s3 service.")
+	backendDetailS3 := &backend.BackendDetail{}
+	backendDetailS3.Id = backendDetail.Id
+	backendDetailS3.Name = backendDetail.Name
+	backendDetailS3.Type = backendDetail.Type
+	backendDetailS3.Region = backendDetail.Region
+	backendDetailS3.Endpoint = backendDetail.Endpoint
+	backendDetailS3.BucketName = backendDetail.BucketName
+	backendDetailS3.Access = backendDetail.Access
+	backendDetailS3.Security = backendDetail.Security
+	sd, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailS3)
+	if err != nil {
+		log.Errorf("adapter creation failed, err:%v\n", err)
+		return err
+	}
+
+	err = sd.BackendCheck(ctx, backendDetail)
+	if err != nil {
+		log.Errorf("failed due to wrong backend details, err:%v\n", err)
+		return err
+	}
+
+	return nil
+}
+
 func GetErrCode(err error) (errCode int32) {
 	if err == nil {
 		errCode = int32(ErrNoErr)
@@ -559,7 +585,7 @@ func GetErrCode(err error) (errCode int32) {
 func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, string, error) {
 	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
-		log.Errorf("get credential faied, err:%v\n", err)
+		log.Errorf("get credential failed, err:%v\n", err)
 		return isAdmin, tenantId, userId, ErrInternalError
 	}
 	if !isAdmin && tenantId != tenantId4Source {

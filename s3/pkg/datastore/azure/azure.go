@@ -331,6 +331,37 @@ func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListP
 	return nil, ErrNotImplemented
 }
 
+func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+
+	object := &pb.Object{
+		BucketName: backendDetail.BucketName,
+		ObjectKey:  "emptyContainer/",
+	}
+
+	bs := []byte{0}
+	stream := bytes.NewReader(bs)
+
+	_, err := ad.Put(ctx, stream, object)
+
+	if err != nil {
+		log.Debug("failed to put object[Azure Blob]:", err)
+		return err
+	}
+
+	input := &pb.DeleteObjectInput{
+		Bucket: backendDetail.BucketName,
+		Key:    "EmptyContainer/",
+	}
+
+	err = ad.Delete(ctx, input)
+	if err != nil {
+		log.Debug("failed to delete object[Azure Blob],\n", err)
+		return err
+	}
+	log.Debug("create and delete object is successful\n")
+	return nil
+}
+
 func (ad *AzureAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
 	return ErrNotImplemented
 }

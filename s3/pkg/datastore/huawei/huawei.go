@@ -317,6 +317,10 @@ func (ad *OBSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 	return nil, nil
 }
 
+func (ad *OBSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	return ErrNotImplemented
+}
+
 func (ad *OBSAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
     return ErrNotImplemented
 }

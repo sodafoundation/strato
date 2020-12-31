@@ -103,6 +103,8 @@ service S3 {
     }
     rpc RestoreObject (RestoreObjectRequest) returns (BaseResponse) {
     }
+    rpc BackendCheck (BackendDetailS3) returns (BaseResponse) {
+    }
 }
 
 message ListObjectPartsRequest {
@@ -719,3 +721,17 @@ message Restore{
 message RestoreObjectRequest {
     Restore restore = 1;
 }
+message BackendDetailS3 {
+	string id = 1;
+	string tenantId = 2;
+	string userId = 3;
+	string name = 4;
+	string type = 5;
+	string region = 6;
+	string endpoint = 7;
+	string bucketName = 8;
+	string access = 9;
+	string security = 10;
+}
+
+

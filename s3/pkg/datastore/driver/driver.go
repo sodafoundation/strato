@@ -25,6 +25,7 @@ type StorageDriver interface {
 		completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error)
 	AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error
 	ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error)
+	BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error
 	Restore(ctx context.Context, restoreObj *pb.Restore) error
 	// Close: cleanup when driver needs to be stopped.
 	Close() error

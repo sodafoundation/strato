@@ -381,6 +381,26 @@ func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPar
 	return nil, errors.New("not implemented yet.")
 }
 
+func (ad *AwsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	Region := aws.String(backendDetail.Region)
+	Endpoint := aws.String(backendDetail.Endpoint)
+	Credentials := credentials.NewStaticCredentials(backendDetail.Access, backendDetail.Security, "")
+	Bucket := aws.String(backendDetail.BucketName)
+	configuration := &aws.Config{
+		Region:      Region,
+		Endpoint:    Endpoint,
+		Credentials: Credentials,
+	}
+
+	svc := awss3.New(session.New(configuration))
+
+	input := &awss3.HeadBucketInput{
+		Bucket: Bucket,
+	}
+	_, err := svc.HeadBucket(input)
+	return err
+}
+
 func (ad *AwsAdapter) Close() error {
 	// TODO:
 	return nil
