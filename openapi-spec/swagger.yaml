@@ -82,6 +82,11 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+  - name: Backup
+    description: Multi-cloud interface for object archival and restore
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
 paths:
   '/v1/{tenantId}/backends':
     parameters:
@@ -768,6 +773,8 @@ paths:
         required: false
         schema:
           type: string
+
+
     put:
       tags:
         - s3
@@ -808,6 +815,111 @@ paths:
           description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
         '404':
           description: Not Found i.e. No Such Key
+
+  '/{bucketName}/{object}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+      - name: object
+        in: path
+        description: the name of object to be archived
+        required: true
+        schema:
+          type: string
+      - name: Range
+        in: query
+        description: >-
+          the Header parameter Range value like "bytes:1-10",used for multipart archival
+          download
+        required: false
+        schema:
+          type: string
+      - name: uploads
+        in: query
+        description: The format is ''/{object}?uploads'',used for init multipartarchive
+        required: false
+        schema:
+          type: string
+      - name: partNumber
+        in: query
+        description: >-
+          the format is
+          '/{object}?partNumber={partNumber}&uploadId={UploadId}',must be used
+          with uploadId parameter, used for upload and archive a part
+        required: false
+        schema:
+          type: string
+      - name: uploadId
+        in: query
+        description: >-
+          the format is '/{object}?uploadId={UploadId}',used for compelete
+          multipart archival and abort multipartarchive
+        required: false
+        schema:
+          type: string
+      - name: X-AMZ-Storage-Class
+        in: header
+        description: For archiving object into AWS, the request header to describe storage class
+        required: false
+        schema:
+          type: string
+      - name: restore
+        in: query
+        description: >-
+          the format is '/{object}?restore', used to restore archived object
+        required: false
+        schema:
+          type: string
+    put:
+      tags:
+        - Backup
+      summary: Archive Object.
+      operationId: objectPut
+      responses:
+        '200':
+          description: Successful Archive Object
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Bucket
+    post:
+      tags:
+        - Backup
+      summary: Restore Object.
+      operationId: objectPost
+      requestBody:
+        desciption: Required inputs for restoring a object.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreObject'
+      responses:
+        '200':
+          description: Successful restoration of Object initiated
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch, RestoreFailed
+        '404':
+          description: Not Found i.e. No Such Bucket
+        '409':
+          description: Restoration of object is already in porgress
+    get:
+      tags:
+        - Backup
+      summary: Download archived and restored Object
+      operationId: objectGet
+      responses:
+        '200':
+          description: Successful Download of Object
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Key
+
   '/storageClasses':
     get:
       tags:
@@ -2203,6 +2315,18 @@ components:
             fields:
               type: object
               $ref: '#/components/schemas/VolumeFields'
+    RestoreObject:
+      type: object
+      description: Restore object request
+      properties:
+        tier:
+          type: string
+          description: the retrieval option when restoring an archived object. This is cloud vendor specific.
+          example: Expedited
+        days:
+          type: int
+          Description: The Days element is required for regular restore. Required for restoring archived object.
+          example: 1
   requestBodies:
     Backend:
       content:
