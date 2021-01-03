@@ -773,6 +773,19 @@ paths:
         required: false
         schema:
           type: string
+      - name: X-AMZ-Storage-Class
+        in: header
+        description: For archiving object, the request header to describe storage class
+        required: false
+        schema:
+          type: string
+      - name: restore
+        in: query
+        description: >-
+          the format is '/{object}?restore', used to restore archived object
+        required: false
+        schema:
+          type: string
 
 
     put:
@@ -816,68 +829,10 @@ paths:
         '404':
           description: Not Found i.e. No Such Key
 
-  '/{bucketName}/{object}':
-    parameters:
-      - name: bucketName
-        in: path
-        description: the name of bucket
-        required: true
-        schema:
-          type: string
-      - name: object
-        in: path
-        description: the name of object to be archived
-        required: true
-        schema:
-          type: string
-      - name: Range
-        in: query
-        description: >-
-          the Header parameter Range value like "bytes:1-10",used for multipart archival
-          download
-        required: false
-        schema:
-          type: string
-      - name: uploads
-        in: query
-        description: The format is ''/{object}?uploads'',used for init multipartarchive
-        required: false
-        schema:
-          type: string
-      - name: partNumber
-        in: query
-        description: >-
-          the format is
-          '/{object}?partNumber={partNumber}&uploadId={UploadId}',must be used
-          with uploadId parameter, used for upload and archive a part
-        required: false
-        schema:
-          type: string
-      - name: uploadId
-        in: query
-        description: >-
-          the format is '/{object}?uploadId={UploadId}',used for compelete
-          multipart archival and abort multipartarchive
-        required: false
-        schema:
-          type: string
-      - name: X-AMZ-Storage-Class
-        in: header
-        description: For archiving object into AWS, the request header to describe storage class
-        required: false
-        schema:
-          type: string
-      - name: restore
-        in: query
-        description: >-
-          the format is '/{object}?restore', used to restore archived object
-        required: false
-        schema:
-          type: string
     put:
       tags:
         - Backup
-      summary: Archive Object.
+      summary: Upload Object into archival storage.
       operationId: objectPut
       responses:
         '200':
@@ -889,7 +844,7 @@ paths:
     post:
       tags:
         - Backup
-      summary: Restore Object.
+      summary: Restore Object from archival storage.
       operationId: objectPost
       requestBody:
         desciption: Required inputs for restoring a object.
