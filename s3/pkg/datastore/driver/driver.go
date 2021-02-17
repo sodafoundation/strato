@@ -12,6 +12,7 @@ import (
 // define the common driver interface for io.
 
 type StorageDriver interface {
+	BucketPut(ctx context.Context, input *pb.Bucket) error
 	Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error)
 	Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error)
 	Delete(ctx context.Context, object *pb.DeleteObjectInput) error

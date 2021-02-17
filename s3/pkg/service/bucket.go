@@ -20,6 +20,7 @@ import (
 
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
@@ -128,6 +129,28 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			return err
 		}
 	}
+
+
+	backendName := "aws-backened"
+
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	sd, err := driver.CreateStorageDriver("aws-s3", backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	err = sd.BucketPut(ctx, in)
+	if err != nil {
+		log.Errorln("failed to put data. err:", err)
+		return err
+	}
+
 	return err
 }
 

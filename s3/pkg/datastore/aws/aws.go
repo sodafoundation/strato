@@ -61,7 +61,48 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
+
+func (ad *AwsAdapter) BucketPut(ctx context.Context, in *pb.Bucket) error {
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+	svc := awss3.New(session.New(configuration))
+
+	input := &awss3.CreateBucketInput{
+		Bucket: aws.String(in.Name),
+		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
+			LocationConstraint: aws.String(ad.backend.Region),
+		},
+	}
+
+	_, err := svc.CreateBucketWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case awss3.ErrCodeBucketAlreadyExists:
+				log.Error(awss3.ErrCodeBucketAlreadyExists, aerr.Error())
+			case awss3.ErrCodeBucketAlreadyOwnedByYou:
+				log.Error(awss3.ErrCodeBucketAlreadyOwnedByYou, aerr.Error())
+			default:
+				log.Error(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Error(err.Error())
+		}
+		return nil
+	}
+	return  nil
+
+}
+
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
+	log.Info("I AM IN PUT ....")
+	log.Info("------------------")
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
 	result := dscommon.PutResult{}
@@ -97,6 +138,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			return result, ErrInternalError
 		}
 	}
+
 	uploader := s3manager.NewUploader(ad.session)
 	input := &s3manager.UploadInput{
 		Body:         dataReader,

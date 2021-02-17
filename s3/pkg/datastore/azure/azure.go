@@ -46,6 +46,10 @@ type AzureAdapter struct {
 	containerURL azblob.ContainerURL
 }
 
+func (ad *AzureAdapter) BucketPut(ctx context.Context, input *pb.Bucket) error {
+	panic("implement me")
+}
+
 /*func Init(backend *backendpb.BackendDetail) *AzureAdapter {
 	endpoint := backend.Endpoint
 	AccessKeyID := backend.Access
