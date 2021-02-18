@@ -16,6 +16,7 @@ type StorageDriver interface {
 	Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error)
 	Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error)
 	Delete(ctx context.Context, object *pb.DeleteObjectInput) error
+	BucketDelete(ctx context.Context, object *pb.Bucket) error
 	// TODO AppendObject
 	Copy(ctx context.Context, stream io.Reader, target *pb.Object) (dscommon.PutResult, error)
 

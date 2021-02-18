@@ -46,6 +46,10 @@ type AzureAdapter struct {
 	containerURL azblob.ContainerURL
 }
 
+func (ad *AzureAdapter) BucketDelete(ctx context.Context, object *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (ad *AzureAdapter) BucketPut(ctx context.Context, input *pb.Bucket) error {
 	panic("implement me")
 }

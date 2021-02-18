@@ -37,6 +37,10 @@ type OBSAdapter struct {
 	client  *obs.ObsClient
 }
 
+func (ad *OBSAdapter) BucketDelete(ctx context.Context, object *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (ad *OBSAdapter) BucketPut(ctx context.Context, input *pb.Bucket) error {
 	panic("implement me")
 }

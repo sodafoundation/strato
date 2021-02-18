@@ -39,6 +39,10 @@ type CephAdapter struct {
 	session *s3client.Client
 }
 
+func (ad *CephAdapter) BucketDelete(ctx context.Context, object *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (ad *CephAdapter) BucketPut(ctx context.Context, input *pb.Bucket) error {
 	panic("implement me")
 }

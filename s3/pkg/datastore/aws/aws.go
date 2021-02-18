@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -63,6 +64,9 @@ func (myc *s3Cred) IsExpired() bool {
 
 
 func (ad *AwsAdapter) BucketPut(ctx context.Context, in *pb.Bucket) error {
+
+	log.Info("The in.......///////:", in)
+
 	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
 	configuration := &aws.Config{
 		Region:      aws.String("us-east-1"),
@@ -76,8 +80,9 @@ func (ad *AwsAdapter) BucketPut(ctx context.Context, in *pb.Bucket) error {
 		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
 			LocationConstraint: aws.String(ad.backend.Region),
 		},
+		ACL: aws.String(in.Acl.CannedAcl),
 	}
-
+    log.Info("The INPUT//////////:", input)
 	_, err := svc.CreateBucketWithContext(ctx, input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -94,7 +99,7 @@ func (ad *AwsAdapter) BucketPut(ctx context.Context, in *pb.Bucket) error {
 			// Message from an error.
 			log.Error(err.Error())
 		}
-		return nil
+		return err
 	}
 	return  nil
 
@@ -206,6 +211,61 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 
 	log.Infof("get object[AWS S3] succeed, objectId:%s, ContentLength:%d\n", objectId, *result.ContentLength)
 	return result.Body, nil
+}
+
+
+func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	log.Info("I am in bucket delete.......")
+	//bucket := ad.backend.BucketName
+	//objectId := input.Bucket + "/" + input.Key
+	//deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &objectId}
+	//
+	//log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
+	//svc := awss3.New(ad.session)
+	//_, err := svc.DeleteObject(&deleteInput)
+	//if err != nil {
+	//	log.Errorf("delete object[AWS S3] failed, objectId:%s, err:%v.\n", objectId, err)
+	//	return ErrDeleteFromBackendFailed
+	//}
+	//
+	//log.Infof("delete object[AWS S3] succeed, objectId:%s.\n", objectId)
+
+
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+	//
+	//
+	//log.Info("configuration.....Region:", configuration.Region)
+	//log.Info("configuration.....Endpoint:", configuration.Endpoint)
+	svc := awss3.New(session.New(configuration))
+	//svc := awss3.New(ad.session)
+	input := &awss3.DeleteBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+	log.Info("THe input.......:", input)
+
+	result, err := svc.DeleteBucketWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return err
+	}
+
+	fmt.Println(result)
+
+	return nil
 }
 
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {

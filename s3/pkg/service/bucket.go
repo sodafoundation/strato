@@ -133,6 +133,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	backendName := "aws-backened"
 
+
 	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
@@ -233,6 +234,29 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		err = ErrBucketNotEmpty
 		return nil
 	}
+
+
+	backendName := "aws-backened"
+
+
+	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	sd, err := driver.CreateStorageDriver("aws-s3", backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	err = sd.BucketDelete(ctx, in)
+	if err != nil {
+		log.Errorln("failed to delete bucket. err:", err)
+		return err
+	}
+
 	err = s.MetaStorage.Db.DeleteBucket(ctx, bucket)
 	if err != nil {
 		log.Errorf("delete bucket[%s] failed, err:%v\n", bucketName, err)

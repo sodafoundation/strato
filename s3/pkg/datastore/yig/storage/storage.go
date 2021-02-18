@@ -51,6 +51,10 @@ type YigStorage struct {
 	gcMgr       *GcMgr
 }
 
+func (yig *YigStorage) BucketDelete(ctx context.Context, object *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (yig *YigStorage) BucketPut(ctx context.Context, input *pb.Bucket) error {
 	panic("implement me")
 }

@@ -39,6 +39,10 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
+func (ad *GcsAdapter) BucketDelete(ctx context.Context, object *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (ad *GcsAdapter) BucketPut(ctx context.Context, input *pb.Bucket) error {
 	panic("implement me")
 }
