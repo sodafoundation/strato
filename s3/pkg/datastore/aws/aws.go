@@ -67,7 +67,7 @@ func (myc *s3Cred) IsExpired() bool {
 
 func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 
-	log.Info("The region is......DefaultLOcation:", ad.backend.Region)
+	log.Info("Bucket create is called in aws service")
 
 	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
 	configuration := &aws.Config{

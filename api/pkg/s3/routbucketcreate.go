@@ -28,7 +28,8 @@ func (s *APIService) RouteBucketCreate(request *restful.Request, response *restf
 		response.WriteError(http.StatusMethodNotAllowed, errors.New("authorize failed"))
 		return
 	}
-    log.Info("request......./////////:", request)
+    log.Info("The request received:", request)
+
 	if IsQuery(request, "acl") {
 		s.BucketAclPut(request, response)
 	} else if IsQuery(request, "versioning") {
