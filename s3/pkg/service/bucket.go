@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3"
@@ -76,6 +77,26 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return nil
 	}
 
+	// We need to find the backend in which bucket will be created
+	backend, err := utils.GetBackend(ctx, s.backendClient, in.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	err = sd.BucketCreate(ctx, in)
+	log.Error("The error while creating bucket:", err)
+	if err != nil {
+		log.Errorln("failed to create bucket in aws-s3 service:", err)
+		return err
+	}
+	
 	processed, err := s.MetaStorage.Db.CheckAndPutBucket(ctx, &Bucket{Bucket: in})
 	if err != nil {
 		log.Error("Error making checkandput: ", err)
@@ -128,8 +149,9 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			return err
 		}
 	}
-	return err
-}
+
+	return nil
+	}
 
 func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBucketResponse) error {
 	log.Infof("GetBucket %s is called in s3 service.", in.Id)

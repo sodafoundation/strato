@@ -39,6 +39,10 @@ type CephAdapter struct {
 	session *s3client.Client
 }
 
+func (ad *CephAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (result dscommon.PutResult, err error) {
 	bucketName := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey

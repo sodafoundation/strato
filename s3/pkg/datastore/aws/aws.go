@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -41,6 +42,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	DefaultRegion = "us-east-1"
+)
+
 type AwsAdapter struct {
 	backend *backendpb.BackendDetail
 	session *session.Session
@@ -59,6 +64,49 @@ func (myc *s3Cred) Retrieve() (credentials.Value, error) {
 func (myc *s3Cred) IsExpired() bool {
 	return false
 }
+
+func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
+
+	log.Info("The region is......DefaultLOcation:", ad.backend.Region)
+
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+	svc := awss3.New(session.New(configuration))
+
+	input := &awss3.CreateBucketInput{
+		Bucket: aws.String(in.Name),
+		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
+			LocationConstraint: aws.String(ad.backend.Region),
+		},
+		ACL: aws.String(in.Acl.CannedAcl),
+	}
+
+	_, err := svc.CreateBucketWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case awss3.ErrCodeBucketAlreadyExists:
+				log.Error(awss3.ErrCodeBucketAlreadyExists, aerr.Error())
+			case awss3.ErrCodeBucketAlreadyOwnedByYou:
+				log.Error(awss3.ErrCodeBucketAlreadyOwnedByYou, aerr.Error())
+			default:
+				log.Error(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Error(err.Error())
+		}
+		return err
+	}
+	return  nil
+
+}
+
 
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := ad.backend.BucketName
