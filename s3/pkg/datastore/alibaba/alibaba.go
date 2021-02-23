@@ -41,6 +41,10 @@ type OSSAdapter struct {
 	client  *oss.Client
 }
 
+func (ad *OSSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	panic("implement me")
+}
+
 func (ad *OSSAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
 	panic("implement me")
 }

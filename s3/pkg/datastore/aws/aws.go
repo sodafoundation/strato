@@ -205,6 +205,42 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	return result.Body, nil
 }
 
+
+func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	log.Info("Bucket delete is called in aws service")
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String(ad.backend.Region),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+
+	svc := awss3.New(session.New(configuration))
+	input := &awss3.DeleteBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+
+	result, err := svc.DeleteBucketWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				log.Error(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Error(err.Error())
+		}
+		return err
+	}
+
+	log.Info(result)
+
+	return nil
+}
+
+
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
 	bucket := ad.backend.BucketName
 	objectId := input.Bucket + "/" + input.Key

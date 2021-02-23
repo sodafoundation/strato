@@ -31,4 +31,5 @@ type StorageDriver interface {
 
 	// change storage class
 	ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error
+	BucketDelete(ctx context.Context, in *pb.Bucket) error
 }

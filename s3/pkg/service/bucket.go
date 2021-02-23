@@ -96,7 +96,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		log.Errorln("failed to create bucket in aws-s3 service:", err)
 		return err
 	}
-	
+
 	processed, err := s.MetaStorage.Db.CheckAndPutBucket(ctx, &Bucket{Bucket: in})
 	if err != nil {
 		log.Error("Error making checkandput: ", err)
@@ -205,6 +205,8 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.BaseResponse) error {
 	bucketName := in.Name
 	log.Infof("DeleteBucket is called in s3 service, bucketName is %s.\n", bucketName)
+	log.Info("The input for deleting bucket is:%v\n", in)
+
 	var err error
 	defer func() {
 		out.ErrorCode = GetErrCode(err)
@@ -232,6 +234,31 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		err = ErrBucketNotEmpty
 		return nil
 	}
+
+	// We need to find the backend in which bucket will be created
+	backend, err := utils.GetBackend(ctx, s.backendClient, bucket.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	log.Info("the backend is:\n", backend)
+
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	log.Info("the driver for the backend is:\n", sd)
+
+	err = sd.BucketDelete(ctx, in)
+	log.Error("The error while deleting bucket:", err)
+	if err != nil {
+		log.Errorln("failed to delete bucket in aws-s3 service:", err)
+		return err
+	}
+
 	err = s.MetaStorage.Db.DeleteBucket(ctx, bucket)
 	if err != nil {
 		log.Errorf("delete bucket[%s] failed, err:%v\n", bucketName, err)
