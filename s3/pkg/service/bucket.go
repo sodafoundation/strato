@@ -255,7 +255,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	err = sd.BucketDelete(ctx, in)
 	log.Error("The error while deleting bucket:", err)
 	if err != nil {
-		log.Errorln("failed to delete bucket in aws-s3 service:", err)
+		log.Errorln("failed to delete bucket in s3 service:", err)
 		return err
 	}
 

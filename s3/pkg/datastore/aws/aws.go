@@ -82,7 +82,6 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
 			LocationConstraint: aws.String(ad.backend.Region),
 		},
-		ACL: aws.String(in.Acl.CannedAcl),
 	}
 
 	_, err := svc.CreateBucketWithContext(ctx, input)
@@ -103,8 +102,16 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 		}
 		return err
 	}
-	return  nil
 
+	// Wait until bucket is created before finishing
+	err = svc.WaitUntilBucketExists(&awss3.HeadBucketInput{
+		Bucket: aws.String(in.Name),
+	})
+	if err != nil {
+		return err
+	}
+
+	return  nil
 }
 
 
@@ -233,6 +240,23 @@ func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 			log.Error(err.Error())
 		}
 		return err
+	}
+
+	// Wait until bucket is gone before finishing
+	err = svc.WaitUntilBucketNotExists(&awss3.HeadBucketInput{
+		Bucket: aws.String(in.Name),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Make sure it's really gone
+	_, err = svc.HeadBucket(&awss3.HeadBucketInput{
+		Bucket: aws.String(in.Name),
+	})
+	// We expect this to fail if bucket does not exist
+	if err != nil {
+		return nil
 	}
 
 	log.Info(result)
