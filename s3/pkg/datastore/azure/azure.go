@@ -46,13 +46,49 @@ type AzureAdapter struct {
 	containerURL azblob.ContainerURL
 }
 
-func (ad *AzureAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
-	panic("implement me")
+func (ad *AzureAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error {
+
+	containerURL,_:= ad.createBucketContainerURL(ad.backend.Access,ad.backend.Security,input.Name)
+
+        // Create the container on the service (with no metadata and no public access)
+        _, err := containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
+        if err != nil {
+                log.Error(err)
+        }
+        log.Infof("Successful container deletion")
+        return nil
 }
 
 func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
-	panic("implement me")
+
+	containerURL,_:= ad.createBucketContainerURL(ad.backend.Access,ad.backend.Security,input.Name)
+
+        // Create the container on the service (with no metadata and no public access)
+        _, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
+        if err != nil {
+                log.Error(err)
+        }
+        log.Infof("Successful container creation")
+        return nil
+
 }
+
+
+func (ad *AzureAdapter) createBucketContainerURL(accountName string, accountKey string,bucketName string) (azblob.ContainerURL, error) {
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+                log.Infof("create credential[Azure Blob] failed, err:%v\n", err)
+                return azblob.ContainerURL{}, err
+        }
+
+	 pipeline:= azblob.NewPipeline(credential, azblob.PipelineOptions{})
+	u, _ := url.Parse("https://"+accountName+".blob.core.windows.net")
+	 serviceURL :=azblob.NewServiceURL(*u, pipeline)
+	 containerURL:= serviceURL.NewContainerURL(bucketName) // Container names require lowercase
+	return containerURL, nil
+
+}
+
 
 /*func Init(backend *backendpb.BackendDetail) *AzureAdapter {
 	endpoint := backend.Endpoint

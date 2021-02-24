@@ -39,12 +39,25 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
-func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
-	panic("implement me")
+func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error {
+	  bucket := ad.session.NewBucket()
+        err := bucket.Remove(input.Name)
+         if err != nil {
+                log.Error("falied to delete bucket",err)
+         }
+        log.Info("bucket deletion successful")
+        return nil
+
 }
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
-	panic("implement me")
+	 bucket := ad.session.NewBucket()
+        err := bucket.Create(input.Name, models.PublicReadWrite)
+         if err != nil {
+                log.Error("falied to create bucket",err)
+         }
+        log.Info("bucket creation successful")
+        return nil
 }
 
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
