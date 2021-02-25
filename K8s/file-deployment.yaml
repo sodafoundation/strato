@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: file
+  name: file
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: file
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: file
+    spec:
+      containers:
+        - env:
+            - name: DB_HOST
+              value: datastore:27017
+#            - name: MICRO_REGISTRY
+#              value: mdns 
+#            - name: MICRO_SERVER_ADDRESS
+#              value: :8092
+            - name:  MICRO_REGISTRY
+              value:  kubernetes
+            - name: MICRO_SERVER_ADDRESS
+              value: 0.0.0.0:9090
+            - name: MICRO_BROKER_ADDRESS
+              value: 0.0.0.0:9091                
+            - name: OS_AUTH_AUTHSTRATEGY
+              value: keystone
+            - name: OS_AUTH_URL
+              value: http://192.168.20.108/identity
+            - name: OS_PASSWORD
+              value: opensds@123
+            - name: OS_PROJECT_NAME
+              value: service
+            - name: OS_USERNAME
+              value: opensds
+            - name: OS_USER_DOMIN_ID
+              value: Default
+          image: sodafoundation/multi-cloud-file:v9
+          name: file
+          ports:
+            - containerPort: 8092
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: file-hostpath0
+            - mountPath: /var/log/multi-cloud
+              name: file-hostpath1
+            - mountPath: /etc/config
+              name: config-volume
+      restartPolicy: Always
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+          name: file-hostpath0
+        - hostPath:
+            path: /var/log/multi-cloud
+          name: file-hostpath1
+        - name: config-volume
+          configMap:
+            name: multicloud-config  
+status: {}

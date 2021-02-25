@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose-tidb.yml --volumes hostPath
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: tidb
+  name: tidb
+spec:
+  ports:
+    - name: "4000"
+      port: 4000
+      targetPort: 4000
+    - name: "10080"
+      port: 10080
+      targetPort: 10080
+  selector:
+    io.kompose.service: tidb
+status:
+  loadBalancer: {}

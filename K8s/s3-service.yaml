@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: s3
+  name: s3
+spec:
+  ports:
+    - name: "8096"
+      port: 8096
+      targetPort: 8096
+  selector:
+    io.kompose.service: s3
+status:
+  loadBalancer: {}

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: dataflow
+  name: dataflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: dataflow
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: dataflow
+    spec:
+      containers:
+        - env:
+            - name: DB_HOST
+              value: datastore:27017
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: PLAINTEXT://kafka:9092
+            - name: LIFECYCLE_CRON_CONFIG
+              value: 0 0 0 * * ?
+#            - name: MICRO_REGISTRY
+#              value: mdns
+#            - name: MICRO_SERVER_ADDRESS
+#              value: :8094
+            - name:  MICRO_REGISTRY
+              value:  kubernetes
+            - name: MICRO_SERVER_ADDRESS
+              value: 0.0.0.0:9090
+            - name: MICRO_BROKER_ADDRESS
+              value: 0.0.0.0:9091                
+          image: sodafoundation/multi-cloud-dataflow:v9
+          name: dataflow
+          ports:
+            - containerPort: 8094
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: dataflow-hostpath0
+            - mountPath: /var/log/multi-cloud
+              name: dataflow-hostpath1
+            - mountPath: /etc/multi-cloud
+              name: config-volume
+      restartPolicy: Always
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+          name: dataflow-hostpath0
+        - hostPath:
+            path: /var/log/multi-cloud
+          name: dataflow-hostpath1
+        - name: config-volume
+          configMap:
+            name: multicloud-config
+status: {}

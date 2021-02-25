@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: backend
+  name: backend
+spec:
+  ports:
+    - name: "8091"
+      port: 8091
+      targetPort: 8091
+  selector:
+    io.kompose.service: backend
+status:
+  loadBalancer: {}

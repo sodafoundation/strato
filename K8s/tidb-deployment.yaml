@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: tidb
+  name: tidb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: tidb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: tidb
+    spec:
+      containers:
+        - image: pingcap/tidb:v2.1.16
+          name: tidb
+          ports:
+            - containerPort: 4000
+            - containerPort: 10080
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/config
+              name: config-volume
+            - mountPath: /tmp/tidb/
+              name: tidb-data
+          command: ["./tidb-server"]
+          args: ["--store=mocktikv","--config=/etc/config/tidb.toml", "-L=info"]
+      restartPolicy: Always
+      volumes:
+        - name: config-volume
+          configMap:
+            name: tidb-config
+        - hostPath:
+            path: /root/multi-cloud/tidb_data
+            type: DirectoryOrCreate
+          name: tidb-data
+status: {}

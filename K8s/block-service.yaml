@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: block
+  name: block
+spec:
+  ports:
+    - name: "31865"
+      port: 31865
+      targetPort: 31865
+  selector:
+    io.kompose.service: block
+status:
+  loadBalancer: {}
