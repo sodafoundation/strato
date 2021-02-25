@@ -30,17 +30,16 @@ import (
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	"github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/opensds/multi-cloud/s3/error"
+	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
-	"github.com/opensds/multi-cloud/s3/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
 var topicLifecycle = "lifecycle"
-var s3client = osdss3.NewS3Service("s3", client.DefaultClient)
+var s3client = osdss3.NewS3Service("soda.multicloud.v1.s3", client.DefaultClient)
 
 const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
 

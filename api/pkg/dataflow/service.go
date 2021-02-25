@@ -24,16 +24,16 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/dataflow/proto"
-	"github.com/opensds/multi-cloud/s3/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	backendService  = "backend"
-	s3Service       = "s3"
-	dataflowService = "dataflow"
+	backendService  = "soda.multicloud.v1.backend"
+	s3Service       = "soda.multicloud.v1.s3"
+	dataflowService = "soda.multicloud.v1.dataflow"
 )
 
 type APIService struct {
