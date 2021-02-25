@@ -54,8 +54,8 @@ type Migration interface {
 
 func Init() {
 	log.Infof("Migration init.")
-	s3client = osdss3.NewS3Service("s3", client.DefaultClient)
-	bkendclient = backend.NewBackendService("backend", client.DefaultClient)
+	s3client = osdss3.NewS3Service("soda.multicloud.v1.s3", client.DefaultClient)
+	bkendclient = backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient)
 }
 
 func HandleMsg(msgData []byte) error {
