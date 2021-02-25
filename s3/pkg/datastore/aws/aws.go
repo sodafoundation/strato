@@ -82,6 +82,7 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
 			LocationConstraint: aws.String(ad.backend.Region),
 		},
+		ACL: aws.String(in.Acl.CannedAcl),
 	}
 
 	_, err := svc.CreateBucketWithContext(ctx, input)
@@ -267,8 +268,9 @@ func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 
 
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
-	bucket := ad.backend.BucketName
-	objectId := input.Bucket + "/" + input.Key
+	bucket := input.Bucket
+	objectId := input.Key
+	log.Info("deleting the object of bucket:%s and object:%s", bucket, objectId)
 	deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &objectId}
 
 	log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
