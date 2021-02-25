@@ -116,8 +116,8 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 
 
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucket := object.BucketName
+	objectId := object.ObjectKey
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
@@ -159,12 +159,13 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			log.Debugf("input.ContentMD5=%s\n", *input.ContentMD5)
 		}
 	}
-	log.Infof("upload object[AWS S3] start, objectId:%s\n", objectId)
+	log.Infof("upload object[AWS S3] start, objectId:%s, input:\n", objectId, input)
 	ret, err := uploader.Upload(input)
 	if err != nil {
 		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v\n", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
+	log.Info("the return value of Upload:%s\n", ret)
 	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
