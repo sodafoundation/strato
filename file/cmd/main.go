@@ -35,7 +35,7 @@ func main() {
 	defer db.Exit(dbStore)
 
 	service := micro.NewService(
-		micro.Name("file"),
+		micro.Name("soda.multicloud.v1.file"),
 	)
 
 	obs.InitLogs()
