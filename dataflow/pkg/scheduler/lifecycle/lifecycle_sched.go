@@ -34,6 +34,7 @@ import (
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
+	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
