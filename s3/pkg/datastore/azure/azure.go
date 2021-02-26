@@ -65,7 +65,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 
         // Create the container on the service (with no metadata and no public access)
         _, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-        if err != nil {
+	      if err != nil {
                 log.Error(err)
         }
         log.Infof("Successful container creation")
@@ -73,7 +73,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 
 }
 
-
+//creates containerURL with bucketname 
 func (ad *AzureAdapter) createBucketContainerURL(accountName string, accountKey string,bucketName string) (azblob.ContainerURL, error) {
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
@@ -126,8 +126,9 @@ func (ad *AzureAdapter) createContainerURL(endpoint string, acountName string, a
 }
 
 func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	objectId := object.BucketName + "/" + object.ObjectKey
-	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
+	objectId :=  object.ObjectKey
+	containerURL,_:= ad.createBucketContainerURL(ad.backend.Access,ad.backend.Security,object.BucketName)
+	blobURL := containerURL.NewBlockBlobURL(objectId)
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d\n", objectId, blobURL, userMd5, object.Size)
@@ -204,11 +205,11 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 }
 
 func (ad *AzureAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
-	bucket := ad.backend.BucketName
-	objectId := input.Bucket + "/" + input.Key
+	bucket := input.Bucket
+	objectId :=  input.Key
 	log.Infof("delete object[Azure Blob], objectId:%s, bucket:%s\n", objectId, bucket)
-
-	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
+	containerURL,_:= ad.createBucketContainerURL(ad.backend.Access,ad.backend.Security,input.Bucket)
+	blobURL := containerURL.NewBlockBlobURL(objectId)
 	log.Infof("blobURL is %v\n", blobURL)
 	delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 	if err != nil {

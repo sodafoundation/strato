@@ -61,8 +61,8 @@ func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 }
 
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucketName := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucketName := object.BucketName
+	objectId :=  object.ObjectKey
 	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
 
 	result := dscommon.PutResult{}
@@ -133,10 +133,10 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 
 func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
 	bucket := ad.session.NewBucket()
-	objectId := input.Bucket + "/" + input.Key
+	objectId := input.Key
 	log.Infof("delete object[GCS], objectId:%s, err:%v\n", objectId)
 
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(input.Bucket)
 	err := GcpObject.Remove(objectId)
 	if err != nil {
 		log.Infof("delete object[GCS] failed, objectId:%s, err:%v\n", objectId, err)
