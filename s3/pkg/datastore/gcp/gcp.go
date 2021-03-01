@@ -39,17 +39,30 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
-func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
-	panic("implement me")
+func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error {
+	bucket := ad.session.NewBucket()
+	err := bucket.Remove(input.Name)
+	if err != nil {
+		log.Error("falied to delete bucket", err)
+	}
+	log.Info("bucket deletion successful")
+	return nil
+
 }
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
-	panic("implement me")
+	bucket := ad.session.NewBucket()
+	err := bucket.Create(input.Name, models.PublicReadWrite)
+	if err != nil {
+		log.Error("falied to create bucket", err)
+	}
+	log.Info("bucket creation successful")
+	return nil
 }
 
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucketName := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucketName := object.BucketName
+	objectId := object.ObjectKey
 	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
 
 	result := dscommon.PutResult{}
@@ -106,7 +119,7 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	}
 
 	bucket := ad.session.NewBucket()
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(object.BucketName)
 	getObject, err := GcpObject.Get(objectId, &getObjectOption)
 	if err != nil {
 		fmt.Println(err)
@@ -123,7 +136,7 @@ func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 	objectId := input.Bucket + "/" + input.Key
 	log.Infof("delete object[GCS], objectId:%s, err:%v\n", objectId)
 
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(input.Bucket)
 	err := GcpObject.Remove(objectId)
 	if err != nil {
 		log.Infof("delete object[GCS] failed, objectId:%s, err:%v\n", objectId, err)
