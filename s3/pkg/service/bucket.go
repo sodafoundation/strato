@@ -371,4 +371,3 @@ func (s *s3Service) PutBucketACL(ctx context.Context, in *pb.PutBucketACLRequest
 	log.Infoln("Put bucket acl successfully.")
 	return nil
 }
-

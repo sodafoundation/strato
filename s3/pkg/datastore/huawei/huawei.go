@@ -321,4 +321,3 @@ func (ad *OBSAdapter) Close() error {
 	//TODO
 	return nil
 }
-

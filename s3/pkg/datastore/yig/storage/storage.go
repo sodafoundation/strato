@@ -200,4 +200,3 @@ func wrapAlignedEncryptionReader(reader io.Reader, startOffset int64, encryption
 	}
 	return
 }
-

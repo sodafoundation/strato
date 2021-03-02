@@ -314,4 +314,3 @@ func (ad *CephAdapter) Close() error {
 	// TODO
 	return nil
 }
-

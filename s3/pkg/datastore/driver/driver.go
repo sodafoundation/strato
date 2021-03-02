@@ -31,4 +31,3 @@ type StorageDriver interface {
 	// change storage class
 	ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error
 }
-

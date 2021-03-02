@@ -342,4 +342,3 @@ func (ad *AwsAdapter) Close() error {
 	// TODO:
 	return nil
 }
-
