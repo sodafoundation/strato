@@ -370,4 +370,3 @@ func (ad *OSSAdapter) Close() error {
 	//TODO
 	return nil
 }
-
