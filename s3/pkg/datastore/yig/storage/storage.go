@@ -19,7 +19,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"errors"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"io"
 	"path/filepath"
 
@@ -49,14 +48,6 @@ type YigStorage struct {
 	Stopping    bool
 	idGen       *utils.GlobalIdGen
 	gcMgr       *GcMgr
-}
-
-func (yig *YigStorage) BucketDelete(ctx context.Context, in *pb.Bucket) error {
-	panic("implement me")
-}
-
-func (yig *YigStorage) BucketCreate(ctx context.Context, input *pb.Bucket) error {
-	panic("implement me")
 }
 
 func New(cfg *config.Config) (*YigStorage, error) {
@@ -209,3 +200,4 @@ func wrapAlignedEncryptionReader(reader io.Reader, startOffset int64, encryption
 	}
 	return
 }
+

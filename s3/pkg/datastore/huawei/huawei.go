@@ -37,14 +37,6 @@ type OBSAdapter struct {
 	client  *obs.ObsClient
 }
 
-func (ad *OBSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
-	panic("implement me")
-}
-
-func (ad *OBSAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
-	panic("implement me")
-}
-
 func (ad *OBSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
@@ -329,3 +321,4 @@ func (ad *OBSAdapter) Close() error {
 	//TODO
 	return nil
 }
+

@@ -27,7 +27,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
@@ -40,10 +39,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	DefaultRegion = "us-east-1"
 )
 
 type AwsAdapter struct {
@@ -65,60 +60,9 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
-func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
-
-	log.Info("Bucket create is called in aws service")
-
-	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
-	configuration := &aws.Config{
-		Region:      aws.String(DefaultRegion),
-		Endpoint:    aws.String(ad.backend.Endpoint),
-		Credentials: Credentials,
-	}
-	svc := awss3.New(session.New(configuration))
-
-	input := &awss3.CreateBucketInput{
-		Bucket: aws.String(in.Name),
-		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
-			LocationConstraint: aws.String(ad.backend.Region),
-		},
-		ACL: aws.String(in.Acl.CannedAcl),
-	}
-
-	_, err := svc.CreateBucketWithContext(ctx, input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case awss3.ErrCodeBucketAlreadyExists:
-				log.Error(awss3.ErrCodeBucketAlreadyExists, aerr.Error())
-			case awss3.ErrCodeBucketAlreadyOwnedByYou:
-				log.Error(awss3.ErrCodeBucketAlreadyOwnedByYou, aerr.Error())
-			default:
-				log.Error(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			log.Error(err.Error())
-		}
-		return err
-	}
-
-	// Wait until bucket is created before finishing
-	err = svc.WaitUntilBucketExists(&awss3.HeadBucketInput{
-		Bucket: aws.String(in.Name),
-	})
-	if err != nil {
-		return err
-	}
-
-	return  nil
-}
-
-
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucket := object.BucketName
-	objectId := object.ObjectKey
+	bucket := ad.backend.BucketName
+	objectId := object.BucketName + "/" + object.ObjectKey
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
@@ -160,13 +104,12 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			log.Debugf("input.ContentMD5=%s\n", *input.ContentMD5)
 		}
 	}
-	log.Infof("upload object[AWS S3] start, objectId:%s, input:\n", objectId, input)
+	log.Infof("upload object[AWS S3] start, objectId:%s\n", objectId)
 	ret, err := uploader.Upload(input)
 	if err != nil {
 		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v\n", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
-	log.Info("the return value of Upload:%s\n", ret)
 	log.Infof("put object[AWS S3] end, objectId:%s\n", objectId)
 
 	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
@@ -214,63 +157,9 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	return result.Body, nil
 }
 
-
-func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
-	log.Info("Bucket delete is called in aws service")
-	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
-	configuration := &aws.Config{
-		Region:      aws.String(ad.backend.Region),
-		Endpoint:    aws.String(ad.backend.Endpoint),
-		Credentials: Credentials,
-	}
-
-	svc := awss3.New(session.New(configuration))
-	input := &awss3.DeleteBucketInput{
-		Bucket: aws.String(in.Name),
-	}
-
-	result, err := svc.DeleteBucketWithContext(ctx, input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				log.Error(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			log.Error(err.Error())
-		}
-		return err
-	}
-
-	// Wait until bucket is gone before finishing
-	err = svc.WaitUntilBucketNotExists(&awss3.HeadBucketInput{
-		Bucket: aws.String(in.Name),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Make sure it's really gone
-	_, err = svc.HeadBucket(&awss3.HeadBucketInput{
-		Bucket: aws.String(in.Name),
-	})
-	// We expect this to fail if bucket does not exist
-	if err != nil {
-		return nil
-	}
-
-	log.Info(result)
-
-	return nil
-}
-
-
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
-	bucket := input.Bucket
-	objectId := input.Key
-	log.Info("deleting the object of bucket:%s and object:%s", bucket, objectId)
+	bucket := ad.backend.BucketName
+	objectId := input.Bucket + "/" + input.Key
 	deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &objectId}
 
 	log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
@@ -453,3 +342,4 @@ func (ad *AwsAdapter) Close() error {
 	// TODO:
 	return nil
 }
+
