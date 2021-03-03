@@ -189,13 +189,13 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 }
 
 func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &objectId,
 	}
-	log.Infof("get object[AWS S3], objectId:%s, start = %d, end = %d\n", objectId, start, end)
+	log.Infof("get object[AWS S3], objectName: %s, objectId:%s, start = %d, end = %d\n", object, objectId, start, end)
 	if start != 0 || end != 0 {
 		strStart := strconv.FormatInt(start, 10)
 		strEnd := strconv.FormatInt(end, 10)
