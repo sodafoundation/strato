@@ -53,6 +53,7 @@ func (ad *AzureAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) erro
 	_, err := containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
 	if err != nil {
 		log.Error(err)
+		return err
 	}
 	log.Infof("Successful bucket deletion")
 	return nil
@@ -66,6 +67,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 	_, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 	if err != nil {
 		log.Error(err)
+		return err
 	}
 	log.Infof("Successful bucket creation")
 	return nil
@@ -76,7 +78,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 func (ad *AzureAdapter) createBucketContainerURL(accountName string, accountKey string, bucketName string) (azblob.ContainerURL, error) {
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
-		log.Infof("create credential[Azure Blob] failed, err:%v\n", err)
+		log.Error("create credential[Azure Blob] failed, err:%v\n", err)
 		return azblob.ContainerURL{}, err
 	}
 

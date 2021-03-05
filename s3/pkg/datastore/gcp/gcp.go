@@ -44,6 +44,7 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error 
 	err := bucket.Remove(input.Name)
 	if err != nil {
 		log.Error("falied to delete bucket", err)
+		return err
 	}
 	log.Info("bucket deletion successful")
 	return nil
@@ -52,9 +53,11 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error 
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
 	bucket := ad.session.NewBucket()
-	err := bucket.Create(input.Name, models.PublicReadWrite)
+	acl := models.ACL(input.Acl.CannedAcl)
+	err := bucket.Create(input.Name, acl)
 	if err != nil {
 		log.Error("falied to create bucket", err)
+		return err
 	}
 	log.Info("bucket creation successful")
 	return nil
