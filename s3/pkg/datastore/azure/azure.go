@@ -86,7 +86,8 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
-	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d\n", objectId, blobURL, userMd5, object.Size)
+	storageClass := dscommon.GetStorClassFromCtx(ctx)
+	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d storageClass=%s", objectId, blobURL, userMd5, object.Size, storageClass)
 
 	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
 	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
@@ -102,14 +103,20 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 		return result, ErrPutToBackendFailed
 	}
 
-	if object.Tier == 0 {
-		// default
-		object.Tier = utils.Tier1
-	}
-	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_Azure)
-	if err != nil {
-		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
-		return result, ErrInternalError
+	var storClass string
+
+	if storageClass != "" {
+		storClass = storageClass
+	} else {
+		if object.Tier == 0 {
+			// default
+			object.Tier = utils.Tier1
+		}
+		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_Azure)
+		if err != nil {
+			log.Infof("translate tier[%d] to azure storage class failed", object.Tier)
+			return result, ErrInternalError
+		}
 	}
 
 	resultMd5 := uploadResp.Response().Header.Get("Content-MD5")
@@ -197,7 +204,7 @@ func (ad *AzureAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.O
 func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	objectId := object.ObjectId
 	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
-	log.Infof("change storage class[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
+	log.Infof("change storage class[Azure Blob], objectId:%s, storageClass:%s blobURL is %v\n", objectId, *newClass, blobURL)
 
 	var res *azblob.BlobSetTierResponse
 	var err error
@@ -363,7 +370,20 @@ func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Back
 }
 
 func (ad *AzureAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
-	return ErrNotImplemented
+	className := inp.StorageClass
+	log.Infof("Restore the object to storage class [%s]", className)
+	objId := inp.BucketName + "/" + inp.ObjectKey
+	obj := &pb.Object{
+		ObjectId:   objId,
+		ObjectKey:  inp.ObjectKey,
+		BucketName: inp.BucketName,
+	}
+	err := ad.ChangeStorageClass(ctx, obj, &className)
+	if err != nil {
+		log.Error("error [%v] in changing the storage class of the object [%s]", err, ObjectKey)
+		return err
+	}
+	return nil
 }
 
 func (ad *AzureAdapter) Close() error {
