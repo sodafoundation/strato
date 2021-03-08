@@ -380,7 +380,7 @@ func (ad *AzureAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
 	}
 	err := ad.ChangeStorageClass(ctx, obj, &className)
 	if err != nil {
-		log.Error("error [%v] in changing the storage class of the object [%s]", err, ObjectKey)
+		log.Error("error [%v] in changing the storage class of the object [%s]", err, inp.ObjectKey)
 		return err
 	}
 	return nil
