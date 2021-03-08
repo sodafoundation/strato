@@ -33,6 +33,7 @@ var (
 	STOR_TYPE_HW_FUSIONCLOUD   = "hw-fusioncloud"
 	STOR_TYPE_IBM_COS          = "ibm-cos"
 	STOR_TYPE_ALIBABA_OSS      = "alibaba-oss"
+	STOR_TYPE_SONY_ODA         = "sony-s3"
 )
 
 var (
