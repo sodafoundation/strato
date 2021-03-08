@@ -382,18 +382,18 @@ func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPar
 }
 
 func (ad *AwsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	Region := aws.String(backendDetail.Region)
-	Endpoint := aws.String(backendDetail.Endpoint)
-	Credentials := credentials.NewStaticCredentials(backendDetail.Access, backendDetail.Security, "")
+	//Region := aws.String(backendDetail.Region)
+	//Endpoint := aws.String(backendDetail.Endpoint)
+	//Credentials := credentials.NewStaticCredentials(backendDetail.Access, backendDetail.Security, "")
 	Bucket := aws.String(backendDetail.BucketName)
-	configuration := &aws.Config{
-		Region:      Region,
-		Endpoint:    Endpoint,
-		Credentials: Credentials,
-	}
+	//configuration := &aws.Config{
+	//	S3ForcePathStyle: aws.Bool(true),
+	//	Region:      Region,
+	//	Endpoint:    Endpoint,
+	//	Credentials: Credentials,
+	//}
 
-	svc := awss3.New(session.New(configuration))
-
+	svc := awss3.New(ad.Session)
 	input := &awss3.HeadBucketInput{
 		Bucket: Bucket,
 	}
