@@ -114,7 +114,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 		}
 		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_Azure)
 		if err != nil {
-			log.Infof("translate tier[%d] to azure storage class failed", object.Tier)
+			log.Errorf("translate tier[%d] to azure storage class failed", object.Tier)
 			return result, ErrInternalError
 		}
 	}
@@ -204,7 +204,7 @@ func (ad *AzureAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.O
 func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	objectId := object.ObjectId
 	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
-	log.Infof("change storage class[Azure Blob], objectId:%s, storageClass:%s blobURL is %v\n", objectId, *newClass, blobURL)
+	log.Infof("Change storage class[Azure Blob], objectId:%s, storageClass:%s blobURL is %v\n", objectId, *newClass, blobURL)
 
 	var res *azblob.BlobSetTierResponse
 	var err error
@@ -225,8 +225,8 @@ func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Objec
 			newClass, err)
 		return ErrInternalError
 	} else {
-		log.Errorf("change storage class[Azure Blob] of object[%s] to %s succeed, res:%v\n", object.ObjectKey,
-			newClass, res.Response())
+		log.Infof("Change storage class[Azure Blob] of object[%s] to %s succeed, res:%v\n", object.ObjectKey,
+			*newClass, res.Response())
 	}
 
 	return nil

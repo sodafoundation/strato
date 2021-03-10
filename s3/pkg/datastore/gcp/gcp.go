@@ -104,7 +104,7 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 	log.Infof("Started uploading objectId:%s into GCS", objectId)
 	ret, err := uploader.Upload(input)
 	if err != nil {
-		log.Errorf("Uplaoding objectId:%s failed with err:%v", objectId, err)
+		log.Errorf("uplaoding objectId:%s failed with err:%v", objectId, err)
 		return result, ErrPutToBackendFailed
 	}
 	log.Infof("Completed uploading objectId:%s into GCS bucket[%s]", objectId, bucketName)
