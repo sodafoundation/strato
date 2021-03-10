@@ -15,7 +15,7 @@ kubectl create configmap yig-sql --from-file=../s3/pkg/datastore/yig/conf/yig.sq
 kubectl apply -f zookeeper-deployment.yaml 
 kubectl apply -f redis-deployment.yaml 
 kubectl apply -f tidb-deployment.yaml 
-kubectl apply -f mongo-deployment.yaml 
+#kubectl apply -f mongo-deployment.yaml 
 kubectl apply -f kafka-deployment.yaml 
 
 kubectl apply -f block-deployment.yaml 
@@ -29,19 +29,16 @@ kubectl apply -f s3-deployment.yaml
 
 #4 Expose the services
 kubectl apply -f zookeeper-service.yaml 
+#kubectl apply -f mongo-service.yaml 
 kubectl apply -f tidb-service.yaml 
 kubectl apply -f redis-service.yaml 
-kubectl apply -f mongo-service.yaml 
 kubectl apply -f kafka-service.yaml 
 
 kubectl apply -f api-service.yaml 
 kubectl apply -f s3api-service.yaml 
-#kubectl apply -f s3-service.yaml 
-#kubectl apply -f backend-service.yaml 
-#kubectl apply -f block-service.yaml 
-#kubectl apply -f file-service.yaml 
-#kubectl apply -f dataflow-service.yaml 
-#kubectl apply -f datamover-service.yaml 
+#kubectl apply -f mongo-headless-service.yaml
+#kubectl apply -f mongo-statefulset.yaml
+
 
 #5. Get all the deployed objects
 

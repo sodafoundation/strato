@@ -2,7 +2,7 @@
 kubectl delete service  zookeeper 
 kubectl delete service  tidb 
 kubectl delete service  redis 
-kubectl delete service  datastore 
+#kubectl delete service  datastore 
 kubectl delete service  kafka 
 		
 kubectl delete service  api 
@@ -13,6 +13,9 @@ kubectl delete service  block
 kubectl delete service  file 
 kubectl delete service  datamover 
 kubectl delete service  dataflow 
+kubectl delete service  mongo
+
+kubectl delete statefulset mongo 
 
 # Delete the deployments
 

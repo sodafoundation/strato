@@ -2,18 +2,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: redis
+    io.soda.service: redis
   name: redis
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: redis
+      io.soda.service: redis
   strategy: {}
   template:
     metadata:
       labels:
-        io.kompose.service: redis
+        io.soda.service: redis
     spec:
       containers:
         - image: redis
@@ -23,4 +23,4 @@ spec:
           command: ["redis-server"]
           resources: {}
       restartPolicy: Always
-status: {}
+

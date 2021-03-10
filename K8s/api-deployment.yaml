@@ -2,28 +2,35 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: api
+    io.soda.service: api
+    app: soda-api
   name: api
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: api
+      io.soda.service: api
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        io.kompose.service: api
+        io.soda.service: api
     spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-api
+             topologyKey: "kubernetes.io/hostname"
       containers:
         - env:
-#            - name: MICRO_REGISTRY
-#              value: mdns
-#            - name: MICRO_SERVER_ADDRESS
-#              value: :8089
-            - name:  MICRO_REGISTRY
-              value:  kubernetes
+            - name: MICRO_REGISTRY
+              value: kubernetes
             - name: MICRO_SERVER_ADDRESS           
               value: 0.0.0.0:8089
             - name: MICRO_BROKER_ADDRESS
@@ -51,26 +58,25 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/ssl/certs
-              name: api-hostpath0
+              name: api-certs
             - mountPath: /etc/localtime
-              name: api-hostpath1
+              name: api-localtime
             - mountPath: /var/log/multi-cloud
-              name: api-hostpath2
+              name: api-logs
             - mountPath: /etc/multi-cloud
               name: config-volume
       restartPolicy: Always
       volumes:
         - hostPath:
             path: /etc/ssl/certs
-          name: api-hostpath0
+          name: api-certs
         - hostPath:
             path: /etc/localtime
-          name: api-hostpath1
+          name: api-localtime
         - hostPath:
             path: /var/log/multi-cloud
-          name: api-hostpath2
+          name: api-logs
         - name: config-volume
           configMap:
             name: multicloud-config
-status: {}
 

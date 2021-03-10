@@ -2,32 +2,40 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: datamover
+    io.soda.service: datamover
+    app: soda-datamover
   name: datamover
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: datamover
+      io.soda.service: datamover
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        io.kompose.service: datamover
+        io.soda.service: datamover
+        app: soda-datamover
     spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-datamover
+             topologyKey: "kubernetes.io/hostname"      
       containers:
         - env:
             - name: DB_HOST
-              value: datastore:27017
+              value: mongodb-0-service,mongodb-1-service,mongodb-2-service/?replicaSet=rs0
             - name: JOB_MAX_RUN_TIME
               value: "86400"
             - name: KAFKA_ADVERTISED_LISTENERS
               value: PLAINTEXT://kafka:9092
-#            - name: MICRO_REGISTRY
-#              value: mdns 
-#            - name: MICRO_SERVER_ADDRESS
-#              value: :8093
             - name:  MICRO_REGISTRY
               value:  kubernetes
             - name: MICRO_SERVER_ADDRESS
@@ -45,25 +53,25 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/ssl/certs
-              name: datamover-hostpath0
+              name: datamover-certs
             - mountPath: /etc/localtime
-              name: datamover-hostpath1
+              name: datamover-localtime
             - mountPath: /var/log/multi-cloud
-              name: datamover-hostpath2
+              name: datamover-logs
             - mountPath: /etc/multi-cloud
               name: config-volume
       restartPolicy: Always
       volumes:
         - hostPath:
             path: /etc/ssl/certs
-          name: datamover-hostpath0
+          name: datamover-certs
         - hostPath:
             path: /etc/localtime
-          name: datamover-hostpath1
+          name: datamover-localtime
         - hostPath:
             path: /var/log/multi-cloud
-          name: datamover-hostpath2
+          name: datamover-logs
         - name: config-volume
           configMap:
             name: multicloud-config
-status: {}
+

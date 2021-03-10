@@ -2,28 +2,36 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: s3
+    io.soda.service: s3
+    app: soda-s3
   name: s3
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: s3
+      io.soda.service: s3
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        io.kompose.service: s3
+        io.soda.service: s3
+        app: soda-s3
     spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-s3
+             topologyKey: "kubernetes.io/hostname"      
       containers:
         - env:
             - name: DB_HOST
               value: tidb:4000
-#            - name: MICRO_REGISTRY
-#              value: mdns
-#            - name: MICRO_SERVER_ADDRESS
-#              value: :8096
             - name:  MICRO_REGISTRY
               value:  kubernetes
             - name: MICRO_SERVER_ADDRESS
@@ -39,43 +47,43 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /var/log/multi-cloud
-              name: s3-hostpath1
+              name: s3-logs
             - mountPath: /etc/yig
-              name: s3-hostpath3
+              name: s3-yig-datastore
             - mountPath: /etc/ceph
-              name: s3-hostpath4
+              name: s3-ceph-cfg
             - mountPath: /etc/config/multi-cloud
-              name: config-volume-1
+              name: multicloud-cfg-volume
             - mountPath: /etc/config/tidb
-              name: config-volume-2
+              name: tidb-cfg-volume
             - mountPath: /etc/config/yig
-              name: config-volume-3
+              name: yig-sql-volume
             - mountPath: /etc/multi-cloud
-              name: config-volume-4
+              name: s3-cfg-volume
       restartPolicy: Always
       volumes:
         - hostPath:
             path: /var/log/multi-cloud
             type: DirectoryOrCreate
-          name: s3-hostpath1
+          name: s3-logs
         - hostPath:
             path: /root/multi-cloud/s3/pkg/datastore/yig/conf
             type: DirectoryOrCreate
-          name: s3-hostpath3
+          name: s3-yig-datastore
         - hostPath:
             path: /etc/ceph
             type: DirectoryOrCreate
-          name: s3-hostpath4
-        - name: config-volume-1
+          name: s3-ceph-cfg
+        - name: multicloud-cfg-volume
           configMap:
             name: multicloud-config
-        - name: config-volume-2
+        - name: tidb-cfg-volume
           configMap:      
             name: tidb-sql
-        - name: config-volume-3
+        - name: yig-sql-volume
           configMap:
             name: yig-sql
-        - name: config-volume-4
+        - name: s3-cfg-volume
           configMap:
             name: s3-config
-status: {}
+

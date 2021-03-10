@@ -2,19 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: tidb
+    io.soda.service: tidb
   name: tidb
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: tidb
+      io.soda.service: tidb
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        io.kompose.service: tidb
+        io.soda.service: tidb
     spec:
       containers:
         - image: pingcap/tidb:v2.1.16
@@ -39,4 +39,4 @@ spec:
             path: /root/multi-cloud/tidb_data
             type: DirectoryOrCreate
           name: tidb-data
-status: {}
+

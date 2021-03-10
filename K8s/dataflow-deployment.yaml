@@ -2,32 +2,40 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: dataflow
+    io.soda.service: dataflow
+    app: soda-dataflow
   name: dataflow
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: dataflow
+      io.soda.service: dataflow
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        io.kompose.service: dataflow
+        io.soda.service: dataflow
+        app: soda-dataflow
     spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-dataflow
+             topologyKey: "kubernetes.io/hostname"
       containers:
         - env:
             - name: DB_HOST
-              value: datastore:27017
+              value: mongodb-0-service,mongodb-1-service,mongodb-2-service/?replicaSet=rs0
             - name: KAFKA_ADVERTISED_LISTENERS
               value: PLAINTEXT://kafka:9092
             - name: LIFECYCLE_CRON_CONFIG
               value: 0 0 0 * * ?
-#            - name: MICRO_REGISTRY
-#              value: mdns
-#            - name: MICRO_SERVER_ADDRESS
-#              value: :8094
             - name:  MICRO_REGISTRY
               value:  kubernetes
             - name: MICRO_SERVER_ADDRESS
@@ -41,20 +49,20 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/localtime
-              name: dataflow-hostpath0
+              name: dataflow-localtime
             - mountPath: /var/log/multi-cloud
-              name: dataflow-hostpath1
+              name: dataflow-logs
             - mountPath: /etc/multi-cloud
               name: config-volume
       restartPolicy: Always
       volumes:
         - hostPath:
             path: /etc/localtime
-          name: dataflow-hostpath0
+          name: dataflow-localtime
         - hostPath:
             path: /var/log/multi-cloud
-          name: dataflow-hostpath1
+          name: dataflow-logs
         - name: config-volume
           configMap:
             name: multicloud-config
-status: {}
+

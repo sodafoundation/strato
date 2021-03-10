@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    kompose.cmd: kompose convert -f docker-compose-tidb.yml --volumes hostPath
-    kompose.version: 1.22.0 (955b78124)
+    soda.cmd: soda convert -f docker-compose-tidb.yml --volumes hostPath
+    soda.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
-    io.kompose.service: tidb
+    io.soda.service: tidb
   name: tidb
 spec:
   ports:
@@ -17,6 +17,6 @@ spec:
       port: 10080
       targetPort: 10080
   selector:
-    io.kompose.service: tidb
+    io.soda.service: tidb
 status:
   loadBalancer: {}

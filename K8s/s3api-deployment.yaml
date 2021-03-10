@@ -2,28 +2,36 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: s3api
+    io.soda.service: s3api
+    app: soda-s3api
   name: s3api
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: s3api
+      io.soda.service: s3api
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        io.kompose.service: s3api
+        io.soda.service: s3api
+        app: soda-s3api
     spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-s3api
+             topologyKey: "kubernetes.io/hostname"      
       containers:
         - env:
-#            - name: MICRO_REGISTRY
-#              value: mdns
-#            - name: MICRO_SERVER_ADDRESS
-#              value: :8090
-            - name:  MICRO_REGISTRY
-              value:  kubernetes
+            - name: MICRO_REGISTRY
+              value: kubernetes
             - name: MICRO_SERVER_ADDRESS
               value: 0.0.0.0:8090
             - name: MICRO_BROKER_ADDRESS
@@ -51,11 +59,11 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/ssl/certs
-              name: s3api-hostpath0
+              name: s3api-certs
             - mountPath: /etc/localtime
-              name: s3api-hostpath1
+              name: s3api-localtime
             - mountPath: /var/log/multi-cloud
-              name: s3api-hostpath2
+              name: s3api-logs
             - mountPath: /etc/multi-cloud/
               name: config-volume
       restartPolicy: Always
@@ -63,15 +71,15 @@ spec:
         - hostPath:
             path: /etc/ssl/certs
             type: DirectoryOrCreate
-          name: s3api-hostpath0
+          name: s3api-certs
         - hostPath:
             path: /etc/localtime
-          name: s3api-hostpath1
+          name: s3api-localtime
         - hostPath:
             path: /var/log/multi-cloud
             type: DirectoryOrCreate
-          name: s3api-hostpath2
+          name: s3api-logs
         - name: config-volume
           configMap:
             name: multicloud-config
-status: {}
+

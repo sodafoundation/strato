@@ -2,18 +2,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: kafka-svc
+    io.soda.service: kafka-svc
   name: kafka-svc
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      io.kompose.service: kafka-svc
+      io.soda.service: kafka-svc
   strategy: {}
   template:
     metadata:
       labels:
-        io.kompose.service: kafka-svc
+        io.soda.service: kafka-svc
     spec:
       containers:
         - env:
@@ -31,4 +31,4 @@ spec:
             - containerPort: 9092
           resources: {}
       restartPolicy: Always
-status: {}
+
