@@ -66,6 +66,7 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 
 	// As per https://cloud.google.com/storage/docs/interoperability,
 	// using AWS CLINET SDK with HMAC credentials to upload object in GCS
+	// https://github.com/GoogleCloudPlatform/golang-samples
 	md5Writer := md5.New()
 	dataReader := io.TeeReader(limitedDataReader, md5Writer)
 	sess := session.Must(session.NewSession(&aws.Config{
