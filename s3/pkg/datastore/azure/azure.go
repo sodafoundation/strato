@@ -87,7 +87,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	storageClass := dscommon.GetStorClassFromCtx(ctx)
-	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d storageClass=%s", objectId, blobURL, userMd5, object.Size, storageClass)
+	log.Infof("Put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d storageClass=%s", objectId, blobURL, userMd5, object.Size, storageClass)
 
 	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
 	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
