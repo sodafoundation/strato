@@ -83,12 +83,12 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		storClass = storageClass
 	} else {
 		if object.Tier == 0 {
-			// default
+			// default i.e STANDARD
 			object.Tier = utils.Tier1
 		}
 		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_GCS)
 		if err != nil {
-			log.Infof("translate tier[%d] to aws storage class failed", object.Tier)
+			log.Error("translate tier[%d] to gcp storage class failed", object.Tier)
 			return result, ErrInternalError
 		}
 	}
