@@ -46,7 +46,7 @@ spec:
                  - mongo
              topologyKey: "kubernetes.io/hostname"
       containers:
-        - image: mtlbillyfong/mongodb-replica-set:20200330-stable-1
+        - image: sodafoundation/soda-mongodb:v4.2.3
           name: mongodb-0
           resources:
             requests:
