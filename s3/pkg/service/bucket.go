@@ -91,9 +91,9 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 
 	err = sd.BucketCreate(ctx, in)
-	log.Error("The error while creating bucket:", err)
+	log.Error("the error while creating bucket:", err)
 	if err != nil {
-		log.Errorln("failed to create bucket in aws-s3 service:", err)
+		log.Errorln("failed to create bucket in s3 service:", err)
 		return err
 	}
 

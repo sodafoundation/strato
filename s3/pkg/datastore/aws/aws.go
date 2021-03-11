@@ -68,7 +68,7 @@ func (myc *s3Cred) IsExpired() bool {
 func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 
 	log.Info("Bucket create is called in aws service")
-
+	log.Info("the input request to create bucket is:", in)
 	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
 	configuration := &aws.Config{
 		Region:      aws.String(DefaultRegion),
@@ -79,13 +79,9 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 
 	input := &awss3.CreateBucketInput{
 		Bucket: aws.String(in.Name),
-		CreateBucketConfiguration: &awss3.CreateBucketConfiguration{
-			LocationConstraint: aws.String(ad.backend.Region),
-		},
-		ACL: aws.String(in.Acl.CannedAcl),
 	}
 
-	_, err := svc.CreateBucketWithContext(ctx, input)
+	buckout, err := svc.CreateBucket(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -104,17 +100,9 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 		return err
 	}
 
-	// Wait until bucket is created before finishing
-	err = svc.WaitUntilBucketExists(&awss3.HeadBucketInput{
-		Bucket: aws.String(in.Name),
-	})
-	if err != nil {
-		return err
-	}
-
-	return  nil
+	log.Info("the result of create bucket:", buckout)
+	return nil
 }
-
 
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucket := object.BucketName
@@ -144,7 +132,15 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		return result, ErrInternalError
 	}
 
-	uploader := s3manager.NewUploader(ad.session)
+	//uploader := s3manager.NewUploader(ad.session)
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Credentials: Credentials,
+	},
+	)
+	uploader := s3manager.NewUploader(sess)
+
 	input := &s3manager.UploadInput{
 		Body:         dataReader,
 		Bucket:       aws.String(bucket),
@@ -160,7 +156,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			log.Debugf("input.ContentMD5=%s\n", *input.ContentMD5)
 		}
 	}
-	log.Infof("upload object[AWS S3] start, objectId:%s, input:\n", objectId, input)
+	log.Infof("upload object[AWS S3] start, objectId:%s, input:%s\n", objectId, input)
 	ret, err := uploader.Upload(input)
 	if err != nil {
 		log.Errorf("put object[AWS S3] failed, objectId:%s, err:%v\n", objectId, err)
@@ -214,12 +210,11 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	return result.Body, nil
 }
 
-
 func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	log.Info("Bucket delete is called in aws service")
 	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
 	configuration := &aws.Config{
-		Region:      aws.String(ad.backend.Region),
+		Region:      aws.String(DefaultRegion),
 		Endpoint:    aws.String(ad.backend.Endpoint),
 		Credentials: Credentials,
 	}
@@ -243,29 +238,10 @@ func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 		}
 		return err
 	}
-
-	// Wait until bucket is gone before finishing
-	err = svc.WaitUntilBucketNotExists(&awss3.HeadBucketInput{
-		Bucket: aws.String(in.Name),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Make sure it's really gone
-	_, err = svc.HeadBucket(&awss3.HeadBucketInput{
-		Bucket: aws.String(in.Name),
-	})
-	// We expect this to fail if bucket does not exist
-	if err != nil {
-		return nil
-	}
-
 	log.Info(result)
 
 	return nil
 }
-
 
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
 	bucket := input.Bucket
@@ -274,7 +250,14 @@ func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 	deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &objectId}
 
 	log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
-	svc := awss3.New(ad.session)
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+
+	svc := awss3.New(session.New(configuration))
 	_, err := svc.DeleteObject(&deleteInput)
 	if err != nil {
 		log.Errorf("delete object[AWS S3] failed, objectId:%s, err:%v.\n", objectId, err)
