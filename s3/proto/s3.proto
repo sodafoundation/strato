@@ -713,9 +713,10 @@ message ListBucketUploadResponse {
 
 message Restore{
     int64 days          = 1;
-    string tier  = 2;
+    string tier         = 2;
     string bucketName   = 3;
     string objectKey    = 4;
+    string storageClass = 5;
 }
 
 message RestoreObjectRequest {

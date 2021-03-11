@@ -15,6 +15,7 @@
 package model
 
 type Restore struct {
-	Days int64  `json:"days,omitempty"`
-	Tier string `json:"tier,omitempty"`
+	Days         int64  `json:"days,omitempty"`
+	Tier         string `json:"tier,omitempty"`
+	StorageClass string `json:"storageClass,omitempty"`
 }
