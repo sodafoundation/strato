@@ -46,7 +46,7 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error 
 		log.Error("falied to delete bucket", err)
 		return err
 	}
-	log.Info("bucket deletion successful")
+	log.Info("Bucket deletion is successful")
 	return nil
 
 }
@@ -59,7 +59,7 @@ func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 		log.Error("falied to create bucket", err)
 		return err
 	}
-	log.Info("bucket creation successful")
+	log.Info("Bucket creation is successful")
 	return nil
 }
 
