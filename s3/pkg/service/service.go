@@ -17,6 +17,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
@@ -32,8 +35,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"strconv"
 )
 
 type Int2String map[int32]string
@@ -70,7 +71,7 @@ func NewS3Service() pb.S3Handler {
 	gc.Init(ctx, cancelFunc, metaStor)
 	return &s3Service{
 		MetaStorage:   metaStor,
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
 	}
 }
 
