@@ -46,6 +46,50 @@ type AzureAdapter struct {
 	containerURL azblob.ContainerURL
 }
 
+func (ad *AzureAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error {
+
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, input.Name)
+
+	_, err := containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
+	if err != nil {
+		log.Error("failed to delete bucket:",err)
+		return err
+	}
+	log.Infof("Successful bucket deletion")
+	return nil
+}
+
+func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, input.Name)
+
+	// Create the container on the service (with no metadata and no public access)
+	_, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
+	if err != nil {
+		log.Error("failed to create bucket:",err)
+		return err
+	}
+	log.Infof("Successful bucket creation")
+	return nil
+
+}
+
+//creates containerURL with bucketname
+func (ad *AzureAdapter) createBucketContainerURL(accountName string, accountKey string, bucketName string) (azblob.ContainerURL, error) {
+	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		log.Error("create credential[Azure Blob] failed, err:%v\n", err)
+		return azblob.ContainerURL{}, err
+	}
+
+	pipeline := azblob.NewPipeline(credential, azblob.PipelineOptions{})
+	u, _ := url.Parse("https://" + accountName + ".blob.core.windows.net")
+	serviceURL := azblob.NewServiceURL(*u, pipeline)
+	containerURL := serviceURL.NewContainerURL(bucketName) // Container names require lowercase
+	return containerURL, nil
+
+}
+
 /*func Init(backend *backendpb.BackendDetail) *AzureAdapter {
 	endpoint := backend.Endpoint
 	AccessKeyID := backend.Access
@@ -66,7 +110,7 @@ func (ad *AzureAdapter) createContainerURL(endpoint string, acountName string, a
 	credential, err := azblob.NewSharedKeyCredential(acountName, accountKey)
 
 	if err != nil {
-		log.Infof("create credential[Azure Blob] failed, err:%v\n", err)
+		log.Errorf("create credential[Azure Blob] failed, err:%v\n", err)
 		return azblob.ContainerURL{}, err
 	}
 
@@ -82,8 +126,9 @@ func (ad *AzureAdapter) createContainerURL(endpoint string, acountName string, a
 }
 
 func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	objectId := object.BucketName + "/" + object.ObjectKey
-	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
+	objectId := object.ObjectKey
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
+	blobURL := containerURL.NewBlockBlobURL(objectId)
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d\n", objectId, blobURL, userMd5, object.Size)
@@ -142,10 +187,10 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 }
 
 func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	log.Infof("get object[Azure Blob], bucket:%s, objectId:%s\n", bucket, object.ObjectId)
-
-	blobURL := ad.containerURL.NewBlobURL(object.ObjectId)
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
+	blobURL := containerURL.NewBlobURL(object.ObjectId)
 
 	count := end - start + 1
 	log.Infof("blobURL:%v, size:%d, start=%d, end=%d, count=%d\n", blobURL, object.Size, start, end, count)
@@ -160,11 +205,11 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 }
 
 func (ad *AzureAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
-	bucket := ad.backend.BucketName
-	objectId := input.Bucket + "/" + input.Key
+	bucket := input.Bucket
+	objectId := input.Key
 	log.Infof("delete object[Azure Blob], objectId:%s, bucket:%s\n", objectId, bucket)
-
-	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, input.Bucket)
+	blobURL := containerURL.NewBlockBlobURL(objectId)
 	log.Infof("blobURL is %v\n", blobURL)
 	delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 	if err != nil {
