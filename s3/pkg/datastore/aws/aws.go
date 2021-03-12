@@ -132,7 +132,6 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		return result, ErrInternalError
 	}
 
-	//uploader := s3manager.NewUploader(ad.session)
 	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(DefaultRegion),
