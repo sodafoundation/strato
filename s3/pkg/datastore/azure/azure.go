@@ -66,7 +66,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 	// Create the container on the service (with no metadata and no public access)
 	_, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 	if err != nil {
-		log.Error("failed to create bucket:"err)
+		log.Error("failed to create bucket:",err)
 		return err
 	}
 	log.Infof("Successful bucket creation")
