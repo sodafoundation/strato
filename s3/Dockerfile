@@ -23,6 +23,12 @@ yum -y install mysql && \
 yum clean all && \
 rm -rf /var/cache/yum
 
+ADD ./server.crt /etc/pki/ca-trust/source/anchors/
+
+RUN update-ca-trust force-enable
+
+
+
 COPY s3 /s3
 COPY initdb.sh /initdb.sh
 ENTRYPOINT ["/initdb.sh"]
