@@ -42,6 +42,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	DefaultRegion = "us-east-1"
+)
+
 type AwsAdapter struct {
 	backend *backendpb.BackendDetail
 	session *session.Session
@@ -61,9 +65,49 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
+func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
+
+	log.Info("Bucket create is called in aws service")
+	log.Info("The input request to create bucket is:", in)
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+	svc := awss3.New(session.New(configuration))
+
+	input := &awss3.CreateBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+
+	buckout, err := svc.CreateBucket(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case awss3.ErrCodeBucketAlreadyExists:
+				log.Error(awss3.ErrCodeBucketAlreadyExists, aerr.Error())
+			case awss3.ErrCodeBucketAlreadyOwnedByYou:
+				log.Error(awss3.ErrCodeBucketAlreadyOwnedByYou, aerr.Error())
+			default:
+				log.Error(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Error(err.Error())
+		}
+		return err
+	}
+    log.Debug("The bucket creation successful in aws s3 service")
+	log.Info("The result of create bucket:", buckout)
+
+	return nil
+}
+
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucket := object.BucketName
+	objectId := object.ObjectKey
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
@@ -97,7 +141,15 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			return result, ErrInternalError
 		}
 	}
-	uploader := s3manager.NewUploader(ad.session)
+    // get the crentials object based on user AK/SK
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Credentials: Credentials,
+	},
+	)
+	uploader := s3manager.NewUploader(sess)
+
 	input := &s3manager.UploadInput{
 		Body:         dataReader,
 		Bucket:       aws.String(bucket),
@@ -141,7 +193,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 }
 
 func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,
@@ -166,13 +218,56 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	return result.Body, nil
 }
 
+
+func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	log.Info("Bucket delete is called in aws s3 service")
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+
+	svc := awss3.New(session.New(configuration))
+	input := &awss3.DeleteBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+
+	result, err := svc.DeleteBucketWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				log.Error(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Error(err.Error())
+		}
+		return err
+	}
+	log.Info(result)
+
+	return nil
+}
+
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
-	bucket := ad.backend.BucketName
-	objectId := input.Bucket + "/" + input.Key
+	log.Info("Bucket object delete is called in aws s3 service")
+	bucket := input.Bucket
+	objectId := input.Key
+	log.Info("Deleting the object of bucket:%s and object:%s", bucket, objectId)
 	deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &objectId}
 
 	log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
-	svc := awss3.New(ad.session)
+
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      aws.String(DefaultRegion),
+		Endpoint:    aws.String(ad.backend.Endpoint),
+		Credentials: Credentials,
+	}
+	svc := awss3.New(session.New(configuration))
 	_, err := svc.DeleteObject(&deleteInput)
 	if err != nil {
 		log.Errorf("delete object[AWS S3] failed, objectId:%s, err:%v.\n", objectId, err)

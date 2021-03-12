@@ -19,6 +19,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"errors"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 	"io"
 	"path/filepath"
 
@@ -39,6 +40,14 @@ const (
 var (
 	RootContext = context.Background()
 )
+
+func (yig *YigStorage) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	panic("implement me")
+}
+
+func (yig *YigStorage) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+	panic("implement me")
+}
 
 // YigStorage implements StorageDriver
 type YigStorage struct {
