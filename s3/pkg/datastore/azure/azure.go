@@ -52,7 +52,7 @@ func (ad *AzureAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) erro
 
 	_, err := containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
 	if err != nil {
-		log.Error(err)
+		log.Error("failed to delete bucket:",err)
 		return err
 	}
 	log.Infof("Successful bucket deletion")
@@ -66,7 +66,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 	// Create the container on the service (with no metadata and no public access)
 	_, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 	if err != nil {
-		log.Error(err)
+		log.Error("failed to create bucket:"err)
 		return err
 	}
 	log.Infof("Successful bucket creation")
@@ -110,7 +110,7 @@ func (ad *AzureAdapter) createContainerURL(endpoint string, acountName string, a
 	credential, err := azblob.NewSharedKeyCredential(acountName, accountKey)
 
 	if err != nil {
-		log.Infof("create credential[Azure Blob] failed, err:%v\n", err)
+		log.Errorf("create credential[Azure Blob] failed, err:%v\n", err)
 		return azblob.ContainerURL{}, err
 	}
 
