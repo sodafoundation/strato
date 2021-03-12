@@ -18,8 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
 	"time"
+
+	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
@@ -44,8 +45,8 @@ func NewBlockService() pb.BlockHandler {
 
 	log.Infof("Init block service finished.\n")
 	return &blockService{
-		blockClient:   pb.NewBlockService("block", client.DefaultClient),
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		blockClient:   pb.NewBlockService("soda.multicloud.v1.block", client.DefaultClient),
+		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
 	}
 }
 

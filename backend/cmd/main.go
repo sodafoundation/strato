@@ -35,7 +35,7 @@ func main() {
 
 	obs.InitLogs()
 	service := micro.NewService(
-		micro.Name("backend"),
+		micro.Name("soda.multicloud.v1.backend"),
 	)
 
 	service.Init()

@@ -26,7 +26,7 @@ import (
 
 func main() {
 	service := micro.NewService(
-		micro.Name("dataflow"),
+		micro.Name("soda.multicloud.v1.dataflow"),
 	)
 
 	obs.InitLogs()
