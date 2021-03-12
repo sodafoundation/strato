@@ -91,11 +91,11 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 
 	err = sd.BucketCreate(ctx, in)
-	log.Error("the error while creating bucket:", err)
 	if err != nil {
 		log.Errorln("failed to create bucket in s3 service:", err)
 		return err
 	}
+	log.Debug("bucket created successfully in s3 service")
 
 	processed, err := s.MetaStorage.Db.CheckAndPutBucket(ctx, &Bucket{Bucket: in})
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 	}
 
 	return nil
-	}
+}
 
 func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBucketResponse) error {
 	log.Infof("GetBucket %s is called in s3 service.", in.Id)
