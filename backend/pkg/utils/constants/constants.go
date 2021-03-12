@@ -30,5 +30,5 @@ const (
 	BackendTypeYIGS3     = "yig"
 	BackendTypeAlibaba   = "alibaba-oss"
 	BackendTypeHpcBlock  = "hw-block"
-	BackendTypeSonyODA   = "sony-s3"
+	BackendTypeSonyODA   = "sony-oda"
 )
