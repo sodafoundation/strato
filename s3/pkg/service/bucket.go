@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3"
@@ -76,12 +77,32 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return nil
 	}
 
+	// We need to find the backend in which bucket will be created
+	backend, err := utils.GetBackend(ctx, s.backendClient, in.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	err = sd.BucketCreate(ctx, in)
+	if err != nil {
+		log.Errorln("failed to create bucket in s3 service:", err)
+		return err
+	}
+	log.Debug("Bucket created successfully in s3 service")
+
 	processed, err := s.MetaStorage.Db.CheckAndPutBucket(ctx, &Bucket{Bucket: in})
 	if err != nil {
 		log.Error("Error making checkandput: ", err)
 		return nil
 	}
-	log.Infof("create bucket[%s] in database succeed, processed=%v.\n", in.Name, processed)
+	log.Infof("Create bucket[%s] in database succeed, processed=%v.\n", in.Name, processed)
 	if !processed { // bucket already exists, return accurate message
 		/*bucket*/ _, err := s.MetaStorage.GetBucket(ctx, bucketName, false)
 		if err == nil {
@@ -210,13 +231,37 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		err = ErrBucketNotEmpty
 		return nil
 	}
+
+	// We need to find the backend in which bucket will be created
+	backend, err := utils.GetBackend(ctx, s.backendClient, bucket.DefaultLocation)
+	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+
+	log.Info("The backend is:\n", backend)
+
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create storage. err:", err)
+		return err
+	}
+
+	log.Info("The driver for the backend is:\n", sd)
+
+	err = sd.BucketDelete(ctx, in)
+	if err != nil {
+		log.Errorln("failed to delete bucket in s3 service:", err)
+		return err
+	}
+
 	err = s.MetaStorage.Db.DeleteBucket(ctx, bucket)
 	if err != nil {
 		log.Errorf("delete bucket[%s] failed, err:%v\n", bucketName, err)
 		return nil
 	}
 
-	log.Infof("delete bucket[%s] successfully\n", bucketName)
+	log.Infof("Delete bucket[%s] successfully\n", bucketName)
 	return nil
 }
 
