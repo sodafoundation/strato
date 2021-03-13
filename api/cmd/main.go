@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	serviceName = "gelato"
+	serviceName = "soda.multicloud.v1.api"
 )
 
 func main() {
