@@ -763,7 +763,7 @@ func initTargeObject(ctx context.Context, in *pb.MoveObjectRequest, srcObject *p
 
 // This is for lifecycle management.
 func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, out *pb.MoveObjectResponse) error {
-	log.Infoln("MoveObject is called in s3 service.")
+	log.Infoln("MoveObject is called in s3 service and the input parameter is:", in)
 
 	err := s.checkMoveRequest(ctx, in)
 	if err != nil {
@@ -781,6 +781,9 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		log.Errorf("failed to get init target obejct. err:%v\n", err)
 		return err
 	}
+
+	// setting target bucketname as bucketname
+	targetObject.BucketName = in.TargetBucket
 
 	var srcSd, targetSd driver.StorageDriver
 	var srcBucket, targetBucket *types.Bucket
@@ -821,8 +824,8 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		if in.MoveType == utils.MoveType_ChangeLocation {
 			targetBucket = srcBucket
 			targetObject.Location = in.TargetLocation
-			log.Infof("move %s cross backends, srcBackend=%s, targetBackend=%s, targetTier=%d\n",
-				srcObject.ObjectKey, srcObject.Location, targetObject.Location, targetObject.Tier)
+			log.Infof("move %s cross backends, srcBackend=%s, targetBackend=%s, targetBucket=%s targetTier=%d\n",
+				srcObject.ObjectKey, srcObject.Location, targetObject.Location, targetObject.BucketName, targetObject.Tier)
 		} else { // MoveType_MoveCrossBuckets
 			log.Infof("move %s from bucket[%s] to bucket[%s]\n", targetObject.ObjectKey, srcObject.BucketName,
 				targetObject.BucketName)
@@ -833,7 +836,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			}
 			targetObject.ObjectKey = in.TargetObject
 			targetObject.Location = targetBucket.DefaultLocation
-			targetObject.BucketName = targetBucket.Name
+			targetObject.BucketName = in.TargetBucket
 			log.Infof("move %s cross buckets, targetBucket=%s, targetBackend=%s, targetTier=%d\n",
 				srcObject.ObjectKey, targetObject.BucketName, targetObject.Location, targetObject.Tier)
 		}
