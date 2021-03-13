@@ -61,9 +61,28 @@ func (myc *s3Cred) IsExpired() bool {
 	return false
 }
 
+func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
+
+	log.Info("Bucket create is called in aws service and input request is:", in)
+	svc := awss3.New(ad.session)
+
+	input := &awss3.CreateBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+
+	buckout, err := svc.CreateBucket(input)
+	if err != nil {
+		log.Error("the create bucket failed in aws-s3 service with err:%s", err.Error())
+		return err
+	}
+	log.Debug("The bucket creation successful in aws-s3 service with output:%s", buckout)
+
+	return nil
+}
+
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucket := object.BucketName
+	objectId := object.ObjectKey
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
@@ -97,7 +116,9 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 			return result, ErrInternalError
 		}
 	}
+
 	uploader := s3manager.NewUploader(ad.session)
+
 	input := &s3manager.UploadInput{
 		Body:         dataReader,
 		Bucket:       aws.String(bucket),
@@ -141,7 +162,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 }
 
 func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	objectId := object.ObjectId
 	getObjectInput := awss3.GetObjectInput{
 		Bucket: &bucket,
@@ -166,12 +187,33 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	return result.Body, nil
 }
 
+
+func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	log.Info("Bucket delete is called in aws s3 service")
+	svc := awss3.New(ad.session)
+	input := &awss3.DeleteBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+
+	result, err := svc.DeleteBucketWithContext(ctx, input)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	log.Debug(result)
+
+	return nil
+}
+
 func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
-	bucket := ad.backend.BucketName
-	objectId := input.Bucket + "/" + input.Key
+	log.Info("Bucket object delete is called in aws s3 service")
+	bucket := input.Bucket
+	objectId := input.Key
+	log.Info("Deleting the object of bucket:%s and object:%s", bucket, objectId)
 	deleteInput := awss3.DeleteObjectInput{Bucket: &bucket, Key: &objectId}
 
 	log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
+
 	svc := awss3.New(ad.session)
 	_, err := svc.DeleteObject(&deleteInput)
 	if err != nil {
