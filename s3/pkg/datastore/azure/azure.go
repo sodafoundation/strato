@@ -34,6 +34,7 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -52,7 +53,7 @@ func (ad *AzureAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) erro
 
 	_, err := containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
 	if err != nil {
-		log.Error("failed to delete bucket:",err)
+		log.Error("failed to delete bucket:", err)
 		return err
 	}
 	log.Infof("Successful bucket deletion")
@@ -66,7 +67,7 @@ func (ad *AzureAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) erro
 	// Create the container on the service (with no metadata and no public access)
 	_, err := containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 	if err != nil {
-		log.Error("failed to create bucket:",err)
+		log.Error("failed to create bucket:", err)
 		return err
 	}
 	log.Infof("Successful bucket creation")
@@ -377,33 +378,25 @@ func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListP
 }
 
 func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-
-	object := &pb.Object{
-		BucketName: backendDetail.BucketName,
-		ObjectKey:  "emptyContainer/",
+	randId := uuid.NewV4().String()
+	input := &pb.Bucket{
+		Name: "sample" + randId,
 	}
 
-	bs := []byte{0}
-	stream := bytes.NewReader(bs)
-
-	_, err := ad.Put(ctx, stream, object)
-
+	err := ad.BucketCreate(ctx, input)
 	if err != nil {
-		log.Debug("failed to put object[Azure Blob]:", err)
+		log.Error("Failed to create sample bucket :", err)
 		return err
 	}
 
-	input := &pb.DeleteObjectInput{
-		Bucket: backendDetail.BucketName,
-		Key:    "EmptyContainer/",
-	}
-
-	err = ad.Delete(ctx, input)
+	log.Debug("Create sample bucket is successul")
+	err = ad.BucketDelete(ctx, input)
 	if err != nil {
-		log.Debug("failed to delete object[Azure Blob],\n", err)
+		log.Error("failed to delete sample bucket :", err)
 		return err
 	}
-	log.Debug("create and delete object is successful\n")
+
+	log.Debug("Delete sample bucket is successful")
 	return nil
 }
 

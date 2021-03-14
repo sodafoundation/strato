@@ -39,6 +39,7 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -186,7 +187,6 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	log.Infof("get object[AWS S3] succeed, objectId:%s, ContentLength:%d\n", objectId, *result.ContentLength)
 	return result.Body, nil
 }
-
 
 func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	log.Info("Bucket delete is called in aws s3 service")
@@ -424,23 +424,26 @@ func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPar
 }
 
 func (ad *AwsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	Region := aws.String(backendDetail.Region)
-	Endpoint := aws.String(backendDetail.Endpoint)
-	Credentials := credentials.NewStaticCredentials(backendDetail.Access, backendDetail.Security, "")
-	Bucket := aws.String(backendDetail.BucketName)
-	configuration := &aws.Config{
-		Region:      Region,
-		Endpoint:    Endpoint,
-		Credentials: Credentials,
+	randId := uuid.NewV4().String()
+	input := &pb.Bucket{
+		Name: "sample" + randId,
 	}
 
-	svc := awss3.New(session.New(configuration))
-
-	input := &awss3.HeadBucketInput{
-		Bucket: Bucket,
+	err := ad.BucketCreate(ctx, input)
+	if err != nil {
+		log.Error("failed to create sample bucket :", err)
+		return err
 	}
-	_, err := svc.HeadBucket(input)
-	return err
+
+	log.Debug("Create sample bucket is successul")
+	err = ad.BucketDelete(ctx, input)
+	if err != nil {
+		log.Error("failed to delete sample bucket :", err)
+		return err
+	}
+
+	log.Debug("Delete sample bucket is successful")
+	return nil
 }
 
 func (ad *AwsAdapter) Close() error {
