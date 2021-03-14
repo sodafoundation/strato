@@ -1798,7 +1798,10 @@ type BucketVersioning struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Status string `protobuf:"bytes,1,opt,name=Status,json=status,proto3" json:"Status,omitempty"`
+	Status               string `protobuf:"bytes,1,opt,name=Status,json=status,proto3" json:"Status,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}
+	XXX_unrecognized     interface{}
+	XXX_sizecache        int
 }
 
 func (x *BucketVersioning) Reset() {
@@ -2255,9 +2258,12 @@ type ServerSideEncryption struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SseType             string `protobuf:"bytes,1,opt,name=sseType,proto3" json:"sseType,omitempty"`
-	EncryptionKey       []byte `protobuf:"bytes,2,opt,name=encryptionKey,proto3" json:"encryptionKey,omitempty"`
-	InitilizationVector []byte `protobuf:"bytes,3,opt,name=initilizationVector,proto3" json:"initilizationVector,omitempty"`
+	SseType              string `protobuf:"bytes,1,opt,name=sseType,proto3" json:"sseType,omitempty"`
+	EncryptionKey        []byte `protobuf:"bytes,2,opt,name=encryptionKey,proto3" json:"encryptionKey,omitempty"`
+	InitilizationVector  []byte `protobuf:"bytes,3,opt,name=initilizationVector,proto3" json:"initilizationVector,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}
+	XXX_unrecognized     interface{}
+	XXX_sizecache        int
 }
 
 func (x *ServerSideEncryption) Reset() {
