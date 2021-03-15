@@ -1,4 +1,4 @@
-kubectl apply -f namespace.yaml
+kubectl create namespace soda-multi-cloud
 
 kubectl apply -f mongo-pv-0.yaml -n soda-multi-cloud
 kubectl apply -f mongo-pv-1.yaml -n soda-multi-cloud
