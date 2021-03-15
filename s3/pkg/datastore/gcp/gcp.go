@@ -53,8 +53,8 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error 
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
 	bucket := ad.session.NewBucket()
-	acl := models.ACL(input.Acl.CannedAcl)
-	err := bucket.Create(input.Name, acl)
+	//acl := models.ACL(input.Acl.CannedAcl)
+	err := bucket.Create(input.Name, models.PublicReadWrite)
 	if err != nil {
 		log.Error("falied to create bucket", err)
 		return err
@@ -136,7 +136,7 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 
 func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
 	bucket := ad.session.NewBucket()
-	objectId := input.Bucket + "/" + input.Key
+	objectId := input.Key
 	log.Infof("delete object[GCS], objectId:%s, err:%v\n", objectId)
 
 	GcpObject := bucket.NewObject(input.Bucket)
@@ -305,11 +305,11 @@ func (ad *GcsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 }
 
 func (ad *GcsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return ErrNotImplemented
+	return nil
 }
 
 func (ad *GcsAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
-    return ErrNotImplemented
+	return ErrNotImplemented
 }
 
 func (ad *GcsAdapter) Close() error {
