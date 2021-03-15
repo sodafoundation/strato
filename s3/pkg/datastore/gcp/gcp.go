@@ -53,7 +53,6 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error 
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
 	bucket := ad.session.NewBucket()
-	//acl := models.ACL(input.Acl.CannedAcl)
 	err := bucket.Create(input.Name, models.PublicReadWrite)
 	if err != nil {
 		log.Error("falied to create bucket", err)
