@@ -1,4 +1,4 @@
-package aws
+package sony
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
@@ -6,37 +6,38 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	awsdk "github.com/opensds/multi-cloud/s3/pkg/datastore/aws"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 )
 
-type AwsS3DriverFactory struct {
+type SonyS3DriverFactory struct {
 }
 
-func (factory *AwsS3DriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
+func (factory *SonyS3DriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
 	endpoint := backend.Endpoint
 	AccessKeyID := backend.Access
 	AccessKeySecret := backend.Security
-	region := backend.Region
 
-	s3aksk := S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
+	s3aksk := awsdk.S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
 	creds := credentials.NewCredentials(&s3aksk)
 
 	disableSSL := true
 	sess, err := session.NewSession(&aws.Config{
-		Region:      &region,
-		Endpoint:    &endpoint,
-		Credentials: creds,
-		DisableSSL:  &disableSSL,
+		S3ForcePathStyle: aws.Bool(true),
+		Region:           aws.String("us-east-1"),
+		Endpoint:         &endpoint,
+		Credentials:      creds,
+		DisableSSL:       &disableSSL,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	adap := &AwsAdapter{Backend: backend, Session: sess}
+	adap := &awsdk.AwsAdapter{Backend: backend, Session: sess}
 
 	return adap, nil
 }
 
 func init() {
-	driver.RegisterDriverFactory(constants.BackendTypeAws, &AwsS3DriverFactory{})
+	driver.RegisterDriverFactory(constants.BackendTypeSonyODA, &SonyS3DriverFactory{})
 }
