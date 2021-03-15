@@ -8,5 +8,6 @@ import (
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/gcp"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/huawei"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/ibm"
+	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/sony"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/yig"
 )
