@@ -46,3 +46,5 @@ kubectl delete pvc mongo-2-pv-claim -n soda-multi-cloud
 kubectl delete pv mongo-0-pv-volume -n soda-multi-cloud
 kubectl delete pv mongo-1-pv-volume -n soda-multi-cloud
 kubectl delete pv mongo-2-pv-volume -n soda-multi-cloud
+
+
