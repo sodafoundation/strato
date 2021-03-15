@@ -24,7 +24,7 @@ spec:
   ports:
     - name: "8090"
       port: 8090
-      nodePort: 31090
+      nodePort: 30090
       targetPort: 8090
   selector:
     io.soda.service: s3api
