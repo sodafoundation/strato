@@ -84,18 +84,21 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return err
 	}
 
-	sd, err := driver.CreateStorageDriver(backend.Type, backend)
-	if err != nil {
-		log.Errorln("failed to create storage. err:", err)
-		return err
-	}
+	if backend.Type == "aws-s3" || backend.Type == "azure-blob" || backend.Type == "gcp-s3" ||
+		backend.Type == "hw-obs" {
+		sd, err := driver.CreateStorageDriver(backend.Type, backend)
+		if err != nil {
+			log.Errorln("failed to create storage. err:", err)
+			return err
+		}
 
-	err = sd.BucketCreate(ctx, in)
-	if err != nil {
-		log.Errorln("failed to create bucket in s3 service:", err)
-		return err
+		err = sd.BucketCreate(ctx, in)
+		if err != nil {
+			log.Errorln("failed to create bucket in s3 service:", err)
+			return err
+		}
+		log.Debug("Bucket created successfully in s3 service")
 	}
-	log.Debug("Bucket created successfully in s3 service")
 
 	processed, err := s.MetaStorage.Db.CheckAndPutBucket(ctx, &Bucket{Bucket: in})
 	if err != nil {

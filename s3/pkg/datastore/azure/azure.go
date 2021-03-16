@@ -241,8 +241,9 @@ func (ad *AzureAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.O
 
 func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	objectId := object.ObjectId
-	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
-	log.Infof("change storage class[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
+	blobURL := containerURL.NewBlobURL(objectId)
+	log.Infof("change storage class[Azure Blob], object=[%s], objectId:%s, blobURL is %v\n", object, objectId, blobURL)
 
 	var res *azblob.BlobSetTierResponse
 	var err error
@@ -278,7 +279,7 @@ func (ad *AzureAdapter) GetObjectInfo(bucketName string, key string, context con
 }
 
 func (ad *AzureAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	log.Infof("bucket is %v\n", bucket)
 	multipartUpload := &pb.MultipartUpload{}
 	multipartUpload.Key = object.ObjectKey

@@ -775,15 +775,14 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		log.Errorf("failed to get object[%s] of bucket[%s]. err:%v\n", in.SrcObject, in.SrcBucket, err)
 		return err
 	}
+    log.Debug("The source object:", srcObject)
 
 	targetObject, err := initTargeObject(ctx, in, srcObject.Object)
 	if err != nil {
 		log.Errorf("failed to get init target obejct. err:%v\n", err)
 		return err
 	}
-
-	// setting target bucketname as bucketname
-	targetObject.BucketName = in.TargetBucket
+	log.Debug("The target object:", targetObject)
 
 	var srcSd, targetSd driver.StorageDriver
 	var srcBucket, targetBucket *types.Bucket
@@ -792,12 +791,15 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		log.Errorf("get source bucket[%s] failed with err:%v", in.SrcBucket, err)
 		return err
 	}
+    log.Debug("The souce bucket:", srcBucket)
 
 	srcBackend, err := utils.GetBackend(ctx, s.backendClient, srcObject.Location)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
 	}
+	log.Debug("The source backend:", srcBackend)
+
 	srcSd, err = driver.CreateStorageDriver(srcBackend.Type, srcBackend)
 	if err != nil {
 		log.Errorln("failed to create storage. err:", err)
@@ -805,13 +807,13 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 	}
 
 	if in.MoveType == utils.MoveType_ChangeStorageTier {
-		log.Infof("chagne storage class of %s\n", targetObject.ObjectKey)
+		log.Infof("The move type is change storage tier(change storage class of): %s\n", targetObject.ObjectKey)
 		// just change storage tier
-		targetBucket = srcBucket
 		className, err := GetNameFromTier(in.TargetTier, srcBackend.Type)
 		if err != nil {
 			return ErrInternalError
 		}
+		log.Debug("The target object in change storage tier:", targetObject)
 		err = srcSd.ChangeStorageClass(ctx, targetObject, &className)
 		if err != nil {
 			log.Errorf("change storage class of object[%s] failed, err:%v\n", targetObject.ObjectKey, err)
@@ -820,10 +822,12 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		newObj := &meta.Object{Object: targetObject}
 		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, srcObject, newObj, nil)
 	} else {
+		log.Infof("Now need to move data and also change storage tier:%s", targetObject.ObjectKey)
 		// need move data, get target location first
 		if in.MoveType == utils.MoveType_ChangeLocation {
 			targetBucket = srcBucket
 			targetObject.Location = in.TargetLocation
+			targetObject.BucketName = in.TargetBucket
 			log.Infof("move %s cross backends, srcBackend=%s, targetBackend=%s, targetBucket=%s targetTier=%d\n",
 				srcObject.ObjectKey, srcObject.Location, targetObject.Location, targetObject.BucketName, targetObject.Tier)
 		} else { // MoveType_MoveCrossBuckets
@@ -847,18 +851,22 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			log.Errorln("failed to get backend client with err:", err)
 			return err
 		}
+		log.Debug("The target backend is:", targetBackend)
 		targetSd, err = driver.CreateStorageDriver(targetBackend.Type, targetBackend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)
 			return err
 		}
 
+		log.Debug("Now ready to move data from one backend to another")
 		// copy data from one backend to another
 		err = s.copyData(ctx, srcSd, targetSd, srcObject.Object, targetObject)
 		if err != nil {
 			log.Errorf("failed to copy object[%s], err:%v", srcObject.ObjectKey, err)
 			return err
 		}
+		log.Debug("Copy of data from one backend to another success!!")
+
 		newObj := &meta.Object{Object: targetObject}
 		if srcObject.Etag != targetObject.Etag {
 			log.Errorf("data integrity check failed, etag of source object is %s, etag of target object is:%s\n",
@@ -870,6 +878,8 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		out.Md5 = targetObject.Etag
 		out.LastModified = targetObject.LastModified
 		// update object meta data
+
+		log.Debug("Now update the meta data of object after copy")
 		err = s.MetaStorage.UpdateObject4Lifecycle(ctx, srcObject, newObj, nil)
 		if err != nil {
 			log.Errorln("failed to update meta data after copy, err:", err)
@@ -877,7 +887,10 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			s.cleanObject(ctx, newObj, targetSd)
 			return err
 		}
+		log.Debug("Update metadata after copy is successful!!")
+
 		// delete source object
+		log.Debug("Now delete the source object, starting..")
 		s.cleanObject(ctx, srcObject, srcSd)
 		log.Infof("delete source object[key=%s]\n", srcObject.ObjectKey)
 	}
@@ -895,6 +908,7 @@ func (s *s3Service) copyData(ctx context.Context, srcSd, targetSd driver.Storage
 		return err
 	}
 	limitedDataReader := io.LimitReader(reader, srcObj.Size)
+	log.Debug("Starting to PUT data to target backend")
 	res, err := targetSd.Put(ctx, limitedDataReader, targetObj)
 	if err != nil {
 		log.Errorln("failed to put data. err:", err)
