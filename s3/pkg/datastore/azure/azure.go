@@ -279,14 +279,14 @@ func (ad *AzureAdapter) GetObjectInfo(bucketName string, key string, context con
 }
 
 func (ad *AzureAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	log.Infof("bucket is %v\n", bucket)
 	multipartUpload := &pb.MultipartUpload{}
 	multipartUpload.Key = object.ObjectKey
 
 	multipartUpload.Bucket = object.BucketName
 	multipartUpload.UploadId = object.ObjectKey + "_" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	multipartUpload.ObjectId = object.BucketName + "/" + object.ObjectKey
+	multipartUpload.ObjectId = object.ObjectKey
 	return multipartUpload, nil
 }
 
@@ -307,10 +307,11 @@ func (ad *AzureAdapter) Base64ToInt64(base64ID string) int64 {
 
 func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	log.Infof("upload part[Azure Blob], bucket:%s, objectId:%s, partNumber:%d\n", bucket, multipartUpload.ObjectId, partNumber)
 
-	blobURL := ad.containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	blobURL := containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	base64ID := ad.Int64ToBase64(partNumber)
 	bytess, _ := ioutil.ReadAll(stream)
 	log.Debugf("blobURL=%+v\n", blobURL)
@@ -329,14 +330,15 @@ func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multip
 
 func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error) {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	result := model.CompleteMultipartUploadResult{}
 	result.Bucket = multipartUpload.Bucket
 	result.Key = multipartUpload.Key
 	result.Location = ad.backend.Name
 	log.Infof("complete multipart upload[Azure Blob], bucket:%s, objectId:%s\n", bucket, multipartUpload.ObjectId)
 
-	blobURL := ad.containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
+	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	blobURL := containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	var completeParts []string
 	for _, p := range completeUpload.Parts {
 		base64ID := ad.Int64ToBase64(p.PartNumber)
@@ -368,7 +370,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUp
 }
 
 func (ad *AzureAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	log.Infof("no need to abort multipart upload[objkey:%s].\n", bucket)
 	return nil
 }

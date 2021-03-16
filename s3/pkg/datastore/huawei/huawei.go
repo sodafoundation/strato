@@ -193,8 +193,8 @@ func (ad *OBSAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 }*/
 
 func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
-	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucket := object.BucketName
+	objectId := object.ObjectKey
 	multipartUpload := &pb.MultipartUpload{}
 	log.Infof("init multipart upload[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
 
@@ -224,8 +224,8 @@ func (ad *OBSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 
 func (ad *OBSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	bucket := ad.backend.BucketName
-	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
+	bucket := multipartUpload.Bucket
+	objectId := multipartUpload.Key
 	log.Infof("upload part[OBS], objectId:%s, partNum:%d, bytes:%d\n", objectId, partNumber, upBytes)
 
 	input := &obs.UploadPartInput{}
@@ -251,8 +251,8 @@ func (ad *OBSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 
 func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error) {
-	bucket := ad.backend.BucketName
-	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
+	bucket := multipartUpload.Bucket
+	objectId := multipartUpload.Key
 	log.Infof("complete multipart upload[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
 
 	input := &obs.CompleteMultipartUploadInput{}
@@ -288,8 +288,8 @@ func (ad *OBSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 }
 
 func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
-	bucket := ad.backend.BucketName
-	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
+	bucket := multipartUpload.Bucket
+	objectId := multipartUpload.Key
 	log.Infof("abort multipart upload[OBS], objectId:%s, bucket:%s\n", objectId, bucket)
 
 	input := &obs.AbortMultipartUploadInput{}
@@ -307,7 +307,7 @@ func (ad *OBSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 }
 
 func (ad *OBSAdapter) ListParts(context context.Context, listParts *pb.ListParts) (*model.ListPartsOutput, error) {
-	bucket := ad.backend.BucketName
+	bucket := listParts.Bucket
 	if context.Value("operation") == "listParts" {
 		input := &obs.ListPartsInput{}
 		input.Bucket = bucket
