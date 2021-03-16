@@ -828,7 +828,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			targetBucket = srcBucket
 			targetObject.Location = in.TargetLocation
 			targetObject.BucketName = in.TargetBucket
-			log.Infof("move %s cross backends, srcBackend=%s, targetBackend=%s, targetBucket=%s targetTier=%d\n",
+			log.Infof("Move %s cross backends, srcBackend=%s, targetBackend=%s, targetBucket=%s targetTier=%d\n",
 				srcObject.ObjectKey, srcObject.Location, targetObject.Location, targetObject.BucketName, targetObject.Tier)
 		} else { // MoveType_MoveCrossBuckets
 			log.Infof("move %s from bucket[%s] to bucket[%s]\n", targetObject.ObjectKey, srcObject.BucketName,

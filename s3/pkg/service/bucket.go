@@ -30,9 +30,9 @@ import (
 var ENC_KEY_LEN int = 32
 var ENC_IV_LEN int = 16
 
-var CrudSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs"}
+var CRUDSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs"}
 
-func contains(slice []string, item string) bool {
+func isCrudSupportedCloud(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))
 	for _, s := range slice {
 		set[s] = struct{}{}
@@ -95,7 +95,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return err
 	}
 
-	if contains(CrudSupportedClouds, backend.Type){
+	if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type){
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)
@@ -254,14 +254,14 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	log.Info("The backend is:\n", backend)
 
-    if contains(CrudSupportedClouds, backend.Type){
+    if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type){
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)
 			return err
 		}
 
-		log.Info("The driver for the backend is:\n", sd)
+		log.Info("The driver for the backend is:", sd)
 
 		err = sd.BucketDelete(ctx, in)
 		if err != nil {
