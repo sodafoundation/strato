@@ -131,13 +131,13 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	blobURL := containerURL.NewBlockBlobURL(objectId)
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
-	log.Infof("put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d\n", objectId, blobURL, userMd5, object.Size)
+	log.Infof("Put object[Azure Blob], objectId:%s, blobURL:%v, userMd5:%s, size:%d\n", objectId, blobURL, userMd5, object.Size)
 
-	log.Infof("put object[Azure Blob] begin, objectId:%s\n", objectId)
+	log.Infof("Put object[Azure Blob] begin, objectId:%s\n", objectId)
 	options := azblob.UploadStreamToBlockBlobOptions{BufferSize: 2 * 1024 * 1024, MaxBuffers: 2}
 
 	uploadResp, err := azblob.UploadStreamToBlockBlob(ctx, stream, blobURL, options)
-	log.Infof("put object[Azure Blob] end, objectId:%s\n", objectId)
+	log.Infof("Put object[Azure Blob] end, objectId:%s\n", objectId)
 	if err != nil {
 		log.Errorf("put object[Azure Blob], objectId:%s, err:%v\n", objectId, err)
 		return result, ErrPutToBackendFailed
@@ -153,7 +153,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	}
 	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_Azure)
 	if err != nil {
-		log.Infof("translate tier[%d] to aws storage class failed\n", object.Tier)
+		log.Infof("Translate tier[%d] to aws storage class failed\n", object.Tier)
 		return result, ErrInternalError
 	}
 
@@ -188,7 +188,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 
 func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
 	bucket := object.BucketName
-	log.Infof("get object[Azure Blob], bucket:%s, objectId:%s\n", bucket, object.ObjectId)
+	log.Infof("Get object[Azure Blob], bucket:%s, objectId:%s\n", bucket, object.ObjectId)
 	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
 	blobURL := containerURL.NewBlobURL(object.ObjectId)
 
@@ -207,14 +207,14 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 func (ad *AzureAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
 	bucket := input.Bucket
 	objectId := input.Key
-	log.Infof("delete object[Azure Blob], objectId:%s, bucket:%s\n", objectId, bucket)
+	log.Infof("Delete object[Azure Blob], objectId:%s, bucket:%s\n", objectId, bucket)
 	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, input.Bucket)
 	blobURL := containerURL.NewBlockBlobURL(objectId)
 	log.Infof("blobURL is %v\n", blobURL)
 	delRsp, err := blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 	if err != nil {
 		if serr, ok := err.(azblob.StorageError); ok { // This error is a Service-specific
-			log.Infof("delete service code:%s\n", serr.ServiceCode())
+			log.Infof("Delete service code:%s\n", serr.ServiceCode())
 			if string(serr.ServiceCode()) == string(azblob.StorageErrorCodeBlobNotFound) {
 				return nil
 			}
@@ -241,8 +241,13 @@ func (ad *AzureAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.O
 
 func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	objectId := object.ObjectId
-	blobURL := ad.containerURL.NewBlockBlobURL(objectId)
-	log.Infof("change storage class[Azure Blob], objectId:%s, blobURL is %v\n", objectId, blobURL)
+	containerURL, urlerr := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
+	if urlerr != nil {
+		log.Errorf("failed to create bucket container url for azure:%v\n", urlerr)
+		return urlerr
+	}
+	blobURL := containerURL.NewBlobURL(objectId)
+	log.Infof("Change storage class[Azure Blob], object=[%s], objectId:%s, blobURL is %v\n", object, objectId, blobURL)
 
 	var res *azblob.BlobSetTierResponse
 	var err error
@@ -278,7 +283,7 @@ func (ad *AzureAdapter) GetObjectInfo(bucketName string, key string, context con
 }
 
 func (ad *AzureAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	log.Infof("bucket is %v\n", bucket)
 	multipartUpload := &pb.MultipartUpload{}
 	multipartUpload.Key = object.ObjectKey

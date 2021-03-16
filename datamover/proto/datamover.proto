@@ -47,8 +47,9 @@ message LifecycleActionRequest {
 	int32 targetTier = 8;   // only for transtion
 	string sourceBackend = 9;	//for transition and expiration
 	string targetBackend = 10;	//for transition and abort incomplete multipart upload
-	int64 objSize = 11;			// for transition
-	string uploadId = 12;		// only for abort incomplete multipart upload
+	string targetBucket = 11; // for transition to specific backend
+	int64 objSize = 12;			// for transition
+	string uploadId = 13;		// only for abort incomplete multipart upload
 }
 
 message LifecycleActionResonse {

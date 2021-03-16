@@ -81,6 +81,7 @@ func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 }
 
 func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
+	log.Infof("Aws-s3 service called to put data with stream=[%s] and object=[%s]", stream, object)
 	bucket := object.BucketName
 	objectId := object.ObjectKey
 	result := dscommon.PutResult{}
@@ -234,13 +235,13 @@ func (ad *AwsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 
 func (ad *AwsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	objectId := object.ObjectId
-	log.Infof("change storage class[AWS S3] of object[%s] to %s .\n", objectId, *newClass)
+	log.Infof("change storage class[AWS S3] of object[%s] to %s .\n", object, *newClass)
 
 	svc := awss3.New(ad.session)
 	input := &awss3.CopyObjectInput{
-		Bucket:     aws.String(ad.backend.BucketName),
+		Bucket:     aws.String(object.BucketName),
 		Key:        aws.String(objectId),
-		CopySource: aws.String(ad.backend.BucketName + "/" + objectId),
+		CopySource: aws.String(object.BucketName + "/" + objectId),
 	}
 	input.StorageClass = aws.String(*newClass)
 	_, err := svc.CopyObject(input)

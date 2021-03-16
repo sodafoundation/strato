@@ -35,7 +35,7 @@ import (
 var InProgressObjs = make(map[string]struct{})
 
 func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) error {
-	log.Infof("copy object[%s], size=%d\n", obj.ObjectKey, obj.Size)
+	log.Infof("Move object[%s] for target location info=[%s]\n", obj, targetLoc)
 
 	// copy object
 	ctx, _ := context.WithTimeout(context.Background(), tmout)
@@ -45,9 +45,12 @@ func MoveObj(obj *osdss3.Object, targetLoc *LocationInfo, tmout time.Duration) e
 		SrcObjectVersion: obj.VersionId,
 		SrcBucket:        obj.BucketName,
 		TargetLocation:   targetLoc.BakendName,
+		TargetBucket:     targetLoc.BucketName,
 		TargetTier:       targetLoc.Tier,
 		MoveType:         utils.MoveType_ChangeLocation,
 	}
+
+	log.Debug("The req parameter before sending for MoveObject:", req)
 	opt := client.WithRequestTimeout(tmout)
 	_, err := s3client.MoveObject(ctx, req, opt)
 	if err != nil {
@@ -73,12 +76,13 @@ func MultipartMoveObj(obj *osdss3.Object, targetLoc *LocationInfo, partSize int6
 }
 
 func doCrossCloudTransition(acReq *datamover.LifecycleActionRequest) error {
-	log.Infof("cross-cloud transition action: transition %s from %d of %s to %d of %s.\n",
-		acReq.ObjKey, acReq.SourceTier, acReq.SourceBackend, acReq.TargetTier, acReq.TargetBackend)
+	log.Infof("cross-cloud transition action: transition %s from %d of %s to %d of %s of %s.\n",
+		acReq.ObjKey, acReq.SourceTier, acReq.SourceBackend, acReq.TargetTier, acReq.TargetBucket, acReq.TargetBackend)
 
-	target := &LocationInfo{BucketName: acReq.BucketName, BakendName: acReq.TargetBackend, Tier: acReq.TargetTier}
+	target := &LocationInfo{BucketName: acReq.TargetBucket, BakendName: acReq.TargetBackend, Tier: acReq.TargetTier}
 
-	log.Infof("transition object[%s] from [%+s] to [%+s]\n", acReq.ObjKey, acReq.SourceBackend, acReq.TargetBackend)
+	log.Infof("transition object[%s] from [%+s] to [TargetBucket: %+s] of [TargetBackend: %+s]\n",
+		acReq.ObjKey, acReq.SourceBackend, acReq.TargetBucket, acReq.TargetBackend)
 	obj := &osdss3.Object{ObjectKey: acReq.ObjKey, Size: acReq.ObjSize, BucketName: acReq.BucketName,
 		Tier: acReq.SourceTier, VersionId: acReq.VersionId}
 

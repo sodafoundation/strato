@@ -144,9 +144,9 @@ func (ad *OBSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	log.Infof("change storage class[OBS] of object[%s] to %s .\n", object.ObjectId, newClass)
 
 	input := &obs.CopyObjectInput{}
-	input.Bucket = ad.backend.BucketName
+	input.Bucket = object.BucketName
 	input.Key = object.ObjectId
-	input.CopySourceBucket = ad.backend.BucketName
+	input.CopySourceBucket = object.BucketName
 	input.CopySourceKey = object.ObjectId
 	input.MetadataDirective = obs.CopyMetadata
 	switch *newClass {
@@ -330,7 +330,7 @@ func (ad *OBSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Backen
 }
 
 func (ad *OBSAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
-    return ErrNotImplemented
+	return ErrNotImplemented
 }
 
 func (ad *OBSAdapter) Close() error {
