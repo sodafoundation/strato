@@ -244,18 +244,22 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	log.Info("The backend is:\n", backend)
 
-	sd, err := driver.CreateStorageDriver(backend.Type, backend)
-	if err != nil {
-		log.Errorln("failed to create storage. err:", err)
-		return err
-	}
+	if backend.Type == "aws-s3" || backend.Type == "azure-blob" || backend.Type == "gcp-s3" ||
+		backend.Type == "hw-obs" {
 
-	log.Info("The driver for the backend is:\n", sd)
+		sd, err := driver.CreateStorageDriver(backend.Type, backend)
+		if err != nil {
+			log.Errorln("failed to create storage. err:", err)
+			return err
+		}
 
-	err = sd.BucketDelete(ctx, in)
-	if err != nil {
-		log.Errorln("failed to delete bucket in s3 service:", err)
-		return err
+		log.Info("The driver for the backend is:\n", sd)
+
+		err = sd.BucketDelete(ctx, in)
+		if err != nil {
+			log.Errorln("failed to delete bucket in s3 service:", err)
+			return err
+		}
 	}
 
 	err = s.MetaStorage.Db.DeleteBucket(ctx, bucket)
