@@ -29,8 +29,8 @@ matrix:
 
 install:
   # Build SODA multi-cloud container images
-  - travis_wait 10 make docker
-  - travis_wait 10 docker-compose up -d
+  - travis_wait 30 make docker
+  - travis_wait 30 docker-compose up -d
 
 script:
   - ./install/CI/coverage
