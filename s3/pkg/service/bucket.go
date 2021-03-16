@@ -30,6 +30,17 @@ import (
 var ENC_KEY_LEN int = 32
 var ENC_IV_LEN int = 16
 
+var CrudSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs"}
+
+func contains(slice []string, item string) bool {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+	_, ok := set[item]
+	return ok
+}
+
 func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb.ListBucketsResponse) error {
 	log.Info("ListBuckets is called in s3 service.")
 	var err error
@@ -84,8 +95,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return err
 	}
 
-	if backend.Type == "aws-s3" || backend.Type == "azure-blob" || backend.Type == "gcp-s3" ||
-		backend.Type == "hw-obs" {
+	if contains(CrudSupportedClouds, backend.Type){
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)
@@ -244,9 +254,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	log.Info("The backend is:\n", backend)
 
-	if backend.Type == "aws-s3" || backend.Type == "azure-blob" || backend.Type == "gcp-s3" ||
-		backend.Type == "hw-obs" {
-
+    if contains(CrudSupportedClouds, backend.Type){
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)

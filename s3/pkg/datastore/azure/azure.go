@@ -241,7 +241,11 @@ func (ad *AzureAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.O
 
 func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 	objectId := object.ObjectId
-	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
+	containerURL, urlerr := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, object.BucketName)
+	if urlerr != nil {
+		log.Errorf("failed to create bucket container url for azure:%v\n", urlerr)
+		return urlerr
+	}
 	blobURL := containerURL.NewBlobURL(objectId)
 	log.Infof("change storage class[Azure Blob], object=[%s], objectId:%s, blobURL is %v\n", object, objectId, blobURL)
 
