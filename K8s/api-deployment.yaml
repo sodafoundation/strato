@@ -54,7 +54,7 @@ spec:
             - name: OS_AUTH_AUTHSTRATEGY
               value: keystone
             - name: OS_AUTH_URL
-              value: http://192.168.20.108/identity
+              value: http://KEYSTONE_IP/identity
             - name: OS_PASSWORD
               value: opensds@123
             - name: OS_PROJECT_NAME
