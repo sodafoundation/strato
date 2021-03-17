@@ -40,7 +40,7 @@ type OBSAdapter struct {
 func (ad *OBSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	_, err := ad.client.DeleteBucket(in.Name)
 	if err != nil {
-		log.Errorf("bucket deletion is failed [%d]\n", err)
+		log.Errorf("bucket deletion is failed :\n", err)
 		return err
 	}
 	log.Info("Deletion of bucket is successful")
@@ -53,7 +53,7 @@ func (ad *OBSAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 	in.ACL = obs.AclType(input.Acl.CannedAcl)
 	_, err := ad.client.CreateBucket(in)
 	if err != nil {
-		log.Errorf("bucket creation is failed [%d]\n", err)
+		log.Errorf("bucket creation is failed :\n", err)
 		return err
 	}
 	log.Info("Creation of bucket is successful")
