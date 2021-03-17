@@ -42,6 +42,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
+const sampleBucket string = "sample"
 
 type AwsAdapter struct {
 	backend *backendpb.BackendDetail
@@ -426,7 +427,7 @@ func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPar
 func (ad *AwsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
 	randId := uuid.NewV4().String()
 	input := &pb.Bucket{
-		Name: "sample" + randId,
+		Name: sampleBucket + randId,
 	}
 
 	err := ad.BucketCreate(ctx, input)

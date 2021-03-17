@@ -41,7 +41,7 @@ import (
 
 // TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
 var MaxTimeForSingleHttpRequest = 50 * time.Minute
-
+const sampleBucket string = "sample"
 type AzureAdapter struct {
 	backend      *backendpb.BackendDetail
 	containerURL azblob.ContainerURL
@@ -310,7 +310,12 @@ func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multip
 	bucket := multipartUpload.Bucket
 	log.Infof("upload part[Azure Blob], bucket:%s, objectId:%s, partNumber:%d\n", bucket, multipartUpload.ObjectId, partNumber)
 
-	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	containerURL, err1 := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	if err1 != nil {
+                log.Errorf("error in containerURL creation:",err1)
+                return nil,err1
+        }
+
 	blobURL := containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	base64ID := ad.Int64ToBase64(partNumber)
 	bytess, _ := ioutil.ReadAll(stream)
@@ -337,7 +342,11 @@ func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUp
 	result.Location = ad.backend.Name
 	log.Infof("complete multipart upload[Azure Blob], bucket:%s, objectId:%s\n", bucket, multipartUpload.ObjectId)
 
-	containerURL, _ := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	containerURL, err1 := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	if err1 != nil {
+                log.Errorf("error in containerURL creation:",err1)
+                return nil,err1
+        }
 	blobURL := containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	var completeParts []string
 	for _, p := range completeUpload.Parts {
@@ -382,12 +391,12 @@ func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListP
 func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
 	randId := uuid.NewV4().String()
 	input := &pb.Bucket{
-		Name: "sample" + randId,
+		Name: sampleBucket + randId,
 	}
 
 	err := ad.BucketCreate(ctx, input)
 	if err != nil {
-		log.Error("Failed to create sample bucket :", err)
+		log.Error("failed to create sample bucket :", err)
 		return err
 	}
 
