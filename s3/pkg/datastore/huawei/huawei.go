@@ -40,7 +40,7 @@ type OBSAdapter struct {
 func (ad *OBSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	_, err := ad.client.DeleteBucket(in.Name)
 	if err != nil {
-		log.Errorf("bucket deletion is failed :\n", err)
+		log.Errorf("bucket deletion is failed :", err)
 		return err
 	}
 	log.Info("Deletion of bucket is successful")
