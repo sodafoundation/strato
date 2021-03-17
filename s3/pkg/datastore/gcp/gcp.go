@@ -39,11 +39,11 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
-func (ad *OSSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	return nil
 }
 
-func (ad *OSSAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
 	return nil
 }
 
