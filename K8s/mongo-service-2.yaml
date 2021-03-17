@@ -16,7 +16,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: default
+  namespace: soda-multi-cloud
   name: mongodb-2-service
   labels:
     run: mongodb-2-service

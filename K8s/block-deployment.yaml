@@ -16,6 +16,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud
   labels:
     io.soda.service: block
     app: soda-backend
