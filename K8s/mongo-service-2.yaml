@@ -31,7 +31,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: default
+  namespace: soda-multi-cloud
   name: mongodb-2
   labels:
     env: test
@@ -60,7 +60,8 @@ spec:
                  - mongo
              topologyKey: "kubernetes.io/hostname"
       containers:
-        - image: sodafoundation/soda-mongodb:v4.2.3
+              #- image: sodafoundation/soda-mongodb:v4.2.3
+        - image: sodafoundation/mongodb:latest
           name: mongodb-2
           resources:
             requests:

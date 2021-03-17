@@ -60,7 +60,8 @@ spec:
                  - mongo
              topologyKey: "kubernetes.io/hostname"
       containers:
-        - image: sodafoundation/soda-mongodb:v4.2.3
+              # - image: sodafoundation/soda-mongodb:v4.2.3
+        - image: sodafoundation/mongodb:latest
           name: mongodb-1
           resources:
             requests:

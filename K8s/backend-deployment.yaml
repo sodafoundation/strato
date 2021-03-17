@@ -55,7 +55,7 @@ spec:
             - name: MICRO_BROKER_ADDRESS
               value: 0.0.0.0:9091
 
-          image: sodafoundation/multi-cloud-backend:v9
+          image: sodafoundation/multi-cloud-backend:latest
           name: backend
           ports:
             - containerPort: 8091

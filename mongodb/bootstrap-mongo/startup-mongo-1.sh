@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 mkdir /data/db/rs0-1
 
 export POD_IP_ADDRESS=$(hostname -i)

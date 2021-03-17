@@ -1,4 +1,4 @@
-# Copyright 2021 The SODA Authors.
+# Copyright 2021 The SODA Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ spec:
             - name: OS_AUTH_AUTHSTRATEGY
               value: keystone
             - name: OS_AUTH_URL
-              value: http://KEYSTONE_IP/identity
+              value: http://192.168.20.108/identity
             - name: OS_PASSWORD
               value: opensds@123
             - name: OS_PROJECT_NAME
@@ -66,7 +66,7 @@ spec:
               value: opensds
             - name: OS_USER_DOMIN_ID
               value: Default
-          image: sodafoundation/multi-cloud-file:v9
+          image: sodafoundation/multi-cloud-file:latest
           name: file
           ports:
             - containerPort: 8092

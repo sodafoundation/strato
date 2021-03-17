@@ -60,7 +60,8 @@ spec:
                  - mongo
              topologyKey: "kubernetes.io/hostname"
       containers:
-        - image: sodafoundation/soda-mongodb:v4.2.3
+              #- image: sodafoundation/soda-mongodb:v4.2.3
+        - image: sodafoundation/mongodb:latest
           name: mongodb-0
           resources:
             requests:
@@ -72,6 +73,8 @@ spec:
               cpu: "700m"
               memory: "2Gi"
           env:
+            - name: "MONGO_CONFIGURE_REPLICA_SET"
+              value: "true"
             - name: "MONGO_INITDB_ROOT_USERNAME"
               value: "admin"
             - name: "MONGO_INITDB_ROOT_PASSWORD"

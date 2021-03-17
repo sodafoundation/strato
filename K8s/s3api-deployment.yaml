@@ -55,7 +55,7 @@ spec:
             - name: OS_AUTH_AUTHSTRATEGY
               value: keystone
             - name: OS_AUTH_URL
-              value: http://KEYSTONE_IP/identity
+              value: http://192.168.20.108/identity
             - name: OS_PASSWORD
               value: opensds@123
             - name: OS_PROJECT_NAME
@@ -68,7 +68,7 @@ spec:
               value: s3
             - name: TRANSFER_SPEED_MIN
               value: "10"
-          image: sodafoundation/multi-cloud-api:v9
+          image: sodafoundation/multi-cloud-api:latest
           name: s3api
           ports:
             - containerPort: 8090
