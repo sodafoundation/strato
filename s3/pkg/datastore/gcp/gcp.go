@@ -39,33 +39,17 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
-func (ad *GcsAdapter) BucketDelete(ctx context.Context, input *pb.Bucket) error {
-	bucket := ad.session.NewBucket()
-	err := bucket.Remove(input.Name)
-	if err != nil {
-		log.Error("falied to delete bucket", err)
-		return err
-	}
-	log.Info("Bucket deletion is successful")
+func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	return nil
-
 }
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
-	bucket := ad.session.NewBucket()
-	acl := models.ACL(input.Acl.CannedAcl)
-	err := bucket.Create(input.Name, acl)
-	if err != nil {
-		log.Error("falied to create bucket", err)
-		return err
-	}
-	log.Info("Bucket creation is successful")
 	return nil
 }
 
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucketName := object.BucketName
-	objectId := object.ObjectKey
+	bucketName := ad.backend.BucketName
+	objectId := object.BucketName + "/" + object.ObjectKey
 	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
 
 	result := dscommon.PutResult{}
@@ -122,7 +106,7 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	}
 
 	bucket := ad.session.NewBucket()
-	GcpObject := bucket.NewObject(object.BucketName)
+	GcpObject := bucket.NewObject(ad.backend.BucketName)
 	getObject, err := GcpObject.Get(objectId, &getObjectOption)
 	if err != nil {
 		fmt.Println(err)
@@ -139,7 +123,7 @@ func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 	objectId := input.Bucket + "/" + input.Key
 	log.Infof("delete object[GCS], objectId:%s, err:%v\n", objectId)
 
-	GcpObject := bucket.NewObject(input.Bucket)
+	GcpObject := bucket.NewObject(ad.backend.BucketName)
 	err := GcpObject.Remove(objectId)
 	if err != nil {
 		log.Infof("delete object[GCS] failed, objectId:%s, err:%v\n", objectId, err)
@@ -305,7 +289,7 @@ func (ad *GcsAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 }
 
 func (ad *GcsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return ErrNotImplemented
+	return nil
 }
 
 func (ad *GcsAdapter) Restore(ctx context.Context, inp *pb.Restore) error {

@@ -34,13 +34,14 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 )
 
 // TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
 var MaxTimeForSingleHttpRequest = 50 * time.Minute
-
+const sampleBucket string = "sample"
 type AzureAdapter struct {
 	backend      *backendpb.BackendDetail
 	containerURL azblob.ContainerURL
@@ -290,7 +291,7 @@ func (ad *AzureAdapter) InitMultipartUpload(ctx context.Context, object *pb.Obje
 
 	multipartUpload.Bucket = object.BucketName
 	multipartUpload.UploadId = object.ObjectKey + "_" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	multipartUpload.ObjectId = object.BucketName + "/" + object.ObjectKey
+	multipartUpload.ObjectId = object.ObjectKey
 	return multipartUpload, nil
 }
 
@@ -311,10 +312,16 @@ func (ad *AzureAdapter) Base64ToInt64(base64ID string) int64 {
 
 func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	log.Infof("upload part[Azure Blob], bucket:%s, objectId:%s, partNumber:%d\n", bucket, multipartUpload.ObjectId, partNumber)
 
-	blobURL := ad.containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
+	containerURL, err1 := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	if err1 != nil {
+                log.Errorf("error in containerURL creation:",err1)
+                return nil,err1
+        }
+
+	blobURL := containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	base64ID := ad.Int64ToBase64(partNumber)
 	bytess, _ := ioutil.ReadAll(stream)
 	log.Debugf("blobURL=%+v\n", blobURL)
@@ -333,14 +340,19 @@ func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multip
 
 func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error) {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	result := model.CompleteMultipartUploadResult{}
 	result.Bucket = multipartUpload.Bucket
 	result.Key = multipartUpload.Key
 	result.Location = ad.backend.Name
 	log.Infof("complete multipart upload[Azure Blob], bucket:%s, objectId:%s\n", bucket, multipartUpload.ObjectId)
 
-	blobURL := ad.containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
+	containerURL, err1 := ad.createBucketContainerURL(ad.backend.Access, ad.backend.Security, multipartUpload.Bucket)
+	if err1 != nil {
+                log.Errorf("error in containerURL creation:",err1)
+                return nil,err1
+        }
+	blobURL := containerURL.NewBlockBlobURL(multipartUpload.ObjectId)
 	var completeParts []string
 	for _, p := range completeUpload.Parts {
 		base64ID := ad.Int64ToBase64(p.PartNumber)
@@ -372,7 +384,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUp
 }
 
 func (ad *AzureAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	log.Infof("no need to abort multipart upload[objkey:%s].\n", bucket)
 	return nil
 }
@@ -382,33 +394,25 @@ func (ad *AzureAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListP
 }
 
 func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-
-	object := &pb.Object{
-		BucketName: backendDetail.BucketName,
-		ObjectKey:  "emptyContainer/",
+	randId := uuid.NewV4().String()
+	input := &pb.Bucket{
+		Name: sampleBucket + randId,
 	}
 
-	bs := []byte{0}
-	stream := bytes.NewReader(bs)
-
-	_, err := ad.Put(ctx, stream, object)
-
+	err := ad.BucketCreate(ctx, input)
 	if err != nil {
-		log.Debug("failed to put object[Azure Blob]:", err)
+		log.Error("failed to create sample bucket :", err)
 		return err
 	}
 
-	input := &pb.DeleteObjectInput{
-		Bucket: backendDetail.BucketName,
-		Key:    "EmptyContainer/",
-	}
-
-	err = ad.Delete(ctx, input)
+	log.Debug("Create sample bucket is successul")
+	err = ad.BucketDelete(ctx, input)
 	if err != nil {
-		log.Debug("failed to delete object[Azure Blob],\n", err)
+		log.Error("failed to delete sample bucket :", err)
 		return err
 	}
-	log.Debug("create and delete object is successful\n")
+
+	log.Debug("Delete sample bucket is successful")
 	return nil
 }
 

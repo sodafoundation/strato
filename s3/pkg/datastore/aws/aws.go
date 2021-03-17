@@ -39,8 +39,10 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
+const sampleBucket string = "sample"
 
 type AwsAdapter struct {
 	backend *backendpb.BackendDetail
@@ -188,7 +190,6 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	return result.Body, nil
 }
 
-
 func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	log.Info("Bucket delete is called in aws s3 service")
 	svc := awss3.New(ad.session)
@@ -255,8 +256,8 @@ func (ad *AwsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 }
 
 func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
-	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucket := object.BucketName
+	objectId := object.ObjectKey
 	log.Infof("init multipart upload[AWS S3], bucket = %v,objectId = %v\n", bucket, objectId)
 
 	storClass, err := osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_AWS)
@@ -289,7 +290,7 @@ func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 
 func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	bytess, err := ioutil.ReadAll(stream)
 	if err != nil {
 		log.Errorf("read data failed, err:%v\n", err)
@@ -326,7 +327,7 @@ func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 
 func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error) {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	log.Infof("complete multipart upload[AWS S3], bucket:%s, objectId:%s.\n", bucket, multipartUpload.ObjectId)
 
 	var completeParts []*awss3.CompletedPart
@@ -366,7 +367,7 @@ func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 }
 
 func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
-	bucket := ad.backend.BucketName
+	bucket := multipartUpload.Bucket
 	log.Infof("abort multipart upload[AWS S3], bucket:%s, objectId:%s.\n", bucket, multipartUpload.ObjectId)
 
 	abortInput := &awss3.AbortMultipartUploadInput{
@@ -425,23 +426,26 @@ func (ad *AwsAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListPar
 }
 
 func (ad *AwsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	Region := aws.String(backendDetail.Region)
-	Endpoint := aws.String(backendDetail.Endpoint)
-	Credentials := credentials.NewStaticCredentials(backendDetail.Access, backendDetail.Security, "")
-	Bucket := aws.String(backendDetail.BucketName)
-	configuration := &aws.Config{
-		Region:      Region,
-		Endpoint:    Endpoint,
-		Credentials: Credentials,
+	randId := uuid.NewV4().String()
+	input := &pb.Bucket{
+		Name: sampleBucket + randId,
 	}
 
-	svc := awss3.New(session.New(configuration))
-
-	input := &awss3.HeadBucketInput{
-		Bucket: Bucket,
+	err := ad.BucketCreate(ctx, input)
+	if err != nil {
+		log.Error("failed to create sample bucket :", err)
+		return err
 	}
-	_, err := svc.HeadBucket(input)
-	return err
+
+	log.Debug("Create sample bucket is successul")
+	err = ad.BucketDelete(ctx, input)
+	if err != nil {
+		log.Error("failed to delete sample bucket :", err)
+		return err
+	}
+
+	log.Debug("Delete sample bucket is successful")
+	return nil
 }
 
 func (ad *AwsAdapter) Close() error {
