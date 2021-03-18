@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
+	"os"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
@@ -43,9 +43,18 @@ type fileService struct {
 func NewFileService() pb.FileHandler {
 
 	log.Infof("Init file service finished.\n")
+
+	flService := "file"
+	backendService := "backend"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		flService = "soda.multicloud.v1.file"
+		backendService = "soda.multicloud.v1.backend"
+	}
+
 	return &fileService{
-		fileClient:    pb.NewFileService("soda.multicloud.v1.file", client.DefaultClient),
-		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
+		fileClient:    pb.NewFileService(flService, client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 

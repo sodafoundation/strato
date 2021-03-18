@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	handler "github.com/opensds/multi-cloud/dataflow/pkg"
@@ -25,8 +26,14 @@ import (
 )
 
 func main() {
+	dataflowService := "dataflow"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		dataflowService = "soda.multicloud.v1.dataflow"
+	}
+
 	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.dataflow"),
+		micro.Name(dataflowService),
 	)
 
 	obs.InitLogs()

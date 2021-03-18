@@ -16,7 +16,7 @@ package main
 
 import (
 	"fmt"
-
+	"os"
 	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	datamover "github.com/opensds/multi-cloud/datamover/pkg"
@@ -24,8 +24,15 @@ import (
 )
 
 func main() {
+
+	datamoverService:= "datamover"	
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		datamoverService = "soda.multicloud.v1.dataflow"
+	}
+
 	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.datamover"),
+		micro.Name(datamoverService),
 	)
 
 	obs.InitLogs()

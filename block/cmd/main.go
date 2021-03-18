@@ -35,10 +35,15 @@ func main() {
 	db.Init(dbStore)
 	defer db.Exit(dbStore)
 
-	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.block"),
-	)
+	blockService := "block"
 
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		blockService = "soda.multicloud.v1.block"
+	}
+	
+	service := micro.NewService(
+		micro.Name(blockService),
+	)
 	obs.InitLogs()
 	service.Init()
 

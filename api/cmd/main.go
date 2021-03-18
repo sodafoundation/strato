@@ -32,11 +32,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	serviceName = "soda.multicloud.v1.api"
-)
-
 func main() {
+
+	serviceName := "api"
+	if os.Getenv("MICRO_ENVIRONMENT") == "k8s" {
+		serviceName = "soda.multicloud.v1.api"
+	}
+
 	webService := web.NewService(
 		web.Name(serviceName),
 		web.Version("v0.1.0"),

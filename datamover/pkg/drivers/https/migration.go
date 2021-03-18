@@ -21,7 +21,7 @@ import (
 	"math"
 	"strconv"
 	"time"
-
+	"os"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/metadata"
@@ -54,8 +54,17 @@ type Migration interface {
 
 func Init() {
 	log.Infof("Migration init.")
-	s3client = osdss3.NewS3Service("soda.multicloud.v1.s3", client.DefaultClient)
-	bkendclient = backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient)
+	
+	s3Service := "s3"
+	backendService := "backend"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		s3Service = "soda.multicloud.v1.s3"
+		backendService = "soda.multicloud.v1.backend"
+	}
+
+	s3client = osdss3.NewS3Service(s3Service, client.DefaultClient)
+	bkendclient = backend.NewBackendService(backendService, client.DefaultClient)
 }
 
 func HandleMsg(msgData []byte) error {

@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
+	"os"
 	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
 
 	"github.com/globalsign/mgo/bson"
@@ -44,9 +44,18 @@ type blockService struct {
 func NewBlockService() pb.BlockHandler {
 
 	log.Infof("Init block service finished.\n")
+
+	blkService := "block"
+	backendService := "backend"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		blkService = "soda.multicloud.v1.block"
+		backendService = "soda.multicloud.v1.backend"
+	}
+
 	return &blockService{
-		blockClient:   pb.NewBlockService("soda.multicloud.v1.block", client.DefaultClient),
-		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
+		blockClient:   pb.NewBlockService(blkService, client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 

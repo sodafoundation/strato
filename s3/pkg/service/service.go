@@ -69,9 +69,16 @@ func NewS3Service() pb.S3Handler {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	metaStor := meta.New(cfg)
 	gc.Init(ctx, cancelFunc, metaStor)
+
+	backendService := "backend"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+	    backendService = "soda.multicloud.v1.backend"
+	}
+	
 	return &s3Service{
 		MetaStorage:   metaStor,
-		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 

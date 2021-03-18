@@ -32,13 +32,9 @@ import (
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"os"
 )
 
-const (
-	backendService  = "soda.multicloud.v1.backend"
-	s3Service       = "soda.multicloud.v1.s3"
-	dataflowService = "soda.multicloud.v1.dataflow"
-)
 
 type APIService struct {
 	backendClient  backend.BackendService
@@ -57,6 +53,16 @@ type DeCrypter struct {
 }
 
 func NewAPIService(c client.Client) *APIService {
+
+	backendService  := "backend"
+	s3Service       := "s3"
+	dataflowService := "dataflow"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		backendService  = "soda.multicloud.v1.backend"
+		s3Service       = "soda.multicloud.v1.s3"
+		dataflowService = "soda.multicloud.v1.dataflow"
+	}
 	return &APIService{
 		backendClient:  backend.NewBackendService(backendService, c),
 		s3Client:       s3.NewS3Service(s3Service, c),

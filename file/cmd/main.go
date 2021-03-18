@@ -34,8 +34,14 @@ func main() {
 	db.Init(dbStore)
 	defer db.Exit(dbStore)
 
+	fileService := "file"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		fileService = "soda.multicloud.v1.file"
+	}
+
 	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.file"),
+		micro.Name(fileService),
 	)
 
 	obs.InitLogs()

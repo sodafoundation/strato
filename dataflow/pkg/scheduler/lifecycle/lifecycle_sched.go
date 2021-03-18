@@ -17,11 +17,6 @@ package lifecycle
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
-	"strconv"
-	"sync"
-	"time"
-
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -33,14 +28,18 @@ import (
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"os"
+	"sort"
+	"strconv"
+	"sync"
+	"time"
 )
 
 var topicLifecycle = "lifecycle"
-var s3client = osdss3.NewS3Service("soda.multicloud.v1.s3", client.DefaultClient)
 
 const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
 
@@ -49,6 +48,14 @@ type InterRules []*InternalLifecycleRule
 // map from a specific tier to an array of tiers, that means transition can happens from the specific tier to those tiers in the array.
 var TransitionMap map[string]struct{}
 var mutext sync.Mutex
+var s3client = osdss3.NewS3Service(getEnv(), client.DefaultClient)
+
+func getEnv() string {
+          if os.Getenv("MICRO_ENVIRONMENT") == "k8s" {
+                  return "soda.multicloud.v1.s3"
+          }
+          return "s3"
+  }
 
 func loadStorageClassDefinition() error {
 	res, _ := s3client.GetTierMap(context.Background(), &s3.BaseRequest{})
