@@ -68,7 +68,7 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 		log.Error("failed to delete bucket due to %s:", err)
 		return err
 	}
-	log.Debug(result)
+	log.Debug("The bucker deletion is successful in gcp:%s",result)
 
 	return nil
 
@@ -97,7 +97,7 @@ func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 		log.Error("create bucket failed in gcp with err:%s", err)
 		return err
 	}
-	log.Debug("The bucket creation successful in gcp with output master:%s", buckout)
+	log.Debug("The bucket creation successful in gcp with output:%s", buckout)
 
 	return nil
 }
