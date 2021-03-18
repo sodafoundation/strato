@@ -16,6 +16,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud
   labels:
     io.soda.service: dataflow
     app: soda-dataflow
@@ -57,7 +58,7 @@ spec:
               value: 0.0.0.0:9090
             - name: MICRO_BROKER_ADDRESS
               value: 0.0.0.0:9091                
-          image: sodafoundation/multi-cloud-dataflow:v9
+          image: sodafoundation/multi-cloud-dataflow:latest
           name: dataflow
           ports:
             - containerPort: 8094

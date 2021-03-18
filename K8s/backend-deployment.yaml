@@ -16,6 +16,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud
   labels:
     io.soda.service: backend
     app: soda-backend
@@ -54,7 +55,7 @@ spec:
             - name: MICRO_BROKER_ADDRESS
               value: 0.0.0.0:9091
 
-          image: sodafoundation/multi-cloud-backend:v9
+          image: sodafoundation/multi-cloud-backend:latest
           name: backend
           ports:
             - containerPort: 8091

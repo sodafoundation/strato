@@ -16,6 +16,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud
   labels:
     io.soda.service: datamover
     app: soda-datamover
@@ -61,7 +62,7 @@ spec:
               value: "3600"
             - name: PARTSIZE
               value: "5"
-          image: sodafoundation/multi-cloud-datamover:v9
+          image: sodafoundation/multi-cloud-datamover:latest
           name: datamover
           ports:
             - containerPort: 8093

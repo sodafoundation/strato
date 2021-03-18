@@ -24,5 +24,6 @@ yum clean all && \
 rm -rf /var/cache/yum
 
 COPY s3 /s3
+
 COPY initdb.sh /initdb.sh
 ENTRYPOINT ["/initdb.sh"]
