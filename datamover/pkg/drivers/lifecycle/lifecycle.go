@@ -17,7 +17,7 @@ package lifecycle
 import (
 	"encoding/json"
 	"sync"
-
+	"os"
 	"github.com/micro/go-micro/v2/client"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
@@ -41,8 +41,16 @@ var Int2ExtTierMap map[string]*Int2String
 
 func Init() {
 	log.Infof("Lifecycle datamover init.")
-	s3client = osdss3.NewS3Service("soda.multicloud.v1.s3", client.DefaultClient)
-	bkendclient = backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient)
+	s3Service := "s3"
+	backendService := "backend"
+
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		s3Service = "soda.multicloud.v1.s3"
+		backendService = "soda.multicloud.v1.backend"
+	}
+
+	s3client = osdss3.NewS3Service(s3Service, client.DefaultClient)
+	bkendclient = backend.NewBackendService(backendService, client.DefaultClient)
 }
 
 func HandleMsg(msgData []byte) error {

@@ -34,10 +34,16 @@ func main() {
 	defer db.Exit()
 
 	obs.InitLogs()
+	
+	backendService := "backend"
+	
+	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
+		backendService = "soda.multicloud.v1.backend"
+	}
+	
 	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.backend"),
+		micro.Name(backendService),
 	)
-
 	service.Init()
 
 	pb.RegisterBackendHandler(service.Server(), handler.NewBackendService())
