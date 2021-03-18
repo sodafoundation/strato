@@ -1,4 +1,4 @@
-# Copyright 2021 The SODA Authors.
+# Copyright 2021 The SODA Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud
   labels:
     io.soda.service: file
     app: soda-file
@@ -65,7 +66,7 @@ spec:
               value: opensds
             - name: OS_USER_DOMIN_ID
               value: Default
-          image: sodafoundation/multi-cloud-file:v9
+          image: sodafoundation/multi-cloud-file:latest
           name: file
           ports:
             - containerPort: 8092

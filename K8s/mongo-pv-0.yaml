@@ -16,6 +16,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
+  namespace: soda-multi-cloud
   name: mongo-0-pv-volume
   labels:
     type: local

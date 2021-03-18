@@ -17,6 +17,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud
   labels:
     io.soda.service: s3
     app: soda-s3
@@ -56,7 +57,7 @@ spec:
               value: 0.0.0.0:9091              
             - name: USE_DEFAULT_STORAGE_CLASS
               value: "1"
-          image: sodafoundation/multi-cloud-s3:v9
+          image: sodafoundation/multi-cloud-s3:latest
           name: s3
           ports:
             - containerPort: 8096

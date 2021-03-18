@@ -16,6 +16,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: soda-multi-cloud      
   labels:
     io.soda.service: api
     app: soda-api
@@ -66,7 +67,7 @@ spec:
               value: ctrl
             - name: TRANSFER_SPEED_MIN
               value: "10"
-          image: sodafoundation/multi-cloud-api:v9
+          image: sodafoundation/multi-cloud-api:latest
           name: api
           ports:
             - containerPort: 8089

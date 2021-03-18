@@ -111,7 +111,6 @@ services:
     image: sodafoundation/multi-cloud-s3
     environment:
       - MICRO_REGISTRY=mdns
-      #- DB_HOST=datastore:27017
       - DB_HOST=tidb:4000
       # 0 means use user defined storage class, otherwise use default storage class.
       - USE_DEFAULT_STORAGE_CLASS=1
@@ -122,8 +121,8 @@ services:
       - ./s3/pkg/datastore/yig/conf/:/etc/yig
       - /etc/ceph:/etc/ceph
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
-      - ./s3/pkg/conf/tidb.sql:/s3.sql
-      - ./s3/pkg/datastore/yig/conf/yig.sql:/yig.sql
+      - ./s3/pkg/conf/tidb.sql:/etc/config/tidb/s3.sql
+      - ./s3/pkg/datastore/yig/conf/yig.sql:/etc/config/yig/yig.sql
     depends_on:
       - redis
       - tidb
