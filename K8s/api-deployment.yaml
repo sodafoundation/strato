@@ -45,6 +45,8 @@ spec:
              topologyKey: "kubernetes.io/hostname"
       containers:
         - env:
+            - name: MICRO_ENVIRONMENT
+              value: k8s
             - name: MICRO_REGISTRY
               value: kubernetes
             - name: MICRO_SERVER_ADDRESS           
