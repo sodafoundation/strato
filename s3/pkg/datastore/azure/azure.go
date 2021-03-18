@@ -269,8 +269,8 @@ func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Objec
 			newClass, err)
 		return ErrInternalError
 	} else {
-		log.Errorf("change storage class[Azure Blob] of object[%s] to %s succeed, res:%v\n", object.ObjectKey,
-			newClass, res.Response())
+		log.Infof("Change storage class[Azure Blob] of object[%s] to %s succeed, res:%v\n", object.ObjectKey,
+			*newClass, res.Response())
 	}
 
 	return nil
@@ -417,7 +417,20 @@ func (ad *AzureAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Back
 }
 
 func (ad *AzureAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
-	return ErrNotImplemented
+	className := inp.StorageClass
+	log.Infof("Restore the object to storage class [%s]", className)
+	objId := inp.BucketName + "/" + inp.ObjectKey
+	obj := &pb.Object{
+		ObjectId:   objId,
+		ObjectKey:  inp.ObjectKey,
+		BucketName: inp.BucketName,
+	}
+	err := ad.ChangeStorageClass(ctx, obj, &className)
+	if err != nil {
+		log.Error("error [%v] in changing the storage class of the object [%s]", err, inp.ObjectKey)
+		return err
+	}
+	return nil
 }
 
 func (ad *AzureAdapter) Close() error {

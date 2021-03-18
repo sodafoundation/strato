@@ -382,7 +382,7 @@ func (ad *OSSAdapter) Restore(ctx context.Context, target *pb.Restore) error {
 }
 
 func (ad *OSSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
-	return ErrNotImplemented
+	return nil
 }
 
 func (ad *OSSAdapter) Close() error {

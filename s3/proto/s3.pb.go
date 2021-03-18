@@ -5894,6 +5894,13 @@ func (x *Restore) GetObjectKey() string {
 	return ""
 }
 
+func (m *Restore) GetStorageClass() string {
+	if m != nil {
+		return m.StorageClass
+	}
+	return ""
+}
+
 type RestoreObjectRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

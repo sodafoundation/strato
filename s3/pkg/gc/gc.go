@@ -29,7 +29,7 @@ func Init(ctx context.Context, cancelFunc context.CancelFunc, meta *meta.Meta) {
 	mt := meta
 	CTX = ctx
 	CancleFunc = cancelFunc
-	backend := bkd.NewBackendService("backend", client.DefaultClient)
+	backend := bkd.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient)
 	go Run(mt, backend)
 }
 

@@ -33,7 +33,7 @@ import (
 
 func main() {
 	service := micro.NewService(
-		micro.Name("s3"),
+		micro.Name("soda.multicloud.v1.s3"),
 	)
 
 	obs.InitLogs()

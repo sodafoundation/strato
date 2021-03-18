@@ -1,0 +1,80 @@
+# Copyright 2021 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.soda.service: backend
+    app: soda-backend
+  name: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      io.soda.service: backend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.soda.service: backend
+        app: soda-backend
+    spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-backend
+             topologyKey: "kubernetes.io/hostname"      
+      containers:
+        - env:
+            - name: DB_HOST
+              value: mongodb-0-service,mongodb-1-service,mongodb-2-service/?replicaSet=rs0
+            - name:  MICRO_REGISTRY
+              value:  kubernetes
+            - name: MICRO_SERVER_ADDRESS
+              value: 0.0.0.0:9090
+            - name: MICRO_BROKER_ADDRESS
+              value: 0.0.0.0:9091
+
+          image: sodafoundation/multi-cloud-backend:v9
+          name: backend
+          ports:
+            - containerPort: 8091
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: backend-localtime
+            - mountPath: /var/log/multi-cloud
+              name: backend-logs
+            - mountPath: /etc/multi-cloud
+              name: config-volume
+      restartPolicy: Always
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+          name: backend-localtime
+        - hostPath:
+            path: /var/log/multi-cloud
+          name: backend-logs
+        - name: config-volume
+          configMap:
+            name: multicloud-config
+
