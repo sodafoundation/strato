@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2021 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,16 +22,23 @@ import (
 	"io/ioutil"
 	"time"
 
+	"crypto/md5"
+	"encoding/hex"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
 	. "github.com/webrtcn/s3client"
-	"github.com/webrtcn/s3client/models"
 )
 
 type GcsAdapter struct {
@@ -50,7 +57,8 @@ func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucketName := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey
-	log.Infof("put object[GCS], objectid:%s, bucket:%s\n", objectId, bucketName)
+	storageClass := dscommon.GetStorClassFromCtx(ctx)
+	log.Infof("Put object[GCS], objectid:%s, bucket:%s in StorageClass[%s]", objectId, bucketName, storageClass)
 
 	result := dscommon.PutResult{}
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
@@ -64,29 +72,65 @@ func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		limitedDataReader = stream
 	}
 
-	bucket := ad.session.NewBucket()
-	GcpObject := bucket.NewObject(bucketName)
-	d, err := ioutil.ReadAll(limitedDataReader)
-	data := []byte(d)
-	base64Encoded, hexEncoded := utils.Md5Content(data)
-	body := ioutil.NopCloser(bytes.NewReader(data))
-	err = GcpObject.Create(objectId, base64Encoded, "", size, body, models.Private)
-	if err != nil {
-		log.Infof("put object[GCS] failed, object:%s, err:%v", objectId, err)
-		return result, ErrPutToBackendFailed
+	// As per https://cloud.google.com/storage/docs/interoperability,
+	// using AWS CLINET SDK with HMAC credentials to upload object in GCS
+	// https://github.com/GoogleCloudPlatform/golang-samples
+	md5Writer := md5.New()
+	dataReader := io.TeeReader(limitedDataReader, md5Writer)
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region:   aws.String("auto"),
+		Endpoint: aws.String("https://storage.googleapis.com"),
+		Credentials: credentials.NewStaticCredentials(
+			ad.backend.Access, ad.backend.Security, ""),
+	}))
+
+	// If the Storage Class is defined from the API request Header, set it else define defaults
+	var storClass string
+	var err error
+
+	if storageClass != "" {
+		storClass = storageClass
+	} else {
+		if object.Tier == 0 {
+			// default i.e STANDARD
+			object.Tier = utils.Tier1
+		}
+		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_GCS)
+		if err != nil {
+			log.Error("translate tier[%d] to gcp storage class failed", object.Tier)
+			return result, ErrInternalError
+		}
+	}
+	uploader := s3manager.NewUploader(sess)
+	input := &s3manager.UploadInput{
+		Body:         dataReader,
+		Bucket:       aws.String(bucketName),
+		Key:          aws.String(objectId),
+		StorageClass: aws.String(storClass),
 	}
 
-	calculatedMd5 := "\"" + hexEncoded + "\""
+	log.Infof("Started uploading objectId:%s into GCS", objectId)
+	ret, err := uploader.Upload(input)
+	if err != nil {
+		log.Errorf("uplaoding objectId:%s failed with err:%v", objectId, err)
+		return result, ErrPutToBackendFailed
+	}
+	log.Infof("Completed uploading objectId:%s into GCS bucket[%s]", objectId, bucketName)
+
+	calculatedMd5 := hex.EncodeToString(md5Writer.Sum(nil))
 	if userMd5 != "" && userMd5 != calculatedMd5 {
-		log.Error("### MD5 not match, calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
+		log.Error("after upload, MD5  does not match, calculatedMd5:", calculatedMd5, "userMd5:", userMd5)
 		return result, ErrBadDigest
 	}
 
+	if ret.VersionID != nil {
+		result.Meta = *ret.VersionID
+	}
 	result.UpdateTime = time.Now().Unix()
 	result.ObjectId = objectId
-	result.Etag = hexEncoded
+	result.Etag = calculatedMd5
 	result.Written = size
-	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v\n", objectId, result.UpdateTime)
+	log.Infof("put object[GCS] succeed, objectId:%s, LastModified is:%v", objectId, result.UpdateTime)
 
 	return result, nil
 }
@@ -293,7 +337,7 @@ func (ad *GcsAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Backen
 }
 
 func (ad *GcsAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
-    return ErrNotImplemented
+	return ErrNotImplemented
 }
 
 func (ad *GcsAdapter) Close() error {

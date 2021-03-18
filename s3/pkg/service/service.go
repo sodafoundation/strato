@@ -17,6 +17,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
@@ -32,8 +35,6 @@ import (
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"strconv"
 )
 
 type Int2String map[int32]string
@@ -70,7 +71,7 @@ func NewS3Service() pb.S3Handler {
 	gc.Init(ctx, cancelFunc, metaStor)
 	return &s3Service{
 		MetaStorage:   metaStor,
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
 	}
 }
 
@@ -182,13 +183,13 @@ func loadHWDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 
 func loadGCPDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	t2n := make(Int2String)
-	t2n[Tier1] = GCS_MULTI_REGIONAL
+	t2n[Tier1] = GCS_STANDARD
 	//t2n[Tier99] = GCS_NEARLINE
 	//t2n[Tier999] = GCS_COLDLINE
 	(*i2e)[OSTYPE_GCS] = &t2n
 
 	n2t := make(String2Int)
-	n2t[GCS_MULTI_REGIONAL] = Tier1
+	n2t[GCS_STANDARD] = Tier1
 	//n2t[GCS_NEARLINE] = Tier99
 	//n2t[GCS_COLDLINE] = Tier999
 	(*e2i)[OSTYPE_GCS] = &n2t

@@ -1,0 +1,92 @@
+# Copyright 2021 The SODA Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: soda-multi-cloud
+  labels:
+    io.soda.service: file
+    app: soda-file
+  name: file
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      io.soda.service: file
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.soda.service: file
+        app: soda-file
+    spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - soda-file
+             topologyKey: "kubernetes.io/hostname"      
+      containers:
+        - env:
+            - name: DB_HOST
+              value: mongodb-0-service,mongodb-1-service,mongodb-2-service/?replicaSet=rs0
+            - name:  MICRO_REGISTRY
+              value:  kubernetes
+            - name: MICRO_SERVER_ADDRESS
+              value: 0.0.0.0:9090
+            - name: MICRO_BROKER_ADDRESS
+              value: 0.0.0.0:9091                
+            - name: OS_AUTH_AUTHSTRATEGY
+              value: keystone
+            - name: OS_AUTH_URL
+              value: http://KEYSTONE_IP/identity
+            - name: OS_PASSWORD
+              value: opensds@123
+            - name: OS_PROJECT_NAME
+              value: service
+            - name: OS_USERNAME
+              value: opensds
+            - name: OS_USER_DOMIN_ID
+              value: Default
+          image: sodafoundation/multi-cloud-file:latest
+          name: file
+          ports:
+            - containerPort: 8092
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: file-localtime
+            - mountPath: /var/log/multi-cloud
+              name: file-logs
+            - mountPath: /etc/config
+              name: config-volume
+      restartPolicy: Always
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+          name: file-localtime
+        - hostPath:
+            path: /var/log/multi-cloud
+          name: file-logs
+        - name: config-volume
+          configMap:
+            name: multicloud-config  
+

@@ -56,10 +56,11 @@ func (s *APIService) RestoreObject(request *restful.Request, response *restful.R
 	}
 
 	resObj := &s3.Restore{
-		Days:       restoreObjDetail.Days,
-		Tier:       restoreObjDetail.Tier,
-		BucketName: bucketName,
-		ObjectKey:  objectKey,
+		Days:         restoreObjDetail.Days,
+		Tier:         restoreObjDetail.Tier,
+		StorageClass: restoreObjDetail.StorageClass,
+		BucketName:   bucketName,
+		ObjectKey:    objectKey,
 	}
 
 	res, restoreErr := s.s3Client.RestoreObject(ctx, &s3.RestoreObjectRequest{Restore: resObj})

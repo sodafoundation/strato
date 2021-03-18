@@ -45,28 +45,28 @@ import (
 const sampleBucket string = "sample"
 
 type AwsAdapter struct {
-	backend *backendpb.BackendDetail
-	session *session.Session
+	Backend *backendpb.BackendDetail
+	Session *session.Session
 }
 
-type s3Cred struct {
-	ak string
-	sk string
+type S3Cred struct {
+	Ak string
+	Sk string
 }
 
-func (myc *s3Cred) Retrieve() (credentials.Value, error) {
-	cred := credentials.Value{AccessKeyID: myc.ak, SecretAccessKey: myc.sk}
+func (myc *S3Cred) Retrieve() (credentials.Value, error) {
+	cred := credentials.Value{AccessKeyID: myc.Ak, SecretAccessKey: myc.Sk}
 	return cred, nil
 }
 
-func (myc *s3Cred) IsExpired() bool {
+func (myc *S3Cred) IsExpired() bool {
 	return false
 }
 
 func (ad *AwsAdapter) BucketCreate(ctx context.Context, in *pb.Bucket) error {
 
 	log.Info("Bucket create is called in aws service and input request is:", in)
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 
 	input := &awss3.CreateBucketInput{
 		Bucket: aws.String(in.Name),
@@ -120,8 +120,7 @@ func (ad *AwsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 		}
 	}
 
-	uploader := s3manager.NewUploader(ad.session)
-
+	uploader := s3manager.NewUploader(ad.Session)
 	input := &s3manager.UploadInput{
 		Body:         dataReader,
 		Bucket:       aws.String(bucket),
@@ -179,7 +178,7 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 		getObjectInput.SetRange(rangestr)
 	}
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	result, err := svc.GetObject(&getObjectInput)
 	if err != nil {
 		log.Errorf("get object[AWS S3] failed, objectId:%s, err:%v", objectId, err)
@@ -192,7 +191,7 @@ func (ad *AwsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 
 func (ad *AwsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	log.Info("Bucket delete is called in aws s3 service")
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	input := &awss3.DeleteBucketInput{
 		Bucket: aws.String(in.Name),
 	}
@@ -216,7 +215,7 @@ func (ad *AwsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) e
 
 	log.Infof("delete object[AWS S3], objectId:%s.\n", objectId)
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	_, err := svc.DeleteObject(&deleteInput)
 	if err != nil {
 		log.Errorf("delete object[AWS S3] failed, objectId:%s, err:%v.\n", objectId, err)
@@ -238,7 +237,7 @@ func (ad *AwsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 	objectId := object.ObjectId
 	log.Infof("change storage class[AWS S3] of object[%s] to %s .\n", object, *newClass)
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	input := &awss3.CopyObjectInput{
 		Bucket:     aws.String(object.BucketName),
 		Key:        aws.String(objectId),
@@ -273,7 +272,7 @@ func (ad *AwsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 		StorageClass: aws.String(storClass),
 	}
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	res, err := svc.CreateMultipartUpload(multiUpInput)
 	if err != nil {
 		log.Fatalf("init multipart upload[AWS S3] failed, err:%v\n", err)
@@ -306,7 +305,7 @@ func (ad *AwsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 	}
 	log.Infof("upload part[AWS S3], input:%v\n", *upPartInput)
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	upRes, err := svc.UploadPart(upPartInput)
 	if err != nil {
 		log.Errorf("upload part[AWS S3] failed. err:%v\n", err)
@@ -348,7 +347,7 @@ func (ad *AwsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 	}
 
 	log.Infof("completeInput %v\n", *completeInput)
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	resp, err := svc.CompleteMultipartUpload(completeInput)
 	if err != nil {
 		log.Errorf("complete multipart upload[AWS S3] failed, err:%v\n", err)
@@ -376,7 +375,7 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 		UploadId: &multipartUpload.UploadId,
 	}
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	rsp, err := svc.AbortMultipartUpload(abortInput)
 	if err != nil {
 		log.Errorf("abort multipart upload[AWS S3] failed, err:%v\n", err)
@@ -388,7 +387,7 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 }
 
 func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
-	bucket := ad.backend.BucketName
+	bucket := ad.Backend.BucketName
 	objectId := input.BucketName + "/" + input.ObjectKey
 	resInput := &awss3.RestoreObjectInput{
 		Bucket: aws.String(bucket),
@@ -401,7 +400,7 @@ func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
 		},
 	}
 
-	svc := awss3.New(ad.session)
+	svc := awss3.New(ad.Session)
 	result, err := svc.RestoreObject(resInput)
 	if err != nil {
 		log.Errorf("error while restoring object in AWS bucket")

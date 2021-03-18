@@ -44,8 +44,8 @@ func NewFileService() pb.FileHandler {
 
 	log.Infof("Init file service finished.\n")
 	return &fileService{
-		fileClient:    pb.NewFileService("file", client.DefaultClient),
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		fileClient:    pb.NewFileService("soda.multicloud.v1.file", client.DefaultClient),
+		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
 	}
 }
 
@@ -396,7 +396,7 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 	}
 
 	fileshare := &pb.FileShare{
-		Name: res.Name,
+		Name:             res.Name,
 		AvailabilityZone: res.AvailabilityZone,
 	}
 
@@ -436,7 +436,7 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 	time.Sleep(6 * time.Second)
 
 	ctxBg := context.Background()
-	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Minute)
+	ctxBg, _ = context.WithTimeout(ctxBg, 10*time.Minute)
 
 	fsGetInput := &pb.GetFileShareRequest{Fileshare: fs}
 
@@ -447,7 +447,6 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 		return
 	}
 	log.Debugf("Get File share response = [%+v] from backend", getFs)
-
 
 	if utils.MergeFileShareData(getFs.Fileshare, fs) != nil {
 		log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v]\n", fs, err)

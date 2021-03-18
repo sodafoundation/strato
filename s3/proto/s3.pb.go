@@ -5832,6 +5832,7 @@ type Restore struct {
 	Tier       string `protobuf:"bytes,2,opt,name=tier,proto3" json:"tier,omitempty"`
 	BucketName string `protobuf:"bytes,3,opt,name=bucketName,proto3" json:"bucketName,omitempty"`
 	ObjectKey  string `protobuf:"bytes,4,opt,name=objectKey,proto3" json:"objectKey,omitempty"`
+	StorageClass         string   `protobuf:"bytes,5,opt,name=storageClass,proto3" json:"storageClass,omitempty"`
 }
 
 func (x *Restore) Reset() {
@@ -5890,6 +5891,13 @@ func (x *Restore) GetBucketName() string {
 func (x *Restore) GetObjectKey() string {
 	if x != nil {
 		return x.ObjectKey
+	}
+	return ""
+}
+
+func (m *Restore) GetStorageClass() string {
+	if m != nil {
+		return m.StorageClass
 	}
 	return ""
 }
