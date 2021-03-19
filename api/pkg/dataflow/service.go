@@ -28,12 +28,19 @@ import (
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 const (
-	backendService  = "soda.multicloud.v1.backend"
-	s3Service       = "soda.multicloud.v1.s3"
-	dataflowService = "soda.multicloud.v1.dataflow"
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker  = "backend"
+	s3Service_Docker       = "s3"
+	dataflowService_Docker = "dataflow"
+	backendService_K8S     = "soda.multicloud.v1.backend"
+	s3Service_K8S          = "soda.multicloud.v1.s3"
+	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
 )
 
 type APIService struct {
@@ -43,6 +50,16 @@ type APIService struct {
 }
 
 func NewAPIService(c client.Client) *APIService {
+	backendService := backendService_Docker
+	s3Service := s3Service_Docker
+	dataflowService := dataflowService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+		s3Service = s3Service_K8S
+		dataflowService = dataflowService_K8S
+	}
+
 	return &APIService{
 		backendClient:  backend.NewBackendService(backendService, c),
 		s3Client:       s3.NewS3Service(s3Service, c),

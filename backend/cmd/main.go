@@ -26,6 +26,14 @@ import (
 	pb "github.com/opensds/multi-cloud/backend/proto"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
+)
+
 func main() {
 	dbHost := os.Getenv("DB_HOST")
 	db.Init(&config.Database{
@@ -34,10 +42,16 @@ func main() {
 	defer db.Exit()
 
 	obs.InitLogs()
-	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.backend"),
-	)
 
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+	}
+
+	service := micro.NewService(
+		micro.Name(backendService),
+	)
 	service.Init()
 
 	pb.RegisterBackendHandler(service.Server(), handler.NewBackendService())

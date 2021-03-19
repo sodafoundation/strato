@@ -54,7 +54,8 @@ spec:
               value: 0.0.0.0:9090
             - name: MICRO_BROKER_ADDRESS
               value: 0.0.0.0:9091
-
+            - name: MICRO_ENVIRONMENT
+              value: k8s  
           image: sodafoundation/multi-cloud-backend:latest
           name: backend
           ports:

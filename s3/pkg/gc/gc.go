@@ -2,6 +2,7 @@ package gc
 
 import (
 	"context"
+	"os"
 	"strconv"
 	"time"
 
@@ -21,15 +22,30 @@ import (
 var CTX context.Context
 var CancleFunc context.CancelFunc
 
+const ()
+
 const (
 	LIST_LIMIT = 1000
+
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 func Init(ctx context.Context, cancelFunc context.CancelFunc, meta *meta.Meta) {
 	mt := meta
 	CTX = ctx
 	CancleFunc = cancelFunc
-	backend := bkd.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient)
+
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+	}
+
+	backend := bkd.NewBackendService(backendService, client.DefaultClient)
 	go Run(mt, backend)
 }
 

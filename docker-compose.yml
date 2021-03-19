@@ -121,7 +121,7 @@ services:
       - ./s3/pkg/datastore/yig/conf/:/etc/yig
       - /etc/ceph:/etc/ceph
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
-      - ./s3/pkg/conf/tidb.sql:/etc/config/tidb/s3.sql
+      - ./s3/pkg/conf/tidb.sql:/etc/config/tidb/tidb.sql
       - ./s3/pkg/datastore/yig/conf/yig.sql:/etc/config/yig/yig.sql
     depends_on:
       - redis

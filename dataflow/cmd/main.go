@@ -22,11 +22,26 @@ import (
 	_ "github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger/crontrigger"
 	pb "github.com/opensds/multi-cloud/dataflow/proto"
 	log "github.com/sirupsen/logrus"
+	"os"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	dataflowService_Docker = "dataflow"
+	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
 )
 
 func main() {
+	dataflowService := dataflowService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		dataflowService = dataflowService_K8S
+	}
+
 	service := micro.NewService(
-		micro.Name("soda.multicloud.v1.dataflow"),
+		micro.Name(dataflowService),
 	)
 
 	obs.InitLogs()
