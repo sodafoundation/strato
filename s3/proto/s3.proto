@@ -412,6 +412,8 @@ message Action {
     int32 tier = 4;
     // Destination backend of the object/bucket for Cross-cloud transition
     string backend = 5;
+    // Destination bucket for specified backend for Cross-cloud transition
+    string targetBucket = 6;
 
 }
 

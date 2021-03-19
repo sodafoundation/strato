@@ -84,6 +84,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 				xmlTransition := model.Transition{}
 				xmlTransition.Days = action.Days
 				xmlTransition.Backend = action.Backend
+				xmlTransition.TargetBucket = action.TargetBucket
 				className, err := s.tier2class(action.Tier)
 				if err == nil {
 					xmlTransition.StorageClass = className
