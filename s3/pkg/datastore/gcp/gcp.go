@@ -62,13 +62,13 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	input := &awss3.DeleteBucketInput{
 		Bucket: aws.String(in.Name),
 	}
-
+	//User have option to pass timout of the call through ctx
 	result, err := svc.DeleteBucketWithContext(ctx, input)
 	if err != nil {
 		log.Error("failed to delete bucket due to %s:", err)
 		return err
 	}
-	log.Debug("The bucker deletion is successful in gcp:%s",result)
+	log.Debug("The bucket deletion is successful in gcp:%s",result)
 
 	return nil
 
@@ -88,11 +88,11 @@ func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 
 	svc := awss3.New(session.New(configuration))
 
-	input1 := &awss3.CreateBucketInput{
+	in := &awss3.CreateBucketInput{
 		Bucket: aws.String(input.Name),
 	}
 
-	buckout, err := svc.CreateBucket(input1)
+	buckout, err := svc.CreateBucket(in)
 	if err != nil {
 		log.Error("create bucket failed in gcp with err:%s", err)
 		return err
