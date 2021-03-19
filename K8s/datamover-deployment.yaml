@@ -57,7 +57,9 @@ spec:
             - name: MICRO_SERVER_ADDRESS
               value: 0.0.0.0:9090
             - name: MICRO_BROKER_ADDRESS
-              value: 0.0.0.0:9091              
+              value: 0.0.0.0:9091
+            - name: MICRO_ENVIRONMENT
+              value: k8s              
             - name: OBJECT_MOVE_TIME
               value: "3600"
             - name: PARTSIZE

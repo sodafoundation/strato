@@ -37,6 +37,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
+)
+
 type Int2String map[int32]string
 type String2Int map[string]int32
 
@@ -69,9 +77,16 @@ func NewS3Service() pb.S3Handler {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	metaStor := meta.New(cfg)
 	gc.Init(ctx, cancelFunc, metaStor)
+
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+	}
+
 	return &s3Service{
 		MetaStorage:   metaStor,
-		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 

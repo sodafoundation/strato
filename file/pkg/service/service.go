@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
@@ -28,11 +26,24 @@ import (
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/model"
 	"github.com/opensds/multi-cloud/file/pkg/utils"
+	"os"
+	"time"
 
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	fileService_Docker = "file"
+	fileService_K8S    = "soda.multicloud.v1.file"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 type fileService struct {
@@ -43,9 +54,18 @@ type fileService struct {
 func NewFileService() pb.FileHandler {
 
 	log.Infof("Init file service finished.\n")
+
+	flService := fileService_Docker
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		flService = fileService_K8S
+		backendService = backendService_K8S
+	}
+
 	return &fileService{
-		fileClient:    pb.NewFileService("soda.multicloud.v1.file", client.DefaultClient),
-		backendClient: backend.NewBackendService("soda.multicloud.v1.backend", client.DefaultClient),
+		fileClient:    pb.NewFileService(flService, client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 
