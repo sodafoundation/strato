@@ -46,6 +46,14 @@ type GcsAdapter struct {
 	session *s3client.Client
 }
 
+func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	return nil
+}
+
+func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+	return nil
+}
+
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 	bucketName := ad.backend.BucketName
 	objectId := object.BucketName + "/" + object.ObjectKey

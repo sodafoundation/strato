@@ -234,6 +234,9 @@ func (s *APIService) BucketLifecyclePut(request *restful.Request, response *rest
 			//Assigning the backend value to the s3 struct
 			s3Transition.Backend = transition.Backend
 
+			// Assigning the Target bucket value to the s3 backend
+			s3Transition.TargetBucket = transition.TargetBucket
+
 			//Assigning the storage class of the object to s3 struct
 			tier, err := s.class2tier(transition.StorageClass)
 			if err != nil {
