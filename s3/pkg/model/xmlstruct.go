@@ -132,6 +132,7 @@ type Transition struct {
 	Days         int32  `xml:"Days"`
 	StorageClass string `xml:"StorageClass"`
 	Backend      string `xml:"Backend"`
+	TargetBucket string `xml:"TargetBucket"`
 }
 
 type Expiration struct {
