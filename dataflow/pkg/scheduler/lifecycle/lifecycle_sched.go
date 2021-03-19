@@ -152,7 +152,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 				acType = ActionCrosscloudTransition
 			}
 
-			v := InternalLifecycleRule{Bucket: bucket, Days: ac.GetDays(), ActionType: acType, Tier: ac.GetTier(), Backend: ac.GetBackend()}
+			v := InternalLifecycleRule{Bucket: bucket, Days: ac.GetDays(), ActionType: acType, Tier: ac.GetTier(), Backend: ac.GetBackend(), TargetBucket: ac.GetTargetBucket()}
 			if rule.GetFilter() != nil {
 				v.Filter = InternalLifecycleFilter{Prefix: rule.Filter.Prefix}
 			}
@@ -329,8 +329,8 @@ func schedSortedActionsRules(inRules *InterRules) {
 						continue
 					}
 					log.Infof("lifecycle action: object=[%s] type=[%d] source-tier=[%d] target-tier=[%d] "+
-						"source-backend=[%s] target-backend=[%s].\n", obj.ObjectKey, r.ActionType, obj.Tier, r.Tier,
-						obj.Location, r.Backend)
+						"source-backend=[%s] target-backend=[%s] and targetBucket=[%s].\n", obj.ObjectKey, r.ActionType, obj.Tier, r.Tier,
+						obj.Location, r.Backend, r.TargetBucket)
 					acreq := datamover.LifecycleActionRequest{
 						ObjKey:        obj.ObjectKey,
 						BucketName:    obj.BucketName,
@@ -339,6 +339,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 						TargetTier:    r.Tier,
 						SourceBackend: obj.Location,
 						TargetBackend: r.Backend,
+						TargetBucket:  r.TargetBucket,
 						ObjSize:       obj.Size,
 						VersionId:     obj.VersionId,
 						StorageMeta:   obj.StorageMeta,
@@ -346,6 +347,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 					}
 
 					// If send failed, then ignore it, because it will be re-sent in the next schedule period.
+					log.Debug("Schedule the lifecycle with request parameters:", acreq)
 					sendActionRequest(&acreq)
 
 					// Add object key to dupCheck so it will not be processed repeatedly in this round or scheduling.
