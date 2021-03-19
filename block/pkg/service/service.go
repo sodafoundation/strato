@@ -18,9 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-	"os"
 	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
+	"os"
+	"time"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
@@ -36,6 +36,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	blockService_Docker   = "block"
+	backendService_K8S    = "soda.multicloud.v1.backend"
+	blockService_K8S      = "soda.multicloud.v1.block"
+)
+
 type blockService struct {
 	blockClient   pb.BlockService
 	backendClient backend.BackendService
@@ -45,12 +55,12 @@ func NewBlockService() pb.BlockHandler {
 
 	log.Infof("Init block service finished.\n")
 
-	blkService := "block"
-	backendService := "backend"
+	blkService := blockService_Docker
+	backendService := backendService_Docker
 
-	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
-		blkService = "soda.multicloud.v1.block"
-		backendService = "soda.multicloud.v1.backend"
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		blkService = blockService_K8S
+		backendService = backendService_K8S
 	}
 
 	return &blockService{

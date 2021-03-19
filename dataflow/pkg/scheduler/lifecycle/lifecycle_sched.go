@@ -39,6 +39,14 @@ import (
 	"time"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	s3Service_Docker = "s3"
+	s3Service_K8S    = "soda.multicloud.v1.s3"
+)
+
 var topicLifecycle = "lifecycle"
 
 const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
@@ -51,11 +59,11 @@ var mutext sync.Mutex
 var s3client = osdss3.NewS3Service(getEnv(), client.DefaultClient)
 
 func getEnv() string {
-          if os.Getenv("MICRO_ENVIRONMENT") == "k8s" {
-                  return "soda.multicloud.v1.s3"
-          }
-          return "s3"
-  }
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		return s3Service_K8S
+	}
+	return s3Service_Docker
+}
 
 func loadStorageClassDefinition() error {
 	res, _ := s3client.GetTierMap(context.Background(), &s3.BaseRequest{})

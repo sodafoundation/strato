@@ -32,11 +32,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+	apiService_Docker = "api"
+	apiService_K8S    = "soda.multicloud.v1.api"
+)
+
 func main() {
 
-	serviceName := "api"
-	if os.Getenv("MICRO_ENVIRONMENT") == "k8s" {
-		serviceName = "soda.multicloud.v1.api"
+	serviceName := apiService_Docker
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		serviceName = apiService_K8S
 	}
 
 	webService := web.NewService(

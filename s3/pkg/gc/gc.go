@@ -2,9 +2,9 @@ package gc
 
 import (
 	"context"
+	"os"
 	"strconv"
 	"time"
-	"os"
 
 	"github.com/micro/go-micro/v2/client"
 	bkd "github.com/opensds/multi-cloud/backend/proto"
@@ -22,8 +22,16 @@ import (
 var CTX context.Context
 var CancleFunc context.CancelFunc
 
+const ()
+
 const (
 	LIST_LIMIT = 1000
+
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 func Init(ctx context.Context, cancelFunc context.CancelFunc, meta *meta.Meta) {
@@ -31,10 +39,10 @@ func Init(ctx context.Context, cancelFunc context.CancelFunc, meta *meta.Meta) {
 	CTX = ctx
 	CancleFunc = cancelFunc
 
-	backendService := "backend"
+	backendService := backendService_Docker
 
-	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
-	    backendService = "soda.multicloud.v1.backend"
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
 	}
 
 	backend := bkd.NewBackendService(backendService, client.DefaultClient)

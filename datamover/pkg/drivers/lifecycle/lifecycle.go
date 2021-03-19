@@ -16,14 +16,14 @@ package lifecycle
 
 import (
 	"encoding/json"
-	"sync"
-	"os"
 	"github.com/micro/go-micro/v2/client"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"sync"
 )
 
 var s3client osdss3.S3Service
@@ -39,14 +39,25 @@ type Int2String map[int32]string
 // map from cloud vendor name to it's map relation relationship between internal tier to it's storage class name.
 var Int2ExtTierMap map[string]*Int2String
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	s3Service_Docker = "s3"
+	s3Service_K8S    = "soda.multicloud.v1.s3"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
+)
+
 func Init() {
 	log.Infof("Lifecycle datamover init.")
-	s3Service := "s3"
-	backendService := "backend"
+	s3Service := s3Service_Docker
+	backendService := backendService_Docker
 
-	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
-		s3Service = "soda.multicloud.v1.s3"
-		backendService = "soda.multicloud.v1.backend"
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		s3Service = s3Service_K8S
+		backendService = backendService_K8S
 	}
 
 	s3client = osdss3.NewS3Service(s3Service, client.DefaultClient)

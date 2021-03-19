@@ -29,16 +29,27 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+
+const (
+
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S = "k8s"
+	
+	blockService_Docker  = "block"
+	blockService_K8S  = "soda.multicloud.v1.block"
+	
+)
+
 func main() {
 	dbHost := os.Getenv("DB_HOST")
 	dbStore := &config.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: dbHost}
 	db.Init(dbStore)
 	defer db.Exit(dbStore)
 
-	blockService := "block"
+	blockService := blockService_Docker
 
-	if(os.Getenv("MICRO_ENVIRONMENT") == "k8s"){
-		blockService = "soda.multicloud.v1.block"
+	if(os.Getenv(MICRO_ENVIRONMENT) == K8S){
+		blockService = blockService_K8S
 	}
 	
 	service := micro.NewService(
