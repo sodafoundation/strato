@@ -55,6 +55,7 @@ const (
 	GCS_REGIONAL       = "REGIONAL"
 	GCS_NEARLINE       = "NEARLINE"
 	GCS_COLDLINE       = "COLDLINE"
+	GCS_ARCHIVE        = "Archive"
 )
 
 const (
