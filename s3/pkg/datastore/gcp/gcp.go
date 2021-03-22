@@ -24,7 +24,7 @@ import (
 
 	"crypto/md5"
 	"encoding/hex"
-
+	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -47,16 +47,64 @@ type GcsAdapter struct {
 }
 
 func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	log.Info("Bucket delete is called in gcp")
+	Region := aws.String(ad.backend.Region)
+	Endpoint := aws.String(ad.backend.Endpoint)
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      Region,
+		Endpoint:    Endpoint,
+		Credentials: Credentials,
+	}
+
+	svc := awss3.New(session.New(configuration))
+
+	input := &awss3.DeleteBucketInput{
+		Bucket: aws.String(in.Name),
+	}
+	//User have option to pass timout of the call through ctx
+	result, err := svc.DeleteBucketWithContext(ctx, input)
+	if err != nil {
+		log.Error("failed to delete bucket due to %s:", err)
+		return err
+	}
+	log.Debug("The bucket deletion is successful in gcp:%s",result)
+
 	return nil
+
 }
 
 func (ad *GcsAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+	log.Info("Bucket create is called in gcp service  and input request is:", input)
+
+	Region := aws.String(ad.backend.Region)
+	Endpoint := aws.String(ad.backend.Endpoint)
+	Credentials := credentials.NewStaticCredentials(ad.backend.Access, ad.backend.Security, "")
+	configuration := &aws.Config{
+		Region:      Region,
+		Endpoint:    Endpoint,
+		Credentials: Credentials,
+	}
+
+	svc := awss3.New(session.New(configuration))
+
+	in := &awss3.CreateBucketInput{
+		Bucket: aws.String(input.Name),
+	}
+
+	buckout, err := svc.CreateBucket(in)
+	if err != nil {
+		log.Error("create bucket failed in gcp with err:%s", err)
+		return err
+	}
+	log.Debug("The bucket creation successful in gcp with output:%s", buckout)
+
 	return nil
 }
 
 func (ad *GcsAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
-	bucketName := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucketName := object.BucketName
+	objectId := object.ObjectKey
 	storageClass := dscommon.GetStorClassFromCtx(ctx)
 	log.Infof("Put object[GCS], objectid:%s, bucket:%s in StorageClass[%s]", objectId, bucketName, storageClass)
 
@@ -150,7 +198,7 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 	}
 
 	bucket := ad.session.NewBucket()
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(object.BucketName)
 	getObject, err := GcpObject.Get(objectId, &getObjectOption)
 	if err != nil {
 		fmt.Println(err)
@@ -164,10 +212,10 @@ func (ad *GcsAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 
 func (ad *GcsAdapter) Delete(ctx context.Context, input *pb.DeleteObjectInput) error {
 	bucket := ad.session.NewBucket()
-	objectId := input.Bucket + "/" + input.Key
+	objectId := input.Key
 	log.Infof("delete object[GCS], objectId:%s, err:%v\n", objectId)
 
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(input.Bucket)
 	err := GcpObject.Remove(objectId)
 	if err != nil {
 		log.Infof("delete object[GCS] failed, objectId:%s, err:%v\n", objectId, err)
@@ -185,10 +233,10 @@ func (ad *GcsAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object,
 
 func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.session.NewBucket()
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectKey
 	log.Infof("init multipart upload[GCS] bucket:%s, objectId:%s\n", bucket, objectId)
 
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(object.BucketName)
 	uploader := GcpObject.NewUploads(objectId)
 	multipartUpload := &pb.MultipartUpload{}
 
@@ -209,12 +257,12 @@ func (ad *GcsAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 
 func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload,
 	partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
-	objectId := multipartUpload.Bucket + "/" + multipartUpload.Key
+	objectId := multipartUpload.Key
 	bucket := ad.session.NewBucket()
 	log.Infof("upload part[GCS], objectId:%s, bucket:%s, partNum:%d, bytes:%s\n",
 		objectId, bucket, partNumber, upBytes)
 
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(multipartUpload.Bucket)
 	uploader := GcpObject.NewUploads(objectId)
 	d, err := ioutil.ReadAll(stream)
 	data := []byte(d)
@@ -240,7 +288,7 @@ func (ad *GcsAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 func (ad *GcsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error) {
 	bucket := ad.session.NewBucket()
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(multipartUpload.Bucket)
 	uploader := GcpObject.NewUploads(multipartUpload.ObjectId)
 	log.Infof("complete multipart upload[GCS], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
 
@@ -272,7 +320,7 @@ func (ad *GcsAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 func (ad *GcsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
 	bucket := ad.session.NewBucket()
 	log.Infof("abort multipart upload[GCS], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
-	GcpObject := bucket.NewObject(ad.backend.BucketName)
+	GcpObject := bucket.NewObject(multipartUpload.Bucket)
 	uploader := GcpObject.NewUploads(multipartUpload.ObjectId)
 	err := uploader.RemoveUploads(multipartUpload.UploadId)
 	if err != nil {
