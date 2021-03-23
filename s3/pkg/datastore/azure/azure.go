@@ -156,8 +156,9 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	if storageClass != "" {
 		storClass = storageClass
 	} else {
-		if object.Tier == 0 {
+		if object.Tier == utils.NO_TIER {
 			// default
+			log.Debugf("No tier is set. Setting it to default:[%d]", utils.NO_TIER)
 			object.Tier = utils.Tier1
 		}
 		storClass, err = osdss3.GetNameFromTier(object.Tier, utils.OSTYPE_Azure)
