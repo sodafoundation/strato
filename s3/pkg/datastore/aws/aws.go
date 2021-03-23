@@ -387,8 +387,8 @@ func (ad *AwsAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 }
 
 func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
-	bucket := ad.Backend.BucketName
-	objectId := input.BucketName + "/" + input.ObjectKey
+	bucket := input.BucketName
+	objectId := input.ObjectKey
 	resInput := &awss3.RestoreObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(objectId),
@@ -403,7 +403,7 @@ func (ad *AwsAdapter) Restore(ctx context.Context, input *pb.Restore) error {
 	svc := awss3.New(ad.Session)
 	result, err := svc.RestoreObject(resInput)
 	if err != nil {
-		log.Errorf("error while restoring object in AWS bucket")
+		log.Errorf("error while restoring object in AWS bucket: [%v]", err)
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case awss3.ErrCodeObjectAlreadyInActiveTierError:
