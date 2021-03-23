@@ -19,6 +19,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"os"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
@@ -30,8 +31,12 @@ import (
 )
 
 const (
-	s3Service      = "s3"
-	backendService = "backend"
+	MICRO_ENVIRONMENT     = "MICRO_ENVIRONMENT"
+	K8S                   = "k8s"
+	s3Service_Docker      = "s3"
+	backendService_Docker = "backend"
+	s3Service_K8S         = "soda.multicloud.v1.s3"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 type APIService struct {
@@ -40,6 +45,15 @@ type APIService struct {
 }
 
 func NewAPIService(c client.Client) *APIService {
+
+	s3Service := s3Service_Docker
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+		s3Service = s3Service_K8S
+	}
+
 	return &APIService{
 		s3Client:      s3.NewS3Service(s3Service, c),
 		backendClient: backend.NewBackendService(backendService, c),
