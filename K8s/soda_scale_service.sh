@@ -2,7 +2,7 @@
 no_of_pods="$1"
 service_name="$2"
 
-if [ -z "$service_name" ] || [ "$no_of_pods" = "c.txt" ]
+if [ -z "$service_name" ] || [ -z "$no_of_pods" ]
 then
         echo "Usage : ./soda_scale_service <service_name> <number_of_instances>"
 else
