@@ -34,11 +34,4 @@ kubectl delete configmap tidb-sql -n soda-multi-cloud
 kubectl delete configmap s3-sql -n soda-multi-cloud
 kubectl delete configmap yig-sql -n soda-multi-cloud
 
-#Cleanup Configmaps
-kubectl delete configmap multicloud-config -n soda-multi-cloud
-kubectl delete configmap tidb-config -n soda-multi-cloud
-kubectl delete configmap s3-config -n soda-multi-cloud
-kubectl delete configmap tidb-sql -n soda-multi-cloud
-kubectl delete configmap s3-sql -n soda-multi-cloud
-kubectl delete configmap yig-sql -n soda-multi-cloud
 
