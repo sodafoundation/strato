@@ -6,7 +6,7 @@ if [ -z "$service_name" ] || [ -z "$no_of_pods" ]
 then
         echo "Usage : ./soda_scale_service <service_name> <number_of_instances>"
         exit 1
-
+fi
 echo "START :: Scaling Service " $2 to $1 "instances.."
 cmd="kubectl scale --replicas=$2  deployment/$1 -n soda-multi-cloud"
 echo "EXECUTING ... $cmd"
