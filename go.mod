@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/Azure/azure-pipeline-go v0.2.2
 	github.com/Azure/azure-sdk-for-go v32.4.0+incompatible
-	github.com/Azure/azure-storage-blob-go v0.10.0
+	github.com/Azure/azure-storage-blob-go v0.8.0
 	github.com/Azure/azure-storage-file-go v0.7.0
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Shopify/sarama v1.19.0
@@ -54,7 +54,3 @@ require (
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	k8s.io/apimachinery v0.18.5
 )
-
-replace github.com/Azure/azure-pipeline-go v0.2.3 => github.com/Azure/azure-pipeline-go v0.2.1
-
-replace github.com/Azure/azure-storage-blob-go v0.10.0 => github.com/Azure/azure-storage-blob-go v0.8.0
