@@ -59,7 +59,7 @@ spec:
               value: k8s              
             - name: USE_DEFAULT_STORAGE_CLASS
               value: "1"
-          image: sodafoundation/multi-cloud-s3:latest
+          image: sodafoundation/multi-cloud-s3:RELEASE_VERSION
           name: s3
           ports:
             - containerPort: 8096

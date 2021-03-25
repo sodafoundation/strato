@@ -70,7 +70,7 @@ spec:
               value: s3
             - name: TRANSFER_SPEED_MIN
               value: "10"
-          image: sodafoundation/multi-cloud-api:latest
+          image: sodafoundation/multi-cloud-api:RELEASE_VERSION
           name: s3api
           ports:
             - containerPort: 8090

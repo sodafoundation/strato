@@ -68,7 +68,7 @@ spec:
               value: opensds
             - name: OS_USER_DOMIN_ID
               value: Default
-          image: sodafoundation/multi-cloud-file:latest
+          image: sodafoundation/multi-cloud-file:RELEASE_VERSION
           name: file
           ports:
             - containerPort: 8092
