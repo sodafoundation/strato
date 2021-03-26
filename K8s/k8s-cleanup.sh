@@ -16,7 +16,7 @@ kubectl delete service  dataflow -n soda-multi-cloud
 kubectl delete deployment zookeeper -n soda-multi-cloud
 kubectl delete deployment redis -n soda-multi-cloud
 kubectl delete deployment tidb -n soda-multi-cloud
-kubectl delete deployment kafka-svc -n soda-multi-cloud
+kubectl delete deployment kafka -n soda-multi-cloud
 kubectl delete deployment block -n soda-multi-cloud
 kubectl delete deployment file -n soda-multi-cloud
 kubectl delete deployment backend -n soda-multi-cloud
@@ -34,11 +34,4 @@ kubectl delete configmap tidb-sql -n soda-multi-cloud
 kubectl delete configmap s3-sql -n soda-multi-cloud
 kubectl delete configmap yig-sql -n soda-multi-cloud
 
-#Cleanup Configmaps
-kubectl delete configmap multicloud-config -n soda-multi-cloud
-kubectl delete configmap tidb-config -n soda-multi-cloud
-kubectl delete configmap s3-config -n soda-multi-cloud
-kubectl delete configmap tidb-sql -n soda-multi-cloud
-kubectl delete configmap s3-sql -n soda-multi-cloud
-kubectl delete configmap yig-sql -n soda-multi-cloud
 

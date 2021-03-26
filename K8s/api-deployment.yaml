@@ -69,7 +69,7 @@ spec:
               value: ctrl
             - name: TRANSFER_SPEED_MIN
               value: "10"
-          image: sodafoundation/multi-cloud-api:latest
+          image: sodafoundation/multi-cloud-api:RELEASE_VERSION
           name: api
           ports:
             - containerPort: 8089
