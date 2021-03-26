@@ -1,17 +1,38 @@
 #!/bin/sh
+
+# Copyright 2021 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 no_of_pods="$1"
 service_name="$2"
+
+if [ "$#" -ne 2 ]; then
+        printf '%s: error: need 2 arguments, <service_name> <number_of_instances>,  got %d\n' "$0" "$#" >&2
+        exit 1
+fi
 
 if [ -z "$service_name" ] || [ -z "$no_of_pods" ]
 then
         echo "Usage : ./soda_scale_service <service_name> <number_of_instances>"
         exit 1
 fi
-echo "START :: Scaling Service " $2 to $1 "instances.."
+echo "START :: Scaling Service " $service_name to $no_of_pods "instances.."
 cmd="kubectl scale --replicas=$2  deployment/$1 -n soda-multi-cloud"
 echo "EXECUTING ... $cmd"
 bash -c "$cmd"
 status=$?
-[ $status -eq 0 ] && echo "COMPLETED :: Scaling Service " $2 to $1 "instances..."
+[ $status -eq 0 ] && echo "COMPLETED :: Scaling Service " $service_name to $no_of_pods "instances..."
 exit 0
 
