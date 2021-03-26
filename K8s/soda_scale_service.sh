@@ -25,7 +25,7 @@ fi
 
 if [ -z "$service_name" ] || [ -z "$no_of_pods" ]
 then
-        echo "Usage : ./soda_scale_service <service_name> <number_of_instances>"
+        echo "Usage : soda_scale_service <service_name> <number_of_instances>"
         exit 1
 fi
 echo "START :: Scaling Service " $service_name to $no_of_pods "instances.."
