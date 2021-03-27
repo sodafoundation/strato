@@ -21,7 +21,7 @@ metadata:
     io.soda.service: kafka
   name: kafka
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       io.soda.service: kafka
