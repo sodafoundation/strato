@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/vault/api v1.0.5-0.20190814205542-3b036e58e950
 	github.com/huaweicloud/golangsdk v0.0.0-20201013113019-d00b298c3cdd
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.0.16-beta
-	github.com/journeymidnight/radoshttpd v0.0.7
+	github.com/journeymidnight/radoshttpd v0.0.0-20190617133011-609666b51136
 	github.com/journeymidnight/yig v2.0.0+incompatible
 	github.com/mholt/certmagic v0.9.3 // indirect
 	github.com/micro/go-log v0.1.0
