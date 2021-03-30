@@ -25,6 +25,7 @@ import (
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
@@ -46,6 +47,9 @@ const (
 	s3Service_K8S          = "soda.multicloud.v1.s3"
 	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
 )
+
+// List of object storge providers supported by s3 services
+var object_types = []string{"aws-s3", "azure-blob", "ibm-cos", "hw-obs", "ceph-s3", "gcp-s3", "fusionstorage-object", "yig", "alibaba-oss", "sony-oda"}
 
 type APIService struct {
 	backendClient  backend.BackendService
@@ -246,12 +250,15 @@ func (s *APIService) CreateBackend(request *restful.Request, response *restful.R
 	backendDetailS3.Access = backendDetail.Access
 	backendDetailS3.Security = backendDetail.Security
 
-	_, err = s.s3Client.BackendCheck(ctx, backendDetailS3)
-	err1 := errors.New("Failed to register backend due to invalid credentials.")
-	if err != nil {
-		log.Errorf("failed to create backend due to wrong credentials: %v", err)
-		response.WriteError(http.StatusBadRequest, err1)
-		return
+    // This backend check will be called only for object storage
+	if utils.SliceContainsString(backendDetail.Type, object_types) {
+		_, err = s.s3Client.BackendCheck(ctx, backendDetailS3)
+		err1 := errors.New("Failed to register backend due to invalid credentials.")
+		if err != nil {
+			log.Errorf("failed to create backend due to wrong credentials: %v", err)
+			response.WriteError(http.StatusBadRequest, err1)
+			return
+		}
 	}
 
 	res, err := s.backendClient.CreateBackend(ctx, &backend.CreateBackendRequest{Backend: backendDetail})
