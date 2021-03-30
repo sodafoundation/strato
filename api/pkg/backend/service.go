@@ -48,7 +48,7 @@ const (
 )
 
 // Map of object storage providers supported by s3 services. Keeping a map
-// to optimize search in o(1)
+// to optimize search
 var objectStorage = map[string]int{
 	"aws-s3":               1,
 	"azure-blob":           1,
