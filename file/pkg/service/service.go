@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
@@ -28,11 +26,24 @@ import (
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/model"
 	"github.com/opensds/multi-cloud/file/pkg/utils"
+	"os"
+	"time"
 
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	fileService_Docker = "file"
+	fileService_K8S    = "soda.multicloud.v1.file"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 type fileService struct {
@@ -43,9 +54,18 @@ type fileService struct {
 func NewFileService() pb.FileHandler {
 
 	log.Infof("Init file service finished.\n")
+
+	flService := fileService_Docker
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		flService = fileService_K8S
+		backendService = backendService_K8S
+	}
+
 	return &fileService{
-		fileClient:    pb.NewFileService("file", client.DefaultClient),
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		fileClient:    pb.NewFileService(flService, client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 
@@ -396,7 +416,7 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 	}
 
 	fileshare := &pb.FileShare{
-		Name: res.Name,
+		Name:             res.Name,
 		AvailabilityZone: res.AvailabilityZone,
 	}
 
@@ -436,7 +456,7 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 	time.Sleep(6 * time.Second)
 
 	ctxBg := context.Background()
-	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Minute)
+	ctxBg, _ = context.WithTimeout(ctxBg, 10*time.Minute)
 
 	fsGetInput := &pb.GetFileShareRequest{Fileshare: fs}
 
@@ -447,7 +467,6 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 		return
 	}
 	log.Debugf("Get File share response = [%+v] from backend", getFs)
-
 
 	if utils.MergeFileShareData(getFs.Fileshare, fs) != nil {
 		log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v]\n", fs, err)

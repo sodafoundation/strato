@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore"
@@ -29,11 +28,26 @@ import (
 	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	_ "go.uber.org/automaxprocs"
+	"os"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	s3Service_Docker = "s3"
+	s3Service_K8S    = "soda.multicloud.v1.s3"
 )
 
 func main() {
+	s3Service := s3Service_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		s3Service = s3Service_K8S
+	}
+
 	service := micro.NewService(
-		micro.Name("s3"),
+		micro.Name(s3Service),
 	)
 
 	obs.InitLogs()

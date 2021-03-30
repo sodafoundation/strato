@@ -34,6 +34,7 @@ type Database struct {
 // Tier1, Tier99 and Tier999 just like the tiers of hot, warm, cold.
 // In the future, we will provide the ability for users to add new storage tiers, if we use 1, 2 and 3, then no space for new storage tiers.
 const (
+	NO_TIER = 0
 	Tier1   = 1
 	Tier99  = 99
 	Tier999 = 999
@@ -50,10 +51,12 @@ const (
 )
 
 const (
+	GCS_STANDARD       = "STANDARD"
 	GCS_MULTI_REGIONAL = "MULTI_REGIONAL"
 	GCS_REGIONAL       = "REGIONAL"
 	GCS_NEARLINE       = "NEARLINE"
 	GCS_COLDLINE       = "COLDLINE"
+	GCS_ARCHIVE        = "Archive"
 )
 
 const (

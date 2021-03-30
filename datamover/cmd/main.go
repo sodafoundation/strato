@@ -16,16 +16,31 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	datamover "github.com/opensds/multi-cloud/datamover/pkg"
 	log "github.com/sirupsen/logrus"
+	"os"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	datamoverService_Docker = "datamover"
+	datamoverService_K8S    = "soda.multicloud.v1.datamover"
 )
 
 func main() {
+
+	datamoverService := datamoverService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		datamoverService = datamoverService_K8S
+	}
+
 	service := micro.NewService(
-		micro.Name("datamover"),
+		micro.Name(datamoverService),
 	)
 
 	obs.InitLogs()

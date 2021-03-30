@@ -64,6 +64,7 @@ type InternalLifecycleRule struct {
 	ActionType   int // 0-Expiration, 1-IncloudTransition, 2-CrossCloudTransition, 3-AbortMultipartUpload
 	DeleteMarker string
 	Backend      string
+	TargetBucket   string
 }
 
 func GetTenantId(ctx context.Context) (string, error) {

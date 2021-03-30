@@ -16,6 +16,9 @@ package backend
 
 import (
 	"errors"
+	"net/http"
+	"strconv"
+
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -23,20 +26,25 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/dataflow/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"net/http"
-	"strconv"
+	"os"
 )
 
 const (
-	backendService  = "backend"
-	s3Service       = "s3"
-	dataflowService = "dataflow"
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker  = "backend"
+	s3Service_Docker       = "s3"
+	dataflowService_Docker = "dataflow"
+	backendService_K8S     = "soda.multicloud.v1.backend"
+	s3Service_K8S          = "soda.multicloud.v1.s3"
+	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
 )
 
 type APIService struct {
@@ -56,6 +64,16 @@ type DeCrypter struct {
 }
 
 func NewAPIService(c client.Client) *APIService {
+
+	backendService := backendService_Docker
+	s3Service := s3Service_Docker
+	dataflowService := dataflowService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+		s3Service = s3Service_K8S
+		dataflowService = dataflowService_K8S
+	}
 	return &APIService{
 		backendClient:  backend.NewBackendService(backendService, c),
 		s3Client:       s3.NewS3Service(s3Service, c),

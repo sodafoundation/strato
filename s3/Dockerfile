@@ -30,5 +30,11 @@ RUN update-ca-trust force-enable
 
 
 COPY s3 /s3
+RUN mkdir -p /etc/config/tidb
+RUN mkdir -p /etc/config/yig
+
+COPY ./pkg/conf/tidb.sql /etc/config/tidb/tidb.sql
+COPY ./pkg/datastore/yig/conf/yig.sql /etc/config/yig/yig.sql
+
 COPY initdb.sh /initdb.sh
 ENTRYPOINT ["/initdb.sh"]
