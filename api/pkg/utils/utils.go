@@ -215,3 +215,13 @@ func GetTimeoutSec(objSize int64) int64 {
 
 	return tmoutSec
 }
+
+// Function to check if the slice contains a string
+func SliceContainsString(inp string, list []string) bool {
+	for _, elem := range list {
+		if elem == inp {
+			return true
+		}
+	}
+	return false
+}
