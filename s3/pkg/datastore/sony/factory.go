@@ -20,8 +20,7 @@ func (factory *SonyS3DriverFactory) CreateDriver(backend *backendpb.BackendDetai
 
 	s3aksk := awsdk.S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
 	creds := credentials.NewCredentials(&s3aksk)
-
-	disableSSL := true
+	disableSSL := false
 	sess, err := session.NewSession(&aws.Config{
 		S3ForcePathStyle: aws.Bool(true),
 		Region:           aws.String("us-east-1"),

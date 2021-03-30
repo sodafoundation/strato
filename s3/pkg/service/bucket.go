@@ -30,7 +30,7 @@ import (
 var ENC_KEY_LEN int = 32
 var ENC_IV_LEN int = 16
 
-var CRUDSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs"}
+var CRUDSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs", "sony-oda"}
 
 func isCrudSupportedCloud(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))
@@ -95,7 +95,7 @@ func (s *s3Service) CreateBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return err
 	}
 
-	if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type){
+	if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type) {
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)
@@ -254,7 +254,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	log.Info("The backend is:\n", backend)
 
-    if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type){
+	if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type) {
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)
