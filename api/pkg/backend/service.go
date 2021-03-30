@@ -47,7 +47,7 @@ const (
 	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
 )
 
-// Map of object storge providers supported by s3 services. Keeping a map
+// Map of object storage providers supported by s3 services. Keeping a map
 // to optimize search in o(1)
 var objectStorage = map[string]int{
 	"aws-s3":               1,
