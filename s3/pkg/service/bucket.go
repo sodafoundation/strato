@@ -252,7 +252,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return err
 	}
 
-	log.Info("The backend is:\n", backend.Name)
+	log.Info("The backend is:", backend.Name)
 
 	if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type) {
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
