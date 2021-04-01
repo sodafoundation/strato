@@ -72,6 +72,9 @@ services:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+    depends_on:
+      - datastore
+    restart: always
 
   redis:
     image: redis
@@ -90,6 +93,9 @@ services:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+    depends_on:
+      - datastore
+    restart: always
   
   file:
     image: sodafoundation/multi-cloud-file
@@ -106,6 +112,9 @@ services:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
+    depends_on:
+      - datastore
+    restart: always
 
   s3:
     image: sodafoundation/multi-cloud-s3
