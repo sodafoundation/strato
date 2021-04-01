@@ -157,7 +157,6 @@ services:
       - zookeeper
       - kafka
       - s3
-    depends_on:
       - datastore
     restart: always
 
