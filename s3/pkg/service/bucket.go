@@ -252,7 +252,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return err
 	}
 
-	log.Info("The backend is:\n", backend)
+	log.Info("The backend is:", backend.Name)
 
 	if isCrudSupportedCloud(CRUDSupportedClouds, backend.Type) {
 		sd, err := driver.CreateStorageDriver(backend.Type, backend)
@@ -260,8 +260,6 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 			log.Errorln("failed to create storage. err:", err)
 			return err
 		}
-
-		log.Info("The driver for the backend is:", sd)
 
 		err = sd.BucketDelete(ctx, in)
 		if err != nil {
