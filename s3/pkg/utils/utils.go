@@ -147,7 +147,6 @@ func GetBackend(ctx context.Context, backedClient backend.BackendService, backen
 		log.Errorf("get backend %s failed.", backendName)
 		return nil, backendErr
 	}
-	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	return backend, nil
 }

@@ -798,7 +798,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		log.Errorln("failed to get backend client with err:", err)
 		return err
 	}
-	log.Debug("The source backend:", srcBackend)
+	log.Debug("The source backend:", srcBackend.Name)
 
 	srcSd, err = driver.CreateStorageDriver(srcBackend.Type, srcBackend)
 	if err != nil {
@@ -851,7 +851,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 			log.Errorln("failed to get backend client with err:", err)
 			return err
 		}
-		log.Debug("The target backend is:", targetBackend)
+		log.Debug("The target backend is:", targetBackend.Name)
 		targetSd, err = driver.CreateStorageDriver(targetBackend.Type, targetBackend)
 		if err != nil {
 			log.Errorln("failed to create storage. err:", err)

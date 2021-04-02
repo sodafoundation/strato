@@ -137,7 +137,6 @@ func (s *APIService) isBackendExist(ctx context.Context, backendName string) boo
 	if backendErr != nil {
 		log.Infof("Get backend[name=%s] failed.", backendName)
 	} else {
-		log.Infof("backendRep=%+v\n", backendRep)
 		if len(backendRep.Backends) > 0 {
 			log.Infof("backend[name=%s] exist.", backendName)
 			flag = true

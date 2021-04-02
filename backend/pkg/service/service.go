@@ -124,7 +124,7 @@ func (b *backendService) ListBackend(ctx context.Context, in *pb.ListBackendRequ
 	out.Backends = backends
 	out.Next = in.Offset + int32(len(res))
 
-	log.Infof("Get backend successfully, #num=%d, backends:%+v\n", len(backends), backends)
+	log.Infof("Get backend successfully, #num=%d", len(backends))
 	return nil
 }
 
