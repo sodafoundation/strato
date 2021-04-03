@@ -82,7 +82,7 @@ docker: build
 	docker build datamover -t sodafoundation/multi-cloud-datamover:latest
 
 goimports:
-	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/)
+	goimports -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/ | grep -v /proto)
 
 clean:
 	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3 block/block file/file
