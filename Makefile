@@ -81,8 +81,18 @@ docker: build
 	chmod 755 datamover/datamover
 	docker build datamover -t sodafoundation/multi-cloud-datamover:latest
 
+.PHONY: goimports
+ifeq ($(CHECK_ERROR),y)
+goimports: UNFORMATTED_FILES = $(shell goimports -local $(shell go list -m) -l $(shell go list -f {{.Dir}} ./... |grep -v /vendor/ | grep -v /proto))
+goimports: 
+	@ if [ ! -z "$(UNFORMATTED_FILES)" ]; then \
+		echo "Formatting error in $(UNFORMATTED_FILES)"; \
+		exit 1; \
+	fi
+else
 goimports:
 	goimports -local $(shell go list -m) -w $(shell go list -f {{.Dir}} ./... |grep -v /vendor/ | grep -v /proto)
+endif
 
 clean:
 	rm -rf $(BUILD_DIR) api/api backend/backend dataflow/dataflow datamover/datamover s3/s3 block/block file/file
