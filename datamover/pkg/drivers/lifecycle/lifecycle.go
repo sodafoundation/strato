@@ -16,14 +16,16 @@ package lifecycle
 
 import (
 	"encoding/json"
+	"os"
+	"sync"
+
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
 	datamover "github.com/opensds/multi-cloud/datamover/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"os"
-	"sync"
 )
 
 var s3client osdss3.S3Service

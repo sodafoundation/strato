@@ -19,15 +19,16 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"errors"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	"io"
 	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/utils"
-	log "github.com/sirupsen/logrus"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 const (
@@ -41,11 +42,11 @@ var (
 	RootContext = context.Background()
 )
 
-func (yig *YigStorage) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+func (yig *YigStorage) BucketDelete(ctx context.Context, in *s3.Bucket) error {
 	panic("implement me")
 }
 
-func (yig *YigStorage) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+func (yig *YigStorage) BucketCreate(ctx context.Context, input *s3.Bucket) error {
 	panic("implement me")
 }
 

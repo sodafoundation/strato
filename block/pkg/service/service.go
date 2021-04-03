@@ -18,21 +18,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
 	"os"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/pkg/db"
 	"github.com/opensds/multi-cloud/block/pkg/model"
 	"github.com/opensds/multi-cloud/block/pkg/utils"
+	block "github.com/opensds/multi-cloud/block/proto"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
 	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
-
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	pb "github.com/opensds/multi-cloud/block/proto"
 	driverutils "github.com/opensds/multi-cloud/contrib/utils"
+
+	"github.com/globalsign/mgo/bson"
+	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,11 +47,11 @@ const (
 )
 
 type blockService struct {
-	blockClient   pb.BlockService
+	blockClient   block.BlockService
 	backendClient backend.BackendService
 }
 
-func NewBlockService() pb.BlockHandler {
+func NewBlockService() block.BlockHandler {
 
 	log.Infof("Init block service finished.\n")
 
@@ -64,12 +64,12 @@ func NewBlockService() pb.BlockHandler {
 	}
 
 	return &blockService{
-		blockClient:   pb.NewBlockService(blkService, client.DefaultClient),
+		blockClient:   block.NewBlockService(blkService, client.DefaultClient),
 		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 
-func (b *blockService) ListVolume(ctx context.Context, in *pb.ListVolumeRequest, out *pb.ListVolumeResponse) error {
+func (b *blockService) ListVolume(ctx context.Context, in *block.ListVolumeRequest, out *block.ListVolumeResponse) error {
 	log.Info("Received ListVolume request.")
 
 	if in.Limit < 0 || in.Offset < 0 {
@@ -84,9 +84,9 @@ func (b *blockService) ListVolume(ctx context.Context, in *pb.ListVolumeRequest,
 		return err
 	}
 
-	var volumes []*pb.Volume
+	var volumes []*block.Volume
 	for _, vol := range res {
-		volume := &pb.Volume{
+		volume := &block.Volume{
 			Id:                 vol.Id.Hex(),
 			CreatedAt:          vol.CreatedAt,
 			UpdatedAt:          vol.UpdatedAt,
@@ -123,7 +123,7 @@ func (b *blockService) ListVolume(ctx context.Context, in *pb.ListVolumeRequest,
 	return nil
 }
 
-func (b *blockService) GetVolume(ctx context.Context, in *pb.GetVolumeRequest, out *pb.GetVolumeResponse) error {
+func (b *blockService) GetVolume(ctx context.Context, in *block.GetVolumeRequest, out *block.GetVolumeResponse) error {
 	log.Info("Received GetVolume request.")
 
 	vol, err := db.DbAdapter.GetVolume(ctx, in.Id)
@@ -132,7 +132,7 @@ func (b *blockService) GetVolume(ctx context.Context, in *pb.GetVolumeRequest, o
 		return err
 	}
 
-	volume := &pb.Volume{
+	volume := &block.Volume{
 		Id:                 vol.Id.Hex(),
 		CreatedAt:          vol.CreatedAt,
 		UpdatedAt:          vol.UpdatedAt,
@@ -166,7 +166,7 @@ func (b *blockService) GetVolume(ctx context.Context, in *pb.GetVolumeRequest, o
 	return nil
 }
 
-func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequest, out *pb.CreateVolumeResponse) error {
+func (b *blockService) CreateVolume(ctx context.Context, in *block.CreateVolumeRequest, out *block.CreateVolumeResponse) error {
 	log.Info("Received CreateVolume request.")
 
 	backend, err := utils.GetBackend(ctx, b.backendClient, in.Volume.BackendId)
@@ -234,7 +234,7 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 		return err
 	}
 
-	out.Volume = &pb.Volume{
+	out.Volume = &block.Volume{
 		Id:                 res.Id.Hex(),
 		CreatedAt:          res.CreatedAt,
 		UpdatedAt:          res.UpdatedAt,
@@ -264,8 +264,8 @@ func (b *blockService) CreateVolume(ctx context.Context, in *pb.CreateVolumeRequ
 	return nil
 }
 
-func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequest,
-	out *pb.UpdateVolumeResponse) error {
+func (b *blockService) UpdateVolume(ctx context.Context, in *block.UpdateVolumeRequest,
+	out *block.UpdateVolumeResponse) error {
 
 	log.Info("Received UpdateVolume request.")
 
@@ -353,7 +353,7 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 		return err
 	}
 
-	out.Volume = &pb.Volume{
+	out.Volume = &block.Volume{
 		Id:                 updateRes.Id.Hex(),
 		CreatedAt:          updateRes.CreatedAt,
 		UpdatedAt:          updateRes.UpdatedAt,
@@ -386,7 +386,7 @@ func (b *blockService) UpdateVolume(ctx context.Context, in *pb.UpdateVolumeRequ
 	return nil
 }
 
-func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequest, out *pb.DeleteVolumeResponse) error {
+func (b *blockService) DeleteVolume(ctx context.Context, in *block.DeleteVolumeRequest, out *block.DeleteVolumeResponse) error {
 
 	log.Info("Received DeleteVolume request.")
 
@@ -408,7 +408,7 @@ func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequ
 		return err
 	}
 
-	volume := &pb.Volume{
+	volume := &block.Volume{
 		Name: res.Name,
 	}
 
@@ -436,7 +436,7 @@ func (b *blockService) DeleteVolume(ctx context.Context, in *pb.DeleteVolumeRequ
 	return nil
 }
 
-func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *backend.BackendDetail) {
+func (b *blockService) SyncVolume(ctx context.Context, vol *block.Volume, backend *backend.BackendDetail) {
 	log.Info("Received SyncVolume request.")
 
 	sd, err := driver.CreateStorageDriver(backend)
@@ -450,7 +450,7 @@ func (b *blockService) SyncVolume(ctx context.Context, vol *pb.Volume, backend *
 	ctxBg := context.Background()
 	ctxBg, _ = context.WithTimeout(ctxBg, 10*time.Second)
 
-	volGetInput := &pb.GetVolumeRequest{Volume: vol}
+	volGetInput := &block.GetVolumeRequest{Volume: vol}
 
 	getVol, err := sd.GetVolume(ctxBg, volGetInput)
 	if err != nil {

@@ -18,9 +18,10 @@ import (
 	"context"
 
 	"github.com/globalsign/mgo/bson"
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 func (ad *adapter) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *[]pb.Bucket) S3Error {

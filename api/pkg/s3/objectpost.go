@@ -20,16 +20,16 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	"github.com/opensds/multi-cloud/s3/error"
+	s3error "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	"github.com/opensds/multi-cloud/s3/proto"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -137,10 +137,10 @@ func (s *APIService) ObjectPost(request *restful.Request, response *restful.Resp
 	eof := false
 	stream, err := s.s3Client.PutObject(ctx)
 	defer stream.Close()
-	obj := pb.PutObjectRequest{
+	obj := s3.PutObjectRequest{
 		BucketName: bucketName,
 		ObjectKey:  objectKey,
-		Acl:        &pb.Acl{CannedAcl: acl.CannedAcl},
+		Acl:        &s3.Acl{CannedAcl: acl.CannedAcl},
 		Attrs:      metadata,
 		Location:   location,
 		Size:       -1,

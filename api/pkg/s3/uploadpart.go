@@ -15,17 +15,18 @@
 package s3
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"strconv"
-	"crypto/sha256"
+
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/s3/error"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 )
 
 func (s *APIService) UploadPart(request *restful.Request, response *restful.Response) {
@@ -45,7 +46,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	/// maximum Upload size for multipart objects in a single operation
 	if isMaxObjectSize(size) {
 		log.Errorf("the size of object to upload is too large.")
-		WriteErrorResponse(response, request, ErrEntityTooLarge)
+		WriteErrorResponse(response, request, s3error.ErrEntityTooLarge)
 		return
 	}
 	log.Infoln("uploadpart size:", size)
@@ -55,13 +56,13 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	partID, err := strconv.Atoi(partIDString)
 	if err != nil {
 		log.Errorf("failed to convert part id string to integer")
-		WriteErrorResponse(response, request, ErrInvalidPart)
+		WriteErrorResponse(response, request, s3error.ErrInvalidPart)
 		return
 	}
 	// check partID with maximum part ID for multipart objects
 	if isMaxPartID(partID) {
 		log.Errorf("the part id is invalid.")
-		WriteErrorResponse(response, request, ErrInvalidMaxParts)
+		WriteErrorResponse(response, request, s3error.ErrInvalidMaxParts)
 		return
 	}
 
@@ -69,7 +70,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 	stream, err := s.s3Client.UploadPart(ctx)
 	defer stream.Close()
 
-	uploadRequest := pb.UploadPartRequest{
+	uploadRequest := s3.UploadPartRequest{
 		BucketName: bucketName,
 		ObjectKey:  objectKey,
 		UploadId:   uploadID,
@@ -113,14 +114,14 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 			eof = true
 		}
 
-		err = stream.Send(&pb.PutDataStream{Data: buf[:n]})
+		err = stream.Send(&s3.PutDataStream{Data: buf[:n]})
 		if err != nil {
 			log.Infof("stream send error: %v\n", err)
 			break
 		}
 	}
 
-	result := pb.UploadPartResponse{}
+	result := s3.UploadPartResponse{}
 	err = stream.RecvMsg(&result)
 	if HandleS3Error(response, request, err, result.GetErrorCode()) != nil {
 		log.Errorln("unable to recv message. err:, errcode:", err, result.ErrorCode)
@@ -133,7 +134,7 @@ func (s *APIService) UploadPart(request *restful.Request, response *restful.Resp
 		if inputSha256Sum != sha256Sum {
 			log.Errorln("sha256Sum:", sha256Sum, ", received:",
 				request.Request.Header.Get("X-Amz-Content-Sha256"))
-			WriteErrorResponse(response, request, ErrContentSHA256Mismatch)
+			WriteErrorResponse(response, request, s3error.ErrContentSHA256Mismatch)
 		}
 	}
 

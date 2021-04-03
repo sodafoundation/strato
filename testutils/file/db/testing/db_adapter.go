@@ -15,7 +15,6 @@ type DBAdapter struct {
 	mock.Mock
 }
 
-
 // CreateFileShare provides a mock function with given fields: ctx, fileshare
 func (_m *DBAdapter) CreateFileShare(ctx context.Context, fileshare *model.FileShare) (*model.FileShare, error) {
 	ret := _m.Called(ctx, fileshare)

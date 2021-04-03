@@ -25,10 +25,11 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

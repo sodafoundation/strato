@@ -24,11 +24,16 @@ import (
 
 	"crypto/md5"
 	"encoding/hex"
-	awss3 "github.com/aws/aws-sdk-go/service/s3"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	log "github.com/sirupsen/logrus"
+	"github.com/webrtcn/s3client"
+	. "github.com/webrtcn/s3client"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -36,9 +41,6 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"github.com/webrtcn/s3client"
-	. "github.com/webrtcn/s3client"
 )
 
 type GcsAdapter struct {
@@ -68,7 +70,7 @@ func (ad *GcsAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 		log.Error("failed to delete bucket due to %s:", err)
 		return err
 	}
-	log.Debug("The bucket deletion is successful in gcp:%s",result)
+	log.Debug("The bucket deletion is successful in gcp:%s", result)
 
 	return nil
 

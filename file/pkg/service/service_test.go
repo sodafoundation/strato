@@ -16,7 +16,12 @@ package service
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/micro/go-micro/v2/client"
+	"github.com/stretchr/testify/mock"
+
 	bkendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	pb "github.com/opensds/multi-cloud/file/proto"
@@ -24,9 +29,6 @@ import (
 	sdtest "github.com/opensds/multi-cloud/testutils/contrib/datastore/drivers"
 	"github.com/opensds/multi-cloud/testutils/file/collection"
 	dbtest "github.com/opensds/multi-cloud/testutils/file/db/testing"
-	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 //====================Mock methods of type (_m *DBAdapter)=============================
@@ -272,9 +274,7 @@ func TestDeleteFileShare(t *testing.T) {
 		Fileshare: pbFileshares[0],
 	}
 
-	var resp = &pb.DeleteFileShareResponse{
-
-	}
+	var resp = &pb.DeleteFileShareResponse{}
 
 	ctx := context.Background()
 	deadline := time.Now().Add(time.Duration(50) * time.Second)

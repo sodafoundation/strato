@@ -3,9 +3,10 @@ package tests
 import (
 	"testing"
 
+	. "gopkg.in/check.v1"
+
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
-	. "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) { TestingT(t) }

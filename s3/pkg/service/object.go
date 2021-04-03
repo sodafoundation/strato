@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/micro/go-micro/v2/metadata"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	utils2 "github.com/opensds/multi-cloud/dataflow/pkg/utils"
@@ -33,7 +35,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 var ChunkSize int = 2048
@@ -775,7 +776,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		log.Errorf("failed to get object[%s] of bucket[%s]. err:%v\n", in.SrcObject, in.SrcBucket, err)
 		return err
 	}
-    log.Debug("The source object:", srcObject)
+	log.Debug("The source object:", srcObject)
 
 	targetObject, err := initTargeObject(ctx, in, srcObject.Object)
 	if err != nil {
@@ -791,7 +792,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 		log.Errorf("get source bucket[%s] failed with err:%v", in.SrcBucket, err)
 		return err
 	}
-    log.Debug("The souce bucket:", srcBucket)
+	log.Debug("The souce bucket:", srcBucket)
 
 	srcBackend, err := utils.GetBackend(ctx, s.backendClient, srcObject.Location)
 	if err != nil {

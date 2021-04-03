@@ -16,6 +16,9 @@ package service
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/pkg/db"
 	"github.com/opensds/multi-cloud/block/pkg/utils"
@@ -26,8 +29,6 @@ import (
 	bkpb "github.com/opensds/multi-cloud/testutils/backend/proto"
 	"github.com/opensds/multi-cloud/testutils/block/collection"
 	mockrepo "github.com/opensds/multi-cloud/testutils/block/db/testing"
-	"testing"
-	"time"
 )
 
 func TestGetVolume(t *testing.T) {

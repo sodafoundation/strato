@@ -19,25 +19,24 @@ import (
 	"os"
 
 	"github.com/micro/go-micro/v2"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	"github.com/opensds/multi-cloud/block/pkg/db"
 	"github.com/opensds/multi-cloud/block/pkg/utils/config"
 	_ "github.com/opensds/multi-cloud/contrib/datastore"
 
+	log "github.com/sirupsen/logrus"
+
 	handler "github.com/opensds/multi-cloud/block/pkg/service"
 	pb "github.com/opensds/multi-cloud/block/proto"
-	log "github.com/sirupsen/logrus"
 )
 
-
 const (
-
 	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
-	K8S = "k8s"
-	
-	blockService_Docker  = "block"
-	blockService_K8S  = "soda.multicloud.v1.block"
-	
+	K8S               = "k8s"
+
+	blockService_Docker = "block"
+	blockService_K8S    = "soda.multicloud.v1.block"
 )
 
 func main() {
@@ -48,10 +47,10 @@ func main() {
 
 	blockService := blockService_Docker
 
-	if(os.Getenv(MICRO_ENVIRONMENT) == K8S){
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
 		blockService = blockService_K8S
 	}
-	
+
 	service := micro.NewService(
 		micro.Name(blockService),
 	)

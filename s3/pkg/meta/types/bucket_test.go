@@ -1,9 +1,10 @@
 package types
 
 import (
+	. "gopkg.in/check.v1"
+
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	. "gopkg.in/check.v1"
 )
 
 type TestData struct {

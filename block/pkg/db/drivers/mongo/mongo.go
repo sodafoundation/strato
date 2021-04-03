@@ -23,9 +23,10 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/block/pkg/model"
-	log "github.com/sirupsen/logrus"
 )
 
 var adapter = &mongoAdapter{}

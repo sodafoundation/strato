@@ -21,13 +21,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/db"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/storage"
-	log "github.com/sirupsen/logrus"
 )
 
 type YigDriverFactory struct {
@@ -37,7 +38,7 @@ type YigDriverFactory struct {
 	initFlag   int32
 }
 
-func (ydf *YigDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.StorageDriver, error) {
+func (ydf *YigDriverFactory) CreateDriver(backend *backend.BackendDetail) (driver.StorageDriver, error) {
 	err := ydf.Init()
 	if err != nil {
 		log.Errorf("failed to perform YigDriverFactory init, err: %v", err)

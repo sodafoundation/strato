@@ -21,6 +21,7 @@ import (
 	"github.com/huaweicloud/golangsdk"
 	"github.com/huaweicloud/golangsdk/openstack/sfs/v2/shares"
 	"github.com/micro/go-micro/v2/util/log"
+
 	"github.com/opensds/multi-cloud/contrib/utils"
 
 	pb "github.com/opensds/multi-cloud/file/proto"

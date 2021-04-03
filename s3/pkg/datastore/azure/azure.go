@@ -26,7 +26,12 @@ import (
 	"time"
 
 	"encoding/hex"
+	"strconv"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
@@ -34,9 +39,6 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 // TryTimeout indicates the maximum time allowed for any single try of an HTTP request.

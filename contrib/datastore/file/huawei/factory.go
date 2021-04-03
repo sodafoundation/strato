@@ -18,6 +18,7 @@ import (
 	"github.com/huaweicloud/golangsdk"
 	"github.com/huaweicloud/golangsdk/openstack"
 	"github.com/micro/go-micro/v2/util/log"
+
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
 

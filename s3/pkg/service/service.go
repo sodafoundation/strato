@@ -22,6 +22,8 @@ import (
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -34,7 +36,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -200,13 +201,13 @@ func loadGCPDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	t2n := make(Int2String)
 	t2n[Tier1] = GCS_STANDARD
 	//t2n[Tier99] = GCS_NEARLINE
-	t2n[Tier999]  = GCS_ARCHIVE
+	t2n[Tier999] = GCS_ARCHIVE
 	(*i2e)[OSTYPE_GCS] = &t2n
 
 	n2t := make(String2Int)
 	n2t[GCS_STANDARD] = Tier1
 	//n2t[GCS_NEARLINE] = Tier99
-	n2t[GCS_ARCHIVE]    = Tier999
+	n2t[GCS_ARCHIVE] = Tier999
 	(*e2i)[OSTYPE_GCS] = &n2t
 }
 
