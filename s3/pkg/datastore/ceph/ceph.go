@@ -49,7 +49,7 @@ func (ad *CephAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 		log.Error("the Delete bucket failed in ceph service with err:%s", err.Error())
 		return err
 	}
-	log.Debug("The bucket:%s deleted successful in ceph", in.Name)
+	log.Debug("The bucket:%s deleted successfully in ceph", in.Name)
 	return nil
 }
 
@@ -60,7 +60,7 @@ func (ad *CephAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error
 		log.Error("the create bucket failed in ceph service with err:%s", err.Error())
 		return err
 	}
-	log.Debug("The bucket:%s creation successful in ceph", input.Name)
+	log.Debug("The bucket:%s created successfully in ceph", input.Name)
 	return nil
 }
 
