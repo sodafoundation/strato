@@ -45,7 +45,7 @@ func (ad *OSSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	log.Info("Bucket delete is called in s3 alibaba-oss")
 	err := ad.client.DeleteBucket(in.Name)
 	if err != nil {
-		log.Error("the bucket deletion failed in s3 alibaba-oss with err:%s", err.Error())
+		log.Error("the bucket deletion failed in s3 Alibaba-oss with error:%s", err.Error())
 		return err
 	}
 	log.Debug("The bucket deletion successful in s3 alibaba-oss")
@@ -57,10 +57,10 @@ func (ad *OSSAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error 
 	log.Info("Bucket create is called in s3 alibaba-oss")
 	err := ad.client.CreateBucket(input.Name)
 	if err != nil {
-		log.Error("the create bucket failed in s3 alibaba-oss with err:%s", err.Error())
+		log.Error("the create bucket failed in s3 Alibaba-oss with error:%s", err.Error())
 		return err
 	}
-	log.Debug("The bucket creation successful in s3 alibaba-oss")
+	log.Debug("The bucket creation successful in s3 Alibaba-oss")
 
 	return nil
 }
