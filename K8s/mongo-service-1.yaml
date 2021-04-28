@@ -73,9 +73,15 @@ spec:
               memory: "2Gi"
           env:
             - name: "MONGO_INITDB_ROOT_USERNAME"
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: "MONGO_USER"
             - name: "MONGO_INITDB_ROOT_PASSWORD"
-              value: "mongo"
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: "MONGO_PASSWORD"
             - name: "MONGODB_ID"
               value: "mongo-1"
           livenessProbe:

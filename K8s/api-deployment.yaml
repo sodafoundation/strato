@@ -57,12 +57,18 @@ spec:
               value: keystone
             - name: OS_AUTH_URL
               value: http://KEYSTONE_IP/identity
+            - name: OS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: OS_USERNAME
             - name: OS_PASSWORD
-              value: opensds@123
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: OS_PASSWORD
             - name: OS_PROJECT_NAME
               value: service
-            - name: OS_USERNAME
-              value: opensds
             - name: OS_USER_DOMIN_ID
               value: Default
             - name: SVC_FLAG
