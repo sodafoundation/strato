@@ -1,5 +1,6 @@
 # Run this file from multi-cloud folder.
 kubectl apply -f rbac.yaml
+kubectl apply -f soda-secret.yaml
 
 #1. Create all the config Maps from files.
 kubectl create configmap multicloud-config --from-file=../examples/multi-cloud.conf -n soda-multi-cloud
