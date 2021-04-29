@@ -46,7 +46,7 @@ func (ad *CephAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
 	bucket := ad.session.NewBucket()
 	err := bucket.Remove(in.Name)
 	if err != nil {
-		log.Error("the Delete bucket failed in ceph service with err:%s", err.Error())
+		log.Error("the delete bucket failed in ceph service with err:%s", err.Error())
 		return err
 	}
 	log.Debug("The bucket:%s deleted successfully in ceph", in.Name)
