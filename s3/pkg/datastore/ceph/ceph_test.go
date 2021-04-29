@@ -39,11 +39,11 @@ func getField() CephAdapter {
 
 func TestCephAdapter_AbortMultipartUpload(t *testing.T) {
 	var multipartObj pb.MultipartUpload
-	multipartObj.ObjectId = ""
-	multipartObj.Key = ""
-	multipartObj.Bucket = ""
-	multipartObj.Location = ""
-	multipartObj.Tier = 0
+	multipartObj.ObjectId = "image.png"
+	multipartObj.Key = "image.png"
+	multipartObj.Bucket = "ceph-sm-1"
+	multipartObj.Tier = 1
+	multipartObj.UploadId = "2~uddegei1PK54yNI8aYJNf13LfZ-bicN"
 	type args struct {
 		ctx             context.Context
 		multipartUpload *pb.MultipartUpload
@@ -340,14 +340,14 @@ func TestCephAdapter_Get(t *testing.T) {
 		end    int64
 	}
 	tests := []struct {
-		name    string
-		fields  CephAdapter
-		args    args
-		want    io.ReadCloser
-		wantErr bool
+		name             string
+		fields           CephAdapter
+		args             args
+		wantIoReadCloser bool
+		wantErr          bool
 	}{
 		{"getObject", getField(), args{context.Background(), &obj, 0, 718243},
-			nil, false},
+			true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -355,28 +355,37 @@ func TestCephAdapter_Get(t *testing.T) {
 				backend: tt.fields.backend,
 				session: tt.fields.session,
 			}
-			_, err := ad.Get(tt.args.ctx, tt.args.object, tt.args.start, tt.args.end)
+			got, err := ad.Get(tt.args.ctx, tt.args.object, tt.args.start, tt.args.end)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if (got != nil) != tt.wantIoReadCloser {
+				t.Errorf("InitMultipartUpload() got = %v, want %v", got, tt.wantIoReadCloser)
+			}
+
 		})
 	}
 }
 
 func TestCephAdapter_InitMultipartUpload(t *testing.T) {
+	var inputobj pb.Object
+	inputobj.BucketName = "ceph-sm-1"
+	inputobj.ObjectKey = "image.png"
+	inputobj.Size = 718244
+
 	type args struct {
 		ctx    context.Context
 		object *pb.Object
 	}
 	tests := []struct {
-		name    string
-		fields  CephAdapter
-		args    args
-		want    *pb.MultipartUpload
-		wantErr bool
+		name                string
+		fields              CephAdapter
+		args                args
+		wantMultipartUpload bool
+		wantErr             bool
 	}{
-		//Todo write case here
+		{"initMultipart", getField(), args{context.Background(), &inputobj}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -389,8 +398,8 @@ func TestCephAdapter_InitMultipartUpload(t *testing.T) {
 				t.Errorf("InitMultipartUpload() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InitMultipartUpload() got = %v, want %v", got, tt.want)
+			if (got != nil) != tt.wantMultipartUpload {
+				t.Errorf("InitMultipartUpload() got = %v, want %v", got, tt.wantMultipartUpload)
 			}
 		})
 	}
