@@ -30,7 +30,9 @@ import (
 var ENC_KEY_LEN int = 32
 var ENC_IV_LEN int = 16
 
-var CRUDSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs", "sony-oda", "ceph-s3"}
+
+var CRUDSupportedClouds = []string{"aws-s3", "azure-blob", "gcp-s3", "hw-obs", "sony-oda", "alibaba-oss","ceph-s3"}
+
 
 func isCrudSupportedCloud(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))

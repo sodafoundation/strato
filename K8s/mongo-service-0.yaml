@@ -75,9 +75,15 @@ spec:
             - name: "MONGO_CONFIGURE_REPLICA_SET"
               value: "true"
             - name: "MONGO_INITDB_ROOT_USERNAME"
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: "MONGO_USER"
             - name: "MONGO_INITDB_ROOT_PASSWORD"
-              value: "mongo"
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: "MONGO_PASSWORD"
             - name: "MONGODB_ID"
               value: "mongo-0"
           livenessProbe:

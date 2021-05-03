@@ -42,18 +42,34 @@ type OSSAdapter struct {
 }
 
 func (ad *OSSAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	log.Info("Bucket delete is called in s3 alibaba-oss")
+	err := ad.client.DeleteBucket(in.Name)
+	if err != nil {
+		log.Error("the bucket deletion failed in s3 Alibaba-oss with error:%s", err.Error())
+		return err
+	}
+	log.Debug("The bucket deletion successful in s3 alibaba-oss")
+
 	return nil
 }
 
 func (ad *OSSAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+	log.Info("Bucket create is called in s3 alibaba-oss")
+	err := ad.client.CreateBucket(input.Name)
+	if err != nil {
+		log.Error("the create bucket failed in s3 Alibaba-oss with error:%s", err.Error())
+		return err
+	}
+	log.Debug("The bucket creation successful in s3 Alibaba-oss")
+
 	return nil
 }
 
 func (ad *OSSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (dscommon.PutResult, error) {
 
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	result := dscommon.PutResult{}
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectKey
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
 	size := object.Size
 
@@ -119,7 +135,7 @@ func (ad *OSSAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Obje
 }
 
 func (ad *OSSAdapter) Get(ctx context.Context, object *pb.Object, start int64, end int64) (io.ReadCloser, error) {
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	log.Infof("bucket is %v\n", bucket)
 	log.Infof("object key %v    %v\n", object.ObjectKey, object.ObjectId)
 
@@ -145,8 +161,8 @@ func (ad *OSSAdapter) Get(ctx context.Context, object *pb.Object, start int64, e
 
 func (ad *OSSAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) error {
 
-	bucket := ad.backend.BucketName
-	objectId := object.Bucket + "/" + object.Key
+	bucket := object.Bucket
+	objectId := object.Key
 	getbucket, err := ad.client.Bucket(bucket)
 	if err != nil {
 		log.Errorf("get bucket failed, err:%v\n", err)
@@ -166,7 +182,7 @@ func (ad *OSSAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) 
 func (ad *OSSAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object, newClass *string) error {
 
 	log.Infof("change storage class[OSS] of object[%s] to %s .\n", object.ObjectId, newClass)
-	bucket := ad.backend.BucketName
+	bucket := object.BucketName
 	objectId := object.ObjectId
 	alibabaBucket, err := ad.client.Bucket(bucket)
 	srcObjectKey := object.BucketName + "/" + object.ObjectKey
@@ -200,8 +216,8 @@ func (ad *OSSAdapter) Copy(ctx context.Context, stream io.Reader, target *pb.Obj
 
 func (ad *OSSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 
-	bucket := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucket := object.BucketName
+	objectId := object.ObjectKey
 	log.Infof("bucket = %v,objectId = %v\n", bucket, objectId)
 	multipartUpload := &pb.MultipartUpload{}
 	getBucket, err := ad.client.Bucket(bucket)
@@ -227,8 +243,8 @@ func (ad *OSSAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object
 func (ad *OSSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipartUpload *pb.MultipartUpload, partNumber int64, upBytes int64) (*model.UploadPartResult, error) {
 
 	tries := 1
-	bucket := ad.backend.BucketName
-	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
+	bucket := multipartUpload.Bucket
+	newObjectKey := multipartUpload.Key
 	input := oss.InitiateMultipartUploadResult{
 		UploadID: multipartUpload.UploadId,
 		Bucket:   bucket,
@@ -267,8 +283,8 @@ func (ad *OSSAdapter) UploadPart(ctx context.Context, stream io.Reader, multipar
 func (ad *OSSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload,
 	completeUpload *model.CompleteMultipartUpload) (*model.CompleteMultipartUploadResult, error) {
 
-	bucket := ad.backend.BucketName
-	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
+	bucket := multipartUpload.Bucket
+	newObjectKey := multipartUpload.Key
 	input := oss.InitiateMultipartUploadResult{
 		XMLName:  xml.Name{"", "InitiateMultipartUploadResult"},
 		Bucket:   bucket,
@@ -314,8 +330,8 @@ func (ad *OSSAdapter) CompleteMultipartUpload(ctx context.Context, multipartUplo
 
 func (ad *OSSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
 
-	bucket := ad.backend.BucketName
-	newObjectKey := multipartUpload.Bucket + "/" + multipartUpload.Key
+	bucket := multipartUpload.Bucket
+	newObjectKey := multipartUpload.Key
 	input := oss.InitiateMultipartUploadResult{
 		UploadID: multipartUpload.UploadId,
 		Bucket:   bucket,
@@ -338,7 +354,7 @@ func (ad *OSSAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload 
 }
 
 func (ad *OSSAdapter) ListParts(context context.Context, listParts *pb.ListParts) (*model.ListPartsOutput, error) {
-	bucket := ad.backend.BucketName
+	bucket := listParts.Bucket
 	if context.Value("operation") == "listParts" {
 		input := oss.InitiateMultipartUploadResult{
 			UploadID: listParts.UploadId,
