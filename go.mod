@@ -1,4 +1,4 @@
-module github.com/sodafoundation/multi-cloud
+module github.com/anvithks/multi-cloud
 
 go 1.13
 
