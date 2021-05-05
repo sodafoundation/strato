@@ -28,9 +28,7 @@ jobs:
       uses: actions/checkout@v2
       
     - name: Clone Multicloud project
-      run: | 
-        ln -s github.com/sodafoundation github.com/opensds
-        go get github.com/sodafoundation/multi-cloud
+      run: go get github.com/anvithks/multi-cloud
       
     - name: Install Pre-requisites
       run: |
