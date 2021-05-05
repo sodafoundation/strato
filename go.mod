@@ -1,4 +1,4 @@
-module github.com/anvithks/multi-cloud
+module github.com/opensds/multi-cloud
 
 go 1.13
 
