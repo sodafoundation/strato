@@ -28,7 +28,7 @@ jobs:
       uses: actions/checkout@v2
       
     - name: Clone Multicloud project
-      run: go get github.com/anvithks/multi-cloud
+      run: go get github.com/opensds/multi-cloud
       
     - name: Install Pre-requisites
       run: |
