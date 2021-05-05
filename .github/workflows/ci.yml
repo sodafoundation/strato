@@ -1,0 +1,57 @@
+name: SODA Multicloud CI Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, test-git-ci ]
+
+jobs:
+  build:
+    env:
+      GO111MODULE: on
+      TARGET: amd64
+        
+    strategy:
+      matrix:
+        go-version: [1.13.x]
+        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    
+    - name: Checkout project  
+      uses: actions/checkout@v2
+      
+    - name: Clone Multicloud project
+      run: go get github.com/sodafoundation/multi-cloud
+      
+    - name: Install Pre-requisites
+      run: |
+        wget -qO - https://packages.confluent.io/deb/5.3/archive.key | sudo apt-key add -
+        wget -q -O- "https://download.ceph.com/keys/release.asc" | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/5.3 stable main"
+        sudo apt-add-repository "deb https://download.ceph.com/debian-luminous/ xenial main"
+        sudo apt-get update && sudo apt-get install -y libradosstriper-dev librados-dev librdkafka-dev
+      
+    - name: Build the multicloud docker images
+      run: |
+        make docker
+        docker-compose up -d
+
+    - name: Run CI scripts for Testing
+      run: ./install/CI/coverage && ./install/CI/test
+    
+    - name: After success run Codecov Coverage tool.
+      uses: codecov/codecov-action@v1
+      with:
+        verbose: true # optional (default = false)
+    
+    - name: Clean up the build
+      run: |
+        docker-compose down
+        make clean
