@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: [ master, test-git-ci ]
+    branches: [ master, test-git-actions ]
 
 jobs:
   build:
