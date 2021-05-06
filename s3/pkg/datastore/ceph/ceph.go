@@ -340,29 +340,37 @@ func (ad *CephAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Backe
 	input := &pb.Bucket{
 		Name: sampleBucket + randId,
 	}
-
-	err := ad.BucketCreate(ctx, input)
-	if err != nil {
-		log.Error("failed to create sample bucket :", err)
-		return err
+	for i := 1; i <= 3; i++ {
+		err := ad.BucketCreate(ctx, input)
+		if err == nil {
+			log.Debug("Create sample bucket is successul")
+			break
+		}
+		if i == 3 {
+			log.Error("failed to create sample bucket :", err)
+			return err
+		}
 	}
-	bucket := ad.session.NewBucket()
-	bucketResp, err1 := bucket.Get(input.Name, "", "", "", 1000)
 
-	if err1 != nil {
-		log.Error("failed to get bucket Info :", err)
-		return err1
+	for j := 1; j <= 10; j++ {
+		bucket := ad.session.NewBucket()
+		_, err1 := bucket.Get(input.Name, "", "", "", 1000)
+		if err1 == nil {
+			break
+		}
+		if j == 10 {
+			log.Error("failed to get bucket Info :", err1)
+			return err1
+		}
+		time.Sleep(5*time.Second)
 	}
-	if bucketResp.Name == input.Name {
-		log.Debug("Create sample bucket is successul")
-		err = ad.BucketDelete(ctx, input)
+		err := ad.BucketDelete(ctx, input)
 		if err != nil {
 			log.Error("failed to delete sample bucket :", err)
 			return err
 		}
 
 		log.Debug("Delete sample bucket is successful")
-	}
 	return nil
 }
 
