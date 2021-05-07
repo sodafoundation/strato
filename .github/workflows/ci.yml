@@ -26,16 +26,20 @@ jobs:
       
     - name: Create the Folder structure
       run: |
-        echo "Check current dir:" \n
+        echo "Check current dir: \n" 
         pwd
         sudo mkdir -p $GOPATH/src/github.com/sodafoundation
         sudo mkdir -p $GOPATH/src/github.com/opensds
         sudo ln -s $GOPATH/src/github.com/sodafoundation $GOPATH/src/github.com/opensds
+      env:
+        GOPATH: ${GOPATH}
 
     - name: Checkout project  
       uses: actions/checkout@v2
       with:
         path: $GOPATH/src/github.com/sodafoundation
+      env:
+        GOPATH: ${GOPATH}
       
     - name: Install Pre-requisites
       run: |
