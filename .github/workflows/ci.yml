@@ -30,7 +30,7 @@ jobs:
     - name: Symlink source into GOPATH for multi-cloud
       run: |
         mkdir -p $(go env GOPATH)/src/github.com/sodafoundation/multi-cloud
-        sudo ln -s $(pwd) $(go env GOPATH)/github.com/sodafoundation/multi-cloud
+        sudo ln -s $(pwd) $(go env GOPATH)/src/github.com/sodafoundation/multi-cloud
 
     - name: Create the Folder structure
       run: |
