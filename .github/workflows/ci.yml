@@ -29,12 +29,10 @@ jobs:
         echo "Check current dir: \n" 
         pwd
         echo "GOPATH: ${GOPATH}"
-        sudo mkdir -p $GOPATH/src/github.com/sodafoundation
-        sudo mkdir -p $GOPATH/src/github.com/opensds
-        sudo ln -s $GOPATH/src/github.com/sodafoundation $GOPATH/src/github.com/opensds
+        sudo mkdir -p ${GOPATH}/src/github.com/sodafoundation
+        sudo mkdir -p ${GOPATH}/src/github.com/opensds
+        sudo ln -s ${GOPATH}/src/github.com/sodafoundation ${GOPATH}/src/github.com/opensds
         go get github.com/sodafoundation/multi-cloud
-      env:
-        GOPATH: ${GOPATH}
       
     - name: Install Pre-requisites
       run: |
