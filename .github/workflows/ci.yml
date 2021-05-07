@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.13.x]
-        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-latest]
+        os: [ubuntu-16.04]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -23,12 +23,19 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go-version }}
-    
+      
+    - name: Create the Folder structure
+      run: |
+        echo "Check current dir:" \n
+        pwd
+        mkdir -p $GOPATH/src/github.com/sodafoundation
+        mkdir -p $GOPATH/src/github.com/opensds
+        ln -s $GOPATH/src/github.com/sodafoundation $GOPATH/src/github.com/opensds
+
     - name: Checkout project  
       uses: actions/checkout@v2
-      
-    - name: Clone Multicloud project
-      run: go get github.com/opensds/multi-cloud
+      with:
+        path: $GOPATH/src/github.com/sodafoundation
       
     - name: Install Pre-requisites
       run: |
