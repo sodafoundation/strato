@@ -1,0 +1,61 @@
+name: SODA Multicloud CI Build
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    env:
+      GO111MODULE: on
+      TARGET: amd64
+        
+    strategy:
+      matrix:
+        go-version: [1.13.x]
+        os: [ubuntu-16.04]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Checkout project  
+      uses: actions/checkout@v2
+
+    - name: Symlink source into GOPATH for multi-cloud
+      run: |
+        mkdir -p $(go env GOPATH)/src/github.com/sodafoundation/multi-cloud
+        sudo ln -s $(pwd) $(go env GOPATH)/src/github.com/sodafoundation/multi-cloud
+
+    - name: Create the Folder structure and symlink to opensds (TODO:-Fix vendor module from opensds to sodafoundation)
+      run: |
+        echo "Check current dir: \n" 
+        pwd
+        echo "GOPATH: $(go env GOPATH)"
+        sudo mkdir -p $(go env GOPATH)/src/github.com/opensds
+        sudo ln -s $(go env GOPATH)/src/github.com/sodafoundation $(go env GOPATH)/src/github.com/opensds
+      
+    - name: Install Pre-requisites
+      run: |
+        wget -qO - https://packages.confluent.io/deb/5.3/archive.key | sudo apt-key add -
+        wget -q -O- "https://download.ceph.com/keys/release.asc" | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/5.3 stable main"
+        sudo apt-add-repository "deb https://download.ceph.com/debian-luminous/ xenial main"
+        sudo apt-get update && sudo apt-get install -y libradosstriper-dev librados-dev librdkafka-dev
+      
+    - name: Build the multicloud docker images
+      run: |
+        make docker
+        docker-compose up -d
+
+    - name: Run CI scripts for Testing
+      run: ./install/CI/coverage && ./install/CI/test
+    
+    - name: After success run Codecov Coverage tool.
+      uses: codecov/codecov-action@v1
+    
+    - name: Clean up the build
+      run: |
+        docker-compose down
+        make clean
