@@ -5,8 +5,9 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"io"
+
+	log "github.com/sirupsen/logrus"
 )
-import log "github.com/sirupsen/logrus"
 
 type alignedReader struct {
 	aligned bool // indicate whether alignment has already been done

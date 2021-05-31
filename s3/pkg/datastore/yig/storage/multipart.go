@@ -8,12 +8,13 @@ import (
 	"sort"
 	"strconv"
 
+	log "github.com/sirupsen/logrus"
+
 	s3err "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

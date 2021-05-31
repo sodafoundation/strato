@@ -16,7 +16,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/micro/go-micro/v2"
+	log "github.com/sirupsen/logrus"
+	_ "go.uber.org/automaxprocs"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	_ "github.com/opensds/multi-cloud/s3/pkg/datastore"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -26,9 +31,6 @@ import (
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
 	handler "github.com/opensds/multi-cloud/s3/pkg/service"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	_ "go.uber.org/automaxprocs"
-	"os"
 )
 
 const (

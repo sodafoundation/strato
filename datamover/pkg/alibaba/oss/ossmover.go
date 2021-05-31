@@ -16,13 +16,15 @@ package ossmover
 import (
 	"bytes"
 	"errors"
+	"io"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
+
+	log "github.com/sirupsen/logrus"
 
 	_ "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"io"
 )
 
 type OSSMover struct {

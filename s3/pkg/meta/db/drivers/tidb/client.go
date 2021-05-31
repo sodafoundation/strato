@@ -24,11 +24,12 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	log "github.com/sirupsen/logrus"
+	"github.com/xxtea/xxtea-go/xxtea"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	log "github.com/sirupsen/logrus"
-	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 const MAX_OPEN_CONNS = 1024

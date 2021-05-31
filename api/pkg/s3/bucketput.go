@@ -19,14 +19,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/s3/error"
+	s3error "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	"github.com/opensds/multi-cloud/s3/proto"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,7 +60,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.CreateTime = time.Now().Unix()
 	bucket.Versioning = &s3.BucketVersioning{}
 	bucket.Versioning.Status = utils.VersioningDisabled // it's the default
-	bucket.Acl = &pb.Acl{CannedAcl: acl.CannedAcl}
+	bucket.Acl = &s3.Acl{CannedAcl: acl.CannedAcl}
 	log.Infof("Bucket PUT: TenantId=%s, UserId=%s\n", bucket.TenantId, bucket.UserId)
 
 	body := ReadBody(request)

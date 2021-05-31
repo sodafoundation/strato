@@ -15,8 +15,9 @@ package ossmover
 
 import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	log "github.com/sirupsen/logrus"
+
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
 func (mover *OSSMover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {

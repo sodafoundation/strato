@@ -21,14 +21,15 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
-	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	"github.com/opensds/multi-cloud/datamover/proto"
+	datamover "github.com/opensds/multi-cloud/datamover/proto"
+
+	"github.com/globalsign/mgo/bson"
+	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 )
 

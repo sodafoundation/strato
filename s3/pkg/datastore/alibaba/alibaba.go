@@ -20,20 +20,22 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
-	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	"io"
 	"strings"
 	"time"
 
+	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+
+	log "github.com/sirupsen/logrus"
 
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"io"
 )
 
 type OSSAdapter struct {
@@ -394,7 +396,7 @@ func (ad *OSSAdapter) ListParts(context context.Context, listParts *pb.ListParts
 
 }
 func (ad *OSSAdapter) Restore(ctx context.Context, target *pb.Restore) error {
-    return nil
+	return nil
 }
 
 func (ad *OSSAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {

@@ -43,7 +43,12 @@ jobs:
         sudo add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/5.3 stable main"
         sudo apt-add-repository "deb https://download.ceph.com/debian-luminous/ xenial main"
         sudo apt-get update && sudo apt-get install -y libradosstriper-dev librados-dev librdkafka-dev
+        go get golang.org/x/tools/cmd/goimports
       
+    - name: Check Golang formatting
+      run: |
+        make CHECK_ERROR=y goimports
+
     - name: Build the multicloud docker images
       run: |
         make docker

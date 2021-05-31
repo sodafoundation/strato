@@ -3,9 +3,10 @@ package meta
 import (
 	"errors"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
-	log "github.com/sirupsen/logrus"
 )
 
 type CacheType int

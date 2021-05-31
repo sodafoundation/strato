@@ -2,9 +2,10 @@ package utils
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetRandom32BitKey(t *testing.T) {

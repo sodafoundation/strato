@@ -16,15 +16,17 @@ package service
 
 import (
 	"context"
+
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	. "github.com/opensds/multi-cloud/s3/error"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 var ENC_KEY_LEN int = 32

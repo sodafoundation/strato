@@ -23,10 +23,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/efs"
+
 	"github.com/opensds/multi-cloud/contrib/utils"
 
-	pb "github.com/opensds/multi-cloud/file/proto"
 	log "github.com/sirupsen/logrus"
+
+	pb "github.com/opensds/multi-cloud/file/proto"
 )
 
 type AwsAdapter struct {

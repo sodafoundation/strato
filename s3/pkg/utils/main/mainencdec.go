@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"io/ioutil"
 	"math/rand"
+
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 func main() {

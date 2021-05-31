@@ -24,19 +24,21 @@ import (
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/azure-storage-file-go/azfile"
+
 	"github.com/opensds/multi-cloud/contrib/utils"
+
+	log "github.com/sirupsen/logrus"
 
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	fileUtils "github.com/opensds/multi-cloud/file/pkg/utils"
 	file "github.com/opensds/multi-cloud/file/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 // TryTimeout indicates the maximum time allowed for any single try of an HTTP request.
 var MaxTimeForSingleHttpRequest = 50 * time.Minute
 
 type AzureAdapter struct {
-	backend  *backendpb.BackendDetail
+	backend *backendpb.BackendDetail
 }
 
 func (ad *AzureAdapter) ParseFileShare(fs storage.Share) (*file.FileShare, error) {
@@ -257,7 +259,7 @@ func (ad *AzureAdapter) UpdatefileShareQuota(ctx context.Context, fs *file.Updat
 
 	headers := result.Response().Header
 	if fsMeta != nil {
-		for k, v  := range fsMeta {
+		for k, v := range fsMeta {
 			headers[k] = v
 		}
 	}
@@ -315,7 +317,7 @@ func (ad *AzureAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFile
 		}
 	}
 
-	if  &fs.Fileshare.Size != nil {
+	if &fs.Fileshare.Size != nil {
 		fileShare, err = ad.UpdatefileShareQuota(ctx, fs, fsMeta, shareURL)
 		if err != nil {
 			log.Error(err)

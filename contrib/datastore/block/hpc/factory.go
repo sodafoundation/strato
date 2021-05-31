@@ -15,35 +15,36 @@
 package hpc
 
 import (
-    "strings"
-    "errors"
+	"errors"
+	"strings"
+
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
+
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/config"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/httphandler"
 	evs "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/evs/v2"
 	"github.com/micro/go-micro/v2/util/log"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
-
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
 )
 
 type HpcBlockDriverFactory struct {
 }
 
-func (factory *HpcBlockDriverFactory) CreateBlockStorageDriver(backend *backendpb.BackendDetail) (driver.BlockDriver, error) {
+func (factory *HpcBlockDriverFactory) CreateBlockStorageDriver(backend *backend.BackendDetail) (driver.BlockDriver, error) {
 	log.Infof("Entered to create HPC volume driver")
 
-    // Getting region and projectId together as project ID and region are always associated
-    region_prjid := strings.Split(backend.Region, ":")
+	// Getting region and projectId together as project ID and region are always associated
+	region_prjid := strings.Split(backend.Region, ":")
 
-    if len(region_prjid) != 2 {
-        err := "Incorrect region and projectID info"
-        log.Error(err)
-        return nil, errors.New(err)
-    }
+	if len(region_prjid) != 2 {
+		err := "Incorrect region and projectID info"
+		log.Error(err)
+		return nil, errors.New(err)
+	}
 	// Create HPC session with the HPC cloud credentials
-    // https://developer.huaweicloud.com/en-us/endpoint?all
+	// https://developer.huaweicloud.com/en-us/endpoint?all
 	url := "https://evs." + region_prjid[0] + ".myhuaweicloud.com"
 	client := evs.NewEvsClient(
 		evs.EvsClientBuilder().

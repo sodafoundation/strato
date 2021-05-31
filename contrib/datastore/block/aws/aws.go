@@ -16,12 +16,13 @@ package aws
 
 import (
 	"context"
+
+	block "github.com/opensds/multi-cloud/block/proto"
+	"github.com/opensds/multi-cloud/contrib/utils"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/contrib/utils"
-
 	awsec2 "github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
 )
@@ -60,16 +61,16 @@ func (ad *AwsAdapter) ParseVolume(volumeAWS *awsec2.Volume) (*block.Volume, erro
 	}
 
 	volume := &block.Volume{
-		Size:               *volumeAWS.Size * utils.GB_FACTOR,
-		Encrypted:          *volumeAWS.Encrypted,
-		Status:             *volumeAWS.State,
-		SnapshotId:         *volumeAWS.SnapshotId,
-		Type:               *volumeAWS.VolumeType,
-		Tags:               tags,
-		Metadata:           metadata,
+		Size:       *volumeAWS.Size * utils.GB_FACTOR,
+		Encrypted:  *volumeAWS.Encrypted,
+		Status:     *volumeAWS.State,
+		SnapshotId: *volumeAWS.SnapshotId,
+		Type:       *volumeAWS.VolumeType,
+		Tags:       tags,
+		Metadata:   metadata,
 	}
 
-	if *volumeAWS.VolumeType == "gp2" || *volumeAWS.VolumeType == "io1"{
+	if *volumeAWS.VolumeType == "gp2" || *volumeAWS.VolumeType == "io1" {
 		volume.Iops = *volumeAWS.Iops
 	}
 
@@ -154,7 +155,7 @@ func (ad *AwsAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 		Encrypted:         aws.Bool(volume.Volume.Encrypted),
 	}
 
-	if volume.Volume.Type ==  "io1" {
+	if volume.Volume.Type == "io1" {
 		// Iops is required only for io1 volumes
 		input.Iops = aws.Int64(volume.Volume.Iops)
 

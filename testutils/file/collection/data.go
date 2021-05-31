@@ -99,7 +99,6 @@ var (
 	}
 )
 
-
 var (
 	SampleBackendDetails = []backendModel.Backend{
 		{

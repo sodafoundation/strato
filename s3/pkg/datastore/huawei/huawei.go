@@ -21,6 +21,9 @@ import (
 
 	"encoding/base64"
 	"encoding/hex"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
@@ -29,7 +32,6 @@ import (
 	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 type OBSAdapter struct {

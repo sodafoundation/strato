@@ -21,9 +21,10 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

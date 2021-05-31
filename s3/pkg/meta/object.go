@@ -16,13 +16,15 @@ package meta
 import (
 	"context"
 
+	"strconv"
+
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
+	tidbclient "github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
 	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (

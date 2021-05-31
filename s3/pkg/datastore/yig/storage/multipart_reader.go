@@ -3,9 +3,10 @@ package storage
 import (
 	"io"
 
+	log "github.com/sirupsen/logrus"
+
 	s3err "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
-	log "github.com/sirupsen/logrus"
 )
 
 type MultipartReader struct {

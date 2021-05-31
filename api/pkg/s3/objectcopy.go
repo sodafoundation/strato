@@ -21,13 +21,14 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	apiutils "github.com/opensds/multi-cloud/api/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 func getTierFromHeader(request *restful.Request) (types.StorageClass, error) {

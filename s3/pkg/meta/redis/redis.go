@@ -3,9 +3,10 @@ package redis
 import (
 	"strconv"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	log "github.com/sirupsen/logrus"
 )
 
 var (

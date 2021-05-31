@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // This uses the  golang SDK by Huaweicloud and uses EVS client for all the ops
 
 package hpc
@@ -20,11 +19,13 @@ package hpc
 import (
 	"context"
 	"errors"
+
+	block "github.com/opensds/multi-cloud/block/proto"
+	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
+	"github.com/opensds/multi-cloud/contrib/utils"
+
 	evs "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/evs/v2"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/evs/v2/model"
-	"github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/contrib/utils"
-    "github.com/opensds/multi-cloud/contrib/datastore/block/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,7 +37,7 @@ type HpcAdapter struct {
 // VolumeDetail is the base struct in the model for huaweicloud-sdk-go-v3 service model
 func (ad *HpcAdapter) ParseVolume(evsVolResp *model.VolumeDetail) (*block.Volume, error) {
 	//Create the map for metadata
-    meta := make(map[string]interface{})
+	meta := make(map[string]interface{})
 	meta = map[string]interface{}{
 		common.VolumeId:              evsVolResp.Id,
 		common.CreationTimeAtBackend: evsVolResp.CreatedAt,
@@ -46,7 +47,6 @@ func (ad *HpcAdapter) ParseVolume(evsVolResp *model.VolumeDetail) (*block.Volume
 		log.Errorf("failed to convert metadata = [%+v] to struct", metadata, err)
 		return nil, err
 	}
-
 
 	size64 := (int64)(evsVolResp.Size)
 	volume := &block.Volume{
@@ -59,7 +59,7 @@ func (ad *HpcAdapter) ParseVolume(evsVolResp *model.VolumeDetail) (*block.Volume
 	return volume, nil
 }
 
-// This is the helper function which basically based upon the Volume Type provided by 
+// This is the helper function which basically based upon the Volume Type provided by
 // API request, will return the corresponding CreateVolumeOptionVolumeType data of the SDK
 func getVolumeTypeForHPC(volType string) (model.CreateVolumeOptionVolumeType, error) {
 	if volType == "SAS" {
@@ -82,7 +82,7 @@ func (ad *HpcAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 
 	availabilityZone := volume.Volume.AvailabilityZone
 
-    // The SDK model expects the size to be int32,
+	// The SDK model expects the size to be int32,
 	size := (int32)(volume.Volume.Size / utils.GB_FACTOR)
 
 	volumeType, typeErr := getVolumeTypeForHPC(volume.Volume.Type)
@@ -105,8 +105,8 @@ func (ad *HpcAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 			Volume: createVolOption},
 	}
 
-    // CreateVolume fromt the EVS client takes CreateVolumeRequest and the
-    // Type hieararchy is CreateVolumeRequest -> Volume (CreateVolumeOption) -> VolumeDetails
+	// CreateVolume fromt the EVS client takes CreateVolumeRequest and the
+	// Type hieararchy is CreateVolumeRequest -> Volume (CreateVolumeOption) -> VolumeDetails
 	result, err := evsClient.CreateVolume(volRequest)
 	if err != nil {
 		log.Error(err)
@@ -127,10 +127,9 @@ func (ad *HpcAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 	}
 	volumes := listVolumes.Volumes
 
-
 	for _, volume := range volumes {
 		if volume.Name == name {
-	        log.Debugf("Create Volume response %+v", volume)
+			log.Debugf("Create Volume response %+v", volume)
 			return &block.CreateVolumeResponse{
 				Volume: volume,
 			}, nil
@@ -140,9 +139,9 @@ func (ad *HpcAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 	return nil, errors.New("Error in creating volume")
 }
 
-// This will list all the volumes 
+// This will list all the volumes
 func (ad *HpcAdapter) ListVolume(ctx context.Context, volume *block.ListVolumeRequest) (*block.ListVolumeResponse, error) {
-    log.Infof("Entered to List all volumes")
+	log.Infof("Entered to List all volumes")
 	evsClient := ad.evsc
 
 	listVolRequest := &model.ListVolumesRequest{}
@@ -162,7 +161,7 @@ func (ad *HpcAdapter) ListVolume(ctx context.Context, volume *block.ListVolumeRe
 		volumes = append(volumes, volume)
 	}
 
-    log.Debugf("Listing volumes: %+v", volumes)
+	log.Debugf("Listing volumes: %+v", volumes)
 	return &block.ListVolumeResponse{
 		Volumes: volumes,
 	}, nil
@@ -170,10 +169,10 @@ func (ad *HpcAdapter) ListVolume(ctx context.Context, volume *block.ListVolumeRe
 
 // Get the details of a particular volume
 func (ad *HpcAdapter) GetVolume(ctx context.Context, volume *block.GetVolumeRequest) (*block.GetVolumeResponse, error) {
-    log.Infof("Entered to get the volume details of %s", volume.Volume.Name)
+	log.Infof("Entered to get the volume details of %s", volume.Volume.Name)
 	evsClient := ad.evsc
 
-    // Get the VolumeId from the metadata for the requested volume
+	// Get the VolumeId from the metadata for the requested volume
 	volumeId := volume.Volume.Metadata.Fields[common.VolumeId].GetStringValue()
 	showRequest := &model.ShowVolumeRequest{VolumeId: volumeId}
 	showResponse, showErr := evsClient.ShowVolume(showRequest)
@@ -235,7 +234,7 @@ func (ad *HpcAdapter) UpdateVolume(ctx context.Context, volume *block.UpdateVolu
 		Metadata: metadata,
 	}
 
-    log.Debugf("Volume updated details: %+v", vol)
+	log.Debugf("Volume updated details: %+v", vol)
 	return &block.UpdateVolumeResponse{
 		Volume: vol,
 	}, nil

@@ -16,15 +16,17 @@ package service
 
 import (
 	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/mock"
+
 	"github.com/opensds/multi-cloud/backend/pkg/db"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	pb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/testutils/backend/collection"
 	mockrepo "github.com/opensds/multi-cloud/testutils/backend/db/testing"
-	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 type MockBackendService struct {
@@ -215,8 +217,7 @@ func TestDeleteBackend(t *testing.T) {
 		Id: "Id",
 	}
 
-	var resp = &pb.DeleteBackendResponse{
-	}
+	var resp = &pb.DeleteBackendResponse{}
 
 	ctx := context.Background()
 	deadline := time.Now().Add(time.Duration(50) * time.Second)
@@ -236,8 +237,8 @@ func TestDeleteBackend(t *testing.T) {
 func TestUpdateBackend(t *testing.T) {
 	var mockBackend = &collection.SampleBackends[0]
 	var req = &pb.UpdateBackendRequest{
-		Id: "Id",
-		Access: "access",
+		Id:       "Id",
+		Access:   "access",
 		Security: "security",
 	}
 
@@ -276,22 +277,20 @@ func TestUpdateBackend(t *testing.T) {
 
 func TestListTypes(t *testing.T) {
 	var req = &pb.ListTypeRequest{
-		Limit:                1,
-		Offset:               2,
-		SortKeys:             []string{"key1", "key2"},
-		SortDirs :            []string{"dir1", "dir2"},
-		Filter:               map[string]string{"key1":"val1", "key2" :"val2"},
+		Limit:    1,
+		Offset:   2,
+		SortKeys: []string{"key1", "key2"},
+		SortDirs: []string{"dir1", "dir2"},
+		Filter:   map[string]string{"key1": "val1", "key2": "val2"},
 	}
 
 	tmpDetail1 := pb.TypeDetail{
-		Name:         constants.BackendTypeAws,
-		Description:   "AWS Simple Cloud Storage Service(S3)",
-
+		Name:        constants.BackendTypeAws,
+		Description: "AWS Simple Cloud Storage Service(S3)",
 	}
 	tmpDetail2 := pb.TypeDetail{
-		Name:         constants.BackendTypeObs,
-		Description:   "Huawei Object Storage Service(OBS)",
-
+		Name:        constants.BackendTypeObs,
+		Description: "Huawei Object Storage Service(OBS)",
 	}
 
 	typeList := []*pb.TypeDetail{
@@ -301,7 +300,7 @@ func TestListTypes(t *testing.T) {
 
 	var resp = &pb.ListTypeResponse{
 		Types: typeList,
-		Next : 99,
+		Next:  99,
 	}
 
 	ctx := context.Background()

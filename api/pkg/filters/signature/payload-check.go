@@ -7,8 +7,9 @@ import (
 	"io/ioutil"
 
 	"github.com/emicklei/go-restful"
-	. "github.com/opensds/multi-cloud/s3/error"
 	log "github.com/sirupsen/logrus"
+
+	. "github.com/opensds/multi-cloud/s3/error"
 )
 
 func PayloadCheck(request *restful.Request, response *restful.Response) error {

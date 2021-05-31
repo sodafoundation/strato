@@ -17,10 +17,11 @@ package s3
 import (
 	"strings"
 
-	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,12 +36,12 @@ func (s *APIService) ObjectDelete(request *restful.Request, response *restful.Re
 
 	if len(bucketName) == 0 {
 		log.Errorf("invalid input, bucket=%s\n", bucketName)
-		WriteErrorResponse(response, request, ErrInvalidBucketName)
+		WriteErrorResponse(response, request, s3error.ErrInvalidBucketName)
 		return
 	}
 	if len(objectName) == 0 {
 		log.Errorf("invalid input, object=%s\n", objectName)
-		WriteErrorResponse(response, request, ErrInvalidObjectName)
+		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
 	}
 
 	input := s3.DeleteObjectInput{Bucket: bucketName, Key: objectName}

@@ -2,6 +2,7 @@ package meta
 
 import (
 	"context"
+
 	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
 )
 
