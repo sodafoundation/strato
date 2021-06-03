@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package = "backend/proto";
+
 service Backend {
 	rpc CreateBackend(CreateBackendRequest) returns (CreateBackendResponse) {}
 	rpc GetBackend(GetBackendRequest) returns (GetBackendResponse) {}
@@ -7,7 +9,11 @@ service Backend {
 	rpc UpdateBackend(UpdateBackendRequest) returns (UpdateBackendResponse) {}
 	rpc DeleteBackend(DeleteBackendRequest) returns (DeleteBackendResponse) {}
 	rpc ListType(ListTypeRequest) returns (ListTypeResponse) {}
-
+	rpc CreateTier(CreateTierRequest) returns (CreateTierResponse) {}
+  	rpc GetTier(GetTierRequest) returns (GetTierResponse) {}
+    	rpc ListTiers(ListTierRequest) returns (ListTierResponse) {}
+    	rpc UpdateTier(UpdateTierRequest) returns (UpdateTierResponse) {}
+    	rpc DeleteTier(DeleteTierRequest) returns (DeleteTierResponse) {}
 }
 
 message CreateBackendRequest {
@@ -86,4 +92,57 @@ message TypeDetail {
 	string name = 1;
 	string description = 2;
 }
+
+message CreateTierRequest {
+	Tier tier = 1;
+}
+
+message CreateTierResponse {
+	Tier tier = 1;
+}
+
+message GetTierRequest {
+	string id = 1;
+}
+
+message GetTierResponse {
+	Tier tier = 1;
+}
+
+message ListTierRequest {
+	int32 limit = 1;
+	int32 offset = 2;
+	repeated string sortKeys = 3;
+	repeated string sortDirs = 4;
+}
+
+message ListTierResponse {
+	repeated Tier tiers = 1;
+	int32 next = 2;
+}
+
+message UpdateTierRequest {
+	string id = 1;
+	string backendId = 2;
+}
+
+message UpdateTierResponse {
+	Tier tier = 1;
+}
+
+message DeleteTierRequest {
+	string id = 1;
+}
+
+message DeleteTierResponse {
+}
+
+message Tier {
+	string id = 1;
+	string tenantId = 2;
+	string userId = 3;
+	string name = 4;
+	string backendId = 5;
+}
+
 

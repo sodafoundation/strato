@@ -17,9 +17,10 @@ package backend
 import (
 	"errors"
 	"net/http"
-	"os"
 	"strconv"
 
+	"github.com/emicklei/go-restful"
+	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
@@ -29,11 +30,9 @@ import (
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
-
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"os"
 )
 
 const (
@@ -446,4 +445,134 @@ func (s *APIService) listStorageType(ctx context.Context, request *restful.Reque
 
 	storageTypes, err := s.backendClient.ListType(ctx, listTypeRequest)
 	return storageTypes, err
+}
+
+func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
+	log.Info("Received request for creating tier.")
+	tier := &backend.Tier{}
+	err := request.ReadEntity(&tier)
+	if err != nil {
+		log.Errorf("failed to read request body: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	ctx := common.InitCtxWithAuthInfo(request)
+	actx := request.Attribute(c.KContext).(*c.Context)
+	tier.TenantId = actx.TenantId
+	tier.UserId = actx.UserId
+
+	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
+	if err != nil {
+		log.Errorf("failed to create tier: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Created backend successfully.")
+	response.WriteEntity(res.Tier)
+
+}
+
+//here backendId can be updated
+func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
+	log.Infof("Received request for updating tier: %v\n", request.PathParameter("id"))
+	id := request.PathParameter("id")
+	updateTierRequest := backend.UpdateTierRequest{Id: id}
+	err := request.ReadEntity(&updateTierRequest)
+	if err != nil {
+		log.Errorf("failed to read request body: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	res, err := s.backendClient.UpdateTier(ctx, &updateTierRequest)
+	if err != nil {
+		log.Errorf("failed to update tier: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Update tier successfully.")
+	response.WriteEntity(res)
+}
+
+// GetTier if tierId is given then details of tier to be given
+func (s *APIService) GetTier(request *restful.Request, response *restful.Response) {
+	log.Infof("Received request for tier details: %s\n", request.PathParameter("id"))
+	id := request.PathParameter("id")
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+	if err != nil {
+		log.Errorf("failed to get tier details: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Get tier details successfully.")
+	response.WriteEntity(res.Tier)
+}
+
+//List of tiers is displayed
+func (s *APIService) ListTiers(request *restful.Request, response *restful.Response) {
+	log.Info("Received request for tier list.")
+
+	ctx := common.InitCtxWithAuthInfo(request)
+
+	listTierRequest := &backend.ListTierRequest{}
+
+	limit, offset, err := common.GetPaginationParam(request)
+	if err != nil {
+		log.Errorf("get pagination parameters failed: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listTierRequest.Limit = limit
+	listTierRequest.Offset = offset
+
+	sortKeys, sortDirs, err := common.GetSortParam(request)
+	if err != nil {
+		log.Errorf("get sort parameters failed: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	listTierRequest.SortKeys = sortKeys
+	listTierRequest.SortDirs = sortDirs
+	log.Debug("***before list tier****")
+	res, err := s.backendClient.ListTiers(ctx, listTierRequest)
+	if err != nil {
+		log.Errorf("failed to list backends: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("List tiers successfully.")
+	response.WriteEntity(res)
+
+}
+
+//given tierId need to delete the tier
+func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
+	id := request.PathParameter("id")
+	log.Infof("Received request for deleting tier: %s\n", id)
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	// TODO: refactor this part
+	_, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+	if err != nil {
+		log.Errorf("failed to get tier details: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	_, err = s.backendClient.DeleteTier(ctx, &backend.DeleteTierRequest{Id: id})
+	if err != nil {
+		log.Errorf("failed to delete tier: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	log.Info("Delete tier  successfully.")
+	response.WriteHeader(http.StatusOK)
+	return
 }
