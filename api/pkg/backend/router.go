@@ -19,7 +19,6 @@ import (
 	"github.com/micro/go-micro/v2/client"
 )
 
-
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
 	ws.Route(ws.GET("/{tenantId}/backends/{id}").To(handler.GetBackend)).
@@ -39,16 +38,14 @@ func RegisterRouter(ws *restful.WebService) {
 
 	ws.Route(ws.GET("/{tenantId}/tiers/{id}").To(handler.GetTier)).
 		Doc("Show tier details")
-
 	ws.Route(ws.GET("/{tenantId}/tiers").To(handler.ListTiers)).
 		Doc("list tiers")
-
 	ws.Route(ws.POST("/{tenantId}/tiers").To(handler.CreateTier)).
 		Doc("Create tier")
-
 	ws.Route(ws.PUT("/{tenantId}/tiers/{id}").To(handler.UpdateTier)).
 		Doc("Update tier")
-
+	ws.Route(ws.DELETE("/{tenantId}/tiers/{id}/{backendId}").To(handler.DeleteTierBackend)).
+		Doc("Delete tier backend")
 	ws.Route(ws.DELETE("/{tenantId}/tiers/{id}").To(handler.DeleteTier)).
 		Doc("Delete tier")
 

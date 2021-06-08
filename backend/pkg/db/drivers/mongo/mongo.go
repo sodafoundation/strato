@@ -215,24 +215,42 @@ func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
 	return session.DB(defaultDBName).C(defaultTierCollection).Remove(m)
 }
 
-func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
+func (repo *mongoRepository) DeleteTierBackend(ctx context.Context, id string, backendId string) error {
+	log.Debug("received request to delete tier backend")
+	session := repo.session.Copy()
+	defer session.Close()
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	u := bson.M{"$pull": bson.M{"backends": backendId}}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return err
+	}
+
+	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, u)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo *mongoRepository) UpdateTier(ctx context.Context, id string, backendId string) error {
 	log.Debug("received request to update tier")
 	session := repo.session.Copy()
 	defer session.Close()
-
-	m := bson.M{"_id": tier.Id}
-
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	u := bson.M{"$push": bson.M{"backends": backendId}}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, tier)
+	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, u)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return tier, nil
+	return nil
 }
 
 func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int) ([]*model.Tier, error) {

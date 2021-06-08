@@ -32,9 +32,8 @@ type Backend struct {
 }
 
 type Tier struct {
-	Id        bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-	TenantId  string        `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
-	UserId    string        `json:"userId,omitempty" bson:"userId,omitempty"`
-	Name      string        `json:"name,omitempty" bson:"name,omitempty"`
-	BackendId string        `json:"type,omitempty" bson:"type,omitempty"`
+	Id       bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
+	TenantId string        `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
+	Name     string        `json:"name,omitempty" bson:"name,omitempty"`
+	Backends []string      `json:"type,omitempty" bson:"backends,omitempty"`
 }

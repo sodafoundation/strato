@@ -14,6 +14,7 @@ service Backend {
     	rpc ListTiers(ListTierRequest) returns (ListTierResponse) {}
     	rpc UpdateTier(UpdateTierRequest) returns (UpdateTierResponse) {}
     	rpc DeleteTier(DeleteTierRequest) returns (DeleteTierResponse) {}
+	rpc DeleteTierBackend(DeleteTierBackendRequest) returns (DeleteTierBackendResponse) {}
 }
 
 message CreateBackendRequest {
@@ -127,7 +128,6 @@ message UpdateTierRequest {
 }
 
 message UpdateTierResponse {
-	Tier tier = 1;
 }
 
 message DeleteTierRequest {
@@ -140,9 +140,16 @@ message DeleteTierResponse {
 message Tier {
 	string id = 1;
 	string tenantId = 2;
-	string userId = 3;
-	string name = 4;
-	string backendId = 5;
+	string name = 3;
+	repeated string backends = 4;
 }
 
+message DeleteTierBackendRequest {
+        string id = 1;
+        string backendId = 2;
+}
+
+message DeleteTierBackendResponse {
+        Tier tier = 1;
+}
 

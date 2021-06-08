@@ -272,10 +272,9 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierRequest, out *pb.CreateTierResponse) error {
 	log.Info("Received CreateTier request.")
 	tier := &model.Tier{
-		Name:      in.Tier.Name,
-		TenantId:  in.Tier.TenantId,
-		UserId:    in.Tier.UserId,
-		BackendId: in.Tier.BackendId,
+		Name:     in.Tier.Name,
+		TenantId: in.Tier.TenantId,
+		Backends: in.Tier.Backends,
 	}
 	res, err := db.Repo.CreateTier(ctx, tier)
 	if err != nil {
@@ -283,11 +282,10 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 		return err
 	}
 	out.Tier = &pb.Tier{
-		Id:        res.Id.Hex(),
-		Name:      res.Name,
-		TenantId:  res.TenantId,
-		UserId:    res.UserId,
-		BackendId: res.BackendId,
+		Id:       res.Id.Hex(),
+		Name:     res.Name,
+		TenantId: res.TenantId,
+		Backends: res.Backends,
 	}
 	log.Info("Create tier successfully.")
 	return nil
@@ -295,25 +293,12 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 
 func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierRequest, out *pb.UpdateTierResponse) error {
 	log.Info("Received UpdateTier request.")
-	tier, err := db.Repo.GetTier(ctx, in.Id)
-	if err != nil {
-		log.Errorf("failed to get tier: %v\n", err)
-		return err
-	}
-
-	tier.BackendId = in.BackendId
-	res, err := db.Repo.UpdateTier(ctx, tier)
+	err := db.Repo.UpdateTier(ctx, in.Id, in.BackendId)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
 		return err
 	}
-	out.Tier = &pb.Tier{
-		Id:        res.Id.Hex(),
-		Name:      res.Name,
-		TenantId:  res.TenantId,
-		UserId:    res.UserId,
-		BackendId: res.BackendId,
-	}
+
 	log.Info("Update tier successfully.")
 	return nil
 
@@ -327,11 +312,10 @@ func (b *backendService) GetTier(ctx context.Context, in *pb.GetTierRequest, out
 		return err
 	}
 	out.Tier = &pb.Tier{
-		Id:        res.Id.Hex(),
-		Name:      res.Name,
-		TenantId:  res.TenantId,
-		UserId:    res.UserId,
-		BackendId: res.BackendId,
+		Id:       res.Id.Hex(),
+		Name:     res.Name,
+		TenantId: res.TenantId,
+		Backends: res.Backends,
 	}
 	log.Info("Get Tier successfully.")
 	return nil
@@ -354,17 +338,28 @@ func (b *backendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, 
 	var tiers []*pb.Tier
 	for _, item := range res {
 		tiers = append(tiers, &pb.Tier{
-			Id:        item.Id.Hex(),
-			Name:      item.Name,
-			TenantId:  item.TenantId,
-			UserId:    item.UserId,
-			BackendId: item.BackendId,
+			Id:       item.Id.Hex(),
+			Name:     item.Name,
+			TenantId: item.TenantId,
+			Backends: item.Backends,
 		})
 	}
 	out.Tiers = tiers
 	out.Next = in.Offset + int32(len(res))
 
 	log.Infof("List Tiers successfully, #num=%d", len(tiers))
+	return nil
+
+}
+
+func (b *backendService) DeleteTierBackend(ctx context.Context, in *pb.DeleteTierBackendRequest, out *pb.DeleteTierBackendResponse) error {
+	log.Info("Received DeleteTierBackend request.")
+	err := db.Repo.DeleteTierBackend(ctx, in.Id, in.BackendId)
+	if err != nil {
+		log.Errorf("failed to delete tier: %v\n", err)
+		return err
+	}
+	log.Info("Delete tier successfully.")
 	return nil
 
 }
