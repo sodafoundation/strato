@@ -44,8 +44,6 @@ func RegisterRouter(ws *restful.WebService) {
 		Doc("Create tier")
 	ws.Route(ws.PUT("/{tenantId}/tiers/{id}").To(handler.UpdateTier)).
 		Doc("Update tier")
-	ws.Route(ws.DELETE("/{tenantId}/tiers/{id}/{backendId}").To(handler.DeleteTierBackend)).
-		Doc("Delete tier backend")
 	ws.Route(ws.DELETE("/{tenantId}/tiers/{id}").To(handler.DeleteTier)).
 		Doc("Delete tier")
 

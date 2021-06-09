@@ -53,7 +53,6 @@ type BackendService interface {
 	ListTiers(ctx context.Context, in *ListTierRequest, opts ...client.CallOption) (*ListTierResponse, error)
 	UpdateTier(ctx context.Context, in *UpdateTierRequest, opts ...client.CallOption) (*UpdateTierResponse, error)
 	DeleteTier(ctx context.Context, in *DeleteTierRequest, opts ...client.CallOption) (*DeleteTierResponse, error)
-	DeleteTierBackend(ctx context.Context, in *DeleteTierBackendRequest, opts ...client.CallOption) (*DeleteTierBackendResponse, error)
 }
 
 type backendService struct {
@@ -178,16 +177,6 @@ func (c *backendService) DeleteTier(ctx context.Context, in *DeleteTierRequest, 
 	return out, nil
 }
 
-func (c *backendService) DeleteTierBackend(ctx context.Context, in *DeleteTierBackendRequest, opts ...client.CallOption) (*DeleteTierBackendResponse, error) {
-	req := c.c.NewRequest(c.name, "Backend.DeleteTierBackend", in)
-	out := new(DeleteTierBackendResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // Server API for Backend service
 
 type BackendHandler interface {
@@ -202,7 +191,6 @@ type BackendHandler interface {
 	ListTiers(context.Context, *ListTierRequest, *ListTierResponse) error
 	UpdateTier(context.Context, *UpdateTierRequest, *UpdateTierResponse) error
 	DeleteTier(context.Context, *DeleteTierRequest, *DeleteTierResponse) error
-	DeleteTierBackend(context.Context, *DeleteTierBackendRequest, *DeleteTierBackendResponse) error
 }
 
 func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server.HandlerOption) error {
@@ -218,7 +206,6 @@ func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server
 		ListTiers(ctx context.Context, in *ListTierRequest, out *ListTierResponse) error
 		UpdateTier(ctx context.Context, in *UpdateTierRequest, out *UpdateTierResponse) error
 		DeleteTier(ctx context.Context, in *DeleteTierRequest, out *DeleteTierResponse) error
-		DeleteTierBackend(ctx context.Context, in *DeleteTierBackendRequest, out *DeleteTierBackendResponse) error
 	}
 	type Backend struct {
 		backend
@@ -273,8 +260,4 @@ func (h *backendHandler) UpdateTier(ctx context.Context, in *UpdateTierRequest, 
 
 func (h *backendHandler) DeleteTier(ctx context.Context, in *DeleteTierRequest, out *DeleteTierResponse) error {
 	return h.BackendHandler.DeleteTier(ctx, in, out)
-}
-
-func (h *backendHandler) DeleteTierBackend(ctx context.Context, in *DeleteTierBackendRequest, out *DeleteTierBackendResponse) error {
-	return h.BackendHandler.DeleteTierBackend(ctx, in, out)
 }

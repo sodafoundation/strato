@@ -293,7 +293,13 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 
 func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierRequest, out *pb.UpdateTierResponse) error {
 	log.Info("Received UpdateTier request.")
-	err := db.Repo.UpdateTier(ctx, in.Id, in.BackendId)
+/*	updateTier := &model.UpdateTier{
+                Id:          in.Id,
+                AddBackends: in.AddBackends,
+                DeleteBackends: in.DeleteBackends,
+        }
+*/
+	err := db.Repo.UpdateTier(ctx, in.Id, in.AddBackends, in.DeleteBackends)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
 		return err
@@ -352,17 +358,6 @@ func (b *backendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, 
 
 }
 
-func (b *backendService) DeleteTierBackend(ctx context.Context, in *pb.DeleteTierBackendRequest, out *pb.DeleteTierBackendResponse) error {
-	log.Info("Received DeleteTierBackend request.")
-	err := db.Repo.DeleteTierBackend(ctx, in.Id, in.BackendId)
-	if err != nil {
-		log.Errorf("failed to delete tier: %v\n", err)
-		return err
-	}
-	log.Info("Delete tier successfully.")
-	return nil
-
-}
 
 func (b *backendService) DeleteTier(ctx context.Context, in *pb.DeleteTierRequest, out *pb.DeleteTierResponse) error {
 	log.Info("Received DeleteTier request.")

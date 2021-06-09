@@ -461,16 +461,34 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
 	tier.TenantId = actx.TenantId
-
 	//validation of backends
-	for _, backendId := range tier.Backends {
-		_, err = s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
-		if err != nil {
-			log.Errorf("failed to get backendId details of backendId: %v %v\n", backendId, err)
-			response.WriteError(http.StatusInternalServerError, err)
-			return
+	listBackendRequest := &backend.ListBackendRequest{}
+	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+        if err != nil {
+                log.Errorf("failed to list backends: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return
+        }
+
+	failBackends:=""
+	for _,backendId := range tier.Backends{
+		exists:=0
+		for _,backend:= range result.Backends{
+			if(backendId==backend.Id){
+				exists=1;
+				break;
+			}
 		}
+		if exists==0{
+		failBackends=failBackends+"("+backendId+")"+","
 	}
+	}
+
+	 if failBackends != ""{
+                log.Errorf("failed to create tier due to the invalid backends:%v \n",failBackends)
+                response.WriteError(http.StatusInternalServerError, err)
+                return
+        }
 
 	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
 	if err != nil {
@@ -497,13 +515,36 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	//validation of backendId
-	_, err = s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: updateTierRequest.BackendId})
-	if err != nil {
-		log.Errorf("failed to get backend details of new backendId: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
+	//validation of backends
+	listBackendRequest := &backend.ListBackendRequest{}
+        result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+        if err != nil {
+                log.Errorf("failed to list backends: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return
+        }
+
+        failBackends:=""
+        for _,backendId := range updateTierRequest.AddBackends{
+                exists:=0
+                for _,backend:= range result.Backends{
+                        if(backendId==backend.Id){
+                                exists=1;
+                                break;
+                        }
+                }
+                if exists==0{
+                failBackends=failBackends+"("+backendId+")"+","
+        }
+        }
+        if failBackends != ""{
+                log.Errorf("failed to create tier due to the invalid backends:%v \n",failBackends)
+                response.WriteError(http.StatusInternalServerError, err)
+                return
+        }
+
+
+
 
 	_, err = s.backendClient.UpdateTier(ctx, &updateTierRequest)
 	if err != nil {
@@ -567,25 +608,6 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 	return
 }
 
-//backend can be deleted
-func (s *APIService) DeleteTierBackend(request *restful.Request, response *restful.Response) {
-	log.Infof("Received request for deleting tier backend: %v\n", request.PathParameter("id"))
-	id := request.PathParameter("id")
-	backendId := request.PathParameter("backendId")
-	deleteTierBackendRequest := backend.DeleteTierBackendRequest{Id: id, BackendId: backendId}
-	ctx := common.InitCtxWithAuthInfo(request)
-
-	_, err := s.backendClient.DeleteTierBackend(ctx, &deleteTierBackendRequest)
-	if err != nil {
-		log.Errorf("failed to delete tier backend: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-
-	log.Info("Deleted tier backend successfully.")
-	response.WriteHeader(http.StatusOK)
-	return
-}
 
 //given tierId need to delete the tier
 func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
