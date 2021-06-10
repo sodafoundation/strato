@@ -293,30 +293,21 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 
 func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierRequest, out *pb.UpdateTierResponse) error {
 	log.Info("Received UpdateTier request.")
-//
-	res,err:= db.Repo.GetTier(ctx,in.Id)
+	 
+	res1,err := db.Repo.GetTier(ctx, in.Tier.Id)
+        if err != nil {
+                log.Errorf("failed to update tier: %v\n", err)
+                return err
+        }
 
-	//to delete backends
-	var delBackends []string
-	for _,backendId:= range res.Backends{
-		found:=false
-		for _,bcknd:= range in.DeleteBackends{
-			if(backendId==bcknd){
-				found=true
-			}
-		}
-		if found==false{
-			delBackends= append(delBackends,backendId)
-		}
-	}
+	 tier := &model.Tier{
+		Id:       res1.Id,
+                Name:     res1.Name,
+                TenantId: res1.TenantId,
+                Backends: in.Tier.Backends,
+        }
 
-	//add backends to be added
-	res.Backends= delBackends
-	for _,backendId:= range in.AddBackends{
-		res.Backends= append(res.Backends,backendId)
-	}
-
-	_,err = db.Repo.UpdateTier(ctx, res)
+	res,err := db.Repo.UpdateTier(ctx, tier)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
 		return err
@@ -330,7 +321,6 @@ func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierReques
         }
 	log.Info("Update tier successfully.")
 	return nil
-
 }
 
 func (b *backendService) GetTier(ctx context.Context, in *pb.GetTierRequest, out *pb.GetTierResponse) error {

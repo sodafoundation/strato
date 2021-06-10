@@ -122,9 +122,7 @@ message ListTierResponse {
 }
 
 message UpdateTierRequest {
-	string id = 1;
-	repeated string addBackends = 2;
-	repeated string deleteBackends = 3;
+	Tier tier = 1;
 }
 
 message UpdateTierResponse {
@@ -143,5 +141,11 @@ message Tier {
 	string tenantId = 2;
 	string name = 3;
 	repeated string backends = 4;
+}
+
+message UpdateTier {
+        string id = 1;
+	repeated string AddBackends = 3;
+        repeated string DeleteBackends = 4;
 }
 

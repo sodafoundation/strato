@@ -33,6 +33,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"os"
+	"io"
+	"io/ioutil"
+	"encoding/json"
 )
 
 const (
@@ -100,6 +103,17 @@ func NewAPIService(c client.Client) *APIService {
 		dataflowClient: dataflow.NewDataFlowService(dataflowService, c),
 	}
 }
+
+
+func ReadBody(r *restful.Request) []byte {
+	var reader io.Reader = r.Request.Body
+	b, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil
+	}
+	return b
+}
+
 
 func (s *APIService) GetBackend(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "backend:get") {
@@ -451,16 +465,23 @@ func (s *APIService) listStorageType(ctx context.Context, request *restful.Reque
 func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for creating tier.")
 	tier := &backend.Tier{}
-	err := request.ReadEntity(&tier)
-	if err != nil {
-		log.Errorf("failed to read request body: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
+	body := ReadBody(request)
+	err := json.Unmarshal(body, &tier)
+	if err != nil{
+	   log.Error("error occurred while decoding body", err)
+	 response.WriteError(http.StatusBadRequest,nil)
+	   return
+	}
+	if len(tier.Backends) == 0{
+	   log.Error("tier can not be created as backends list is empty or correct" + " filed \"Backends\" is not present in request body")
+	   response.WriteError(http.StatusBadRequest,err)
+	   return
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
 	tier.TenantId = actx.TenantId
+
 	//validation of backends
 	listBackendRequest := &backend.ListBackendRequest{}
 	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
@@ -470,7 +491,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
                 return
         }
 
-	var failBackends []string
+	var failedBackends []string
 	for _,backendId := range tier.Backends{
 		exists:=false
 		for _,backend:= range result.Backends{
@@ -480,12 +501,12 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 			}
 		}
 		if exists==false{
-		failBackends=append(failBackends,backendId)
+		failedBackends=append(failedBackends,backendId)
 	}
 	}
 
-	 if len(failBackends) !=0{
-                log.Errorf("failed to create tier due to the invalid backends:%v \n",failBackends)
+	 if len(failedBackends) !=0{
+                log.Errorf("failed to create tier due to the invalid backends:%v \n",failedBackends)
                 response.WriteError(http.StatusBadRequest,err)
                 return
         }
@@ -505,17 +526,33 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 //here backendId can be updated
 func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for updating tier: %v\n", request.PathParameter("id"))
+	
 	id := request.PathParameter("id")
-	updateTierRequest := backend.UpdateTierRequest{Id: id}
-	err := request.ReadEntity(&updateTierRequest)
-	if err != nil {
-		log.Errorf("failed to read request body: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
+	updateTier := backend.UpdateTier{Id: id}
+	body := ReadBody(request)
+        err := json.Unmarshal(body, &updateTier)
+        if err != nil{
+           log.Error("error occurred while decoding body", err)
+         response.WriteError(http.StatusBadRequest,nil)
+           return
+        }
+        if len(updateTier.AddBackends)== 0 && len(updateTier.DeleteBackends)== 0{
+           log.Error("tier can not be updated with empty addBackends and deleteBackends")
+           response.WriteError(http.StatusBadRequest,err)
+           return
+        }
+
+
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	//validation of backends
+	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+        if err != nil {
+                log.Errorf("failed to get tier details: %v\n", err)
+                response.WriteError(http.StatusInternalServerError, err)
+                return
+        }
+
+	//validation of add backends
 	listBackendRequest := &backend.ListBackendRequest{}
         result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
         if err != nil {
@@ -525,7 +562,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
         }
 
         var failBackends []string
-        for _,backendId := range updateTierRequest.AddBackends{
+        for _,backendId := range updateTier.AddBackends{
                 exists:=false
                 for _,backend:= range result.Backends{
                         if(backendId==backend.Id){
@@ -537,13 +574,55 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
                 failBackends=append(failBackends,backendId)
         }
         }
-        if len(failBackends) != 0{
-                log.Errorf("failed to create tier due to the invalid backends:%v \n",failBackends)
-                response.WriteError(http.StatusBadRequest,err)
-                return
+	var failDelBackends []string
+        //check whether delete backends belong to tier
+        for _,backendId:= range updateTier.DeleteBackends{
+                found:=false
+                for _,bcknd:= range res.Tier.Backends{
+                        if(backendId==bcknd){
+                                found=true
+                        }
+                }
+                if found==false{
+                        failDelBackends= append(failDelBackends,backendId)
+                }
+        }
+        if len(failBackends)!=0 || len(failDelBackends)!=0 {
+                err1 := errors.New("failed to update tier because backends are not proper")
+		if len(failBackends)!=0{
+			log.Errorf("cannot update tier because %v backends are not valid",failBackends)
+		}
+                if len(failDelBackends)!=0{
+			log.Errorf("cannot update tier because %v backends are not present in tier",failDelBackends)
+                }
+		response.WriteError(http.StatusBadRequest,err1)
+		return 
         }
 
-	res, err := s.backendClient.UpdateTier(ctx, &updateTierRequest)
+
+        // backends to be deleted
+        var delBackends []string
+        for _,backendId:= range res.Tier.Backends{
+                found:=false
+                for _,bcknd:= range updateTier.DeleteBackends{
+                        if(backendId==bcknd){
+                                found=true
+                        }
+                }
+                if found==false{
+                        delBackends= append(delBackends,backendId)
+                }
+        }
+
+        res.Tier.Backends= delBackends
+
+	 //add backends to be added
+        for _,backendId:= range updateTier.AddBackends{
+                res.Tier.Backends= append(res.Tier.Backends,backendId)
+        }
+
+	updateTierRequest:= &backend.UpdateTierRequest{Tier: res.Tier}
+	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -551,7 +630,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Update tier successfully.")
-	response.WriteEntity(res.Tier)
+	response.WriteEntity(res1.Tier)
 }
 
 // GetTier if tierId is given then details of tier to be given
@@ -619,7 +698,7 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	}
 	// check whether tier is empty
 	if len(res.Tier.Backends) != 0 {
-		log.Errorf("failed to delete tier bez tier is not empty: %v\n", err)
+		log.Errorf("failed to delete tier because tier is not empty has backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
