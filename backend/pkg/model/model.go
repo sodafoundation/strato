@@ -37,11 +37,3 @@ type Tier struct {
 	Name     string        `json:"name,omitempty" bson:"name,omitempty"`
 	Backends []string      `json:"type,omitempty" bson:"backends,omitempty"`
 }
-/*
-type UpdateTier struct {
-        Id       bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-	AddBackends []string      `json:"type,omitempty" bson:"addBackends,omitempty"`
-	DeleteBackends []string      `json:"type,omitempty" bson:"deleteBackends,omitempty"`
-
-}
-*/

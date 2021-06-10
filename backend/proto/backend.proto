@@ -128,6 +128,7 @@ message UpdateTierRequest {
 }
 
 message UpdateTierResponse {
+	Tier tier = 1;
 }
 
 message DeleteTierRequest {

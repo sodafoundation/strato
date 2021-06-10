@@ -31,7 +31,7 @@ type Repository interface {
 	ListBackend(ctx context.Context, limit, offset int, query interface{}) ([]*model.Backend, error)
 	CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error)
 	DeleteTier(ctx context.Context, id string) error
-	UpdateTier(ctx context.Context, id string, addBackends []string, deleteBackends []string) error
+	UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier,error)
 	GetTier(ctx context.Context, id string) (*model.Tier, error)
 	ListTiers(ctx context.Context, limit, offset int) ([]*model.Tier, error)
 	Close()

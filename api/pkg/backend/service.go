@@ -470,23 +470,23 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
                 return
         }
 
-	failBackends:=""
+	var failBackends []string
 	for _,backendId := range tier.Backends{
-		exists:=0
+		exists:=false
 		for _,backend:= range result.Backends{
 			if(backendId==backend.Id){
-				exists=1;
+				exists=true;
 				break;
 			}
 		}
-		if exists==0{
-		failBackends=failBackends+"("+backendId+")"+","
+		if exists==false{
+		failBackends=append(failBackends,backendId)
 	}
 	}
 
-	 if failBackends != ""{
+	 if len(failBackends) !=0{
                 log.Errorf("failed to create tier due to the invalid backends:%v \n",failBackends)
-                response.WriteError(http.StatusInternalServerError, err)
+                response.WriteError(http.StatusBadRequest,err)
                 return
         }
 
@@ -524,29 +524,26 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
                 return
         }
 
-        failBackends:=""
+        var failBackends []string
         for _,backendId := range updateTierRequest.AddBackends{
-                exists:=0
+                exists:=false
                 for _,backend:= range result.Backends{
                         if(backendId==backend.Id){
-                                exists=1;
+                                exists=true;
                                 break;
                         }
                 }
-                if exists==0{
-                failBackends=failBackends+"("+backendId+")"+","
+                if exists==false{
+                failBackends=append(failBackends,backendId)
         }
         }
-        if failBackends != ""{
+        if len(failBackends) != 0{
                 log.Errorf("failed to create tier due to the invalid backends:%v \n",failBackends)
-                response.WriteError(http.StatusInternalServerError, err)
+                response.WriteError(http.StatusBadRequest,err)
                 return
         }
 
-
-
-
-	_, err = s.backendClient.UpdateTier(ctx, &updateTierRequest)
+	res, err := s.backendClient.UpdateTier(ctx, &updateTierRequest)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -554,7 +551,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Update tier successfully.")
-	response.WriteHeader(http.StatusOK)
+	response.WriteEntity(res.Tier)
 }
 
 // GetTier if tierId is given then details of tier to be given

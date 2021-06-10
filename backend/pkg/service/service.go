@@ -293,18 +293,41 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 
 func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierRequest, out *pb.UpdateTierResponse) error {
 	log.Info("Received UpdateTier request.")
-/*	updateTier := &model.UpdateTier{
-                Id:          in.Id,
-                AddBackends: in.AddBackends,
-                DeleteBackends: in.DeleteBackends,
-        }
-*/
-	err := db.Repo.UpdateTier(ctx, in.Id, in.AddBackends, in.DeleteBackends)
+//
+	res,err:= db.Repo.GetTier(ctx,in.Id)
+
+	//to delete backends
+	var delBackends []string
+	for _,backendId:= range res.Backends{
+		found:=false
+		for _,bcknd:= range in.DeleteBackends{
+			if(backendId==bcknd){
+				found=true
+			}
+		}
+		if found==false{
+			delBackends= append(delBackends,backendId)
+		}
+	}
+
+	//add backends to be added
+	res.Backends= delBackends
+	for _,backendId:= range in.AddBackends{
+		res.Backends= append(res.Backends,backendId)
+	}
+
+	_,err = db.Repo.UpdateTier(ctx, res)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
 		return err
 	}
 
+	 out.Tier = &pb.Tier{
+                Id:       res.Id.Hex(),
+                Name:     res.Name,
+                TenantId: res.TenantId,
+                Backends: res.Backends,
+        }
 	log.Info("Update tier successfully.")
 	return nil
 

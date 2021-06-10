@@ -216,28 +216,20 @@ func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
 }
 
 
-func (repo *mongoRepository) UpdateTier(ctx context.Context, id string, addBackends []string, deleteBackends []string) error {
+func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier,error) {
 	log.Debug("received request to update tier")
 	session := repo.session.Copy()
 	defer session.Close()
-	m := bson.M{"_id": bson.ObjectIdHex(id)}
-	ua := bson.M{"$push": bson.M{"backends": bson.M{ "$each": addBackends }}}
-	ud := bson.M{"$pullAll": bson.M{"backends": deleteBackends }}
+	m := bson.M{"_id": tier.Id}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
-		return err
+		return nil,err
 	}
-	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, ua)
+	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, tier)
 	if err != nil {
-		return err
+		return nil,err
 	}
-
-	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, ud)
-        if err != nil {
-                return err
-        }
-
-	return nil
+	return tier,nil
 }
 
 func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int) ([]*model.Tier, error) {
