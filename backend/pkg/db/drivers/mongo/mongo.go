@@ -190,7 +190,6 @@ func (repo *mongoRepository) CreateTier(ctx context.Context, tier *model.Tier) (
 	if tier.Id == "" {
 		tier.Id = bson.NewObjectId()
 	}
-
 	err := session.DB(defaultDBName).C(defaultTierCollection).Insert(tier)
 	if err != nil {
 		return nil, err
