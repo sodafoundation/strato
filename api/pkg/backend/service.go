@@ -15,9 +15,8 @@
 package backend
 
 import (
+	"encoding/json"
 	"errors"
-	"net/http"
-	"strconv"
 	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
@@ -32,10 +31,11 @@ import (
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"os"
 	"io"
 	"io/ioutil"
-	"encoding/json"
+	"net/http"
+	"os"
+	"strconv"
 )
 
 const (
@@ -104,7 +104,6 @@ func NewAPIService(c client.Client) *APIService {
 	}
 }
 
-
 func ReadBody(r *restful.Request) []byte {
 	var reader io.Reader = r.Request.Body
 	b, e := ioutil.ReadAll(reader)
@@ -113,7 +112,6 @@ func ReadBody(r *restful.Request) []byte {
 	}
 	return b
 }
-
 
 func (s *APIService) GetBackend(request *restful.Request, response *restful.Response) {
 	if !policy.Authorize(request, response, "backend:get") {
@@ -467,16 +465,16 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	tier := &backend.Tier{}
 	body := ReadBody(request)
 	err := json.Unmarshal(body, &tier)
-	if err != nil{
-	   log.Error("error occurred while decoding body", err)
-	   response.WriteError(http.StatusBadRequest,nil)
-	   return
+	if err != nil {
+		log.Error("error occurred while decoding body", err)
+		response.WriteError(http.StatusBadRequest, nil)
+		return
 	}
-	if len(tier.Name) == 0{
-	   errMsg := fmt.Sprintf("\"Name\" is required parameter should not be empty")
-	   log.Error(errMsg)	
-	   response.WriteError(http.StatusBadRequest, errors.New(errMsg))
-	   return
+	if len(tier.Name) == 0 {
+		errMsg := fmt.Sprintf("\"Name\" is required parameter should not be empty")
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
@@ -487,71 +485,71 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	tierResult, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
 	log.Info("The list of existing tiers:", tierResult)
 	if err != nil {
-   		log.Errorf("failed to list Tiers: %v\n", err)
-   		response.WriteError(http.StatusInternalServerError, err)
-   		return
+		log.Errorf("failed to list Tiers: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
 	}
-	//validate name 
-	for _, t := range tierResult.Tiers{
-	   if tier.Name == t.GetName(){
-	      errMsg := fmt.Sprintf("name: %v is already exists.", tier.Name)
-	      log.Error(errMsg)
-	      response.WriteError(http.StatusBadRequest, errors.New(errMsg))
-	      return
-	   }
+	//validate name
+	for _, t := range tierResult.Tiers {
+		if tier.Name == t.GetName() {
+			errMsg := fmt.Sprintf("name: %v is already exists.", tier.Name)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
 	}
 
 	//duplicate backends check:
-	 visited := make(map[string]int, 0)
-	 for _,val:= range tier.Backends{
-      
-          visited[val]++ 
-	 }
-	
+	visited := make(map[string]int, 0)
+	for _, val := range tier.Backends {
+
+		visited[val]++
+	}
+
 	var duplicates []string
-	for u,v:= range visited{
-		if(v!=1){
-			duplicates= append(duplicates,u)
+	for u, v := range visited {
+		if v != 1 {
+			duplicates = append(duplicates, u)
 		}
 	}
-	
-	if len(duplicates)!=0{
-                errMsg:= fmt.Sprintf("backends in request: %v are duplicated", duplicates)
+
+	if len(duplicates) != 0 {
+		errMsg := fmt.Sprintf("backends in request: %v are duplicated", duplicates)
 		log.Error(errMsg)
-		response.WriteError(http.StatusBadRequest,errors.New(errMsg))
-                return
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
 	}
-	
+
 	//validation of backends
 	listBackendRequest := &backend.ListBackendRequest{}
 	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
-        if err != nil {
-                log.Errorf("failed to list backends: %v\n", err)
-                response.WriteError(http.StatusInternalServerError, err)
-                return
-        }
+	if err != nil {
+		log.Errorf("failed to list backends: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
 
 	var failedBackends []string
-	for _,backendId := range tier.Backends{
-		exists:=false
-		for _,backend:= range result.Backends{
-			if(backendId==backend.Id){
-				exists=true;
-				break;
+	for _, backendId := range tier.Backends {
+		exists := false
+		for _, backend := range result.Backends {
+			if backendId == backend.Id {
+				exists = true
+				break
 			}
 		}
-		if exists==false{
-		failedBackends=append(failedBackends,backendId)
-	}
+		if exists == false {
+			failedBackends = append(failedBackends, backendId)
+		}
 	}
 
-	 if len(failedBackends) !=0{
-		 errMsg:= fmt.Sprintf("invalid backends in request: %v are found", failedBackends)
-                log.Error(errMsg)
-                response.WriteError(http.StatusBadRequest,errors.New(errMsg))
-                return
+	if len(failedBackends) != 0 {
+		errMsg := fmt.Sprintf("invalid backends in request: %v are found", failedBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
 
-        }
+	}
 
 	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
 	if err != nil {
@@ -568,148 +566,146 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 //here backendId can be updated
 func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for updating tier: %v\n", request.PathParameter("id"))
-	
+
 	id := request.PathParameter("id")
 	updateTier := backend.UpdateTier{Id: id}
 	body := ReadBody(request)
-        err := json.Unmarshal(body, &updateTier)
-        if err != nil{
-           log.Error("error occurred while decoding body", err)
-         response.WriteError(http.StatusBadRequest,nil)
-           return
-        }
-        if len(updateTier.AddBackends)== 0 && len(updateTier.DeleteBackends)== 0{
-           log.Error("tier can not be updated with empty addBackends and deleteBackends")
-           response.WriteError(http.StatusBadRequest,err)
-           return
-        }
+	err := json.Unmarshal(body, &updateTier)
+	if err != nil {
+		log.Error("error occurred while decoding body", err)
+		response.WriteError(http.StatusBadRequest, nil)
+		return
+	}
+	if len(updateTier.AddBackends) == 0 && len(updateTier.DeleteBackends) == 0 {
+		log.Error("tier can not be updated with empty addBackends and deleteBackends")
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
-        if err != nil {
-                log.Errorf("failed to get tier details: %v\n", err)
+	if err != nil {
+		log.Errorf("failed to get tier details: %v\n", err)
 		err1 := errors.New("failed to get tier details")
-                response.WriteError(http.StatusInternalServerError, err1)
-                return
-        }
+		response.WriteError(http.StatusInternalServerError, err1)
+		return
+	}
 
-	 //duplicate  backends check:
-         visited := make(map[string]int, 0)
-         for _,val:= range updateTier.AddBackends{
-          visited[val]++ 
-         }
+	//duplicate  backends check:
+	visited := make(map[string]int, 0)
+	for _, val := range updateTier.AddBackends {
+		visited[val]++
+	}
 
-	for _,val:= range updateTier.DeleteBackends{
-          visited[val]++ 
-         } 
+	for _, val := range updateTier.DeleteBackends {
+		visited[val]++
+	}
 
-        var duplicates []string
-        for u,v:= range visited{
-                if(v!=1){
-                        duplicates= append(duplicates,u)
-                }
-        }
-        if len(duplicates)!=0{
-                errMsg:= fmt.Sprintf("some backends in add or/and delete in request: %v are duplicate", duplicates)
-                log.Error(errMsg)
-                response.WriteError(http.StatusBadRequest,errors.New(errMsg))
-                return
-        }
+	var duplicates []string
+	for u, v := range visited {
+		if v != 1 {
+			duplicates = append(duplicates, u)
+		}
+	}
+	if len(duplicates) != 0 {
+		errMsg := fmt.Sprintf("some backends in add or/and delete in request: %v are duplicate", duplicates)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
 
 	//validation of add backends
 	listBackendRequest := &backend.ListBackendRequest{}
-        result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
-        if err != nil {
-                log.Errorf("failed to list backends: %v\n", err)
-                response.WriteError(http.StatusInternalServerError, err)
-                return
-        }
+	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+	if err != nil {
+		log.Errorf("failed to list backends: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
 
-        var failBackends []string
-        for _,backendId := range updateTier.AddBackends{
-                exists:=false
-                for _,backend:= range result.Backends{
-                        if(backendId==backend.Id){
-                                exists=true;
-                                break;
-                        }
-                }
-                if exists==false{
-                failBackends=append(failBackends,backendId)
-        }
-        }
+	var failBackends []string
+	for _, backendId := range updateTier.AddBackends {
+		exists := false
+		for _, backend := range result.Backends {
+			if backendId == backend.Id {
+				exists = true
+				break
+			}
+		}
+		if exists == false {
+			failBackends = append(failBackends, backendId)
+		}
+	}
 
-	if len(failBackends)!=0{
-                errMsg:= fmt.Sprintf("add backends in request: %v are invalid", failBackends)
-                log.Error(errMsg)
-                response.WriteError(http.StatusBadRequest,errors.New(errMsg))
-                return
-        }
+	if len(failBackends) != 0 {
+		errMsg := fmt.Sprintf("add backends in request: %v are invalid", failBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
 
-	
 	//check whether add backends already exists
-        var failAddBackends []string
-        for _,backendId:= range updateTier.AddBackends{
-                found:=false
-                for _,bcknd:= range res.Tier.Backends{
-                        if(backendId==bcknd){
-                                found=true
-                        }
-                }
-                if found==true{
-                        failAddBackends= append(failAddBackends,backendId)
-                }
-        }
-	if len(failAddBackends)!=0{
-                errMsg:= fmt.Sprintf("add backends in request: %v already exists in tier", failAddBackends)
-                log.Error(errMsg)
-                response.WriteError(http.StatusBadRequest,errors.New(errMsg))
-                return
-        }
-
+	var failAddBackends []string
+	for _, backendId := range updateTier.AddBackends {
+		found := false
+		for _, bcknd := range res.Tier.Backends {
+			if backendId == bcknd {
+				found = true
+			}
+		}
+		if found == true {
+			failAddBackends = append(failAddBackends, backendId)
+		}
+	}
+	if len(failAddBackends) != 0 {
+		errMsg := fmt.Sprintf("add backends in request: %v already exists in tier", failAddBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
 
 	//check whether delete backends belong to tier
 	var failDelBackends []string
-        for _,backendId:= range updateTier.DeleteBackends{
-                found:=false
-                for _,bcknd:= range res.Tier.Backends{
-                        if(backendId==bcknd){
-                                found=true
-                        }
-                }
-                if found==false{
-                        failDelBackends= append(failDelBackends,backendId)
-                }
-        }
-        if len(failDelBackends)!=0{
-       		errMsg:= fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier",failDelBackends)
-                log.Error(errMsg)
-                response.WriteError(http.StatusBadRequest,errors.New(errMsg))
-                return
-	 }
+	for _, backendId := range updateTier.DeleteBackends {
+		found := false
+		for _, bcknd := range res.Tier.Backends {
+			if backendId == bcknd {
+				found = true
+			}
+		}
+		if found == false {
+			failDelBackends = append(failDelBackends, backendId)
+		}
+	}
+	if len(failDelBackends) != 0 {
+		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", failDelBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
 
-        // backends to be deleted
-        var delBackends []string
-        for _,backendId:= range res.Tier.Backends{
-                found:=false
-                for _,bcknd:= range updateTier.DeleteBackends{
-                        if(backendId==bcknd){
-                                found=true
-                        }
-                }
-                if found==false{
-                        delBackends= append(delBackends,backendId)
-                }
-        }
+	// backends to be deleted
+	var delBackends []string
+	for _, backendId := range res.Tier.Backends {
+		found := false
+		for _, bcknd := range updateTier.DeleteBackends {
+			if backendId == bcknd {
+				found = true
+			}
+		}
+		if found == false {
+			delBackends = append(delBackends, backendId)
+		}
+	}
 
-        res.Tier.Backends= delBackends
+	res.Tier.Backends = delBackends
 
-	 //add backends to be added
-        for _,backendId:= range updateTier.AddBackends{
-                res.Tier.Backends= append(res.Tier.Backends,backendId)
-        }
+	//add backends to be added
+	for _, backendId := range updateTier.AddBackends {
+		res.Tier.Backends = append(res.Tier.Backends, backendId)
+	}
 
-	updateTierRequest:= &backend.UpdateTierRequest{Tier: res.Tier}
+	updateTierRequest := &backend.UpdateTierRequest{Tier: res.Tier}
 	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
 	if err != nil {
 		log.Errorf("failed to update tier: %v\n", err)
@@ -771,7 +767,6 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 	response.WriteEntity(res)
 	return
 }
-
 
 //given tierId need to delete the tier
 func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
