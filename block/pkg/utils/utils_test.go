@@ -167,16 +167,16 @@ func TestGetBackend(t *testing.T) {
 	ctx := context.Background()
 
 	bkendDetail := backend.BackendDetail{
-		Id:                   "",
-		TenantId:             "",
-		UserId:               "",
-		Name:                 "",
-		Type:                 "",
-		Region:               "",
-		Endpoint:             "",
-		BucketName:           "",
-		Access:               "",
-		Security:             "",
+		Id:         "",
+		TenantId:   "",
+		UserId:     "",
+		Name:       "",
+		Type:       "",
+		Region:     "",
+		Endpoint:   "",
+		BucketName: "",
+		Access:     "",
+		Security:   "",
 	}
 
 	bkendReq := &backend.GetBackendRequest{
