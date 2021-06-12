@@ -77,6 +77,14 @@ func (_m *MockBackendService) ListType(ctx context.Context, in *pb.ListTypeReque
 	return result.(error)
 }
 
+func (_m *MockBackendService) CreateTier(ctx context.Context, in *pb.CreateTierRequest, out *pb.CreateTierResponse) error {
+        args := _m.Called()
+        result := args.Get(0)
+
+        return result.(error)
+}
+
+
 //===============================Test methods Test<MethodName> ==================================
 
 func TestGetBackend(t *testing.T) {
@@ -311,4 +319,9 @@ func TestListTypes(t *testing.T) {
 	testService := NewBackendService()
 	err := testService.ListType(ctx, req, resp)
 	t.Log(err)
+}
+
+
+func TestCreateTier(t *testing.T) {
+
 }

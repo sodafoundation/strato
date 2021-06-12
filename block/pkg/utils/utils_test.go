@@ -177,9 +177,6 @@ func TestGetBackend(t *testing.T) {
 		BucketName:           "",
 		Access:               "",
 		Security:             "",
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
 	}
 
 	bkendReq := &backend.GetBackendRequest{
