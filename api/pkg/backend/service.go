@@ -502,19 +502,14 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	//duplicate backends check:
+	var duplicates []string
 	visited := make(map[string]int, 0)
 	for _, val := range tier.Backends {
-
+		if visited[val] >= 1 {
+			duplicates = append(duplicates, val)
+		}
 		visited[val]++
 	}
-
-	var duplicates []string
-	for u, v := range visited {
-		if v != 1 {
-			duplicates = append(duplicates, u)
-		}
-	}
-
 	if len(duplicates) != 0 {
 		errMsg := fmt.Sprintf("backends in request: %v are duplicated", duplicates)
 		log.Error(errMsg)
@@ -522,7 +517,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	//validation of backends
+	//validation of backends whether they exists in list of backends
 	listBackendRequest := &backend.ListBackendRequest{}
 	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
 	if err != nil {
@@ -593,21 +588,22 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	//duplicate  backends check:
+	//to check whether backends are repeated in add backends or/add delete backends:
+	var duplicates []string
 	visited := make(map[string]int, 0)
+
 	for _, val := range updateTier.AddBackends {
+		if visited[val] >= 1 {
+			duplicates = append(duplicates, val)
+		}
 		visited[val]++
 	}
 
 	for _, val := range updateTier.DeleteBackends {
-		visited[val]++
-	}
-
-	var duplicates []string
-	for u, v := range visited {
-		if v != 1 {
-			duplicates = append(duplicates, u)
+		if visited[val] >= 1 {
+			duplicates = append(duplicates, val)
 		}
+		visited[val]++
 	}
 	if len(duplicates) != 0 {
 		errMsg := fmt.Sprintf("some backends in add or/and delete in request: %v are duplicate", duplicates)
@@ -616,7 +612,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	//validation of add backends
+	//validation of add backends with list of backends
 	listBackendRequest := &backend.ListBackendRequest{}
 	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
 	if err != nil {
@@ -646,7 +642,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	//check whether add backends already exists
+	//check whether add backends already exists in the tier
 	var failAddBackends []string
 	for _, backendId := range updateTier.AddBackends {
 		found := false
@@ -686,7 +682,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	// backends to be deleted
+	// delete backends to be removed from tier backends
 	var delBackends []string
 	for _, backendId := range res.Tier.Backends {
 		found := false
@@ -699,10 +695,9 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 			delBackends = append(delBackends, backendId)
 		}
 	}
-
 	res.Tier.Backends = delBackends
 
-	//add backends to be added
+	//add backends to be added to the tier backends
 	for _, backendId := range updateTier.AddBackends {
 		res.Tier.Backends = append(res.Tier.Backends, backendId)
 	}
