@@ -35,6 +35,7 @@ type mongoRepository struct {
 
 var defaultDBName = "multi-cloud"
 var defaultCollection = "backends"
+var defaultTierCollection = "tiers"
 var mutex sync.Mutex
 var mongoRepo = &mongoRepository{}
 
@@ -180,6 +181,93 @@ func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 	}
 
 	return backends, nil
+}
+
+func (repo *mongoRepository) CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
+	log.Debug("received request to create tier in db")
+	session := repo.session.Copy()
+	defer session.Close()
+
+	if tier.Id == "" {
+		tier.Id = bson.NewObjectId()
+	}
+	err := session.DB(defaultDBName).C(defaultTierCollection).Insert(tier)
+	if err != nil {
+		return nil, err
+	}
+	return tier, nil
+
+}
+
+func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
+	log.Debug("received request to delete tier from db")
+
+	session := repo.session.Copy()
+	defer session.Close()
+
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return err
+	}
+
+	return session.DB(defaultDBName).C(defaultTierCollection).Remove(m)
+}
+
+func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
+	log.Debug("received request to update tier")
+	session := repo.session.Copy()
+	defer session.Close()
+	m := bson.M{"_id": tier.Id}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, tier)
+	if err != nil {
+		return nil, err
+	}
+	return tier, nil
+}
+
+func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int) ([]*model.Tier, error) {
+	log.Debug("received request to list tiers")
+	session := repo.session.Copy()
+	defer session.Close()
+	if limit == 0 {
+		limit = math.MinInt32
+	}
+	var tiers []*model.Tier
+	m := bson.M{}
+	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
+	err := session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tiers, nil
+}
+
+func (repo *mongoRepository) GetTier(ctx context.Context, id string) (*model.Tier,
+	error) {
+	log.Debug("received request to get tier details")
+	session := repo.session.Copy()
+	defer session.Close()
+
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	var tier = &model.Tier{}
+	collection := session.DB(defaultDBName).C(defaultTierCollection)
+	err = collection.Find(m).One(tier)
+	if err != nil {
+		return nil, err
+	}
+	return tier, nil
 }
 
 func (repo *mongoRepository) Close() {

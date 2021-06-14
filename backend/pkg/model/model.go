@@ -30,3 +30,10 @@ type Backend struct {
 	Access     string        `json:"access,omitempty" bson:"access,omitempty"`
 	Security   string        `json:"security,omitempty" bson:"security,omitempty"`
 }
+
+type Tier struct {
+	Id       bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
+	TenantId string        `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
+	Name     string        `json:"name,omitempty" bson:"name,omitempty"`
+	Backends []string      `json:"type,omitempty" bson:"backends,omitempty"`
+}
