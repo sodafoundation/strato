@@ -18,10 +18,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
 	"io"
 	"io/ioutil"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/webrtcn/s3client"
@@ -363,15 +364,15 @@ func (ad *CephAdapter) BackendCheck(ctx context.Context, backendDetail *pb.Backe
 			log.Error("failed to get bucket Info :", err1)
 			return err1
 		}
-		time.Sleep(5*time.Second)
+		time.Sleep(5 * time.Second)
 	}
-		err := ad.BucketDelete(ctx, input)
-		if err != nil {
-			log.Error("failed to delete sample bucket :", err)
-			return err
-		}
+	err := ad.BucketDelete(ctx, input)
+	if err != nil {
+		log.Error("failed to delete sample bucket :", err)
+		return err
+	}
 
-		log.Debug("Delete sample bucket is successful")
+	log.Debug("Delete sample bucket is successful")
 	return nil
 }
 
