@@ -81,7 +81,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		var backendName string
 		if isTier == "True" {
 			backendName = s.getBackendFromTier(ctx, createBucketConf.LocationConstraint)
-		}else{
+		} else {
 			backendName = createBucketConf.LocationConstraint
 		}
 		if backendName != "" {
