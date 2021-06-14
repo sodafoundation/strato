@@ -176,7 +176,9 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 				if tier.Name == tierName {
 					backendId = tier.Backends[rand.Intn(len(tier.Backends))]
 					break
-				}}}
+				}
+			}
+		}
 	}
 
 	if backendId != "" {
@@ -185,9 +187,10 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 			log.Error("the selected backends from tier doesn't exists.")
 			return ""
 		}
-		if backendRep != nil{
-		backendName = backendRep.Backend.Name
-	}}
+		if backendRep != nil {
+			backendName = backendRep.Backend.Name
+		}
+	}
 
 	return backendName
 }
