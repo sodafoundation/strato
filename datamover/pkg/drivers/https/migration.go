@@ -18,22 +18,24 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/metadata"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"math"
-	"os"
-	"strconv"
-	"time"
 )
 
 var simuRoutines = 10

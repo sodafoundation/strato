@@ -17,8 +17,10 @@ package utils
 import (
 	"context"
 	"errors"
+
 	"github.com/micro/go-log"
 	"github.com/micro/go-micro/v2/metadata"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
@@ -64,7 +66,7 @@ type InternalLifecycleRule struct {
 	ActionType   int // 0-Expiration, 1-IncloudTransition, 2-CrossCloudTransition, 3-AbortMultipartUpload
 	DeleteMarker string
 	Backend      string
-	TargetBucket   string
+	TargetBucket string
 }
 
 func GetTenantId(ctx context.Context) (string, error) {

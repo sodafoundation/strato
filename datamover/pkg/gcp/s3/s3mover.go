@@ -22,11 +22,12 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
 	log "github.com/sirupsen/logrus"
 	. "github.com/webrtcn/s3client"
 	"github.com/webrtcn/s3client/models"
+
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+	pb "github.com/opensds/multi-cloud/datamover/proto"
 )
 
 type CreateMultipartUploadOutput struct {

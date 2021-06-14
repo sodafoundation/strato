@@ -25,11 +25,12 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
+	log "github.com/sirupsen/logrus"
+
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/model"
 	"github.com/opensds/multi-cloud/api/pkg/utils"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	log "github.com/sirupsen/logrus"
 )
 
 type Keystone struct {

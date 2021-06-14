@@ -24,12 +24,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/emicklei/go-restful"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	. "github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
-	"github.com/opensds/multi-cloud/s3/error"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 

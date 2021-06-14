@@ -17,9 +17,9 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud/block/pkg/model"
 
 	"github.com/opensds/multi-cloud/block/pkg/db/drivers/mongo"
+	"github.com/opensds/multi-cloud/block/pkg/model"
 	"github.com/opensds/multi-cloud/block/pkg/utils/config"
 )
 

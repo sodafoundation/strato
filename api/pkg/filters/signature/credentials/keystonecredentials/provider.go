@@ -22,10 +22,11 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	creds "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/model"
-	log "github.com/sirupsen/logrus"
 )
 
 // ProviderName is the name of the credentials provider.

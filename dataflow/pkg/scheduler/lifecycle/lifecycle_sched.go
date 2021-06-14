@@ -17,8 +17,12 @@ package lifecycle
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/micro/go-micro/v2/client"
-	"github.com/micro/go-micro/v2/metadata"
+	"os"
+	"sort"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
@@ -30,13 +34,11 @@ import (
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/micro/go-micro/v2/client"
+	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"os"
-	"sort"
-	"strconv"
-	"sync"
-	"time"
 )
 
 const (

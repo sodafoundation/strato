@@ -17,8 +17,9 @@ package Gcps3mover
 import (
 	"errors"
 
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	log "github.com/sirupsen/logrus"
+
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
 func (mover *GcpS3Mover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {

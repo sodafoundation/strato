@@ -17,8 +17,9 @@ package tests
 import (
 	"sync"
 
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/utils"
 	. "gopkg.in/check.v1"
+
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/utils"
 )
 
 const (

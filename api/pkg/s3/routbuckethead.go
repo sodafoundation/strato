@@ -16,6 +16,7 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
+
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 )
 

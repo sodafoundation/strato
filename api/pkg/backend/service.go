@@ -17,10 +17,9 @@ package backend
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
@@ -30,9 +29,11 @@ import (
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
+	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"os"
 )
 
 const (

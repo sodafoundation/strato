@@ -9,13 +9,14 @@ import (
 	"sync"
 	"time"
 
+	. "gopkg.in/check.v1"
+
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	. "gopkg.in/check.v1"
 )
 
 func (ys *YigSuite) TestPutObjectSucceed(c *C) {

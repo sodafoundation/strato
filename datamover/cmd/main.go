@@ -16,11 +16,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/micro/go-micro/v2"
+	"os"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	datamover "github.com/opensds/multi-cloud/datamover/pkg"
+
+	"github.com/micro/go-micro/v2"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 const (

@@ -17,12 +17,14 @@ package s3
 import (
 	"crypto/md5"
 	"encoding/xml"
-	"github.com/emicklei/go-restful"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/s3/error"
+	s3error "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,7 +43,7 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 	body := ReadBody(request)
 	if body == nil {
 		log.Info("no request body provided for creating versioning configuration")
-		WriteErrorResponse(response, request, S3ErrorCode(ErrInvalidVersioning))
+		WriteErrorResponse(response, request, s3error.S3ErrorCode(s3error.ErrInvalidVersioning))
 		return
 	}
 	log.Infof("MD5 sum for body is %x", md5.Sum(body))
@@ -49,7 +51,7 @@ func (s *APIService) BucketVersioningPut(request *restful.Request, response *res
 	versionConf := model.VersioningConfiguration{}
 	err = xml.Unmarshal(body, &versionConf)
 	if err != nil {
-		WriteErrorResponse(response, request, S3ErrorCode(ErrInvalidVersioning))
+		WriteErrorResponse(response, request, s3error.S3ErrorCode(s3error.ErrInvalidVersioning))
 		return
 	}
 

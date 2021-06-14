@@ -20,8 +20,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/opensds/multi-cloud/api/pkg/utils"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 )
 
 func init() {

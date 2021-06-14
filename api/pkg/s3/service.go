@@ -21,12 +21,13 @@ import (
 	"math"
 	"os"
 
-	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
-	"github.com/opensds/multi-cloud/backend/proto"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/proto"
+
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -93,8 +94,8 @@ func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
 	if err == nil {
-		if rsp.GetErrorCode() != int32(ErrNoErr) {
-			err = S3ErrorCode(rsp.GetErrorCode())
+		if rsp.GetErrorCode() != int32(s3error.ErrNoErr) {
+			err = s3error.S3ErrorCode(rsp.GetErrorCode())
 		}
 	}
 	if err != nil {
@@ -114,8 +115,8 @@ func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, 
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
 	if err == nil {
-		if rsp.GetErrorCode() != int32(ErrNoErr) {
-			err = S3ErrorCode(rsp.GetErrorCode())
+		if rsp.GetErrorCode() != int32(s3error.ErrNoErr) {
+			err = s3error.S3ErrorCode(rsp.GetErrorCode())
 		}
 	}
 	if err != nil {
@@ -129,7 +130,7 @@ func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, 
 func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
 	flag := false
 
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
+	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backend.ListBackendRequest{
 		Offset: 0,
 		Limit:  math.MaxInt32,
 		Filter: map[string]string{"name": backendName}})
@@ -151,8 +152,8 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 		WriteErrorResponse(response, request, err)
 		return err
 	}
-	if errCode != int32(ErrNoErr) {
-		err := S3ErrorCode(errCode)
+	if errCode != int32(s3error.ErrNoErr) {
+		err := s3error.S3ErrorCode(errCode)
 		WriteErrorResponse(response, request, err)
 		return err
 	}

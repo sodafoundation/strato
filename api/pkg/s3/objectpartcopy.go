@@ -21,12 +21,14 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/journeymidnight/yig/helper"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	. "github.com/opensds/multi-cloud/s3/error"
 
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+
+	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
 // ObjectPartCopy copy object from http header x-amz-copy-source as a part for multipart

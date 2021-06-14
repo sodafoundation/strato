@@ -8,9 +8,10 @@ import (
 	"sync"
 
 	"fmt"
+	"time"
+
 	"github.com/journeymidnight/radoshttpd/rados"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 const (

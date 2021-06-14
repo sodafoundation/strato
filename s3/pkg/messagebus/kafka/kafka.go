@@ -5,7 +5,8 @@ import (
 	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	"github.com/micro/go-micro/v2/util/log"
+
 	"github.com/opensds/multi-cloud/s3/pkg/messagebus/types"
 )
 

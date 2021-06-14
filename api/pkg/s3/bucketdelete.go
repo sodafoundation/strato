@@ -16,9 +16,10 @@ package s3
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (s *APIService) BucketDelete(request *restful.Request, response *restful.Response) {

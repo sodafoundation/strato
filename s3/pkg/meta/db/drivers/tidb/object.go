@@ -22,10 +22,11 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	pb "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/xxtea/xxtea-go/xxtea"
+
+	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	pb "github.com/opensds/multi-cloud/s3/proto"
 )
 
 func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, version string) (object *Object, err error) {

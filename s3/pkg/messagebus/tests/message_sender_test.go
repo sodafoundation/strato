@@ -3,11 +3,12 @@ package tests
 import (
 	"fmt"
 
+	. "gopkg.in/check.v1"
+
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	bus "github.com/opensds/multi-cloud/s3/pkg/messagebus"
 	_ "github.com/opensds/multi-cloud/s3/pkg/messagebus/kafka"
 	"github.com/opensds/multi-cloud/s3/pkg/messagebus/types"
-	. "gopkg.in/check.v1"
 )
 
 func (mbs *MessageBusTestSuite) TestMessageSenderGet(c *C) {

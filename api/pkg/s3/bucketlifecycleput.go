@@ -24,14 +24,15 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	"github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 // Map from storage calss to tier

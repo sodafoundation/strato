@@ -1,8 +1,9 @@
 package datatype
 
 import (
-	. "github.com/opensds/multi-cloud/s3/error"
 	"time"
+
+	s3error "github.com/opensds/multi-cloud/s3/error"
 )
 
 const (
@@ -27,5 +28,5 @@ func ParseAmzDate(amzDateStr string) (amzDate time.Time, apiErr error) {
 			return amzDate, nil
 		}
 	}
-	return time.Time{}, ErrMalformedDate
+	return time.Time{}, s3error.ErrMalformedDate
 }

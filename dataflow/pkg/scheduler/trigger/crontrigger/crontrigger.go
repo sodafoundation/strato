@@ -17,10 +17,11 @@ package crontrigger
 import (
 	"fmt"
 
-	"github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/opensds/multi-cloud/dataflow/pkg/model"
+	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
 )
 
 type CronTrigger struct {
