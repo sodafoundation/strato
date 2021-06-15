@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 
 	"github.com/micro/go-micro/v2/client"
@@ -162,13 +163,16 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 	return nil
 }
 
+// this method is basically for getting the backends name from tier
 func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
 	log.Info("The received tier name for getting backend name:", tierName)
 	var backendId, backendName string
+	var response *restful.Response
 
 	tierResp, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
 	if err != nil {
 		log.Error("list tier failed during getting backends from tier")
+		response.WriteError(http.StatusInternalServerError, err)
 		return ""
 	} else {
 		if len(tierResp.Tiers) > 0 {
@@ -185,6 +189,7 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 		backendRep, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
 		if err != nil {
 			log.Error("the selected backends from tier doesn't exists.")
+			response.WriteError(http.StatusInternalServerError, err)
 			return ""
 		}
 		if backendRep != nil {
