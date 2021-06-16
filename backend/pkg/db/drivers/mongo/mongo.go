@@ -240,8 +240,12 @@ func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int) (
 	}
 	var tiers []*model.Tier
 	m := bson.M{}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
 	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
-	err := session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
+	err = session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
 
 	if err != nil {
 		return nil, err

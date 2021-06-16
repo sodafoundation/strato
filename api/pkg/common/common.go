@@ -176,6 +176,26 @@ func InitCtxWithAuthInfo(request *restful.Request) context.Context {
 	return ctx
 }
 
+// TODO: Can be optimized with above function InitCtxWithAuthInfo()
+func InitCtxWithAuthInfoNonAdmin(request *restful.Request) context.Context {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	var ctx context.Context
+	if actx.IsAdmin {
+		ctx = metadata.NewContext(context.Background(), map[string]string{
+			CTX_KEY_USER_ID:   actx.UserId,
+			CTX_KEY_TENANT_ID: actx.TenantId,
+			CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
+		})
+	} else {
+		ctx = metadata.NewContext(context.Background(), map[string]string{
+			CTX_KEY_TENANT_ID: request.PathParameter("tenantId"),
+			CTX_KEY_IS_ADMIN:  strconv.FormatBool(false),
+		})
+	}
+
+	return ctx
+}
+
 func GetOwner(request *restful.Request) (ownerId string) {
 	actx := request.Attribute(c.KContext).(*c.Context)
 	return actx.TenantId

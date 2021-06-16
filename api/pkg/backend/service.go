@@ -464,6 +464,9 @@ func (s *APIService) listStorageType(ctx context.Context, request *restful.Reque
 //tiering functions
 func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for creating tier.")
+	if !policy.Authorize(request, response, "tier:create") {
+		return
+	}
 	tier := &backend.Tier{}
 	body := ReadBody(request)
 	err := json.Unmarshal(body, &tier)
@@ -480,8 +483,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	actx := request.Attribute(c.KContext).(*c.Context)
-	tier.TenantId = actx.TenantId
+	tier.TenantId = request.PathParameter("tenantId")
 
 	//list tiers
 	tierResult, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
@@ -563,7 +565,9 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 //here backendId can be updated
 func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for updating tier: %v\n", request.PathParameter("id"))
-
+	if !policy.Authorize(request, response, "tier:update") {
+		return
+	}
 	id := request.PathParameter("id")
 	updateTier := backend.UpdateTier{Id: id}
 	body := ReadBody(request)
@@ -717,6 +721,10 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 // GetTier if tierId is given then details of tier to be given
 func (s *APIService) GetTier(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for tier details: %s\n", request.PathParameter("id"))
+	if !policy.Authorize(request, response, "tier:get") {
+		return
+	}
+
 	id := request.PathParameter("id")
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
@@ -733,8 +741,11 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 //List of tiers is displayed
 func (s *APIService) ListTiers(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for tier list.")
+	if !policy.Authorize(request, response, "tier:list") {
+		return
+	}
 
-	ctx := common.InitCtxWithAuthInfo(request)
+	ctx := common.InitCtxWithAuthInfoNonAdmin(request)
 	listTierRequest := &backend.ListTierRequest{}
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
@@ -769,6 +780,10 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("id")
 	log.Infof("Received request for deleting tier: %s\n", id)
+	if !policy.Authorize(request, response, "tier:delete") {
+		return
+	}
+
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
