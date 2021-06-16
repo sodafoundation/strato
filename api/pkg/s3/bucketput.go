@@ -30,7 +30,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	TrueValue = "True"
+)
+
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
+	log.Info("Create bucket request received")
+	var isTier string
+
+	isTier = request.HeaderParameter("tier")
 	bucketName := strings.ToLower(request.PathParameter(common.REQUEST_PATH_BUCKET_NAME))
 	if !isValidBucketName(bucketName) {
 		WriteErrorResponse(response, request, s3error.ErrInvalidBucketName)
@@ -75,7 +83,12 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			return
 		}
 
-		backendName := createBucketConf.LocationConstraint
+		var backendName string
+		if strings.EqualFold(isTier, TrueValue) {
+			backendName = s.getBackendFromTier(ctx, createBucketConf.LocationConstraint)
+		} else {
+			backendName = createBucketConf.LocationConstraint
+		}
 		if backendName != "" {
 			log.Infof("backendName is %v\n", backendName)
 			bucket.DefaultLocation = backendName
