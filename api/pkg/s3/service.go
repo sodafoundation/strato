@@ -16,6 +16,7 @@ package s3
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	"io"
 	"io/ioutil"
 	"math"
@@ -185,8 +186,9 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 		}
 	}
 
+	adminCtx := common.GetAdminContext()
 	if backendId != "" {
-		backendRep, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
+		backendRep, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
 		if err != nil {
 			log.Error("the selected backends from tier doesn't exists.")
 			response.WriteError(http.StatusInternalServerError, err)
@@ -197,5 +199,6 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 		}
 	}
 
+	log.Info("The backendName from tier:", backendName)
 	return backendName
 }

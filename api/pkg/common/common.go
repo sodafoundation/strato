@@ -35,6 +35,7 @@ const (
 	MaxObjectSize           = 5 * 1024 * 1024 * 1024 // 5GB
 	SortDirectionAsc        = "asc"
 	SortDirectionDesc       = "desc"
+	DefaultAdminTenantId    = "94b280022d0c4401bcf3b0ea85870519"
 )
 
 const (
@@ -193,6 +194,15 @@ func InitCtxWithAuthInfoNonAdmin(request *restful.Request) context.Context {
 		})
 	}
 
+	return ctx
+}
+
+func GetAdminContext() context.Context {
+	var ctx context.Context
+	ctx = metadata.NewContext(context.Background(), map[string]string{
+		CTX_KEY_TENANT_ID: DefaultAdminTenantId,
+		CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
+	})
 	return ctx
 }
 
