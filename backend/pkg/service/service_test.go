@@ -84,6 +84,34 @@ func (_m *MockBackendService) CreateTier(ctx context.Context, in *pb.CreateTierR
 	return result.(error)
 }
 
+func (_m *MockBackendService) GetTier(ctx context.Context, in *pb.GetTierRequest, out *pb.GetTierResponse) error {
+	args := _m.Called()
+	result := args.Get(0)
+
+	return result.(error)
+}
+
+func (_m *MockBackendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, out *pb.ListTierResponse) error {
+	args := _m.Called()
+	result := args.Get(0)
+
+	return result.(error)
+}
+
+func (_m *MockBackendService) UpdateTier(ctx context.Context, in *pb.UpdateTierRequest, out *pb.UpdateTierResponse) error {
+	args := _m.Called()
+	result := args.Get(0)
+
+	return result.(error)
+}
+
+func (_m *MockBackendService) DeleteTier(ctx context.Context, in *pb.DeleteTierRequest, out *pb.DeleteTierResponse) error {
+	args := _m.Called()
+	result := args.Get(0)
+
+	return result.(error)
+}
+
 //===============================Test methods Test<MethodName> ==================================
 
 func TestGetBackend(t *testing.T) {
@@ -321,5 +349,172 @@ func TestListTypes(t *testing.T) {
 }
 
 func TestCreateTier(t *testing.T) {
+	var mockTier = &collection.SampleCreateTier[0]
 
+	mockTierDetail := pb.Tier{
+		Id:       "",
+		TenantId: "sample-tier-tenantID",
+		Name:     "sample-tier-name",
+		Backends: []string{"sample-tier-backend-1", "sample-tier-backend-2"},
+	}
+
+	var req = &pb.CreateTierRequest{
+		Tier: &mockTierDetail,
+	}
+	var resp = &pb.CreateTierResponse{
+		Tier: &mockTierDetail,
+	}
+
+	ctx := context.Background()
+	deadline := time.Now().Add(time.Duration(50) * time.Second)
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	mockRepoClient := new(mockrepo.Repository)
+	mockRepoClient.On("CreateTier", ctx, mockTier).Return(mockTier, nil)
+	db.Repo = mockRepoClient
+
+	testService := NewBackendService()
+	err := testService.CreateTier(ctx, req, resp)
+	t.Log(err)
+	mockRepoClient.AssertExpectations(t)
+
+}
+
+func TestGetTier(t *testing.T) {
+	var mockTier = &collection.SampleTiers[0]
+	var req = &pb.GetTierRequest{
+		Id: "Id",
+	}
+
+	mockTierDetail := pb.Tier{
+		Id:       "3769855c-b103-11e7-b772-17b880d2f537",
+		TenantId: "sample-tiers-tenantID",
+		Name:     "sample-tiers-name",
+		Backends: []string{"sample-tier-backend-1", "sample-tier-backend-2"},
+	}
+
+	var resp = &pb.GetTierResponse{
+		Tier: &mockTierDetail,
+	}
+
+	ctx := context.Background()
+	deadline := time.Now().Add(time.Duration(50) * time.Second)
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	mockRepoClient := new(mockrepo.Repository)
+	mockRepoClient.On("GetTier", ctx, "Id").Return(mockTier, nil)
+	db.Repo = mockRepoClient
+
+	testService := NewBackendService()
+	err := testService.GetTier(ctx, req, resp)
+	t.Log(err)
+	mockRepoClient.AssertExpectations(t)
+}
+
+func TestListTiers(t *testing.T) {
+	var req = &pb.ListTierRequest{
+		Limit:    10,
+		Offset:   20,
+		SortKeys: []string{"k1", "k2"},
+		SortDirs: []string{"dir1", "dir2"},
+	}
+
+	var pbTier = []*model.Tier{
+		{Id: "tierId",
+			TenantId: "tenantId",
+			Name:     "name",
+			Backends: []string{"backends"},
+		},
+	}
+
+	var pbTierDetail = []*pb.Tier{
+		{Id: "tierId",
+			TenantId: "tenantId",
+			Name:     "name",
+			Backends: []string{"backends"},
+		},
+	}
+
+	var resp = &pb.ListTierResponse{
+		Tiers: pbTierDetail,
+	}
+
+	ctx := context.Background()
+	deadline := time.Now().Add(time.Duration(50) * time.Second)
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	mockRepoClient := new(mockrepo.Repository)
+	mockRepoClient.On("ListTiers", ctx, 10, 20).Return(pbTier, nil)
+	db.Repo = mockRepoClient
+
+	testService := NewBackendService()
+	err := testService.ListTiers(ctx, req, resp)
+	t.Log(err)
+	mockRepoClient.AssertExpectations(t)
+}
+
+func TestUpdateTier(t *testing.T) {
+
+	var mockTier = &collection.SampleUpdateTier[0]
+	mockTierReqDetail := pb.Tier{
+		Id:       "Id",
+		TenantId: "tier-tenant",
+		Name:     "tier-name",
+		Backends: []string{"Backends"},
+	}
+
+	var req = &pb.UpdateTierRequest{
+		Tier: &mockTierReqDetail,
+	}
+
+	mockTierResDetail := pb.Tier{
+		Id:       "Id",
+		TenantId: "tier-tenant",
+		Name:     "ter-name",
+		Backends: []string{"Backends"},
+	}
+
+	var resp = &pb.UpdateTierResponse{
+		Tier: &mockTierResDetail,
+	}
+
+	ctx := context.Background()
+	deadline := time.Now().Add(time.Duration(50) * time.Second)
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	mockRepoClient := new(mockrepo.Repository)
+	mockRepoClient.On("GetTier", ctx, "Id").Return(mockTier, nil)
+	mockRepoClient.On("UpdateTier", ctx, mockTier).Return(mockTier, nil)
+	db.Repo = mockRepoClient
+
+	testService := NewBackendService()
+	err := testService.UpdateTier(ctx, req, resp)
+	t.Log(err)
+	mockRepoClient.AssertExpectations(t)
+
+}
+
+func TestDeleteTier(t *testing.T) {
+	var req = &pb.DeleteTierRequest{
+		Id: "Id",
+	}
+	var resp = &pb.DeleteTierResponse{}
+
+	ctx := context.Background()
+	deadline := time.Now().Add(time.Duration(50) * time.Second)
+	ctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	mockRepoClient := new(mockrepo.Repository)
+	mockRepoClient.On("DeleteTier", ctx, "Id").Return(nil)
+	db.Repo = mockRepoClient
+
+	testService := NewBackendService()
+	err := testService.DeleteTier(ctx, req, resp)
+	t.Log(err)
+	mockRepoClient.AssertExpectations(t)
 }
