@@ -198,7 +198,5 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 			backendName = backendRep.Backend.Name
 		}
 	}
-
-	log.Info("The backendName from tier:", backendName)
 	return backendName
 }
