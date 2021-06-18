@@ -89,6 +89,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			if backendName != "" {
 				bucket.DefaultLocation = backendName
 				ctx = common.GetAdminContext()
+				bucket.Tiers = createBucketConf.LocationConstraint
 				flag = true
 			}
 

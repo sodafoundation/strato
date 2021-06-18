@@ -69,6 +69,10 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 				Versioning:           buckets[j].Versioning,
 				ServerSideEncryption: buckets[j].ServerSideEncryption,
 			})
+
+			if buckets[j].Tiers != "" {
+				out.Buckets[j].DefaultLocation = buckets[j].Tiers
+			}
 		}
 	}
 
@@ -211,6 +215,10 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		Usages:               bucket.Usages,
 		Versioning:           bucket.Versioning,
 		ServerSideEncryption: bucket.ServerSideEncryption,
+	}
+	// if tiering is enabled, Defaultlocation should be tier name instead of backendname
+	if bucket.Tiers != "" {
+		out.BucketMeta.DefaultLocation = bucket.Tiers
 	}
 
 	return nil

@@ -145,11 +145,11 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 
 	var rows *sql.Rows
 	sqltext := "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-		"versioning,replication,update_time from buckets;"
+		"versioning,replication,update_time,tiers from buckets;"
 
 	if !isAdmin {
 		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-			"versioning,replication,update_time from buckets where tenantid=?;"
+			"versioning,replication,update_time,tiers from buckets where tenantid=?;"
 		rows, err = t.Client.Query(sqltext, tenantId)
 	} else {
 		rows, err = t.Client.Query(sqltext)
@@ -184,7 +184,8 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 			&policy,
 			&tmp.Versioning.Status,
 			&replication,
-			&updateTime)
+			&updateTime,
+			&tmp.Tiers)
 		if err != nil {
 			err = handleDBError(err)
 			return
