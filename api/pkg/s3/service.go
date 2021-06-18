@@ -16,19 +16,23 @@ package s3
 
 import (
 	"context"
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	s3error "github.com/opensds/multi-cloud/s3/error"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/http"
 	"os"
+
+	"github.com/micro/go-micro/v2/client"
+
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 const (
