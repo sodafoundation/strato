@@ -21,25 +21,17 @@ import (
 	handler "github.com/opensds/multi-cloud/aksk/pkg/service"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	//TODO : Add KeyStone env details.
 
-	// dbHost := os.Getenv("DB_HOST")
-	// dbStore := &config.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: dbHost}
-	// db.Init(dbStore)
-	// defer db.Exit(dbStore)
-
+	obs.InitLogs()
 	service := micro.NewService(
-		micro.Name("aksk"),
+		micro.Name("backend"),
 	)
 
-	obs.InitLogs()
 	service.Init()
-
-	log.Infof("Initializing AKSK service..")
 
 	pb.RegisterAkSkHandler(service.Server(), handler.NewAkSkService())
 	if err := service.Run(); err != nil {

@@ -2,12 +2,13 @@
 // versions:
 // 	protoc-gen-go v1.25.0
 // 	protoc        v3.2.0
-// source: aksk/proto/aksk.proto
+// source: aksk.proto
 
-package proto
+package aksk
 
 import (
 	proto "github.com/golang/protobuf/proto"
+	_ "github.com/golang/protobuf/ptypes/struct"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -25,31 +26,35 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-type CreateAkSkRequest struct {
+type AkSkDetail struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	AkSk *AkSkDetail `protobuf:"bytes,1,opt,name=AkSk,proto3" json:"AkSk,omitempty"`
+	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	UserId    string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Name      string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Type      string `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
+	Blob      string `protobuf:"bytes,5,opt,name=blob,proto3" json:"blob,omitempty"`
 }
 
-func (x *CreateAkSkRequest) Reset() {
-	*x = CreateAkSkRequest{}
+func (x *AkSkDetail) Reset() {
+	*x = AkSkDetail{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[0]
+		mi := &file_aksk_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *CreateAkSkRequest) String() string {
+func (x *AkSkDetail) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateAkSkRequest) ProtoMessage() {}
+func (*AkSkDetail) ProtoMessage() {}
 
-func (x *CreateAkSkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[0]
+func (x *AkSkDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_aksk_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,157 +65,44 @@ func (x *CreateAkSkRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateAkSkRequest.ProtoReflect.Descriptor instead.
-func (*CreateAkSkRequest) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use AkSkDetail.ProtoReflect.Descriptor instead.
+func (*AkSkDetail) Descriptor() ([]byte, []int) {
+	return file_aksk_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CreateAkSkRequest) GetAkSk() *AkSkDetail {
+func (x *AkSkDetail) GetProjectId() string {
 	if x != nil {
-		return x.AkSk
-	}
-	return nil
-}
-
-type CreateAkSkResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	AkSk *AkSkDetail `protobuf:"bytes,1,opt,name=AkSk,proto3" json:"AkSk,omitempty"`
-}
-
-func (x *CreateAkSkResponse) Reset() {
-	*x = CreateAkSkResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *CreateAkSkResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateAkSkResponse) ProtoMessage() {}
-
-func (x *CreateAkSkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateAkSkResponse.ProtoReflect.Descriptor instead.
-func (*CreateAkSkResponse) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *CreateAkSkResponse) GetAkSk() *AkSkDetail {
-	if x != nil {
-		return x.AkSk
-	}
-	return nil
-}
-
-type GetAkSkRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-}
-
-func (x *GetAkSkRequest) Reset() {
-	*x = GetAkSkRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetAkSkRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetAkSkRequest) ProtoMessage() {}
-
-func (x *GetAkSkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetAkSkRequest.ProtoReflect.Descriptor instead.
-func (*GetAkSkRequest) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *GetAkSkRequest) GetId() string {
-	if x != nil {
-		return x.Id
+		return x.ProjectId
 	}
 	return ""
 }
 
-type GetAkSkResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	AkSk *AkSkDetail `protobuf:"bytes,1,opt,name=AkSk,proto3" json:"AkSk,omitempty"`
-}
-
-func (x *GetAkSkResponse) Reset() {
-	*x = GetAkSkResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetAkSkResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetAkSkResponse) ProtoMessage() {}
-
-func (x *GetAkSkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetAkSkResponse.ProtoReflect.Descriptor instead.
-func (*GetAkSkResponse) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetAkSkResponse) GetAkSk() *AkSkDetail {
+func (x *AkSkDetail) GetUserId() string {
 	if x != nil {
-		return x.AkSk
+		return x.UserId
 	}
-	return nil
+	return ""
+}
+
+func (x *AkSkDetail) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AkSkDetail) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *AkSkDetail) GetBlob() string {
+	if x != nil {
+		return x.Blob
+	}
+	return ""
 }
 
 type ListAkSkRequest struct {
@@ -228,7 +120,7 @@ type ListAkSkRequest struct {
 func (x *ListAkSkRequest) Reset() {
 	*x = ListAkSkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[4]
+		mi := &file_aksk_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -241,7 +133,7 @@ func (x *ListAkSkRequest) String() string {
 func (*ListAkSkRequest) ProtoMessage() {}
 
 func (x *ListAkSkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[4]
+	mi := &file_aksk_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -254,7 +146,7 @@ func (x *ListAkSkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAkSkRequest.ProtoReflect.Descriptor instead.
 func (*ListAkSkRequest) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{4}
+	return file_aksk_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListAkSkRequest) GetLimit() int32 {
@@ -297,14 +189,14 @@ type ListAkSkResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	AkSks []*AkSkDetail `protobuf:"bytes,1,rep,name=AkSks,proto3" json:"AkSks,omitempty"`
-	Next  int32         `protobuf:"varint,2,opt,name=next,proto3" json:"next,omitempty"`
+	Aksk []*AkSkDetail `protobuf:"bytes,1,rep,name=aksk,proto3" json:"aksk,omitempty"`
+	Next int32         `protobuf:"varint,2,opt,name=next,proto3" json:"next,omitempty"`
 }
 
 func (x *ListAkSkResponse) Reset() {
 	*x = ListAkSkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[5]
+		mi := &file_aksk_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -317,7 +209,7 @@ func (x *ListAkSkResponse) String() string {
 func (*ListAkSkResponse) ProtoMessage() {}
 
 func (x *ListAkSkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[5]
+	mi := &file_aksk_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -330,12 +222,12 @@ func (x *ListAkSkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAkSkResponse.ProtoReflect.Descriptor instead.
 func (*ListAkSkResponse) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{5}
+	return file_aksk_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListAkSkResponse) GetAkSks() []*AkSkDetail {
+func (x *ListAkSkResponse) GetAksk() []*AkSkDetail {
 	if x != nil {
-		return x.AkSks
+		return x.Aksk
 	}
 	return nil
 }
@@ -345,6 +237,202 @@ func (x *ListAkSkResponse) GetNext() int32 {
 		return x.Next
 	}
 	return 0
+}
+
+type GetAkSkRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id         string      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AkSkDetail *AkSkDetail `protobuf:"bytes,2,opt,name=AkSkDetail,proto3" json:"AkSkDetail,omitempty"`
+}
+
+func (x *GetAkSkRequest) Reset() {
+	*x = GetAkSkRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_aksk_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetAkSkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAkSkRequest) ProtoMessage() {}
+
+func (x *GetAkSkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aksk_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAkSkRequest.ProtoReflect.Descriptor instead.
+func (*GetAkSkRequest) Descriptor() ([]byte, []int) {
+	return file_aksk_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetAkSkRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetAkSkRequest) GetAkSkDetail() *AkSkDetail {
+	if x != nil {
+		return x.AkSkDetail
+	}
+	return nil
+}
+
+type GetAkSkResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	AkSkDetail *AkSkDetail `protobuf:"bytes,1,opt,name=AkSkDetail,proto3" json:"AkSkDetail,omitempty"`
+}
+
+func (x *GetAkSkResponse) Reset() {
+	*x = GetAkSkResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_aksk_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetAkSkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAkSkResponse) ProtoMessage() {}
+
+func (x *GetAkSkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aksk_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAkSkResponse.ProtoReflect.Descriptor instead.
+func (*GetAkSkResponse) Descriptor() ([]byte, []int) {
+	return file_aksk_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetAkSkResponse) GetAkSkDetail() *AkSkDetail {
+	if x != nil {
+		return x.AkSkDetail
+	}
+	return nil
+}
+
+type CreateAkSkRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Aksk *AkSkDetail `protobuf:"bytes,1,opt,name=aksk,proto3" json:"aksk,omitempty"`
+}
+
+func (x *CreateAkSkRequest) Reset() {
+	*x = CreateAkSkRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_aksk_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CreateAkSkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAkSkRequest) ProtoMessage() {}
+
+func (x *CreateAkSkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aksk_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAkSkRequest.ProtoReflect.Descriptor instead.
+func (*CreateAkSkRequest) Descriptor() ([]byte, []int) {
+	return file_aksk_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreateAkSkRequest) GetAksk() *AkSkDetail {
+	if x != nil {
+		return x.Aksk
+	}
+	return nil
+}
+
+type CreateAkSkResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Aksk *AkSkDetail `protobuf:"bytes,1,opt,name=aksk,proto3" json:"aksk,omitempty"`
+}
+
+func (x *CreateAkSkResponse) Reset() {
+	*x = CreateAkSkResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_aksk_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CreateAkSkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAkSkResponse) ProtoMessage() {}
+
+func (x *CreateAkSkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aksk_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAkSkResponse.ProtoReflect.Descriptor instead.
+func (*CreateAkSkResponse) Descriptor() ([]byte, []int) {
+	return file_aksk_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CreateAkSkResponse) GetAksk() *AkSkDetail {
+	if x != nil {
+		return x.Aksk
+	}
+	return nil
 }
 
 type DeleteAkSkRequest struct {
@@ -358,7 +446,7 @@ type DeleteAkSkRequest struct {
 func (x *DeleteAkSkRequest) Reset() {
 	*x = DeleteAkSkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[6]
+		mi := &file_aksk_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -371,7 +459,7 @@ func (x *DeleteAkSkRequest) String() string {
 func (*DeleteAkSkRequest) ProtoMessage() {}
 
 func (x *DeleteAkSkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[6]
+	mi := &file_aksk_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,7 +472,7 @@ func (x *DeleteAkSkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAkSkRequest.ProtoReflect.Descriptor instead.
 func (*DeleteAkSkRequest) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{6}
+	return file_aksk_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteAkSkRequest) GetId() string {
@@ -403,7 +491,7 @@ type DeleteAkSkResponse struct {
 func (x *DeleteAkSkResponse) Reset() {
 	*x = DeleteAkSkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[7]
+		mi := &file_aksk_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -416,7 +504,7 @@ func (x *DeleteAkSkResponse) String() string {
 func (*DeleteAkSkResponse) ProtoMessage() {}
 
 func (x *DeleteAkSkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[7]
+	mi := &file_aksk_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -429,37 +517,34 @@ func (x *DeleteAkSkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAkSkResponse.ProtoReflect.Descriptor instead.
 func (*DeleteAkSkResponse) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{7}
+	return file_aksk_proto_rawDescGZIP(), []int{8}
 }
 
-type AkSkDetail struct {
+type BaseRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	UserId    string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Blob      string `protobuf:"bytes,3,opt,name=blob,proto3" json:"blob,omitempty"`
-	Type      string `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (x *AkSkDetail) Reset() {
-	*x = AkSkDetail{}
+func (x *BaseRequest) Reset() {
+	*x = BaseRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_aksk_proto_aksk_proto_msgTypes[8]
+		mi := &file_aksk_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *AkSkDetail) String() string {
+func (x *BaseRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AkSkDetail) ProtoMessage() {}
+func (*BaseRequest) ProtoMessage() {}
 
-func (x *AkSkDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_aksk_proto_aksk_proto_msgTypes[8]
+func (x *BaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aksk_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -470,157 +555,146 @@ func (x *AkSkDetail) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AkSkDetail.ProtoReflect.Descriptor instead.
-func (*AkSkDetail) Descriptor() ([]byte, []int) {
-	return file_aksk_proto_aksk_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use BaseRequest.ProtoReflect.Descriptor instead.
+func (*BaseRequest) Descriptor() ([]byte, []int) {
+	return file_aksk_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *AkSkDetail) GetProjectId() string {
+func (x *BaseRequest) GetId() string {
 	if x != nil {
-		return x.ProjectId
+		return x.Id
 	}
 	return ""
 }
 
-func (x *AkSkDetail) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
+var File_aksk_proto protoreflect.FileDescriptor
 
-func (x *AkSkDetail) GetBlob() string {
-	if x != nil {
-		return x.Blob
-	}
-	return ""
-}
-
-func (x *AkSkDetail) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-var File_aksk_proto_aksk_proto protoreflect.FileDescriptor
-
-var file_aksk_proto_aksk_proto_rawDesc = []byte{
-	0x0a, 0x15, 0x61, 0x6b, 0x73, 0x6b, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x61, 0x6b, 0x73,
-	0x6b, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x34, 0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74,
-	0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x04,
-	0x41, 0x6b, 0x53, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53,
-	0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x52, 0x04, 0x41, 0x6b, 0x53, 0x6b, 0x22, 0x35, 0x0a,
-	0x12, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x12, 0x1f, 0x0a, 0x04, 0x41, 0x6b, 0x53, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x52, 0x04,
-	0x41, 0x6b, 0x53, 0x6b, 0x22, 0x20, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x32, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53,
-	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1f, 0x0a, 0x04, 0x41, 0x6b, 0x53,
-	0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65,
-	0x74, 0x61, 0x69, 0x6c, 0x52, 0x04, 0x41, 0x6b, 0x53, 0x6b, 0x22, 0xe8, 0x01, 0x0a, 0x0f, 0x4c,
-	0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x14,
-	0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6c,
-	0x69, 0x6d, 0x69, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x12, 0x1a, 0x0a, 0x08,
-	0x73, 0x6f, 0x72, 0x74, 0x4b, 0x65, 0x79, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x08,
-	0x73, 0x6f, 0x72, 0x74, 0x4b, 0x65, 0x79, 0x73, 0x12, 0x1a, 0x0a, 0x08, 0x73, 0x6f, 0x72, 0x74,
-	0x44, 0x69, 0x72, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x08, 0x73, 0x6f, 0x72, 0x74,
-	0x44, 0x69, 0x72, 0x73, 0x12, 0x34, 0x0a, 0x06, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x05,
-	0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x45, 0x6e, 0x74,
-	0x72, 0x79, 0x52, 0x06, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x1a, 0x39, 0x0a, 0x0b, 0x46, 0x69,
-	0x6c, 0x74, 0x65, 0x72, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76,
-	0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75,
-	0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x49, 0x0a, 0x10, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b, 0x53,
-	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x21, 0x0a, 0x05, 0x41, 0x6b, 0x53,
-	0x6b, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53, 0x6b, 0x44,
-	0x65, 0x74, 0x61, 0x69, 0x6c, 0x52, 0x05, 0x41, 0x6b, 0x53, 0x6b, 0x73, 0x12, 0x12, 0x0a, 0x04,
-	0x6e, 0x65, 0x78, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x6e, 0x65, 0x78, 0x74,
-	0x22, 0x23, 0x0a, 0x11, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x14, 0x0a, 0x12, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41,
-	0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x6c, 0x0a, 0x0a, 0x41,
+var file_aksk_proto_rawDesc = []byte{
+	0x0a, 0x0a, 0x61, 0x6b, 0x73, 0x6b, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x73, 0x74,
+	0x72, 0x75, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x80, 0x01, 0x0a, 0x0a, 0x41,
 	0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x6f,
 	0x6a, 0x65, 0x63, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x70,
 	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65, 0x72,
 	0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49,
-	0x64, 0x12, 0x12, 0x0a, 0x04, 0x62, 0x6c, 0x6f, 0x62, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x62, 0x6c, 0x6f, 0x62, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x32, 0xdb, 0x01, 0x0a, 0x04, 0x41, 0x6b,
-	0x53, 0x6b, 0x12, 0x37, 0x0a, 0x0a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b,
-	0x12, 0x12, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53,
-	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x2e, 0x0a, 0x07, 0x47,
-	0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x12, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x10, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53,
-	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x31, 0x0a, 0x08, 0x4c,
-	0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x12, 0x10, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b,
-	0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x4c, 0x69, 0x73, 0x74,
-	0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x37,
-	0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x12, 0x12, 0x2e, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x13, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x0c, 0x5a, 0x0a, 0x61, 0x6b, 0x73, 0x6b, 0x2f,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x62, 0x6c, 0x6f,
+	0x62, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x62, 0x6c, 0x6f, 0x62, 0x22, 0xe8, 0x01,
+	0x0a, 0x0f, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65,
+	0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x12,
+	0x1a, 0x0a, 0x08, 0x73, 0x6f, 0x72, 0x74, 0x4b, 0x65, 0x79, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28,
+	0x09, 0x52, 0x08, 0x73, 0x6f, 0x72, 0x74, 0x4b, 0x65, 0x79, 0x73, 0x12, 0x1a, 0x0a, 0x08, 0x73,
+	0x6f, 0x72, 0x74, 0x44, 0x69, 0x72, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x08, 0x73,
+	0x6f, 0x72, 0x74, 0x44, 0x69, 0x72, 0x73, 0x12, 0x34, 0x0a, 0x06, 0x46, 0x69, 0x6c, 0x74, 0x65,
+	0x72, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b,
+	0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72,
+	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x06, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x1a, 0x39, 0x0a,
+	0x0b, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03,
+	0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14,
+	0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x47, 0x0a, 0x10, 0x4c, 0x69, 0x73, 0x74,
+	0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1f, 0x0a, 0x04,
+	0x61, 0x6b, 0x73, 0x6b, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53,
+	0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x52, 0x04, 0x61, 0x6b, 0x73, 0x6b, 0x12, 0x12, 0x0a,
+	0x04, 0x6e, 0x65, 0x78, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x6e, 0x65, 0x78,
+	0x74, 0x22, 0x4d, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x2b, 0x0a, 0x0a, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69,
+	0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65,
+	0x74, 0x61, 0x69, 0x6c, 0x52, 0x0a, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c,
+	0x22, 0x3e, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x2b, 0x0a, 0x0a, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69,
+	0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65,
+	0x74, 0x61, 0x69, 0x6c, 0x52, 0x0a, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c,
+	0x22, 0x34, 0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x04, 0x61, 0x6b, 0x73, 0x6b, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53, 0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c,
+	0x52, 0x04, 0x61, 0x6b, 0x73, 0x6b, 0x22, 0x35, 0x0a, 0x12, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
+	0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1f, 0x0a, 0x04,
+	0x61, 0x6b, 0x73, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x41, 0x6b, 0x53,
+	0x6b, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x52, 0x04, 0x61, 0x6b, 0x73, 0x6b, 0x22, 0x23, 0x0a,
+	0x11, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02,
+	0x69, 0x64, 0x22, 0x14, 0x0a, 0x12, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x0a, 0x0b, 0x42, 0x61, 0x73, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x32, 0xdb, 0x01, 0x0a, 0x04, 0x41, 0x6b, 0x53, 0x6b,
+	0x12, 0x31, 0x0a, 0x08, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x12, 0x10, 0x2e, 0x4c,
+	0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11,
+	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x00, 0x12, 0x2e, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x12, 0x0f,
+	0x2e, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x10, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x00, 0x12, 0x37, 0x0a, 0x0a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53,
+	0x6b, 0x12, 0x12, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x6b,
+	0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x37, 0x0a, 0x0a,
+	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x12, 0x12, 0x2e, 0x44, 0x65, 0x6c,
+	0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13,
+	0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x41, 0x6b, 0x53, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x08, 0x5a, 0x06, 0x2e, 0x3b, 0x61, 0x6b, 0x73, 0x6b, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_aksk_proto_aksk_proto_rawDescOnce sync.Once
-	file_aksk_proto_aksk_proto_rawDescData = file_aksk_proto_aksk_proto_rawDesc
+	file_aksk_proto_rawDescOnce sync.Once
+	file_aksk_proto_rawDescData = file_aksk_proto_rawDesc
 )
 
-func file_aksk_proto_aksk_proto_rawDescGZIP() []byte {
-	file_aksk_proto_aksk_proto_rawDescOnce.Do(func() {
-		file_aksk_proto_aksk_proto_rawDescData = protoimpl.X.CompressGZIP(file_aksk_proto_aksk_proto_rawDescData)
+func file_aksk_proto_rawDescGZIP() []byte {
+	file_aksk_proto_rawDescOnce.Do(func() {
+		file_aksk_proto_rawDescData = protoimpl.X.CompressGZIP(file_aksk_proto_rawDescData)
 	})
-	return file_aksk_proto_aksk_proto_rawDescData
+	return file_aksk_proto_rawDescData
 }
 
-var file_aksk_proto_aksk_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_aksk_proto_aksk_proto_goTypes = []interface{}{
-	(*CreateAkSkRequest)(nil),  // 0: CreateAkSkRequest
-	(*CreateAkSkResponse)(nil), // 1: CreateAkSkResponse
-	(*GetAkSkRequest)(nil),     // 2: GetAkSkRequest
-	(*GetAkSkResponse)(nil),    // 3: GetAkSkResponse
-	(*ListAkSkRequest)(nil),    // 4: ListAkSkRequest
-	(*ListAkSkResponse)(nil),   // 5: ListAkSkResponse
-	(*DeleteAkSkRequest)(nil),  // 6: DeleteAkSkRequest
-	(*DeleteAkSkResponse)(nil), // 7: DeleteAkSkResponse
-	(*AkSkDetail)(nil),         // 8: AkSkDetail
-	nil,                        // 9: ListAkSkRequest.FilterEntry
+var file_aksk_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_aksk_proto_goTypes = []interface{}{
+	(*AkSkDetail)(nil),         // 0: AkSkDetail
+	(*ListAkSkRequest)(nil),    // 1: ListAkSkRequest
+	(*ListAkSkResponse)(nil),   // 2: ListAkSkResponse
+	(*GetAkSkRequest)(nil),     // 3: GetAkSkRequest
+	(*GetAkSkResponse)(nil),    // 4: GetAkSkResponse
+	(*CreateAkSkRequest)(nil),  // 5: CreateAkSkRequest
+	(*CreateAkSkResponse)(nil), // 6: CreateAkSkResponse
+	(*DeleteAkSkRequest)(nil),  // 7: DeleteAkSkRequest
+	(*DeleteAkSkResponse)(nil), // 8: DeleteAkSkResponse
+	(*BaseRequest)(nil),        // 9: BaseRequest
+	nil,                        // 10: ListAkSkRequest.FilterEntry
 }
-var file_aksk_proto_aksk_proto_depIdxs = []int32{
-	8, // 0: CreateAkSkRequest.AkSk:type_name -> AkSkDetail
-	8, // 1: CreateAkSkResponse.AkSk:type_name -> AkSkDetail
-	8, // 2: GetAkSkResponse.AkSk:type_name -> AkSkDetail
-	9, // 3: ListAkSkRequest.Filter:type_name -> ListAkSkRequest.FilterEntry
-	8, // 4: ListAkSkResponse.AkSks:type_name -> AkSkDetail
-	0, // 5: AkSk.CreateAkSk:input_type -> CreateAkSkRequest
-	2, // 6: AkSk.GetAkSk:input_type -> GetAkSkRequest
-	4, // 7: AkSk.ListAkSk:input_type -> ListAkSkRequest
-	6, // 8: AkSk.DeleteAkSk:input_type -> DeleteAkSkRequest
-	1, // 9: AkSk.CreateAkSk:output_type -> CreateAkSkResponse
-	3, // 10: AkSk.GetAkSk:output_type -> GetAkSkResponse
-	5, // 11: AkSk.ListAkSk:output_type -> ListAkSkResponse
-	7, // 12: AkSk.DeleteAkSk:output_type -> DeleteAkSkResponse
-	9, // [9:13] is the sub-list for method output_type
-	5, // [5:9] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+var file_aksk_proto_depIdxs = []int32{
+	10, // 0: ListAkSkRequest.Filter:type_name -> ListAkSkRequest.FilterEntry
+	0,  // 1: ListAkSkResponse.aksk:type_name -> AkSkDetail
+	0,  // 2: GetAkSkRequest.AkSkDetail:type_name -> AkSkDetail
+	0,  // 3: GetAkSkResponse.AkSkDetail:type_name -> AkSkDetail
+	0,  // 4: CreateAkSkRequest.aksk:type_name -> AkSkDetail
+	0,  // 5: CreateAkSkResponse.aksk:type_name -> AkSkDetail
+	1,  // 6: AkSk.ListAkSk:input_type -> ListAkSkRequest
+	3,  // 7: AkSk.GetAkSk:input_type -> GetAkSkRequest
+	5,  // 8: AkSk.CreateAkSk:input_type -> CreateAkSkRequest
+	7,  // 9: AkSk.DeleteAkSk:input_type -> DeleteAkSkRequest
+	2,  // 10: AkSk.ListAkSk:output_type -> ListAkSkResponse
+	4,  // 11: AkSk.GetAkSk:output_type -> GetAkSkResponse
+	6,  // 12: AkSk.CreateAkSk:output_type -> CreateAkSkResponse
+	8,  // 13: AkSk.DeleteAkSk:output_type -> DeleteAkSkResponse
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_aksk_proto_aksk_proto_init() }
-func file_aksk_proto_aksk_proto_init() {
-	if File_aksk_proto_aksk_proto != nil {
+func init() { file_aksk_proto_init() }
+func file_aksk_proto_init() {
+	if File_aksk_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_aksk_proto_aksk_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateAkSkRequest); i {
+		file_aksk_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AkSkDetail); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -631,43 +705,7 @@ func file_aksk_proto_aksk_proto_init() {
 				return nil
 			}
 		}
-		file_aksk_proto_aksk_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateAkSkResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_aksk_proto_aksk_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetAkSkRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_aksk_proto_aksk_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetAkSkResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_aksk_proto_aksk_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_aksk_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListAkSkRequest); i {
 			case 0:
 				return &v.state
@@ -679,7 +717,7 @@ func file_aksk_proto_aksk_proto_init() {
 				return nil
 			}
 		}
-		file_aksk_proto_aksk_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_aksk_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListAkSkResponse); i {
 			case 0:
 				return &v.state
@@ -691,7 +729,55 @@ func file_aksk_proto_aksk_proto_init() {
 				return nil
 			}
 		}
-		file_aksk_proto_aksk_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_aksk_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetAkSkRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_aksk_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetAkSkResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_aksk_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CreateAkSkRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_aksk_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CreateAkSkResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_aksk_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteAkSkRequest); i {
 			case 0:
 				return &v.state
@@ -703,7 +789,7 @@ func file_aksk_proto_aksk_proto_init() {
 				return nil
 			}
 		}
-		file_aksk_proto_aksk_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_aksk_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteAkSkResponse); i {
 			case 0:
 				return &v.state
@@ -715,8 +801,8 @@ func file_aksk_proto_aksk_proto_init() {
 				return nil
 			}
 		}
-		file_aksk_proto_aksk_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AkSkDetail); i {
+		file_aksk_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BaseRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -732,18 +818,18 @@ func file_aksk_proto_aksk_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_aksk_proto_aksk_proto_rawDesc,
+			RawDescriptor: file_aksk_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_aksk_proto_aksk_proto_goTypes,
-		DependencyIndexes: file_aksk_proto_aksk_proto_depIdxs,
-		MessageInfos:      file_aksk_proto_aksk_proto_msgTypes,
+		GoTypes:           file_aksk_proto_goTypes,
+		DependencyIndexes: file_aksk_proto_depIdxs,
+		MessageInfos:      file_aksk_proto_msgTypes,
 	}.Build()
-	File_aksk_proto_aksk_proto = out.File
-	file_aksk_proto_aksk_proto_rawDesc = nil
-	file_aksk_proto_aksk_proto_goTypes = nil
-	file_aksk_proto_aksk_proto_depIdxs = nil
+	File_aksk_proto = out.File
+	file_aksk_proto_rawDesc = nil
+	file_aksk_proto_goTypes = nil
+	file_aksk_proto_depIdxs = nil
 }
