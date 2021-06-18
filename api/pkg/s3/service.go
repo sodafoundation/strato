@@ -16,13 +16,6 @@ package s3
 
 import (
 	"context"
-	"io"
-	"io/ioutil"
-	"math"
-	"math/rand"
-	"net/http"
-	"os"
-
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/api/pkg/common"
@@ -30,6 +23,12 @@ import (
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"math"
+	"math/rand"
+	"net/http"
+	"os"
 )
 
 const (
