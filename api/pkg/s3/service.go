@@ -16,7 +16,6 @@ package s3
 
 import (
 	"context"
-	"github.com/opensds/multi-cloud/api/pkg/common"
 	"io"
 	"io/ioutil"
 	"math"
@@ -24,13 +23,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
-
+	"github.com/opensds/multi-cloud/api/pkg/common"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
-
-	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -198,5 +196,6 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 			backendName = backendRep.Backend.Name
 		}
 	}
+
 	return backendName
 }
