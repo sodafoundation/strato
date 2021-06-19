@@ -54,7 +54,15 @@ func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, 
 func (b *AkSkService) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest, out *pb.GetAkSkResponse) error {
 	log.Info("Received GetAkSk request.")
 
+	res, err := keystone.GetAKSK()
+	if err != nil {
+		log.Errorf("Failed to create AKSK : %v", err)
+		return err
+	}
+
+	log.Info("Created AKSK successfully. Response Status : " , res)
 	return nil
+
 }
 
 func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out *pb.ListAkSkResponse) error {
@@ -65,6 +73,13 @@ func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out 
 
 func (b *AkSkService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
 	log.Info("Received DeleteAkSk request.")
+	res, err := keystone.DeleteAKSK(in.Id)
+	if err != nil {
+		log.Errorf("Failed to delete AKSK : %v", err)
+		return err
+	}
+
+	log.Info("Deleted AKSK successfully. Response Status : " , res)
 
 	return nil
 }

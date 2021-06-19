@@ -37,16 +37,13 @@ func CreateAKSK( aksk *model.AkSk)(string, error) {
 	blob := credblob{access: accessKey, secret:  secretKey}
 
 	credbody := credBody{ blob: blob,
-		projectId: "94b280022d0c4401bcf3b0ea85870519",
-		userId: "558057c4256545bd8a307c37464003c9",
+		projectId: aksk.ProjectId,
+		userId: aksk.UserId,
 		backendtype: "ec2"}
 
 
 	reqbody := reqBody{Credential: credbody}
 	mapB3, _ := json.Marshal(reqbody)
-	fmt.Println(string(mapB3))
-
-
 	log.Info("RAJAT - REQUEST - " , string(mapB3))
 
 	akskresp, err := http.Post(KEYSTONE_URL,"application/json",bytes.NewBuffer( mapB3) )
@@ -87,7 +84,6 @@ func DeleteAKSK(id string)(*http.Response, error){
 }
 
 func GetAKSK()(*http.Response, error) {
-// return this.http.get(this.url, param);
 
 	akskresp, err := http.Get(KEYSTONE_URL)
 	if err != nil {
