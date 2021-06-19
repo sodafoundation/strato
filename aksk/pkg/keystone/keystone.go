@@ -7,42 +7,45 @@ import (
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 )
 
-const KEYSTONE_URL = "http://192.168.20.108/identity/v3/auth/"
+const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
-type resp struct {
-	credential map[string]string
-	//map[string]map[string]string
+type credblob struct {
+	access string
+	secret string
 }
+
+type reqBody struct {
+	Credential credBody
+}
+
+type credBody struct {
+	blob credblob `json:"blob"`
+	projectId string `json:"projectId"`
+	userId string `json:"userId"`
+	backendtype string `json:"backendtype"`
+}
+
 
 func CreateAKSK( aksk *model.AkSk)(string, error) {
 	accessKey, _ := utils.GenerateRandomString(16)
 	secretKey, _ := utils.GenerateRandomString(32)
-	blob := "{\"access\":\"" + accessKey + "\",\"secret\":\"" + secretKey +"\"}"
-	log.Info("RAJAT - CreateAKSK - AKSK : ", blob)
-	/*requestbody := &resp{
-		credential:  map[string]string{
-			"blob": blob,
-			"project_id": aksk.ProjectId,
-			"type": "ec2",
-			"user_id": aksk.UserId,
-		} ,
-	}
-	request, _ := json.Marshal(requestbody)
-	*/
-	mapD2 := map[string]string{"blob": string(blob),
-		"project_id": "94b280022d0c4401bcf3b0ea85870519",
-		"type": "ec2",
-		"user_id": "558057c4256545bd8a307c37464003c9",}
-	mapD3 := map[string]map[string]string{
-		"credential" : mapD2,
-	}
-	mapB2, _ := json.Marshal(mapD2)
-	fmt.Println(string(mapB2))
-	mapB3, _ := json.Marshal(mapD3)
+
+	blob := credblob{access: accessKey, secret:  secretKey}
+
+	credbody := credBody{ blob: blob,
+		projectId: "94b280022d0c4401bcf3b0ea85870519",
+		userId: "558057c4256545bd8a307c37464003c9",
+		backendtype: "ec2"}
+
+
+	reqbody := reqBody{Credential: credbody}
+	mapB3, _ := json.Marshal(reqbody)
 	fmt.Println(string(mapB3))
+
 
 	log.Info("RAJAT - REQUEST - " , string(mapB3))
 
@@ -63,10 +66,41 @@ func ListAKSK() {
 
 }
 
-func DeleteAKSK() {
+func DeleteAKSK(id string)(*http.Response, error){
 
+	req, err := http.NewRequest(http.MethodDelete, KEYSTONE_URL+"/"+id, bytes.NewBuffer(nil))
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalln(err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+	// Convert response body to string
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
+
+	return  resp, nil
 }
 
-func GetAKSK() {
+func GetAKSK()(*http.Response, error) {
+// return this.http.get(this.url, param);
+
+	akskresp, err := http.Get(KEYSTONE_URL)
+	if err != nil {
+		return nil, err
+	}
+
+	defer akskresp.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
+
+	// Convert response body to string
+	bodyString := string(bodyBytes)
+	fmt.Println("API Response as String:\n" + bodyString)
+
+	return akskresp, nil
 
 }
