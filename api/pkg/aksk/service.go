@@ -17,7 +17,7 @@ package akskPackage
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
-	"github.com/opensds/multi-cloud/aksk/proto"
+	aksk "github.com/opensds/multi-cloud/aksk/proto"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	log "github.com/sirupsen/logrus"
 )
