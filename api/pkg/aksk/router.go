@@ -17,14 +17,15 @@ package akskPackage
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
 )
 
 func RegisterRouter(ws *restful.WebService) {
-
+	log.Info("RAJAT - RegisterRouter - AKSK ")
 	handler := NewAPIService(client.DefaultClient)
 	ws.Route(ws.GET("/{tenantId}/AkSks/{id}").To(handler.GetAkSk)).
 		Doc("Show AkSk details")
-	ws.Route(ws.GET("/{tenantId}/AkSks").To(handler.ListAkSk)).
+	ws.Route(ws.GET("/{tenantId}/AkSks").To(handler.ListAkSks)).
 		Doc("Get AkSk list")
 	ws.Route(ws.POST("/{tenantId}/AkSks").To(handler.CreateAkSk)).
 		Doc("Create AkSk")

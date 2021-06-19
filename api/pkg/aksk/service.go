@@ -18,8 +18,11 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	aksk "github.com/opensds/multi-cloud/aksk/proto"
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 )
 
 const (
@@ -42,9 +45,25 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 		return
 	}
 
+	log.Infof("Received request for AK, SK details - : %s\n", request.PathParameter("id"))
+	id := request.PathParameter("id")
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	res, err := s.akskClient.GetAkSk(ctx, &aksk.GetAkSkRequest{Id: id})
+	if err != nil {
+		log.Errorf("failed to get AK, SK details: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Get AK, SK details completed successfully.")
+	response.WriteEntity(res.AkSkDetail)
+
+
 }
 
-func (s *APIService) ListAkSk(request *restful.Request, response *restful.Response) {
+func (s *APIService) ListAkSks(request *restful.Request, response *restful.Response) {
+	log.Info("RAJAT - AKSK - ListAkSk ")
 	if !policy.Authorize(request, response, "AkSk:list") {
 		return
 	}
@@ -52,13 +71,41 @@ func (s *APIService) ListAkSk(request *restful.Request, response *restful.Respon
 }
 
 func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Response) {
+	log.Info("RAJAT - AKSK - CreateAkSk ")
 	if !policy.Authorize(request, response, "AkSk:create") {
 		return
 	}
 
+	akskDetail := &aksk.AkSkDetail{}
+	err := request.ReadEntity(&akskDetail)
+	if err != nil {
+		log.Errorf("failed to read request body: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx := common.InitCtxWithAuthInfo(request)
+	actx := request.Attribute(c.KContext).(*c.Context)
+	akskDetail.ProjectId = actx.TenantId
+	akskDetail.UserId = actx.UserId
+
+	log.Info("RAJAT - AKSK - ProjectID ", akskDetail.ProjectId )
+	log.Info("RAJAT - AKSK - UserID ", akskDetail.UserId )
+
+	res, err := s.akskClient.CreateAkSk(ctx, &aksk.CreateAkSkRequest{Aksk: akskDetail})
+	if err != nil {
+		log.Errorf("failed to create Ak, SK: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Create AcessKey, SecretKey successfully.")
+	response.WriteEntity(res.Aksk)
+
 }
 
 func (s *APIService) DeleteAkSk(request *restful.Request, response *restful.Response) {
+	log.Info("RAJAT - AKSK - DeleteAkSk ")
 	if !policy.Authorize(request, response, "AkSk:delete") {
 		return
 	}

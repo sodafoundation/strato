@@ -16,7 +16,9 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/aksk/pkg/model"
 
+	keystone "github.com/opensds/multi-cloud/aksk/pkg/keystone"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -31,6 +33,20 @@ func NewAkSkService() pb.AkSkHandler {
 func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, out *pb.CreateAkSkResponse) error {
 	log.Info("Received CreateAkSk request.")
 
+	aksk := &model.AkSk{
+		ProjectId: in.Aksk.ProjectId,
+		UserId: in.Aksk.UserId,
+		Type: in.Aksk.Type,
+		Blob: in.Aksk.Blob,
+	}
+
+	res, err := keystone.CreateAKSK(aksk)
+	if err != nil {
+		log.Errorf("Failed to create AKSK : %v", err)
+		return err
+	}
+
+	log.Info("Created AKSK successfully. Response Status : " , res)
 	return nil
 
 }

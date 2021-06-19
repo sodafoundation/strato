@@ -14,7 +14,7 @@
 
 package model
 
-//AkSkSpec is used to hold the data to generate the AccessKey and SecretKey for the User.
+//AkSk is used to hold the data to generate the AccessKey and SecretKey for the User.
 
 type AkSk struct {
 
