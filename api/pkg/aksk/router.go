@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package AkSk
+package akskPackage
 
 import (
 	"github.com/emicklei/go-restful"
@@ -20,6 +20,7 @@ import (
 )
 
 func RegisterRouter(ws *restful.WebService) {
+
 	handler := NewAPIService(client.DefaultClient)
 	ws.Route(ws.GET("/{tenantId}/AkSks/{id}").To(handler.GetAkSk)).
 		Doc("Show AkSk details")

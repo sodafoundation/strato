@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.idea
 
 # Test binary, build with `go test -c`
 *.test
@@ -13,6 +14,7 @@
 
 # Build packaging output
 build/
+.idea
 
 # Tidb data
 tidb_data

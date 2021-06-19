@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package AkSk
+package akskPackage
 
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/opensds/multi-cloud/aksk/proto"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,16 +27,17 @@ const (
 )
 
 type APIService struct {
-	akskClient proto.AkSkService
+	akskClient aksk.AkSkService
 }
 
 func NewAPIService(c client.Client) *APIService {
 	return &APIService{
-		akskClient: proto.NewAkSkService(akskService, c),
+		akskClient: aksk.NewAkSkService(akskService, c),
 	}
 }
 
 func (s *APIService) GetAkSk(request *restful.Request, response *restful.Response) {
+	log.Info("RAJAT - AKSK - GetAkSk ")
 	if !policy.Authorize(request, response, "AkSk:get") {
 		return
 	}

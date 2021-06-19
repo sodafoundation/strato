@@ -15,6 +15,7 @@
 package main
 
 import (
+	akskPackage "github.com/opensds/multi-cloud/api/pkg/aksk"
 	"os"
 
 	"github.com/emicklei/go-restful"
@@ -69,6 +70,7 @@ func main() {
 		dataflow.RegisterRouter(ws)
 		block.RegisterRouter(ws)
 		file.RegisterRouter(ws)
+		akskPackage.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())

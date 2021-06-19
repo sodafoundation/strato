@@ -28,7 +28,7 @@ func main() {
 
 	obs.InitLogs()
 	service := micro.NewService(
-		micro.Name("backend"),
+		micro.Name("aksk"),
 	)
 
 	service.Init()

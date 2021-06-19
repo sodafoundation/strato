@@ -2,7 +2,10 @@
   "admin_or_owner": "is_admin:True or (role:admin and is_admin_project:True) or  tenant_id:%(tenant_id)s",
   "default": "",
   "admin_api": "is_admin:True or (role:admin and is_admin_project:True)",
-
+  "AkSk:list": "",
+  "AkSk:get": "",
+  "AkSk:create": "",
+  "AkSk:delete": "",
   "backend:get":"",
   "backend:list":"",
   "backend:create":"",

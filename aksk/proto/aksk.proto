@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = ".;aksk";
+option go_package = "aksk/proto";
 
 service AkSk {
     rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
@@ -54,7 +54,4 @@ message DeleteAkSkRequest {
 message DeleteAkSkResponse {
 }
 
-message BaseRequest {
-    string id = 1;
-}
 
