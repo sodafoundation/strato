@@ -23,13 +23,13 @@ import (
 func RegisterRouter(ws *restful.WebService) {
 	log.Info("RAJAT - RegisterRouter - AKSK ")
 	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/{tenantId}/AkSks/{id}").To(handler.GetAkSk)).
+	ws.Route(ws.GET("/{tenantId}/aksks/{id}").To(handler.GetAkSk)).
 		Doc("Show AkSk details")
-	ws.Route(ws.GET("/{tenantId}/AkSks").To(handler.ListAkSks)).
+	ws.Route(ws.GET("/{tenantId}/aksks").To(handler.ListAkSks)).
 		Doc("Get AkSk list")
-	ws.Route(ws.POST("/{tenantId}/AkSks").To(handler.CreateAkSk)).
+	ws.Route(ws.POST("/{tenantId}/aksks").To(handler.CreateAkSk)).
 		Doc("Create AkSk")
-	ws.Route(ws.DELETE("/{tenantId}/AkSks/{id}").To(handler.DeleteAkSk)).
+	ws.Route(ws.DELETE("/{tenantId}/aksks/{id}").To(handler.DeleteAkSk)).
 		Doc("Delete AkSk")
 
 }

@@ -16,8 +16,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/micro/go-micro/v2"
 	handler "github.com/opensds/multi-cloud/aksk/pkg/service"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
@@ -26,10 +24,8 @@ import (
 
 func main() {
 	//TODO : Add KeyStone env details.
-	dbHost := os.Getenv("DB_HOST")
-	dbStore := &config.Database{Credential: "unkonwn", Driver: "mongodb", Endpoint: dbHost}
-	db.Init(dbStore)
-	defer db.Exit(dbStore)
+	//keystoneHost := os.Getenv("HOST_IP")
+
 
 	obs.InitLogs()
 	service := micro.NewService(
