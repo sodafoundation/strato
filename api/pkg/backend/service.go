@@ -634,7 +634,6 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 			failBackends = append(failBackends, backendId)
 		}
 	}
-
 	if len(failBackends) != 0 {
 		errMsg := fmt.Sprintf("add backends in request: %v are invalid", failBackends)
 		log.Error(errMsg)
@@ -664,7 +663,35 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	//check whether delete backends belong to tier
 	var failDelBackends []string
+	res2, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	for _, backendId := range updateTier.DeleteBackends {
+		//check whether backend has any buckets
+		//res2, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
+		count := 0
+		res1, err1 := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
+		if err1 != nil {
+			log.Errorf("failed to get backend details: %v\n", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+
+		for _, v := range res2.Buckets {
+			backendname := res1.Backend.Name
+			if backendname == v.DefaultLocation {
+				count++
+			}
+		}
+		if err != nil {
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		if count != 0 {
+			errMsg := fmt.Sprintf("failed to update tier because backendId %v has buckets(not empty)", backendId)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
+
 		found := false
 		for _, bcknd := range res.Tier.Backends {
 			if backendId == bcknd {
@@ -770,23 +797,16 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	id := request.PathParameter("id")
 	log.Infof("Received request for deleting tier: %s\n", id)
 	ctx := common.InitCtxWithAuthInfo(request)
-	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+	_, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get tier details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	// check whether tier is empty
-	if len(res.Tier.Backends) != 0 {
-		log.Errorf("failed to delete tier because tier is not empty has backends: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
-	}
-
 	_, err = s.backendClient.DeleteTier(ctx, &backend.DeleteTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to delete tier: %v\n", err)
-		err1 := errors.New("failed to delete tier because tier has associated backends")
+		err1 := errors.New("failed to delete tier")
 		response.WriteError(http.StatusInternalServerError, err1)
 		return
 	}
