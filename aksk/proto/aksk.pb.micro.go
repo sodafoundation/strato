@@ -42,7 +42,7 @@ func NewAkSkEndpoints() []*api.Endpoint {
 // Client API for AkSk service
 
 type AkSkService interface {
-	ListAkSk(ctx context.Context, in *ListAkSkRequest, opts ...client.CallOption) (*ListAkSkResponse, error)
+	//  rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
 	GetAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error)
 	CreateAkSk(ctx context.Context, in *CreateAkSkRequest, opts ...client.CallOption) (*CreateAkSkResponse, error)
 	DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, opts ...client.CallOption) (*DeleteAkSkResponse, error)
@@ -58,16 +58,6 @@ func NewAkSkService(name string, c client.Client) AkSkService {
 		c:    c,
 		name: name,
 	}
-}
-
-func (c *akSkService) ListAkSk(ctx context.Context, in *ListAkSkRequest, opts ...client.CallOption) (*ListAkSkResponse, error) {
-	req := c.c.NewRequest(c.name, "AkSk.ListAkSk", in)
-	out := new(ListAkSkResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *akSkService) GetAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error) {
@@ -103,7 +93,7 @@ func (c *akSkService) DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, opt
 // Server API for AkSk service
 
 type AkSkHandler interface {
-	ListAkSk(context.Context, *ListAkSkRequest, *ListAkSkResponse) error
+	//  rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
 	GetAkSk(context.Context, *GetAkSkRequest, *GetAkSkResponse) error
 	CreateAkSk(context.Context, *CreateAkSkRequest, *CreateAkSkResponse) error
 	DeleteAkSk(context.Context, *DeleteAkSkRequest, *DeleteAkSkResponse) error
@@ -111,7 +101,6 @@ type AkSkHandler interface {
 
 func RegisterAkSkHandler(s server.Server, hdlr AkSkHandler, opts ...server.HandlerOption) error {
 	type akSk interface {
-		ListAkSk(ctx context.Context, in *ListAkSkRequest, out *ListAkSkResponse) error
 		GetAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error
 		CreateAkSk(ctx context.Context, in *CreateAkSkRequest, out *CreateAkSkResponse) error
 		DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, out *DeleteAkSkResponse) error
@@ -125,10 +114,6 @@ func RegisterAkSkHandler(s server.Server, hdlr AkSkHandler, opts ...server.Handl
 
 type akSkHandler struct {
 	AkSkHandler
-}
-
-func (h *akSkHandler) ListAkSk(ctx context.Context, in *ListAkSkRequest, out *ListAkSkResponse) error {
-	return h.AkSkHandler.ListAkSk(ctx, in, out)
 }
 
 func (h *akSkHandler) GetAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error {

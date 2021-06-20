@@ -24,6 +24,7 @@ message ListAkSkRequest {
     repeated string sortKeys = 3;
     repeated string sortDirs = 4;
     map<string, string> Filter = 5;
+    string token = 6;
 }
 
 message ListAkSkResponse {
@@ -50,6 +51,7 @@ message CreateAkSkResponse {
 
 message DeleteAkSkRequest {
     string id = 1;
+    AkSkDetail AkSkDetail = 2;
 }
 
 message DeleteAkSkResponse {

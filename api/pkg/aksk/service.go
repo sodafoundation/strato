@@ -48,10 +48,14 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 	log.Infof("Received request for AK, SK details - : %s\n", request.PathParameter("id"))
 	id := request.PathParameter("id")
 
+	akskDetail := &aksk.AkSkDetail{}
 	ctx := common.InitCtxWithAuthInfo(request)
+	actx := request.Attribute(c.KContext).(*c.Context)
+	akskDetail.ProjectId = actx.TenantId
+	akskDetail.UserId = actx.UserId
+	akskDetail.Token = actx.AuthToken
 
-
-	res, err := s.akskClient.GetAkSk(ctx, &aksk.GetAkSkRequest{Id: id})
+	res, err := s.akskClient.GetAkSk(ctx, &aksk.GetAkSkRequest{Id: id, AkSkDetail: akskDetail})
 	if err != nil {
 		log.Errorf("failed to get AK, SK details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -61,7 +65,6 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 	log.Info("Get AK, SK details completed successfully.")
 	response.WriteEntity(res.AkSkDetail)
 
-
 }
 
 func (s *APIService) ListAkSks(request *restful.Request, response *restful.Response) {
@@ -69,6 +72,23 @@ func (s *APIService) ListAkSks(request *restful.Request, response *restful.Respo
 	if !policy.Authorize(request, response, "AkSk:list") {
 		return
 	}
+
+	akskDetail := &aksk.AkSkDetail{}
+	ctx := common.InitCtxWithAuthInfo(request)
+	actx := request.Attribute(c.KContext).(*c.Context)
+	akskDetail.ProjectId = actx.TenantId
+	akskDetail.UserId = actx.UserId
+	akskDetail.Token = actx.AuthToken
+
+	res, err := s.akskClient.ListAkSk(ctx, &aksk.ListAkSkRequest{})
+	if err != nil {
+		log.Errorf("failed to get AK, SK details: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Get AK, SK details completed successfully.")
+	response.WriteEntity(res.AkSkDetail)
 
 }
 
@@ -114,4 +134,23 @@ func (s *APIService) DeleteAkSk(request *restful.Request, response *restful.Resp
 		return
 	}
 
+	log.Infof("Received DELETE request for AK, SK details - : %s\n", request.PathParameter("id"))
+	id := request.PathParameter("id")
+
+	akskDetail := &aksk.AkSkDetail{}
+	ctx := common.InitCtxWithAuthInfo(request)
+	actx := request.Attribute(c.KContext).(*c.Context)
+	akskDetail.ProjectId = actx.TenantId
+	akskDetail.UserId = actx.UserId
+	akskDetail.Token = actx.AuthToken
+
+	res, err := s.akskClient.DeleteAkSk(ctx, &aksk.DeleteAkSkRequest{Id: id, AkSkDetail: akskDetail})
+	if err != nil {
+		log.Errorf("failed to get AK, SK details: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Info("Get AK, SK details completed successfully.")
+	response.WriteEntity(res)
 }

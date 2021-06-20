@@ -2,6 +2,7 @@ package keystone
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
@@ -54,7 +55,6 @@ func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, er
 		panic(err)
 	}
 
-	//blobbody , err :=  json.Marshal(blob{access: akey, secret: skey})
 	u, err := json.Marshal(Credential{Credential: CredBody{ProjectId: aksk.ProjectId,
 		UserId: aksk.UserId,
 		Blob: in,
@@ -66,8 +66,7 @@ func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, er
 	postreq , err := http.NewRequest("POST", KEYSTONE_URL, bytes.NewBuffer(u))
 	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
 	postreq.Header.Set("Content-Type", "application/json")
-	postreq.Header.Set("Accept", "*/*")
-	postreq.Header.Set("Accept-Encoding"," gzip, deflate, br")
+
 
 	akskresp, _ := client.Do(postreq)
 	log.Info("RAJAT - RESPONSE  - " , akskresp)
@@ -82,44 +81,74 @@ func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, er
 	return akskresp, nil
 }
 
-func ListAKSK() {
+func ListAKSK(ctx context.Context)(*http.Response, error) {
 
-}
-
-func DeleteAKSK(id string)(*http.Response, error){
-
-	req, err := http.NewRequest(http.MethodDelete, KEYSTONE_URL+"/"+id, bytes.NewBuffer(nil))
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalln(err)
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-
-	// Convert response body to string
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
-
-	return  resp, nil
-}
-
-func GetAKSK()(*http.Response, error) {
+	postreq , err := http.NewRequest("GET", KEYSTONE_URL, bytes.NewBuffer(nil))
+	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
+	postreq.Header.Set("Content-Type", "application/json")
 
 	akskresp, err := http.Get(KEYSTONE_URL)
 	if err != nil {
 		return nil, err
 	}
 
-	defer akskresp.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 
 	// Convert response body to string
 	bodyString := string(bodyBytes)
 	fmt.Println("API Response as String:\n" + bodyString)
+	defer akskresp.Body.Close()
+	return akskresp, nil
+}
+
+func DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkRequest)(*http.Response, error){
+
+	client := &http.Client{}
+	log.Info("RAJAT - DELETE  - URL " , KEYSTONE_URL+"/" + req.GetId())
+	getreq , err := http.NewRequest("DELETE", KEYSTONE_URL+"/" + req.GetId(), bytes.NewBuffer(nil))
+	getreq.Header.Add("X-Auth-Token", req.AkSkDetail.Token)
+	getreq.Header.Set("Content-Type", "application/json")
+
+	akskresp, err := client.Do(getreq)
+	log.Info("RAJAT - RESPONSE  - " , akskresp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("RAJAT - Delete AKSK Response - ", akskresp)
+	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
+
+	// Convert response body to string
+	bodyString := string(bodyBytes)
+	fmt.Println("AKSK API Response as String:\n" + bodyString)
+	//defer akskresp.Body.Close()
+	return akskresp, nil
+}
+
+func GetAKSK(ctx context.Context, req *pb.GetAkSkRequest) (*http.Response, error) {
+
+	client := &http.Client{}
+
+	getreq , err := http.NewRequest("GET", KEYSTONE_URL+"/"+req.GetId(), bytes.NewBuffer(nil))
+	getreq.Header.Add("X-Auth-Token", req.AkSkDetail.Token)
+	getreq.Header.Set("Content-Type", "application/json")
+
+	akskresp, err := client.Do(getreq)
+	log.Info("RAJAT - RESPONSE  - " , akskresp)
+
+	defer akskresp.Body.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("RAJAT - Create AKSK Response - ", akskresp)
+	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
+
+	// Convert response body to string
+	bodyString := string(bodyBytes)
+	fmt.Println("AKSK API Response as String:\n" + bodyString)
 
 	return akskresp, nil
-
 }
