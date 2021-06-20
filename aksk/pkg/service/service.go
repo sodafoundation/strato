@@ -16,13 +16,8 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"github.com/opensds/multi-cloud/aksk/pkg/iam"
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
-	"io/ioutil"
-	"net/http"
-
-	keystone "github.com/opensds/multi-cloud/aksk/pkg/keystone"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -44,27 +39,40 @@ func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, 
 		Blob: in.Aksk.Blob,
 	}
 
-	res, err := keystone.CreateAKSK(aksk, in)
+	res, err := iam.CredStore.CreateAkSk(ctx, aksk)
 	if err != nil {
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err
 	}
 
+	out.Aksk = &pb.AkSkDetail{
+		ProjectId: res.ProjectId,
+		UserId: res.UserId,
+		Type: res.Type,
+		Blob: res.Blob,
+	}
+
 	log.Info("Created AKSK successfully. Response Status : " , res)
 	return nil
-
 }
 
 func (b *AkSkService) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest, out *pb.GetAkSkResponse) error {
 	log.Info("Received GetAkSk request.")
 
-	res, err := keystone.GetAKSK(ctx, in)
+	res, err := iam.CredStore.GetAkSk(ctx, in) //GetAKSK(ctx, in)
 	if err != nil {
 		log.Errorf("Failed to get AKSK : %v", err)
 		return err
 	}
 
-	bodyString := ""
+	out.AkSkDetail = &pb.AkSkDetail{
+		ProjectId: res.ProjectId,
+		UserId: res.UserId,
+		Type: res.Type,
+		Blob: res.Blob,
+	}
+
+	/*bodyString := ""
 	if res.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(res.Body)
 		if err != nil {
@@ -72,13 +80,13 @@ func (b *AkSkService) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest, out *p
 		}
 		bodyString = string(bodyBytes)
 		log.Info(bodyString)
-	}
+	}*/
 
-	log.Info("Created AKSK successfully. Response Status : " , bodyString)
+	log.Info("Created AKSK successfully. " , out)
 	return nil
 
 }
-
+/*
 func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out *pb.ListAkSkResponse) error {
 	log.Info("Received ListAkSk request.")
 
@@ -100,7 +108,7 @@ func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out 
 		ProjectId: item.ProjectId,
 
 		})
-	}*/
+	}
 	bodyString := ""
 	if res.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(res.Body)
@@ -114,26 +122,16 @@ func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out 
 
 	log.Infof("List AKSK successful, aksks:%+v\n", bodyString)
 	return nil
-}
+}*/
 
 func (b *AkSkService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
 	log.Info("Received DeleteAkSk request.")
-	res, err := keystone.DeleteAKSK(ctx, in)
+	err := iam.CredStore.DeleteAkSk(ctx, in) //DeleteAKSK(ctx, in)
 	if err != nil {
 		log.Errorf("Failed to delete AKSK : %v", err)
 		return err
 	}
-	bodyString := ""
-	if res.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		bodyString = string(bodyBytes)
-		log.Info(bodyString)
-	}
 
-	log.Info("Deleted AKSK successfully. Response Status : " , bodyString)
-
+	log.Info("Deleted AKSK successfully. ")
 	return nil
 }

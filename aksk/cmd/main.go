@@ -17,14 +17,21 @@ package main
 import (
 	"fmt"
 	"github.com/micro/go-micro/v2"
+	"github.com/opensds/multi-cloud/aksk/pkg/iam"
 	handler "github.com/opensds/multi-cloud/aksk/pkg/service"
+	"github.com/opensds/multi-cloud/aksk/pkg/utils/config"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	"os"
 )
 
 func main() {
-	//TODO : Add KeyStone env details.
-	//keystoneHost := os.Getenv("HOST_IP")
+	iamHost := os.Getenv("IAM_HOST")
+	iam.Init(&config.CredentialStore{
+		Driver:   "keystone",
+		Host: iamHost})
+
+	defer iam.Exit()
 
 
 	obs.InitLogs()

@@ -67,7 +67,7 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 
 }
 
-func (s *APIService) ListAkSks(request *restful.Request, response *restful.Response) {
+/*func (s *APIService) ListAkSks(request *restful.Request, response *restful.Response) {
 	log.Info("RAJAT - AKSK - ListAkSk ")
 	if !policy.Authorize(request, response, "AkSk:list") {
 		return
@@ -90,7 +90,7 @@ func (s *APIService) ListAkSks(request *restful.Request, response *restful.Respo
 	log.Info("Get AK, SK details completed successfully.")
 	response.WriteEntity(res.AkSkDetail)
 
-}
+}*/
 
 func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Response) {
 	log.Info("RAJAT - AKSK - CreateAkSk ")

@@ -13,7 +13,11 @@ import (
 	"net/http"
 )
 
+type keystoneIam struct {
+}
 const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
+
+var keystone = &keystoneIam{}
 
 type blob struct {
 	Access string `json:"access"`
@@ -36,7 +40,11 @@ type Client struct {
 
 }
 
-func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, error) {
+func Init(host string) *keystoneIam {
+	return keystone
+}
+
+func (iam *keystoneIam) CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSk, error) {
 
 	akey:= utils.GenerateRandomString(16)
 	skey := utils.GenerateRandomString(32)
@@ -49,15 +57,15 @@ func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, er
 		panic(err)
 	}
 
-	in := string(byts)
-	byts, err = json.Marshal(in)
+	blobin := string(byts)
+	byts, err = json.Marshal(blobin)
 	if err != nil {
 		panic(err)
 	}
 
 	u, err := json.Marshal(Credential{Credential: CredBody{ProjectId: aksk.ProjectId,
 		UserId: aksk.UserId,
-		Blob: in,
+		Blob: blobin,
 		Type: "ec2"}})
 
 	fmt.Println(string(u))
@@ -66,7 +74,6 @@ func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, er
 	postreq , err := http.NewRequest("POST", KEYSTONE_URL, bytes.NewBuffer(u))
 	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
 	postreq.Header.Set("Content-Type", "application/json")
-
 
 	akskresp, _ := client.Do(postreq)
 	log.Info("RAJAT - RESPONSE  - " , akskresp)
@@ -78,10 +85,10 @@ func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, er
 	}
 
 	log.Info("RAJAT - Create AKSK Response - ", akskresp)
-	return akskresp, nil
+	return aksk, nil
 }
 
-func ListAKSK(ctx context.Context)(*http.Response, error) {
+/*func (iam *keystoneIam) ListAKSK(ctx context.Context)([]*model.AkSk, error) {
 
 	postreq , err := http.NewRequest("GET", KEYSTONE_URL, bytes.NewBuffer(nil))
 	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
@@ -99,9 +106,9 @@ func ListAKSK(ctx context.Context)(*http.Response, error) {
 	fmt.Println("API Response as String:\n" + bodyString)
 	defer akskresp.Body.Close()
 	return akskresp, nil
-}
+}*/
 
-func DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkRequest)(*http.Response, error){
+func (iam *keystoneIam) DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkRequest)error{
 
 	client := &http.Client{}
 	log.Info("RAJAT - DELETE  - URL " , KEYSTONE_URL+"/" + req.GetId())
@@ -113,7 +120,7 @@ func DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkRequest)(*http.Response, 
 	log.Info("RAJAT - RESPONSE  - " , akskresp)
 
 	if err != nil {
-		return nil, err
+		return  err
 	}
 
 	log.Info("RAJAT - Delete AKSK Response - ", akskresp)
@@ -123,10 +130,10 @@ func DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkRequest)(*http.Response, 
 	bodyString := string(bodyBytes)
 	fmt.Println("AKSK API Response as String:\n" + bodyString)
 	//defer akskresp.Body.Close()
-	return akskresp, nil
+	return  nil
 }
 
-func GetAKSK(ctx context.Context, req *pb.GetAkSkRequest) (*http.Response, error) {
+func (iam *keystoneIam) GetAKSK(ctx context.Context, req *pb.GetAkSkRequest) (*model.GetAkSk, error) {
 
 	client := &http.Client{}
 
@@ -150,5 +157,9 @@ func GetAKSK(ctx context.Context, req *pb.GetAkSkRequest) (*http.Response, error
 	bodyString := string(bodyBytes)
 	fmt.Println("AKSK API Response as String:\n" + bodyString)
 
-	return akskresp, nil
+	var backend = &model.GetAkSk{}
+	json.Unmarshal(bodyBytes, &backend)
+	fmt.Printf("Results: %v\n", backend)
+
+	return backend, nil
 }
