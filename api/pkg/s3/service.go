@@ -165,12 +165,10 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 	return nil
 }
 
-// this method is basically for getting the backends name from tier
-func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
-	log.Info("The received tier name for getting backend name:", tierName)
-	var backendId, backendName string
+func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) string {
+	log.Info("Request for GetBackendIdFromTier received", tierName)
 	var response *restful.Response
-
+	var backendId string
 	tierResp, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
 	if err != nil {
 		log.Error("list tier failed during getting backends from tier")
@@ -186,6 +184,16 @@ func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) st
 			}
 		}
 	}
+	return backendId
+}
+
+// this method is basically for getting the backends name from tier
+func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
+	log.Info("The received tier name for getting backend name:", tierName)
+	var backendId, backendName string
+	var response *restful.Response
+
+	backendId = s.GetBackendIdFromTier(ctx, tierName)
 
 	adminCtx := common.GetAdminContext()
 	if backendId != "" {
