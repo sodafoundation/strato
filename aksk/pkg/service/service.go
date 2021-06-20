@@ -40,7 +40,7 @@ func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, 
 		Blob: in.Aksk.Blob,
 	}
 
-	res, err := keystone.CreateAKSK(aksk)
+	res, err := keystone.CreateAKSK(aksk, in)
 	if err != nil {
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err

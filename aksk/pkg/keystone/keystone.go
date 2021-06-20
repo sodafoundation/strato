@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
+	pb "github.com/opensds/multi-cloud/aksk/proto"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -13,50 +14,72 @@ import (
 
 const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
-type credblob struct {
-	access string
-	secret string
-}
-
-type reqBody struct {
-	Credential credBody
-}
-
-type credBody struct {
-	blob credblob `json:"blob"`
-	projectId string `json:"projectId"`
-	userId string `json:"userId"`
-	backendtype string `json:"backendtype"`
+type blob struct {
+	Access string `json:"access"`
+	Secret string `json:"secret"`
 }
 
 
-func CreateAKSK( aksk *model.AkSk)(string, error) {
-	accessKey, _ := utils.GenerateRandomString(16)
-	secretKey, _ := utils.GenerateRandomString(32)
+type CredBody struct {
+	ProjectId string `json:"project_id"`
+	UserId string `json:"user_id"`
+	Blob string `json:"blob"`
+	Type string `json:"type"`
+}
 
-	blob := credblob{access: accessKey, secret:  secretKey}
+type Credential struct {
+	Credential CredBody `json:"credential"`
+}
 
-	credbody := credBody{ blob: blob,
-		projectId: aksk.ProjectId,
-		userId: aksk.UserId,
-		backendtype: "ec2"}
+type Client struct {
 
+}
 
-	reqbody := reqBody{Credential: credbody}
-	mapB3, _ := json.Marshal(reqbody)
-	log.Info("RAJAT - REQUEST - " , string(mapB3))
+func CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*http.Response, error) {
 
-	akskresp, err := http.Post(KEYSTONE_URL,"application/json",bytes.NewBuffer( mapB3) )
+	akey:= utils.GenerateRandomString(16)
+	skey := utils.GenerateRandomString(32)
 
+	blb := blob{Access: akey, Secret: skey}
+	log.Info("RAJAT - AK SK  - " , akey , skey)
+
+	byts, err := json.Marshal(blb)
+	if err != nil {
+		panic(err)
+	}
+
+	in := string(byts)
+	byts, err = json.Marshal(in)
+	if err != nil {
+		panic(err)
+	}
+
+	//blobbody , err :=  json.Marshal(blob{access: akey, secret: skey})
+	u, err := json.Marshal(Credential{Credential: CredBody{ProjectId: aksk.ProjectId,
+		UserId: aksk.UserId,
+		Blob: in,
+		Type: "ec2"}})
+
+	fmt.Println(string(u))
+	client := &http.Client{}
+
+	postreq , err := http.NewRequest("POST", KEYSTONE_URL, bytes.NewBuffer(u))
+	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
+	postreq.Header.Set("Content-Type", "application/json")
+	postreq.Header.Set("Accept", "*/*")
+	postreq.Header.Set("Accept-Encoding"," gzip, deflate, br")
+
+	akskresp, _ := client.Do(postreq)
 	log.Info("RAJAT - RESPONSE  - " , akskresp)
 
 	defer akskresp.Body.Close()
 
 	if err != nil {
-	   return "", err
+	   return nil, err
 	}
 
-	return akskresp.Status, nil
+	log.Info("RAJAT - Create AKSK Response - ", akskresp)
+	return akskresp, nil
 }
 
 func ListAKSK() {

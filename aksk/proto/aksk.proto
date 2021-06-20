@@ -15,6 +15,7 @@ message AkSkDetail {
     string name = 3;
     string type = 4;
     string blob = 5;
+    string token = 6;
 }
 
 message ListAkSkRequest {
