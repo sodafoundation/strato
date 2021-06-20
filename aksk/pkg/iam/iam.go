@@ -11,10 +11,10 @@ import (
 
 type IAMAuthenticator interface {
 	// AkSk
-	CreateAkSk(ctx context.Context, AkSk *model.AkSk) (*model.AkSk, error)
-	DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error
-	GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSk, error)
-	ListAkSk(ctx context.Context, limit, offset int, query interface{}) ([]*model.AkSk, error)
+	CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSk, error)
+	DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) (error)
+	GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.GetAkSk, error)
+	//ListAkSk(ctx context.Context, limit, offset int, query interface{}) ([]*model.AkSk, error)
 	Close()
 }
 
@@ -23,8 +23,8 @@ var CredStore IAMAuthenticator
 func Init(iam *config.CredentialStore) {
 	switch iam.Driver {
 	case "keystone":
-		Iam := keystone.Init(iam.Host)
-		fmt.Printf("Initializing Keystone!\n", Iam)
+		CredStore = keystone.Init(iam.Host)
+		fmt.Printf("Initializing Keystone!\n", CredStore)
 		return
 	default:
 		fmt.Printf("Can't find Credentials driver %s!\n", iam.Driver)

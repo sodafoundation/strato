@@ -22,14 +22,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type AkSkService struct {
+type akskService struct {
 }
-
 func NewAkSkService() pb.AkSkHandler {
-	return &AkSkService{}
+	return &akskService{}
 }
 
-func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, out *pb.CreateAkSkResponse) error {
+
+func (b akskService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, out *pb.CreateAkSkResponse) error {
 	log.Info("Received CreateAkSk request.")
 
 	aksk := &model.AkSk{
@@ -39,7 +39,7 @@ func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, 
 		Blob: in.Aksk.Blob,
 	}
 
-	res, err := iam.CredStore.CreateAkSk(ctx, aksk)
+	res, err := iam.CredStore.CreateAkSk(aksk,in)
 	if err != nil {
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err
@@ -56,20 +56,22 @@ func (b *AkSkService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, 
 	return nil
 }
 
-func (b *AkSkService) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest, out *pb.GetAkSkResponse) error {
+
+
+func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
 	log.Info("Received GetAkSk request.")
 
-	res, err := iam.CredStore.GetAkSk(ctx, in) //GetAKSK(ctx, in)
+	res, err := iam.CredStore.GetAkSk(ctx, request) //GetAKSK(ctx, in)
 	if err != nil {
 		log.Errorf("Failed to get AKSK : %v", err)
 		return err
 	}
 
-	out.AkSkDetail = &pb.AkSkDetail{
-		ProjectId: res.ProjectId,
-		UserId: res.UserId,
-		Type: res.Type,
-		Blob: res.Blob,
+	response.AkSkDetail = &pb.AkSkDetail{
+		ProjectId: res.Credentials.ProjectId,
+		UserId: res.Credentials.UserId,
+		Type: res.Credentials.Type,
+		Blob: res.Credentials.Blob,
 	}
 
 	/*bodyString := ""
@@ -82,12 +84,12 @@ func (b *AkSkService) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest, out *p
 		log.Info(bodyString)
 	}*/
 
-	log.Info("Created AKSK successfully. " , out)
+	log.Info("Created AKSK successfully. " , response)
 	return nil
 
 }
 /*
-func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out *pb.ListAkSkResponse) error {
+func (b akskService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out *pb.ListAkSkResponse) error {
 	log.Info("Received ListAkSk request.")
 
 	if in.Limit < 0 || in.Offset < 0 {
@@ -124,7 +126,8 @@ func (b *AkSkService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out 
 	return nil
 }*/
 
-func (b *AkSkService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
+
+func (b akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
 	log.Info("Received DeleteAkSk request.")
 	err := iam.CredStore.DeleteAkSk(ctx, in) //DeleteAKSK(ctx, in)
 	if err != nil {

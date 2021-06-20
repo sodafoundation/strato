@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	//"github.com/opensds/multi-cloud/aksk/pkg/iam"
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
@@ -13,17 +14,19 @@ import (
 	"net/http"
 )
 
-type keystoneIam struct {
-}
-const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
-var keystone = &keystoneIam{}
+
+
+func (iam *keystoneIam) Close() {
+	panic("Not used!!")
+}
+
+const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
 type blob struct {
 	Access string `json:"access"`
 	Secret string `json:"secret"`
 }
-
 
 type CredBody struct {
 	ProjectId string `json:"project_id"`
@@ -37,15 +40,19 @@ type Credential struct {
 }
 
 type Client struct {
-
 }
+
+type keystoneIam struct {
+}
+
+var keystone = &keystoneIam{}
 
 func Init(host string) *keystoneIam {
 	return keystone
 }
 
-func (iam *keystoneIam) CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSk, error) {
 
+func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSk, error) {
 	akey:= utils.GenerateRandomString(16)
 	skey := utils.GenerateRandomString(32)
 
@@ -108,12 +115,13 @@ func (iam *keystoneIam) CreateAKSK(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 	return akskresp, nil
 }*/
 
-func (iam *keystoneIam) DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkRequest)error{
+
+func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
 
 	client := &http.Client{}
-	log.Info("RAJAT - DELETE  - URL " , KEYSTONE_URL+"/" + req.GetId())
-	getreq , err := http.NewRequest("DELETE", KEYSTONE_URL+"/" + req.GetId(), bytes.NewBuffer(nil))
-	getreq.Header.Add("X-Auth-Token", req.AkSkDetail.Token)
+	log.Info("RAJAT - DELETE  - URL " , KEYSTONE_URL+"/" + in.GetId())
+	getreq , err := http.NewRequest("DELETE", KEYSTONE_URL+"/" + in.GetId(), bytes.NewBuffer(nil))
+	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
 
 	akskresp, err := client.Do(getreq)
@@ -133,12 +141,13 @@ func (iam *keystoneIam) DeleteAKSK(ctx context.Context, req *pb.DeleteAkSkReques
 	return  nil
 }
 
-func (iam *keystoneIam) GetAKSK(ctx context.Context, req *pb.GetAkSkRequest) (*model.GetAkSk, error) {
+
+func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.GetAkSk, error) {
 
 	client := &http.Client{}
 
-	getreq , err := http.NewRequest("GET", KEYSTONE_URL+"/"+req.GetId(), bytes.NewBuffer(nil))
-	getreq.Header.Add("X-Auth-Token", req.AkSkDetail.Token)
+	getreq , err := http.NewRequest("GET", KEYSTONE_URL + "/" + in.GetId(), bytes.NewBuffer(nil))
+	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
 
 	akskresp, err := client.Do(getreq)
