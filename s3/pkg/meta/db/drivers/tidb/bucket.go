@@ -41,7 +41,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	var row *sql.Row
 
 	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
-		"update_time from buckets where bucketname=?;"
+		"update_time,tiers from buckets where bucketname=?;"
 	row = t.Client.QueryRow(sqltext, bucketName)
 
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
@@ -59,6 +59,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		&tmp.Versioning.Status,
 		&replication,
 		&updateTime,
+		&tmp.Tiers,
 	)
 	if err != nil {
 		err = handleDBError(err)

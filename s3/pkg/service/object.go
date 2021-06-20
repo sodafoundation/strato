@@ -83,10 +83,16 @@ func (s *s3Service) RestoreObject(ctx context.Context, req *pb.RestoreObjectRequ
 	if object.Location != "" {
 		backendName = object.Location
 	}
+
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if bucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
 	// incase get backend failed
 	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
 	// if this object has only one part
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	backend, err := utils.GetBackend(bkndCtx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("unable to get backend. err:", err)
 		return err
@@ -268,7 +274,14 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 	}
 	// incase get backend failed
 	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if bucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
+
+	backend, err := utils.GetBackend(bkndCtx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -464,8 +477,15 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 	}
 	// incase get backend failed
 	ctx = utils.SetRepresentTenant(ctx, tenantId, bucket.TenantId)
+
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if bucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
+
 	// if this object has only one part
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	backend, err := utils.GetBackend(bkndCtx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("unable to get backend. err:", err)
 		return err
@@ -622,7 +642,14 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	}
 	// incase get backend failed
 	ctx = utils.SetRepresentTenant(ctx, tenantId, srcBucket.TenantId)
-	srcBackend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if srcBucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
+
+	srcBackend, err := utils.GetBackend(bkndCtx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return nil
@@ -636,7 +663,14 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 	targetBackendName := targetBucket.DefaultLocation
 	// incase get backend failed
 	ctx = utils.SetRepresentTenant(ctx, tenantId, targetBucket.TenantId)
-	targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetBackendName)
+
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx = ctx
+	if targetBucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
+
+	targetBackend, err := utils.GetBackend(bkndCtx, s.backendClient, targetBackendName)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return nil
@@ -794,7 +828,13 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 	}
 	log.Debug("The souce bucket:", srcBucket)
 
-	srcBackend, err := utils.GetBackend(ctx, s.backendClient, srcObject.Location)
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if srcBucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
+
+	srcBackend, err := utils.GetBackend(bkndCtx, s.backendClient, srcObject.Location)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err
@@ -846,8 +886,14 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 				srcObject.ObjectKey, targetObject.BucketName, targetObject.Location, targetObject.Tier)
 		}
 
+		// if tiers is enabled, list all the backend using admin context
+		bkndCtx := ctx
+		if targetBucket.Tiers != "" {
+			bkndCtx = utils.GetAdminContext()
+		}
+
 		// get storage driver
-		targetBackend, err := utils.GetBackend(ctx, s.backendClient, targetObject.Location)
+		targetBackend, err := utils.GetBackend(bkndCtx, s.backendClient, targetObject.Location)
 		if err != nil {
 			log.Errorln("failed to get backend client with err:", err)
 			return err
@@ -1050,9 +1096,15 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *
 	if obj.Location != "" {
 		backendName = obj.Location
 	}
+
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if bucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
 	// incase get backend failed
 	ctx = utils.SetRepresentTenant(ctx, requestTenant, bucket.TenantId)
-	backend, err := utils.GetBackend(ctx, s.backendClient, backendName)
+	backend, err := utils.GetBackend(bkndCtx, s.backendClient, backendName)
 	if err != nil {
 		log.Errorln("failed to get backend with err:", err)
 		return err
