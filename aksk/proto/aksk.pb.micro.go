@@ -42,8 +42,9 @@ func NewAkSkEndpoints() []*api.Endpoint {
 // Client API for AkSk service
 
 type AkSkService interface {
-	//  rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
+	//rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
 	GetAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error)
+	DownloadAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error)
 	CreateAkSk(ctx context.Context, in *CreateAkSkRequest, opts ...client.CallOption) (*CreateAkSkResponse, error)
 	DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, opts ...client.CallOption) (*DeleteAkSkResponse, error)
 }
@@ -62,6 +63,16 @@ func NewAkSkService(name string, c client.Client) AkSkService {
 
 func (c *akSkService) GetAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error) {
 	req := c.c.NewRequest(c.name, "AkSk.GetAkSk", in)
+	out := new(GetAkSkResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *akSkService) DownloadAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error) {
+	req := c.c.NewRequest(c.name, "AkSk.DownloadAkSk", in)
 	out := new(GetAkSkResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -93,8 +104,9 @@ func (c *akSkService) DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, opt
 // Server API for AkSk service
 
 type AkSkHandler interface {
-	//  rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
+	//rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
 	GetAkSk(context.Context, *GetAkSkRequest, *GetAkSkResponse) error
+	DownloadAkSk(context.Context, *GetAkSkRequest, *GetAkSkResponse) error
 	CreateAkSk(context.Context, *CreateAkSkRequest, *CreateAkSkResponse) error
 	DeleteAkSk(context.Context, *DeleteAkSkRequest, *DeleteAkSkResponse) error
 }
@@ -102,6 +114,7 @@ type AkSkHandler interface {
 func RegisterAkSkHandler(s server.Server, hdlr AkSkHandler, opts ...server.HandlerOption) error {
 	type akSk interface {
 		GetAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error
+		DownloadAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error
 		CreateAkSk(ctx context.Context, in *CreateAkSkRequest, out *CreateAkSkResponse) error
 		DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, out *DeleteAkSkResponse) error
 	}
@@ -118,6 +131,10 @@ type akSkHandler struct {
 
 func (h *akSkHandler) GetAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error {
 	return h.AkSkHandler.GetAkSk(ctx, in, out)
+}
+
+func (h *akSkHandler) DownloadAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error {
+	return h.AkSkHandler.DownloadAkSk(ctx, in, out)
 }
 
 func (h *akSkHandler) CreateAkSk(ctx context.Context, in *CreateAkSkRequest, out *CreateAkSkResponse) error {

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2021 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,14 @@ package akskPackage
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
-	log "github.com/sirupsen/logrus"
 )
 
 func RegisterRouter(ws *restful.WebService) {
-	log.Info("RAJAT - RegisterRouter - AKSK ")
 	handler := NewAPIService(client.DefaultClient)
 	ws.Route(ws.GET("/{tenantId}/aksks/{id}").To(handler.GetAkSk)).
 		Doc("Show AkSk details")
-	//ws.Route(ws.GET("/{tenantId}/aksks").To(handler.ListAkSks)).
-//		Doc("Get AkSk list")
+	ws.Route(ws.GET("/{tenantId}/aksks/{id}/download").To(handler.DownloadAkSk)).
+		Doc("Download AkSk details")
 	ws.Route(ws.POST("/{tenantId}/aksks").To(handler.CreateAkSk)).
 		Doc("Create AkSk")
 	ws.Route(ws.DELETE("/{tenantId}/aksks/{id}").To(handler.DeleteAkSk)).

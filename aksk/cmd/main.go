@@ -1,4 +1,4 @@
-// Copyright 2020 The SODA Authors.
+// Copyright 2021 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,19 +28,15 @@ import (
 func main() {
 	iamHost := os.Getenv("IAM_HOST")
 	iam.Init(&config.CredentialStore{
-		Driver:   "keystone",
-		Host: iamHost})
+		Driver: "keystone",
+		Host:   iamHost})
 
 	defer iam.Exit()
-
-
 	obs.InitLogs()
 	service := micro.NewService(
 		micro.Name("aksk"),
 	)
-
 	service.Init()
-
 	pb.RegisterAkSkHandler(service.Server(), handler.NewAkSkService())
 	if err := service.Run(); err != nil {
 		fmt.Println(err)

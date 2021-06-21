@@ -50,3 +50,38 @@ type GetAkSkBody struct {
 type GetAkSk struct {
 	Credentials GetAkSkBody `json:"credentials,omitempty" bson:"credentials,omitempty"`
 }
+
+type AkSkBlob struct {
+	Blob string `json:"aksk,omitempty" bson:"aksk,omitempty"`
+}
+
+type AkSkOut struct {
+	Credential struct {
+		UserID string `json:"user_id"`
+		Links  struct {
+			Self string `json:"self"`
+		} `json:"links"`
+		Blob      string `json:"blob"`
+		ProjectID string `json:"project_id"`
+		Type      string `json:"type"`
+		ID        string `json:"id"`
+	} `json:"credential"`
+}
+
+type AkSkListOut struct {
+	Credentials []struct {
+		UserID string `json:"user_id"`
+		Links  struct {
+			Self string `json:"self"`
+		} `json:"links"`
+		Blob      string `json:"blob"`
+		ProjectID string `json:"project_id"`
+		Type      string `json:"type"`
+		ID        string `json:"id"`
+	} `json:"credentials"`
+	Links struct {
+		Self     string      `json:"self"`
+		Previous interface{} `json:"previous"`
+		Next     interface{} `json:"next"`
+	} `json:"links"`
+}

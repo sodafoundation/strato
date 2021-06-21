@@ -15,15 +15,10 @@
 package utils
 
 import (
-	"bytes"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
-	"net/http"
 )
 
 const KEYSTONE_URL = "http://192.168.20.108/identity/v3/auth/tokens"
-
-
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -33,51 +28,4 @@ func GenerateRandomString(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
-}
-
-
-/*func GenerateRandomString(n int) (string, error) {
-	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
-	ret := make([]byte, n)
-	for i := 0; i < n; i++ {
-		//num, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(len(letters))))
-		num, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(len(letters))))
-		if err != nil {
-			return "", err
-		}
-		ret = append(ret, letters[num.Int64()])
-	}
-
-	return string(ret), nil
-}*/
-
-
-func GetKeystoneToken() string{
-	bodybyt := []byte(
-	 `{	"auth": {
-		"identity": {
-			"methods": [
-						"password"
-						],
-		"password": {
-			"user": {	"name": "admin",
-						"domain": {
-							"name": "Default"
-						},
-						"password": "opensds@123"
-					}
-				}
-			}
-		}
-	}`)
-	akskresp, err := http.Post(KEYSTONE_URL,"application/json",bytes.NewBuffer(bodybyt))
-	log.Info("RAJAT - RESPONSE  - " , akskresp)
-
-	defer akskresp.Body.Close()
-
-	if err != nil {
-		return  "Error occurred"
-	}
-
-	return akskresp.Header.Get("X-Subject-Token")
 }

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2021 The OpenSDS Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,12 +40,11 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func (s *APIService) GetAkSk(request *restful.Request, response *restful.Response) {
-	log.Info("RAJAT - AKSK - GetAkSk ")
+
 	if !policy.Authorize(request, response, "AkSk:get") {
 		return
 	}
 
-	log.Infof("Received request for AK, SK details - : %s\n", request.PathParameter("id"))
 	id := request.PathParameter("id")
 
 	akskDetail := &aksk.AkSkDetail{}
@@ -67,11 +66,13 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 
 }
 
-/*func (s *APIService) ListAkSks(request *restful.Request, response *restful.Response) {
-	log.Info("RAJAT - AKSK - ListAkSk ")
-	if !policy.Authorize(request, response, "AkSk:list") {
+func (s *APIService) DownloadAkSk(request *restful.Request, response *restful.Response) {
+
+	if !policy.Authorize(request, response, "AkSk:get") {
 		return
 	}
+
+	id := request.PathParameter("id")
 
 	akskDetail := &aksk.AkSkDetail{}
 	ctx := common.InitCtxWithAuthInfo(request)
@@ -80,20 +81,22 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 	akskDetail.UserId = actx.UserId
 	akskDetail.Token = actx.AuthToken
 
-	res, err := s.akskClient.ListAkSk(ctx, &aksk.ListAkSkRequest{})
+	res, err := s.akskClient.DownloadAkSk(ctx, &aksk.GetAkSkRequest{Id: id, AkSkDetail: akskDetail})
 	if err != nil {
 		log.Errorf("failed to get AK, SK details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Get AK, SK details completed successfully.")
+	response.ResponseWriter.Header().Set("Content-Disposition", "attachment")
+	response.ResponseWriter.Header().Set("Content-Type", "application/octet-stream")
+	log.Info("Downloaded  AK, SK details completed successfully.")
 	response.WriteEntity(res.AkSkDetail)
 
-}*/
+}
 
 func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Response) {
-	log.Info("RAJAT - AKSK - CreateAkSk ")
+
 	if !policy.Authorize(request, response, "AkSk:create") {
 		return
 	}
@@ -112,10 +115,6 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 	akskDetail.UserId = actx.UserId
 	akskDetail.Token = actx.AuthToken
 
-	log.Info("RAJAT - AKSK - ProjectID ", akskDetail.ProjectId )
-	log.Info("RAJAT - AKSK - UserID ", akskDetail.UserId )
-	log.Info("RAJAT - AKSK - Token ", akskDetail.Token )
-
 	res, err := s.akskClient.CreateAkSk(ctx, &aksk.CreateAkSkRequest{Aksk: akskDetail})
 	if err != nil {
 		log.Errorf("failed to create Ak, SK: %v\n", err)
@@ -123,18 +122,15 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	log.Info("Create AcessKey, SecretKey successfully.")
-	response.WriteEntity(res.Aksk)
+	response.WriteEntity(res.Aksk.String())
 
 }
 
 func (s *APIService) DeleteAkSk(request *restful.Request, response *restful.Response) {
-	log.Info("RAJAT - AKSK - DeleteAkSk ")
 	if !policy.Authorize(request, response, "AkSk:delete") {
 		return
 	}
 
-	log.Infof("Received DELETE request for AK, SK details - : %s\n", request.PathParameter("id"))
 	id := request.PathParameter("id")
 
 	akskDetail := &aksk.AkSkDetail{}

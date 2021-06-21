@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/opensds/multi-cloud/aksk/pkg/iam"
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
@@ -24,108 +25,63 @@ import (
 
 type akskService struct {
 }
+
 func NewAkSkService() pb.AkSkHandler {
 	return &akskService{}
 }
-
 
 func (b akskService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, out *pb.CreateAkSkResponse) error {
 	log.Info("Received CreateAkSk request.")
 
 	aksk := &model.AkSk{
 		ProjectId: in.Aksk.ProjectId,
-		UserId: in.Aksk.UserId,
-		Type: in.Aksk.Type,
-		Blob: in.Aksk.Blob,
+		UserId:    in.Aksk.UserId,
+		Type:      in.Aksk.Type,
+		Blob:      in.Aksk.Blob,
 	}
 
-	res, err := iam.CredStore.CreateAkSk(aksk,in)
+	res, err := iam.CredStore.CreateAkSk(aksk, in)
 	if err != nil {
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err
 	}
 
 	out.Aksk = &pb.AkSkDetail{
-		ProjectId: res.ProjectId,
-		UserId: res.UserId,
-		Type: res.Type,
-		Blob: res.Blob,
+		ProjectId: res.Credential.ProjectID,
+		UserId:    res.Credential.UserID,
+		Type:      res.Credential.Type,
+		Blob:      res.Credential.Blob,
 	}
 
-	log.Info("Created AKSK successfully. Response Status : " , res)
+	log.Info("Created AKSK successfully. Response  : ", out.Aksk.Blob)
 	return nil
 }
-
-
 
 func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
 	log.Info("Received GetAkSk request.")
 
-	res, err := iam.CredStore.GetAkSk(ctx, request) //GetAKSK(ctx, in)
+	res, err := iam.CredStore.GetAkSk(ctx, request)
 	if err != nil {
 		log.Errorf("Failed to get AKSK : %v", err)
 		return err
 	}
 
-	response.AkSkDetail = &pb.AkSkDetail{
-		ProjectId: res.Credentials.ProjectId,
-		UserId: res.Credentials.UserId,
-		Type: res.Credentials.Type,
-		Blob: res.Credentials.Blob,
+	aksk := &pb.AkSkDetail{}
+	for idx, cred := range res.Credentials {
+		aksk = &pb.AkSkDetail{
+			ProjectId: cred.ProjectID,
+			UserId:    cred.UserID,
+			Blob:      cred.Blob,
+			Type:      cred.Type,
+		}
+		response.AkSkDetail = append(response.AkSkDetail, aksk)
+		fmt.Println("At index", idx, "value is", cred)
 	}
 
-	/*bodyString := ""
-	if res.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		bodyString = string(bodyBytes)
-		log.Info(bodyString)
-	}*/
-
-	log.Info("Created AKSK successfully. " , response)
+	log.Info("Created AKSK successfully. ", response)
 	return nil
 
 }
-/*
-func (b akskService) ListAkSk(ctx context.Context, in *pb.ListAkSkRequest, out *pb.ListAkSkResponse) error {
-	log.Info("Received ListAkSk request.")
-
-	if in.Limit < 0 || in.Offset < 0 {
-		msg := fmt.Sprintf("invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
-		log.Info(msg)
-		return errors.New(msg)
-	}
-
-	res, err := keystone.ListAKSK(ctx)
-	if err != nil {
-		log.Errorf("failed to list backend: %v\n", err)
-		return err
-	}
-
-	/*var aksks []*pb.AkSkDetail
-	for _, item := range res {
-		aksks = append(aksks, &pb.AkSkDetail{
-		ProjectId: item.ProjectId,
-
-		})
-	}
-	bodyString := ""
-	if res.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		bodyString = string(bodyBytes)
-		log.Info(bodyString)
-	}
-	//out.Next = in.Offset + int32(len(res))
-
-	log.Infof("List AKSK successful, aksks:%+v\n", bodyString)
-	return nil
-}*/
-
 
 func (b akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
 	log.Info("Received DeleteAkSk request.")
@@ -137,4 +93,30 @@ func (b akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, o
 
 	log.Info("Deleted AKSK successfully. ")
 	return nil
+}
+
+func (b akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
+	log.Info("Received GetAkSk request.")
+
+	res, err := iam.CredStore.GetAkSk(ctx, request)
+	if err != nil {
+		log.Errorf("Failed to get AKSK : %v", err)
+		return err
+	}
+
+	aksk := &pb.AkSkDetail{}
+	for idx, cred := range res.Credentials {
+		aksk = &pb.AkSkDetail{
+			ProjectId: cred.ProjectID,
+			UserId:    cred.UserID,
+			Blob:      cred.Blob,
+			Type:      cred.Type,
+		}
+		response.AkSkDetail = append(response.AkSkDetail, aksk)
+		fmt.Println("At index", idx, "value is", cred)
+	}
+
+	log.Info("Created AKSK successfully. ", response)
+	return nil
+
 }

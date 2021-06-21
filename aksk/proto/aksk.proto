@@ -3,7 +3,7 @@ syntax = "proto3";
 option go_package = "aksk/proto";
 
 service AkSk {
-    rpc ListAkSk(ListAkSkRequest) returns (ListAkSkResponse) {}
+    rpc DownloadAkSk(GetAkSkRequest) returns (GetAkSkResponse) {}
     rpc GetAkSk(GetAkSkRequest) returns (GetAkSkResponse) {}
     rpc CreateAkSk(CreateAkSkRequest) returns (CreateAkSkResponse) {}
     rpc DeleteAkSk(DeleteAkSkRequest) returns (DeleteAkSkResponse) {}
@@ -18,27 +18,13 @@ message AkSkDetail {
     string token = 6;
 }
 
-message ListAkSkRequest {
-    int32 limit = 1;
-    int32 offset = 2;
-    repeated string sortKeys = 3;
-    repeated string sortDirs = 4;
-    map<string, string> Filter = 5;
-    string token = 6;
-}
-
-message ListAkSkResponse {
-    repeated AkSkDetail aksk = 1;
-    int32 next = 2;
-}
-
 message GetAkSkRequest {
     string id = 1;
     AkSkDetail AkSkDetail = 2;
 }
 
 message GetAkSkResponse {
-    AkSkDetail AkSkDetail = 1;
+    repeated AkSkDetail AkSkDetail = 1;
 }
 
 message CreateAkSkRequest {
