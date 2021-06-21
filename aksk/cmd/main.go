@@ -16,13 +16,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/micro/go-micro/v2"
 	"github.com/opensds/multi-cloud/aksk/pkg/iam"
 	handler "github.com/opensds/multi-cloud/aksk/pkg/service"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils/config"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	"os"
 )
 
 func main() {
