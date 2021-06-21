@@ -215,3 +215,32 @@ func GetTimeoutSec(objSize int64) int64 {
 
 	return tmoutSec
 }
+
+//return the duplicate values present in the string array
+func DuplicatesCheck(obj []string) []string {
+	var duplicates []string
+	visited := make(map[string]int, 0)
+	for _, val := range obj {
+		if visited[val] >= 1 {
+			duplicates = append(duplicates, val)
+		}
+		visited[val]++
+	}
+	return duplicates
+}
+
+//return the present values and absent values of object1 in object2
+func ContainAndNotContain(obj1 []string, obj2 []string) ([]string, []string) {
+	var present, absent []string
+	for _, val := range obj1 {
+		found := Contained(val, obj2)
+		if found == true {
+			present = append(present, val)
+		}
+		if found == false {
+			absent = append(absent, val)
+		}
+	}
+	return present, absent
+
+}
