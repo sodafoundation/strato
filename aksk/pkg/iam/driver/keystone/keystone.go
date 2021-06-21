@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-
 	"github.com/opensds/multi-cloud/aksk/pkg/iam"
 
 	"io/ioutil"
