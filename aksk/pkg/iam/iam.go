@@ -30,7 +30,6 @@ type IAMAuthenticator interface {
 	DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error
 	GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error)
 	DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error)
-	Close()
 }
 
 var CredStore IAMAuthenticator

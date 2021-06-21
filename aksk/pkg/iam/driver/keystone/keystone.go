@@ -18,8 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/opensds/multi-cloud/aksk/pkg/iam"
-
 	"io/ioutil"
 	"net/http"
 
@@ -29,9 +27,7 @@ import (
 	_ "github.com/sirupsen/logrus"
 )
 
-func (iam *keystoneIam) Close() {
-	panic("Not used as of now!!")
-}
+
 
 const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
@@ -59,9 +55,10 @@ type keystoneIam struct {
 
 var keystone = &keystoneIam{}
 
-func Init(host string) iam.IAMAuthenticator {
+func Init(host string) *keystoneIam {
 	return keystone
 }
+
 
 func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSkOut, error) {
 	akey := utils.GenerateRandomString(16)
