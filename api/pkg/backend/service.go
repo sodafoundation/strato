@@ -347,7 +347,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	// TODO: refactor this part
-	count, err := s.HasBuckets(id, ctx)
+	count, err := s.GetBucketsCount(id, ctx)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 		return
@@ -491,7 +491,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	//duplicate backends check:
-	duplicates := utils.DuplicatesCheck(tier.Backends)
+	duplicates := utils.GetDuplicates(tier.Backends)
 	if len(duplicates) != 0 {
 		errMsg := fmt.Sprintf("backends in request: %v are duplicated", duplicates)
 		log.Error(errMsg)
@@ -561,7 +561,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		all = append(all, backendId)
 	}
 
-	duplicates := utils.DuplicatesCheck(all)
+	duplicates := utils.GetDuplicates(all)
 	if len(duplicates) != 0 {
 		errMsg := fmt.Sprintf("some backends in add or/and delete in request: %v are duplicate", duplicates)
 		log.Error(errMsg)
@@ -570,7 +570,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	//check whether addBackends does not exists in the tier already
-	failAddBackends, _ := utils.ContainAndNotContain(updateTier.AddBackends, res.Tier.Backends)
+	failAddBackends, _ := utils.GetClassifiedValues(updateTier.AddBackends, res.Tier.Backends)
 	if len(failAddBackends) != 0 {
 		errMsg := fmt.Sprintf("add backends in request: %v already exists in tier", failAddBackends)
 		log.Error(errMsg)
@@ -579,7 +579,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	//check whether deleteBackends belong to tier
-	_, failDelBackends := utils.ContainAndNotContain(updateTier.DeleteBackends, res.Tier.Backends)
+	_, failDelBackends := utils.GetClassifiedValues(updateTier.DeleteBackends, res.Tier.Backends)
 	if len(failDelBackends) != 0 {
 		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", failDelBackends)
 		log.Error(errMsg)
@@ -602,7 +602,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	//check whether delete backends have no buckets
 	for _, backendId := range updateTier.DeleteBackends {
-		count, err1 := s.HasBuckets(backendId, ctx)
+		count, err1 := s.GetBucketsCount(backendId, ctx)
 		if err1 != nil {
 			response.WriteError(http.StatusInternalServerError, err1)
 			return
@@ -709,7 +709,7 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 
 	//check whether backends of tier has no buckets
 	for _, backendId := range res.Tier.Backends {
-		count, err := s.HasBuckets(backendId, ctx)
+		count, err := s.GetBucketsCount(backendId, ctx)
 		if err != nil {
 			response.WriteError(http.StatusInternalServerError, err)
 			return
@@ -735,7 +735,7 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 }
 
 //checking whether backend has buckets
-func (s *APIService) HasBuckets(backendId string, ctx context.Context) (int, error) {
+func (s *APIService) GetBucketsCount(backendId string, ctx context.Context) (int, error) {
 	res2, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
 	if err != nil {
 		return -1, err

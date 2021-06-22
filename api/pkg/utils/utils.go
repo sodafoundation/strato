@@ -217,10 +217,10 @@ func GetTimeoutSec(objSize int64) int64 {
 }
 
 //return the duplicate values present in the string array
-func DuplicatesCheck(obj []string) []string {
+func GetDuplicates(list []string) []string {
 	var duplicates []string
 	visited := make(map[string]int, 0)
-	for _, val := range obj {
+	for _, val := range list {
 		if visited[val] >= 1 {
 			duplicates = append(duplicates, val)
 		}
@@ -229,11 +229,11 @@ func DuplicatesCheck(obj []string) []string {
 	return duplicates
 }
 
-//return the present values and absent values of object1 in object2
-func ContainAndNotContain(obj1 []string, obj2 []string) ([]string, []string) {
+//return the values of list1 that belong to and dont belong to list2
+func GetClassifiedValues(list1 []string, list2 []string) ([]string, []string) {
 	var present, absent []string
-	for _, val := range obj1 {
-		found := Contained(val, obj2)
+	for _, val := range list1 {
+		found := Contained(val, list2)
 		if found == true {
 			present = append(present, val)
 		}
