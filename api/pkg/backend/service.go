@@ -702,19 +702,20 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// Update (remove) the tenants
 	currTenants := res.Tier.Tenants
-	for _, val := range currTenants {
-		for j, val1 := range updateTier.DeleteTenants {
-			if val == val1 {
+
+	for _, val := range updateTier.DeleteTenants {
+		for j, cval := range currTenants {
+			if val == cval {
 				currTenants = append(currTenants[:j], currTenants[j+1:]...)
 			}
 		}
 	}
 	// update(Add) the tenants
 	for _, tenantId := range updateTier.AddTenants {
-		res.Tier.Tenants = append(currTenants, tenantId)
+		currTenants = append(currTenants, tenantId)
 	}
 
-	log.Info("res.Tier.Tenants======:", res.Tier.Tenants)
+	res.Tier.Tenants = currTenants
 	updateTierRequest := &backend.UpdateTierRequest{Tier: res.Tier}
 	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
 	if err != nil {

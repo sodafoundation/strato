@@ -164,7 +164,7 @@ func (_m *Repository) ListBackend(ctx context.Context, limit int, offset int, qu
 }
 
 // ListTiers provides a mock function with given fields: ctx, limit, offset
-func (_m *Repository) ListTiers(ctx context.Context, limit int, offset int) ([]*model.Tier, error) {
+func (_m *Repository) ListTiers(ctx context.Context, limit int, offset int, query interface{}) ([]*model.Tier, error) {
 	ret := _m.Called(ctx, limit, offset)
 
 	var r0 []*model.Tier
