@@ -80,7 +80,7 @@ func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, re
 		fmt.Println("At index", idx, "value is", cred)
 	}
 
-	log.Info("Created AKSK successfully. ", response)
+	log.Info("Got AKSK successfully. ", response)
 	return nil
 
 }
@@ -118,7 +118,7 @@ func (b akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkReques
 		fmt.Println("At index", idx, "value is", cred)
 	}
 
-	log.Info("Created AKSK successfully. ", response)
+	log.Info("Downloaded AKSK successfully. ", response)
 	return nil
 
 }

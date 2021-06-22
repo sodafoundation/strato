@@ -28,7 +28,7 @@ import (
 	pb "github.com/opensds/multi-cloud/aksk/proto"
 )
 
-const KEYSTONE_URL = "" //"http://192.168.20.108/identity/v3/credentials"
+const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
 type blob struct {
 	Access string `json:"access"`
@@ -96,7 +96,7 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
 
 	client := &http.Client{}
-	getreq, err := http.NewRequest("DELETE", KEYSTONE_URL+"/"+in.GetId(), bytes.NewBuffer(nil))
+	getreq, err := http.NewRequest("DELETE", KEYSTONE_URL+"/"+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
 

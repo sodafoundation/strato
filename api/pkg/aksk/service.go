@@ -117,12 +117,18 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 	akskDetail.UserId = actx.UserId
 	akskDetail.Token = actx.AuthToken
 
+	log.Info("RAJAT - AKSK - ProjectID ", akskDetail.ProjectId )
+	log.Info("RAJAT - AKSK - UserID ", akskDetail.UserId )
+	log.Info("RAJAT - AKSK - Token ", akskDetail.Token )
+
 	res, err := s.akskClient.CreateAkSk(ctx, &aksk.CreateAkSkRequest{Aksk: akskDetail})
 	if err != nil {
 		log.Errorf("failed to create Ak, SK: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+	log.Info("Create AcessKey, SecretKey successfully. : ", res.Aksk)
+	log.Info(" REQUEST : ", akskDetail)
 
 	response.WriteEntity(res.Aksk.String())
 
