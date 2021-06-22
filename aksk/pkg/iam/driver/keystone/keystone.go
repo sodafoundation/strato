@@ -27,6 +27,7 @@ import (
 )
 
 const KEYSTONE_URI = "/identity/v3/credentials"
+const PROTOCOL = "http://"
 
 type blob struct {
 	Access string `json:"access"`
@@ -49,12 +50,12 @@ type Client struct {
 
 type keystoneIam struct {
 	host string
-	uri string
+	uri  string
 }
 
 var keystone = &keystoneIam{}
 
-func Init(host string,) *keystoneIam {
+func Init(host string) *keystoneIam {
 	keystone.host = host
 	return keystone
 }
@@ -74,9 +75,8 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 		Blob:   string(blbout),
 		Type:   "ec2"}})
 
-
 	client := &http.Client{}
-	keystoneURL := "http://"+iam.host+KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	postreq, err := http.NewRequest("POST", keystoneURL, bytes.NewBuffer(u))
 	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
 	postreq.Header.Set("Content-Type", "application/json")
@@ -99,7 +99,7 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
 
 	client := &http.Client{}
-	keystoneURL := "http://"+iam.host+KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	getreq, err := http.NewRequest("DELETE", keystoneURL+"/"+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
@@ -117,7 +117,7 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
 
 	client := &http.Client{}
-	keystoneURL := "http://"+iam.host+KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
@@ -138,7 +138,7 @@ func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*mo
 
 func (iam *keystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
 	client := &http.Client{}
-	keystoneURL := "http://"+iam.host+KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
