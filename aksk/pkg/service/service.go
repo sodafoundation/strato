@@ -55,7 +55,7 @@ func (b akskService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, o
 		Blob:      res.Credential.Blob,
 	}
 
-	log.Info("Created AKSK successfully. Response  : ", out.Aksk.Blob)
+	log.Info("Created AKSK successfully. Response  : ", res.Credential.Blob)
 	return nil
 }
 
