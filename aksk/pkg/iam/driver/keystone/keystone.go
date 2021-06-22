@@ -24,11 +24,10 @@ import (
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
-
 	_ "github.com/sirupsen/logrus"
 )
 
-const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
+const KEYSTONE_URL = "" //"http://192.168.20.108/identity/v3/credentials"
 
 type blob struct {
 	Access string `json:"access"`

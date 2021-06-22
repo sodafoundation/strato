@@ -18,8 +18,6 @@ import (
 	"math/rand"
 )
 
-const KEYSTONE_URL = "http://192.168.20.108/identity/v3/auth/tokens"
-
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func GenerateRandomString(n int) string {

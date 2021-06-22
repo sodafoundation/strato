@@ -15,7 +15,7 @@
 package config
 
 type CredentialStore struct {
-	Credential string `conf:"credential,username:password@tcp(ip:port)/dbname"`
+	URI 	   string `conf:"driver, /identity/v3/credentials"`
 	Driver     string `conf:"driver,keystone"`
-	Host       string `conf:"host,localhost:8089"`
+	Host       string `conf:"host,localhost"`
 }
