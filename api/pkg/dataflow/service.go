@@ -15,10 +15,9 @@
 package dataflow
 
 import (
-        "encoding/json"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
