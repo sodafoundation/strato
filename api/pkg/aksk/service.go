@@ -117,9 +117,9 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 	akskDetail.UserId = actx.UserId
 	akskDetail.Token = actx.AuthToken
 
-	log.Info("RAJAT - AKSK - ProjectID ", akskDetail.ProjectId )
-	log.Info("RAJAT - AKSK - UserID ", akskDetail.UserId )
-	log.Info("RAJAT - AKSK - Token ", akskDetail.Token )
+	log.Info("RAJAT - AKSK - ProjectID ", akskDetail.ProjectId)
+	log.Info("RAJAT - AKSK - UserID ", akskDetail.UserId)
+	log.Info("RAJAT - AKSK - Token ", akskDetail.Token)
 
 	res, err := s.akskClient.CreateAkSk(ctx, &aksk.CreateAkSkRequest{Aksk: akskDetail})
 	if err != nil {
