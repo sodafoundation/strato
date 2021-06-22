@@ -20,9 +20,10 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/s3/pkg/exception"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
-	log "github.com/sirupsen/logrus"
 )
 
 func (ad *adapter) DeleteBucket(ctx context.Context, bucketName string) S3Error {

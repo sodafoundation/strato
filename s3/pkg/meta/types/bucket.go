@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

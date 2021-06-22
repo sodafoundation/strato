@@ -19,11 +19,20 @@ import (
 	"os"
 
 	micro "github.com/micro/go-micro/v2"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	"github.com/opensds/multi-cloud/backend/pkg/db"
 	handler "github.com/opensds/multi-cloud/backend/pkg/service"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/config"
 	pb "github.com/opensds/multi-cloud/backend/proto"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 func main() {
@@ -34,10 +43,16 @@ func main() {
 	defer db.Exit()
 
 	obs.InitLogs()
-	service := micro.NewService(
-		micro.Name("backend"),
-	)
 
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+	}
+
+	service := micro.NewService(
+		micro.Name(backendService),
+	)
 	service.Init()
 
 	pb.RegisterBackendHandler(service.Server(), handler.NewBackendService())

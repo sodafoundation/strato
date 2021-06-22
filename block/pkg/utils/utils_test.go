@@ -2,14 +2,16 @@ package utils
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/pkg/model"
 	pb "github.com/opensds/multi-cloud/block/proto"
 	bkpb "github.com/opensds/multi-cloud/testutils/backend/proto"
 	"github.com/opensds/multi-cloud/testutils/block/collection"
-	"reflect"
-	"testing"
 )
 
 func TestUpdateVolumeStruct(t *testing.T) {
@@ -20,15 +22,15 @@ func TestUpdateVolumeStruct(t *testing.T) {
 
 	volModel1 := &collection.SampleVolumes[0]
 	volPb1 := &collection.SamplePBVolumes[0]
-	volPb2 :=  &collection.SamplePBVolumes[1]
+	volPb2 := &collection.SamplePBVolumes[1]
 
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name:"TestUpdateVolumeStruct 1", args:args{volModel: volModel1, volPb: volPb1}, wantErr: false},
-		{name:"TestUpdateVolumeStruct 2", args:args{volModel: volModel1, volPb: volPb2}, wantErr: false},
+		{name: "TestUpdateVolumeStruct 1", args: args{volModel: volModel1, volPb: volPb1}, wantErr: false},
+		{name: "TestUpdateVolumeStruct 2", args: args{volModel: volModel1, volPb: volPb2}, wantErr: false},
 	}
 
 	for _, tt := range tests {
@@ -48,17 +50,16 @@ func TestUpdateVolumeModel(t *testing.T) {
 
 	volModel1 := &collection.SampleVolumes[0]
 	volPb1 := &collection.SamplePBVolumes[0]
-	volPb2 :=  &collection.SamplePBVolumes[1]
+	volPb2 := &collection.SamplePBVolumes[1]
 
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name:"TestUpdateVolumeModel 1", args:args{volModel: volModel1, volPb: volPb1}, wantErr: false},
-		{name:"TestUpdateVolumeModel 2", args:args{volModel: volModel1, volPb: volPb2}, wantErr: false},
+		{name: "TestUpdateVolumeModel 1", args: args{volModel: volModel1, volPb: volPb1}, wantErr: false},
+		{name: "TestUpdateVolumeModel 2", args: args{volModel: volModel1, volPb: volPb2}, wantErr: false},
 	}
-
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -83,9 +84,8 @@ func TestConvertTags(t *testing.T) {
 		Value: "v2",
 	}
 
-	wantTag1 := model.Tag{Key: "T1" , Value: "v1"}
-	wantTag2 := model.Tag{Key: "T2" , Value: "v2"}
-
+	wantTag1 := model.Tag{Key: "T1", Value: "v1"}
+	wantTag2 := model.Tag{Key: "T2", Value: "v2"}
 
 	tests := []struct {
 		name    string
@@ -93,8 +93,8 @@ func TestConvertTags(t *testing.T) {
 		want    []model.Tag
 		wantErr bool
 	}{
-		{name:"TestConvertTags 1", args:args{pbtags: []*pb.Tag{&pbtag1} }, want:[]model.Tag{wantTag1} ,  wantErr: false},
-		{name:"TestConvertTags 2", args:args{pbtags: []*pb.Tag{&pbtag2} }, want:[]model.Tag{wantTag2} ,  wantErr: false},
+		{name: "TestConvertTags 1", args: args{pbtags: []*pb.Tag{&pbtag1}}, want: []model.Tag{wantTag1}, wantErr: false},
+		{name: "TestConvertTags 2", args: args{pbtags: []*pb.Tag{&pbtag2}}, want: []model.Tag{wantTag2}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -143,15 +143,15 @@ func TestMergeVolumeData(t *testing.T) {
 	}
 
 	volPb1 := &collection.SamplePBVolumes[0]
-	volPb2 :=  &collection.SamplePBVolumes[1]
+	volPb2 := &collection.SamplePBVolumes[1]
 
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name:"TestMergeVolumeData 1", args:args{vol: volPb1, volFinal: volPb2}, wantErr: false},
-		{name:"TestMergeVolumeData 2", args:args{vol: volPb1, volFinal: volPb1}, wantErr: false},
+		{name: "TestMergeVolumeData 1", args: args{vol: volPb1, volFinal: volPb2}, wantErr: false},
+		{name: "TestMergeVolumeData 2", args: args{vol: volPb1, volFinal: volPb1}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -167,31 +167,28 @@ func TestGetBackend(t *testing.T) {
 	ctx := context.Background()
 
 	bkendDetail := backend.BackendDetail{
-		Id:                   "",
-		TenantId:             "",
-		UserId:               "",
-		Name:                 "",
-		Type:                 "",
-		Region:               "",
-		Endpoint:             "",
-		BucketName:           "",
-		Access:               "",
-		Security:             "",
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
+		Id:         "",
+		TenantId:   "",
+		UserId:     "",
+		Name:       "",
+		Type:       "",
+		Region:     "",
+		Endpoint:   "",
+		BucketName: "",
+		Access:     "",
+		Security:   "",
 	}
 
 	bkendReq := &backend.GetBackendRequest{
 		Id: "id",
-    }
+	}
 
 	bkendResp := backend.GetBackendResponse{
 		Backend: &bkendDetail,
 	}
 
 	mockBackendClient := new(bkpb.BackendService)
-	mockBackendClient.On("GetBackend", ctx, bkendReq ).Return(&bkendResp, nil)
+	mockBackendClient.On("GetBackend", ctx, bkendReq).Return(&bkendResp, nil)
 
 	GetBackend(ctx, mockBackendClient, "id")
 

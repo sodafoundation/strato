@@ -15,24 +15,41 @@
 package main
 
 import (
-	"github.com/micro/go-micro/v2"
+	"os"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	handler "github.com/opensds/multi-cloud/dataflow/pkg"
 	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler"
 	_ "github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger/crontrigger"
-	pb "github.com/opensds/multi-cloud/dataflow/proto"
+	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
+
+	"github.com/micro/go-micro/v2"
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	dataflowService_Docker = "dataflow"
+	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
+)
+
 func main() {
+	dataflowService := dataflowService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		dataflowService = dataflowService_K8S
+	}
+
 	service := micro.NewService(
-		micro.Name("dataflow"),
+		micro.Name(dataflowService),
 	)
 
 	obs.InitLogs()
 	log.Info("Init dataflow service.")
 	service.Init()
-	pb.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService())
+	dataflow.RegisterDataFlowHandler(service.Server(), handler.NewDataFlowService())
 	scheduler.LoadAllPlans()
 	scheduler.LoadLifecycleScheduler()
 	if err := service.Run(); err != nil {

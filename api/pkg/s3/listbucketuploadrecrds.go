@@ -5,11 +5,12 @@ import (
 	"sort"
 
 	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 func (s *APIService) ListBucketUploadRecords(request *restful.Request, response *restful.Response) {

@@ -2,9 +2,11 @@ package datatype
 
 import (
 	"encoding/xml"
+
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	log "github.com/sirupsen/logrus"
 )
 
 var ValidCannedAcl = []string{

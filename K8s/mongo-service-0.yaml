@@ -1,0 +1,108 @@
+# Copyright 2021 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: soda-multi-cloud
+  name: mongodb-0-service
+  labels:
+    run: mongodb-0-service
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+    protocol: TCP
+  selector:
+    defacementComponent: mongodb-0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: soda-multi-cloud
+  name: mongodb-0
+  labels:
+    env: test
+    defacementComponent: mongodb-0
+    app: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      defacementComponent: mongodb-0
+  template:
+    metadata:
+      labels:
+        defacementComponent: mongodb-0
+        app: mongo
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - mongo
+             topologyKey: "kubernetes.io/hostname"
+      containers:
+        - image: sodafoundation/mongodb:latest
+          name: mongodb-0
+          resources:
+            requests:
+              ephemeral-storage: "1Gi"
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              ephemeral-storage: "2Gi"
+              cpu: "700m"
+              memory: "2Gi"
+          env:
+            - name: "MONGO_CONFIGURE_REPLICA_SET"
+              value: "true"
+            - name: "MONGO_INITDB_ROOT_USERNAME"
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: "MONGO_USER"
+            - name: "MONGO_INITDB_ROOT_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: soda-secret
+                  key: "MONGO_PASSWORD"
+            - name: "MONGODB_ID"
+              value: "mongo-0"
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - mongo --quiet --eval "db.getMongo()"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: mongo-localtime
+              mountPath: /etc/localtime
+            - name: mongo-0-data
+              mountPath: /data/db/mongo-0
+      volumes:
+        - name: mongo-localtime
+          hostPath:
+            path: /etc/localtime
+        - name: mongo-0-data
+          persistentVolumeClaim:
+            claimName: mongo-0-pv-claim        

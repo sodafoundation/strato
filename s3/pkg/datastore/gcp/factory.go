@@ -1,10 +1,11 @@
 package gcp
 
 import (
+	"github.com/webrtcn/s3client"
+
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
-	"github.com/webrtcn/s3client"
 )
 
 type GcsDriverFactory struct {

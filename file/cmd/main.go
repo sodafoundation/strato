@@ -18,14 +18,24 @@ import (
 	"os"
 
 	"github.com/micro/go-micro/v2"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	_ "github.com/opensds/multi-cloud/contrib/datastore"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/utils/config"
 
+	log "github.com/sirupsen/logrus"
+
 	handler "github.com/opensds/multi-cloud/file/pkg/service"
 	pb "github.com/opensds/multi-cloud/file/proto"
-	log "github.com/sirupsen/logrus"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	fileService_Docker = "file"
+	fileService_K8S    = "soda.multicloud.v1.file"
 )
 
 func main() {
@@ -34,8 +44,14 @@ func main() {
 	db.Init(dbStore)
 	defer db.Exit(dbStore)
 
+	fileService := fileService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		fileService = fileService_K8S
+	}
+
 	service := micro.NewService(
-		micro.Name("file"),
+		micro.Name(fileService),
 	)
 
 	obs.InitLogs()

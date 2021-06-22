@@ -26,17 +26,19 @@ import (
 	"time"
 
 	"github.com/micro/go-micro/v2/util/log"
-	"github.com/opensds/multi-cloud/contrib/utils"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/opensds/multi-cloud/contrib/utils"
+
+	gcpfilev1 "google.golang.org/api/file/v1"
 
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	file "github.com/opensds/multi-cloud/file/proto"
-	gcpfilev1 "google.golang.org/api/file/v1"
 )
 
 const (
-	locationURIFmt  = "projects/%s/locations/%s"
-	instanceURIFmt  = locationURIFmt + "/instances/%s"
+	locationURIFmt = "projects/%s/locations/%s"
+	instanceURIFmt = locationURIFmt + "/instances/%s"
 
 	// GCP FS Patch update masks
 	fileShareUpdateMask = "file_shares"
@@ -60,7 +62,7 @@ func (g GcpAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFileShar
 
 	instance := &gcpfilev1.Instance{
 		Description: fs.Fileshare.Description,
-		Tier: fs.Fileshare.Metadata.Fields[Tier].GetStringValue(),
+		Tier:        fs.Fileshare.Metadata.Fields[Tier].GetStringValue(),
 		FileShares: []*gcpfilev1.FileShareConfig{
 			{
 				Name:       fs.Fileshare.Name,
@@ -69,8 +71,8 @@ func (g GcpAdapter) CreateFileShare(ctx context.Context, fs *file.CreateFileShar
 		},
 		Networks: []*gcpfilev1.NetworkConfig{
 			{
-				Network:         DefaultNetwork,
-				Modes:           []string{InternetProtocolModeIpv4},
+				Network: DefaultNetwork,
+				Modes:   []string{InternetProtocolModeIpv4},
 			},
 		},
 		Labels: labels,
@@ -174,7 +176,6 @@ func (g GcpAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFileShar
 	instanceId := g.getInstanceId(fs.Fileshare.Name)
 	instanceUri := g.instanceURI(g.backend.Region, fs.Fileshare.AvailabilityZone, instanceId)
 
-
 	// Create a file instance for the Patch request.
 	instance = &gcpfilev1.Instance{
 		Tier: fs.Fileshare.Metadata.Fields["Tier"].GetStringValue(),
@@ -186,8 +187,8 @@ func (g GcpAdapter) UpdatefileShare(ctx context.Context, fs *file.UpdateFileShar
 		},
 		Networks: []*gcpfilev1.NetworkConfig{
 			{
-				Network:         "default",
-				Modes:           []string{"MODE_IPV4"},
+				Network: "default",
+				Modes:   []string{"MODE_IPV4"},
 			},
 		},
 	}
@@ -238,12 +239,12 @@ func (g *GcpAdapter) ParseFileShare(instance *gcpfilev1.Instance) (*file.FileSha
 	}
 
 	meta := map[string]interface{}{
-		InstanceResourceName: instance.Name,
+		InstanceResourceName:  instance.Name,
 		CreationTimeAtBackend: instance.CreateTime,
-		Etag: instance.Etag,
-		Networks: instance.Networks,
-		State: instance.State,
-		StatusMessage: instance.StatusMessage,
+		Etag:                  instance.Etag,
+		Networks:              instance.Networks,
+		State:                 instance.State,
+		StatusMessage:         instance.StatusMessage,
 	}
 
 	metadata, err := utils.ConvertMapToStruct(meta)
@@ -253,9 +254,9 @@ func (g *GcpAdapter) ParseFileShare(instance *gcpfilev1.Instance) (*file.FileSha
 	}
 
 	fileshare := &file.FileShare{
-		Size:      instance.FileShares[0].CapacityGb * utils.GB_FACTOR,
-		Tags:      tags,
-		Metadata:  metadata,
+		Size:     instance.FileShares[0].CapacityGb * utils.GB_FACTOR,
+		Tags:     tags,
+		Metadata: metadata,
 	}
 
 	return fileshare, nil
@@ -264,7 +265,7 @@ func (g *GcpAdapter) ParseFileShare(instance *gcpfilev1.Instance) (*file.FileSha
 func (g *GcpAdapter) GetInstance(ctx context.Context, fs *file.FileShare) (*gcpfilev1.Instance, error) {
 	instanceId := g.getInstanceId(fs.Name)
 	instance, err := g.instancesService.Get(g.instanceURI(g.backend.Region, fs.AvailabilityZone, instanceId)).Context(ctx).Do()
-	if err != nil  || instance == nil {
+	if err != nil || instance == nil {
 		return nil, fmt.Errorf("failed to get instance %v", err)
 	}
 
@@ -322,4 +323,3 @@ func (g GcpAdapter) Close() error {
 	// TODO:
 	return nil
 }
-

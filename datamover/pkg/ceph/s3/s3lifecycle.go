@@ -16,9 +16,11 @@ package cephs3mover
 
 import (
 	"errors"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+
 	log "github.com/sirupsen/logrus"
 	. "github.com/webrtcn/s3client"
+
+	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 )
 
 func (mover *CephS3Mover) ChangeStorageClass(objKey *string, newClass *string, bkend *BackendInfo) error {

@@ -91,6 +91,8 @@ type S3Service interface {
 	GetBucketPolicy(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteBucketPolicy(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*BaseResponse, error)
 	HeadBucket(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*Bucket, error)
+	RestoreObject(ctx context.Context, in *RestoreObjectRequest, opts ...client.CallOption) (*BaseResponse, error)
+	BackendCheck(ctx context.Context, in *BackendDetailS3, opts ...client.CallOption) (*BaseResponse, error)
 }
 
 type s3Service struct {
@@ -686,6 +688,26 @@ func (c *s3Service) HeadBucket(ctx context.Context, in *BaseRequest, opts ...cli
 	return out, nil
 }
 
+func (c *s3Service) RestoreObject(ctx context.Context, in *RestoreObjectRequest, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.RestoreObject", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *s3Service) BackendCheck(ctx context.Context, in *BackendDetailS3, opts ...client.CallOption) (*BaseResponse, error) {
+	req := c.c.NewRequest(c.name, "S3.BackendCheck", in)
+	out := new(BaseResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for S3 service
 
 type S3Handler interface {
@@ -738,6 +760,8 @@ type S3Handler interface {
 	GetBucketPolicy(context.Context, *BaseRequest, *BaseResponse) error
 	DeleteBucketPolicy(context.Context, *BaseRequest, *BaseResponse) error
 	HeadBucket(context.Context, *BaseRequest, *Bucket) error
+	RestoreObject(context.Context, *RestoreObjectRequest, *BaseResponse) error
+	BackendCheck(context.Context, *BackendDetailS3, *BaseResponse) error
 }
 
 func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOption) error {
@@ -790,6 +814,8 @@ func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOp
 		GetBucketPolicy(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		DeleteBucketPolicy(ctx context.Context, in *BaseRequest, out *BaseResponse) error
 		HeadBucket(ctx context.Context, in *BaseRequest, out *Bucket) error
+		RestoreObject(ctx context.Context, in *RestoreObjectRequest, out *BaseResponse) error
+		BackendCheck(ctx context.Context, in *BackendDetailS3, out *BaseResponse) error
 	}
 	type S3 struct {
 		s3
@@ -1100,4 +1126,12 @@ func (h *s3Handler) DeleteBucketPolicy(ctx context.Context, in *BaseRequest, out
 
 func (h *s3Handler) HeadBucket(ctx context.Context, in *BaseRequest, out *Bucket) error {
 	return h.S3Handler.HeadBucket(ctx, in, out)
+}
+
+func (h *s3Handler) RestoreObject(ctx context.Context, in *RestoreObjectRequest, out *BaseResponse) error {
+	return h.S3Handler.RestoreObject(ctx, in, out)
+}
+
+func (h *s3Handler) BackendCheck(ctx context.Context, in *BackendDetailS3, out *BaseResponse) error {
+	return h.S3Handler.BackendCheck(ctx, in, out)
 }

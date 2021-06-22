@@ -18,21 +18,33 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/contrib/datastore/file/aws"
 	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
+	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	"github.com/opensds/multi-cloud/file/pkg/db"
 	"github.com/opensds/multi-cloud/file/pkg/model"
 	"github.com/opensds/multi-cloud/file/pkg/utils"
-
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	pb "github.com/opensds/multi-cloud/file/proto"
-	log "github.com/sirupsen/logrus"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	fileService_Docker = "file"
+	fileService_K8S    = "soda.multicloud.v1.file"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 type fileService struct {
@@ -43,9 +55,18 @@ type fileService struct {
 func NewFileService() pb.FileHandler {
 
 	log.Infof("Init file service finished.\n")
+
+	flService := fileService_Docker
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		flService = fileService_K8S
+		backendService = backendService_K8S
+	}
+
 	return &fileService{
-		fileClient:    pb.NewFileService("file", client.DefaultClient),
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		fileClient:    pb.NewFileService(flService, client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 
@@ -162,6 +183,9 @@ func (f *fileService) CreateFileShare(ctx context.Context, in *pb.CreateFileShar
 	fs, err := sd.CreateFileShare(ctx, in)
 	if err != nil {
 		log.Errorf("Received error in creating file shares at backend %s", err)
+		if fs == nil {
+			return err
+		}
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
 		fs.Fileshare.Status = utils.FileShareStateCreating
@@ -278,7 +302,7 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 			return err
 		}
 		in.Fileshare.Metadata = metaStruct
-	} else if backend.Backend.Type == constants.BackendTypeGcsFile {
+	} else if backend.Backend.Type == constants.BackendTypeGcsFile || backend.Backend.Type == constants.BackendTypeHwSFS {
 		metaStruct, err := driverutils.ConvertMapToStruct(res.Metadata)
 		if err != nil {
 			log.Errorf("Failed to convert metaMap: [%+v] to metaStruct %s\n", res.Metadata, err)
@@ -289,7 +313,10 @@ func (f *fileService) UpdateFileShare(ctx context.Context, in *pb.UpdateFileShar
 
 	fs, err := sd.UpdatefileShare(ctx, in)
 	if err != nil {
-		log.Errorf("Received error in creating file shares at backend %s", err)
+		log.Errorf("received error in updating file shares at backend %s", err)
+		if fs == nil {
+			return err
+		}
 		fs.Fileshare.Status = utils.FileShareStateError
 	} else {
 		fs.Fileshare.Status = utils.FileShareStateUpdating
@@ -390,7 +417,7 @@ func (f *fileService) DeleteFileShare(ctx context.Context, in *pb.DeleteFileShar
 	}
 
 	fileshare := &pb.FileShare{
-		Name: res.Name,
+		Name:             res.Name,
 		AvailabilityZone: res.AvailabilityZone,
 	}
 
@@ -430,7 +457,7 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 	time.Sleep(6 * time.Second)
 
 	ctxBg := context.Background()
-	ctxBg, _ = context.WithTimeout(ctxBg, 10 * time.Minute)
+	ctxBg, _ = context.WithTimeout(ctxBg, 10*time.Minute)
 
 	fsGetInput := &pb.GetFileShareRequest{Fileshare: fs}
 
@@ -441,7 +468,6 @@ func (f *fileService) SyncFileShare(ctx context.Context, fs *pb.FileShare, backe
 		return
 	}
 	log.Debugf("Get File share response = [%+v] from backend", getFs)
-
 
 	if utils.MergeFileShareData(getFs.Fileshare, fs) != nil {
 		log.Errorf("Failed to merge file share create data: [%+v] and get data: [%+v]\n", fs, err)

@@ -23,8 +23,9 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/metadata"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
 	log "github.com/sirupsen/logrus"
+
+	c "github.com/opensds/multi-cloud/api/pkg/context"
 )
 
 const (

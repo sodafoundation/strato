@@ -22,26 +22,53 @@ import (
 	"io/ioutil"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/webrtcn/s3client"
+	. "github.com/webrtcn/s3client"
+	"github.com/webrtcn/s3client/models"
+
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
-	"github.com/webrtcn/s3client"
-	. "github.com/webrtcn/s3client"
-	"github.com/webrtcn/s3client/models"
 )
+
+const sampleBucket string = "sample"
 
 type CephAdapter struct {
 	backend *backendpb.BackendDetail
 	session *s3client.Client
 }
 
+func (ad *CephAdapter) BucketDelete(ctx context.Context, in *pb.Bucket) error {
+	bucket := ad.session.NewBucket()
+	err := bucket.Remove(in.Name)
+	if err != nil {
+		log.Error("the delete bucket failed in ceph service with err: %s", err.Error())
+		return err
+	}
+	log.Debug("The bucket:%s deleted successfully in ceph", in.Name)
+	return nil
+}
+
+func (ad *CephAdapter) BucketCreate(ctx context.Context, input *pb.Bucket) error {
+	bucket := ad.session.NewBucket()
+	err := bucket.Create(input.Name, models.Private)
+	if err != nil {
+		log.Error("the create bucket failed in ceph service with err:%s", err.Error())
+		return err
+	}
+	log.Debug("The bucket:%s created successfully in ceph", input.Name)
+	return nil
+}
+
 func (ad *CephAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Object) (result dscommon.PutResult, err error) {
-	bucketName := ad.backend.BucketName
-	objectId := object.BucketName + "/" + object.ObjectKey
+	bucketName := object.BucketName
+	objectId := object.ObjectKey
 	log.Infof("put object[Ceph S3], bucket:%s, objectId:%s\n", bucketName, objectId)
 
 	userMd5 := dscommon.GetMd5FromCtx(ctx)
@@ -100,7 +127,7 @@ func (ad *CephAdapter) Get(ctx context.Context, object *pb.Object, start int64, 
 	}
 
 	bucket := ad.session.NewBucket()
-	cephObject := bucket.NewObject(ad.backend.BucketName)
+	cephObject := bucket.NewObject(object.BucketName)
 	getObject, err := cephObject.Get(object.ObjectId, &getObjectOption)
 	if err != nil {
 		fmt.Println(err)
@@ -114,10 +141,10 @@ func (ad *CephAdapter) Get(ctx context.Context, object *pb.Object, start int64, 
 
 func (ad *CephAdapter) Delete(ctx context.Context, object *pb.DeleteObjectInput) error {
 	bucket := ad.session.NewBucket()
-	objectId := object.Bucket + "/" + object.Key
+	objectId := object.Key
 	log.Infof("delete object[Ceph S3], objectId:%s, bucket:%s\n", objectId, bucket)
 
-	cephObject := bucket.NewObject(ad.backend.BucketName)
+	cephObject := bucket.NewObject(object.Bucket)
 	err := cephObject.Remove(objectId)
 	if err != nil {
 		log.Infof("delete object[Ceph S3] failed, objectId:%s, err:%v\n", objectId, err)
@@ -170,9 +197,9 @@ func (ad *CephAdapter) ChangeStorageClass(ctx context.Context, object *pb.Object
 
 func (ad *CephAdapter) InitMultipartUpload(ctx context.Context, object *pb.Object) (*pb.MultipartUpload, error) {
 	bucket := ad.session.NewBucket()
-	objectId := object.BucketName + "/" + object.ObjectKey
+	objectId := object.ObjectKey
 	log.Infof("init multipart upload[Ceph S3], bucket = %s,objectId = %v\n", bucket, objectId)
-	cephObject := bucket.NewObject(ad.backend.BucketName)
+	cephObject := bucket.NewObject(object.BucketName)
 	uploader := cephObject.NewUploads(objectId)
 	multipartUpload := &pb.MultipartUpload{}
 
@@ -195,7 +222,7 @@ func (ad *CephAdapter) UploadPart(ctx context.Context, stream io.Reader, multipa
 	bucket := ad.session.NewBucket()
 	log.Infof("upload part[Ceph S3], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
 
-	cephObject := bucket.NewObject(ad.backend.BucketName)
+	cephObject := bucket.NewObject(multipartUpload.Bucket)
 	uploader := cephObject.NewUploads(multipartUpload.ObjectId)
 
 	d, err := ioutil.ReadAll(stream)
@@ -224,7 +251,7 @@ func (ad *CephAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpl
 	bucket := ad.session.NewBucket()
 	log.Infof("complete multipart upload[Ceph S3], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
 
-	cephObject := bucket.NewObject(ad.backend.BucketName)
+	cephObject := bucket.NewObject(multipartUpload.Bucket)
 	uploader := cephObject.NewUploads(multipartUpload.ObjectId)
 	var completeParts []CompletePart
 	for _, p := range completeUpload.Parts {
@@ -253,7 +280,7 @@ func (ad *CephAdapter) CompleteMultipartUpload(ctx context.Context, multipartUpl
 
 func (ad *CephAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload *pb.MultipartUpload) error {
 	bucket := ad.session.NewBucket()
-	cephObject := bucket.NewObject(ad.backend.BucketName)
+	cephObject := bucket.NewObject(multipartUpload.Bucket)
 	uploader := cephObject.NewUploads(multipartUpload.ObjectId)
 	log.Infof("abort multipart upload[Ceph S3], objectId:%s, bucket:%s\n", multipartUpload.ObjectId, bucket)
 
@@ -308,6 +335,49 @@ func (ad *CephAdapter) AbortMultipartUpload(ctx context.Context, multipartUpload
 
 func (ad *CephAdapter) ListParts(ctx context.Context, multipartUpload *pb.ListParts) (*model.ListPartsOutput, error) {
 	return nil, ErrNotImplemented
+}
+
+func (ad *CephAdapter) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	randId := uuid.NewV4().String()
+	input := &pb.Bucket{
+		Name: sampleBucket + randId,
+	}
+	for i := 1; i <= 3; i++ {
+		err := ad.BucketCreate(ctx, input)
+		if err == nil {
+			log.Debug("Create sample bucket is successul")
+			break
+		}
+		if i == 3 {
+			log.Error("failed to create sample bucket :", err)
+			return err
+		}
+	}
+
+	for j := 1; j <= 10; j++ {
+		bucket := ad.session.NewBucket()
+		_, err1 := bucket.Get(input.Name, "", "", "", 1000)
+		if err1 == nil {
+			break
+		}
+		if j == 10 {
+			log.Error("failed to get bucket Info :", err1)
+			return err1
+		}
+		time.Sleep(5 * time.Second)
+	}
+	err := ad.BucketDelete(ctx, input)
+	if err != nil {
+		log.Error("failed to delete sample bucket :", err)
+		return err
+	}
+
+	log.Debug("Delete sample bucket is successful")
+	return nil
+}
+
+func (ad *CephAdapter) Restore(ctx context.Context, inp *pb.Restore) error {
+	return ErrNotImplemented
 }
 
 func (ad *CephAdapter) Close() error {

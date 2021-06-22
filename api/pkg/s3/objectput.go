@@ -23,12 +23,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
-	"github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/proto"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,11 +39,20 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	bucketName := request.PathParameter(common.REQUEST_PATH_BUCKET_NAME)
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
+	storageClass := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	// Save metadata
+	metadata := extractMetadataFromHeader(request.Request.Header)
+	if storageClass == "" {
+		log.Infof("The storage class is not provided")
+	} else {
+		log.Infof("Storage class to be set for object is [%s]", storageClass)
+		metadata["storageClass"] = storageClass
+	}
 	url := request.Request.URL
 	if strings.HasSuffix(url.String(), "/") {
 		objectKey = objectKey + "/"
 	}
-	log.Infof("received request: PUT object, objectkey=%s, bucketName=%s\n:",
+	log.Infof("Received request: PUT object, objectkey=%s, bucketName=%s:",
 		objectKey, bucketName)
 
 	//var authType = signature.GetRequestAuthType(r)
@@ -69,8 +78,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	// Save metadata.
-	metadata := extractMetadataFromHeader(request.Request.Header)
 	// Get Content-Md5 sent by client and verify if valid
 	if _, ok := request.Request.Header["Content-Md5"]; !ok {
 		metadata["md5Sum"] = ""
@@ -126,20 +133,20 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	eof := false
 	stream, err := s.s3Client.PutObject(ctx)
 	defer stream.Close()
-	obj := pb.PutObjectRequest{
+	obj := s3.PutObjectRequest{
 		BucketName: bucketName,
 		ObjectKey:  objectKey,
-		Acl:        &pb.Acl{CannedAcl: acl.CannedAcl},
+		Acl:        &s3.Acl{CannedAcl: acl.CannedAcl},
 		Attrs:      metadata,
 		Location:   location,
 		Size:       size,
 	}
 	// add all header information, if any
-	obj.Headers = make(map[string]*pb.HeaderValues, len(request.Request.Header))
+	obj.Headers = make(map[string]*s3.HeaderValues, len(request.Request.Header))
 
 	for k, v := range request.Request.Header {
 		valueArr := make([]string, 0)
-		headerValues := pb.HeaderValues{Values: valueArr}
+		headerValues := s3.HeaderValues{Values: valueArr}
 		// add all v for this k to headerValues
 		headerValues.Values = append(headerValues.Values, v...)
 		// add k,[v] to input proto struct

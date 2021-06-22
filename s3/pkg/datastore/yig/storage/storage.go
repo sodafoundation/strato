@@ -22,11 +22,13 @@ import (
 	"io"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/crypto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/utils"
-	log "github.com/sirupsen/logrus"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 const (
@@ -39,6 +41,14 @@ const (
 var (
 	RootContext = context.Background()
 )
+
+func (yig *YigStorage) BucketDelete(ctx context.Context, in *s3.Bucket) error {
+	panic("implement me")
+}
+
+func (yig *YigStorage) BucketCreate(ctx context.Context, input *s3.Bucket) error {
+	panic("implement me")
+}
 
 // YigStorage implements StorageDriver
 type YigStorage struct {

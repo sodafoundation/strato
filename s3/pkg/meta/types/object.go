@@ -15,10 +15,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/xxtea/xxtea-go/xxtea"
+
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	"github.com/xxtea/xxtea-go/xxtea"
 )
 
 type Object struct {

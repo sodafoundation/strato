@@ -17,30 +17,39 @@ package lifecycle
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/micro/go-micro/v2/client"
-	"github.com/micro/go-micro/v2/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	"github.com/opensds/multi-cloud/dataflow/pkg/db"
 	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	"github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/opensds/multi-cloud/s3/error"
+	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
-	"github.com/opensds/multi-cloud/s3/proto"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/micro/go-micro/v2/client"
+	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	s3Service_Docker = "s3"
+	s3Service_K8S    = "soda.multicloud.v1.s3"
+)
+
 var topicLifecycle = "lifecycle"
-var s3client = osdss3.NewS3Service("s3", client.DefaultClient)
 
 const TIME_LAYOUT_TIDB = "2006-01-02 15:04:05"
 
@@ -49,6 +58,14 @@ type InterRules []*InternalLifecycleRule
 // map from a specific tier to an array of tiers, that means transition can happens from the specific tier to those tiers in the array.
 var TransitionMap map[string]struct{}
 var mutext sync.Mutex
+var s3client = osdss3.NewS3Service(getEnv(), client.DefaultClient)
+
+func getEnv() string {
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		return s3Service_K8S
+	}
+	return s3Service_Docker
+}
 
 func loadStorageClassDefinition() error {
 	res, _ := s3client.GetTierMap(context.Background(), &s3.BaseRequest{})
@@ -152,7 +169,7 @@ func handleBucketLifecyle(bucket string, rules []*osdss3.LifecycleRule) error {
 				acType = ActionCrosscloudTransition
 			}
 
-			v := InternalLifecycleRule{Bucket: bucket, Days: ac.GetDays(), ActionType: acType, Tier: ac.GetTier(), Backend: ac.GetBackend()}
+			v := InternalLifecycleRule{Bucket: bucket, Days: ac.GetDays(), ActionType: acType, Tier: ac.GetTier(), Backend: ac.GetBackend(), TargetBucket: ac.GetTargetBucket()}
 			if rule.GetFilter() != nil {
 				v.Filter = InternalLifecycleFilter{Prefix: rule.Filter.Prefix}
 			}
@@ -329,8 +346,8 @@ func schedSortedActionsRules(inRules *InterRules) {
 						continue
 					}
 					log.Infof("lifecycle action: object=[%s] type=[%d] source-tier=[%d] target-tier=[%d] "+
-						"source-backend=[%s] target-backend=[%s].\n", obj.ObjectKey, r.ActionType, obj.Tier, r.Tier,
-						obj.Location, r.Backend)
+						"source-backend=[%s] target-backend=[%s] and targetBucket=[%s].\n", obj.ObjectKey, r.ActionType, obj.Tier, r.Tier,
+						obj.Location, r.Backend, r.TargetBucket)
 					acreq := datamover.LifecycleActionRequest{
 						ObjKey:        obj.ObjectKey,
 						BucketName:    obj.BucketName,
@@ -339,6 +356,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 						TargetTier:    r.Tier,
 						SourceBackend: obj.Location,
 						TargetBackend: r.Backend,
+						TargetBucket:  r.TargetBucket,
 						ObjSize:       obj.Size,
 						VersionId:     obj.VersionId,
 						StorageMeta:   obj.StorageMeta,
@@ -346,6 +364,7 @@ func schedSortedActionsRules(inRules *InterRules) {
 					}
 
 					// If send failed, then ignore it, because it will be re-sent in the next schedule period.
+					log.Debug("Schedule the lifecycle with request parameters:", acreq)
 					sendActionRequest(&acreq)
 
 					// Add object key to dupCheck so it will not be processed repeatedly in this round or scheduling.

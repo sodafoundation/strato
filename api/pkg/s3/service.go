@@ -19,19 +19,27 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"math/rand"
+	"net/http"
+	"os"
+
+	"github.com/micro/go-micro/v2/client"
+
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 
 	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
-	"github.com/opensds/multi-cloud/backend/proto"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/proto"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	s3Service      = "s3"
-	backendService = "backend"
+	MICRO_ENVIRONMENT     = "MICRO_ENVIRONMENT"
+	K8S                   = "k8s"
+	s3Service_Docker      = "s3"
+	backendService_Docker = "backend"
+	s3Service_K8S         = "soda.multicloud.v1.s3"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 type APIService struct {
@@ -40,6 +48,15 @@ type APIService struct {
 }
 
 func NewAPIService(c client.Client) *APIService {
+
+	s3Service := s3Service_Docker
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+		s3Service = s3Service_K8S
+	}
+
 	return &APIService{
 		s3Client:      s3.NewS3Service(s3Service, c),
 		backendClient: backend.NewBackendService(backendService, c),
@@ -79,8 +96,8 @@ func (s *APIService) getBucketMeta(ctx context.Context, bucketName string) (*s3.
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
 	if err == nil {
-		if rsp.GetErrorCode() != int32(ErrNoErr) {
-			err = S3ErrorCode(rsp.GetErrorCode())
+		if rsp.GetErrorCode() != int32(s3error.ErrNoErr) {
+			err = s3error.S3ErrorCode(rsp.GetErrorCode())
 		}
 	}
 	if err != nil {
@@ -100,8 +117,8 @@ func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, 
 	// gRPC client, so in our codes, gRPC server will return nil and set error code to reponse package while business
 	// error happens, and if gRPC client received error, that means some exception happened for gRPC itself.
 	if err == nil {
-		if rsp.GetErrorCode() != int32(ErrNoErr) {
-			err = S3ErrorCode(rsp.GetErrorCode())
+		if rsp.GetErrorCode() != int32(s3error.ErrNoErr) {
+			err = s3error.S3ErrorCode(rsp.GetErrorCode())
 		}
 	}
 	if err != nil {
@@ -115,7 +132,7 @@ func (s *APIService) getObjectMeta(ctx context.Context, bucketName, objectName, 
 func (s *APIService) isBackendExist(ctx context.Context, backendName string) bool {
 	flag := false
 
-	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backendpb.ListBackendRequest{
+	backendRep, backendErr := s.backendClient.ListBackend(ctx, &backend.ListBackendRequest{
 		Offset: 0,
 		Limit:  math.MaxInt32,
 		Filter: map[string]string{"name": backendName}})
@@ -123,7 +140,6 @@ func (s *APIService) isBackendExist(ctx context.Context, backendName string) boo
 	if backendErr != nil {
 		log.Infof("Get backend[name=%s] failed.", backendName)
 	} else {
-		log.Infof("backendRep=%+v\n", backendRep)
 		if len(backendRep.Backends) > 0 {
 			log.Infof("backend[name=%s] exist.", backendName)
 			flag = true
@@ -138,11 +154,48 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 		WriteErrorResponse(response, request, err)
 		return err
 	}
-	if errCode != int32(ErrNoErr) {
-		err := S3ErrorCode(errCode)
+	if errCode != int32(s3error.ErrNoErr) {
+		err := s3error.S3ErrorCode(errCode)
 		WriteErrorResponse(response, request, err)
 		return err
 	}
 
 	return nil
+}
+
+// this method is basically for getting the backends name from tier
+func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
+	log.Info("The received tier name for getting backend name:", tierName)
+	var backendId, backendName string
+	var response *restful.Response
+
+	tierResp, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
+	if err != nil {
+		log.Error("list tier failed during getting backends from tier")
+		response.WriteError(http.StatusInternalServerError, err)
+		return ""
+	} else {
+		if len(tierResp.Tiers) > 0 {
+			for _, tier := range tierResp.Tiers {
+				if tier.Name == tierName {
+					backendId = tier.Backends[rand.Intn(len(tier.Backends))]
+					break
+				}
+			}
+		}
+	}
+
+	if backendId != "" {
+		backendRep, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
+		if err != nil {
+			log.Error("the selected backends from tier doesn't exists.")
+			response.WriteError(http.StatusInternalServerError, err)
+			return ""
+		}
+		if backendRep != nil {
+			backendName = backendRep.Backend.Name
+		}
+	}
+
+	return backendName
 }

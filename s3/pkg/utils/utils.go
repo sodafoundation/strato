@@ -19,10 +19,12 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+
 	"github.com/micro/go-micro/v2/metadata"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/opensds/multi-cloud/api/pkg/common"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 )
 
 type Database struct {
@@ -34,6 +36,7 @@ type Database struct {
 // Tier1, Tier99 and Tier999 just like the tiers of hot, warm, cold.
 // In the future, we will provide the ability for users to add new storage tiers, if we use 1, 2 and 3, then no space for new storage tiers.
 const (
+	NO_TIER = 0
 	Tier1   = 1
 	Tier99  = 99
 	Tier999 = 999
@@ -50,10 +53,12 @@ const (
 )
 
 const (
+	GCS_STANDARD       = "STANDARD"
 	GCS_MULTI_REGIONAL = "MULTI_REGIONAL"
 	GCS_REGIONAL       = "REGIONAL"
 	GCS_NEARLINE       = "NEARLINE"
 	GCS_COLDLINE       = "COLDLINE"
+	GCS_ARCHIVE        = "Archive"
 )
 
 const (
@@ -144,7 +149,6 @@ func GetBackend(ctx context.Context, backedClient backend.BackendService, backen
 		log.Errorf("get backend %s failed.", backendName)
 		return nil, backendErr
 	}
-	log.Infof("backendRep is %v:", backendRep)
 	backend := backendRep.Backends[0]
 	return backend, nil
 }

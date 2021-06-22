@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"

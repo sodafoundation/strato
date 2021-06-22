@@ -17,7 +17,11 @@ package main
 import (
 	"os"
 
-	akskPackage "github.com/opensds/multi-cloud/api/pkg/aksk"
+	"github.com/emicklei/go-restful"
+	"github.com/micro/go-micro/v2/web"
+	log "github.com/sirupsen/logrus"
+
+  akskPackage "github.com/opensds/multi-cloud/api/pkg/aksk"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/block"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
@@ -28,17 +32,22 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/web"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
-	serviceName = "gelato"
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+	apiService_Docker = "api"
+	apiService_K8S    = "soda.multicloud.v1.api"
 )
 
 func main() {
+
+	serviceName := apiService_Docker
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		serviceName = apiService_K8S
+	}
+
 	webService := web.NewService(
 		web.Name(serviceName),
 		web.Version("v0.1.0"),

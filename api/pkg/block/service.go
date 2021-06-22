@@ -16,18 +16,20 @@ package block
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/opensds/multi-cloud/block/pkg/model"
 	"github.com/opensds/multi-cloud/contrib/utils"
-	"net/http"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/block/proto"
-	log "github.com/sirupsen/logrus"
+	backend "github.com/opensds/multi-cloud/backend/proto"
+	block "github.com/opensds/multi-cloud/block/proto"
 )
 
 const (
@@ -244,7 +246,6 @@ func (s *APIService) UpdateVolume(request *restful.Request, response *restful.Re
 	log.Info("Received request for updating volume.")
 
 	volume := &model.Volume{}
-
 	err := request.ReadEntity(&volume)
 	if err != nil {
 		log.Errorf("Failed to read request body err: \n", err)
@@ -282,6 +283,7 @@ func (s *APIService) UpdateVolume(request *restful.Request, response *restful.Re
 		vol.Size = *volume.Size
 	}
 
+	vol.Name = volume.Name
 	if volume.Encrypted != nil && *volume.Encrypted {
 		vol.Encrypted = *volume.Encrypted
 		vol.EncryptionSettings = volume.EncryptionSettings

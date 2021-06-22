@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
@@ -18,7 +19,7 @@ func (factory *AwsS3DriverFactory) CreateDriver(backend *backendpb.BackendDetail
 	AccessKeySecret := backend.Security
 	region := backend.Region
 
-	s3aksk := s3Cred{ak: AccessKeyID, sk: AccessKeySecret}
+	s3aksk := S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
 	creds := credentials.NewCredentials(&s3aksk)
 
 	disableSSL := true
@@ -32,7 +33,7 @@ func (factory *AwsS3DriverFactory) CreateDriver(backend *backendpb.BackendDetail
 		return nil, err
 	}
 
-	adap := &AwsAdapter{backend: backend, session: sess}
+	adap := &AwsAdapter{Backend: backend, Session: sess}
 
 	return adap, nil
 }

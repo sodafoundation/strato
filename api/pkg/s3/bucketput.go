@@ -19,18 +19,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/emicklei/go-restful"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/s3/error"
+	s3error "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	"github.com/opensds/multi-cloud/s3/proto"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
+
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	TrueValue = "True"
+)
+
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
+	log.Info("Create bucket request received")
+	var isTier string
+
+	isTier = request.HeaderParameter("tier")
 	bucketName := strings.ToLower(request.PathParameter(common.REQUEST_PATH_BUCKET_NAME))
 	if !isValidBucketName(bucketName) {
 		WriteErrorResponse(response, request, s3error.ErrInvalidBucketName)
@@ -60,7 +68,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 	bucket.CreateTime = time.Now().Unix()
 	bucket.Versioning = &s3.BucketVersioning{}
 	bucket.Versioning.Status = utils.VersioningDisabled // it's the default
-	bucket.Acl = &pb.Acl{CannedAcl: acl.CannedAcl}
+	bucket.Acl = &s3.Acl{CannedAcl: acl.CannedAcl}
 	log.Infof("Bucket PUT: TenantId=%s, UserId=%s\n", bucket.TenantId, bucket.UserId)
 
 	body := ReadBody(request)
@@ -75,7 +83,12 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			return
 		}
 
-		backendName := createBucketConf.LocationConstraint
+		var backendName string
+		if strings.EqualFold(isTier, TrueValue) {
+			backendName = s.getBackendFromTier(ctx, createBucketConf.LocationConstraint)
+		} else {
+			backendName = createBucketConf.LocationConstraint
+		}
 		if backendName != "" {
 			log.Infof("backendName is %v\n", backendName)
 			bucket.DefaultLocation = backendName

@@ -19,21 +19,23 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/metadata"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
 	"github.com/opensds/multi-cloud/datamover/pkg/db"
 	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
 	pb "github.com/opensds/multi-cloud/datamover/proto"
 	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
 	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 var simuRoutines = 10
@@ -47,6 +49,17 @@ const WT_MOVE = 96
 const WT_DELETE = 4
 const JobType = "migration"
 
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	s3Service_Docker = "s3"
+	s3Service_K8S    = "soda.multicloud.v1.s3"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
+)
+
 type Migration interface {
 	Init()
 	HandleMsg(msg string)
@@ -54,8 +67,17 @@ type Migration interface {
 
 func Init() {
 	log.Infof("Migration init.")
-	s3client = osdss3.NewS3Service("s3", client.DefaultClient)
-	bkendclient = backend.NewBackendService("backend", client.DefaultClient)
+
+	s3Service := s3Service_Docker
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		s3Service = s3Service_K8S
+		backendService = backendService_K8S
+	}
+
+	s3client = osdss3.NewS3Service(s3Service, client.DefaultClient)
+	bkendclient = backend.NewBackendService(backendService, client.DefaultClient)
 }
 
 func HandleMsg(msgData []byte) error {

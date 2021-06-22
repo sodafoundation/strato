@@ -18,17 +18,19 @@ import (
 	"context"
 
 	"github.com/micro/go-micro/v2/util/log"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
-	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
+	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
+	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
+	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
+
 	gcpfilev1 "google.golang.org/api/file/v1"
+
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
 )
 
 type GcpFSDriverFactory struct {

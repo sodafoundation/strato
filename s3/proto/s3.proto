@@ -101,6 +101,10 @@ service S3 {
     }
     rpc HeadBucket (BaseRequest) returns (Bucket) {
     }
+    rpc RestoreObject (RestoreObjectRequest) returns (BaseResponse) {
+    }
+    rpc BackendCheck (BackendDetailS3) returns (BaseResponse) {
+    }
 }
 
 message ListObjectPartsRequest {
@@ -408,6 +412,8 @@ message Action {
     int32 tier = 4;
     // Destination backend of the object/bucket for Cross-cloud transition
     string backend = 5;
+    // Destination bucket for specified backend for Cross-cloud transition
+    string targetBucket = 6;
 
 }
 
@@ -706,3 +712,29 @@ message ListBucketUploadResponse {
     int32 errorCode = 1;
     ListBucketUploadResult result = 2;
 }
+
+message Restore{
+    int64 days          = 1;
+    string tier         = 2;
+    string bucketName   = 3;
+    string objectKey    = 4;
+    string storageClass = 5;
+}
+
+message RestoreObjectRequest {
+    Restore restore = 1;
+}
+message BackendDetailS3 {
+	string id = 1;
+	string tenantId = 2;
+	string userId = 3;
+	string name = 4;
+	string type = 5;
+	string region = 6;
+	string endpoint = 7;
+	string bucketName = 8;
+	string access = 9;
+	string security = 10;
+}
+
+

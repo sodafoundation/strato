@@ -16,13 +16,15 @@ package s3
 
 import (
 	"fmt"
+
 	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
 	. "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 //Convert function from storage tier to storage class for XML format output
@@ -84,6 +86,7 @@ func (s *APIService) BucketLifecycleGet(request *restful.Request, response *rest
 				xmlTransition := model.Transition{}
 				xmlTransition.Days = action.Days
 				xmlTransition.Backend = action.Backend
+				xmlTransition.TargetBucket = action.TargetBucket
 				className, err := s.tier2class(action.Tier)
 				if err == nil {
 					xmlTransition.StorageClass = className

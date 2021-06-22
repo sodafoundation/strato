@@ -16,6 +16,7 @@ package gophercloudclient
 
 import (
 	"github.com/gophercloud/gophercloud"
+
 	"github.com/opensds/multi-cloud/testhelper"
 )
 

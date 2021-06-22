@@ -17,23 +17,33 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	"os"
 	"strconv"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
 	"github.com/opensds/multi-cloud/s3/pkg/db"
 	"github.com/opensds/multi-cloud/s3/pkg/gc"
 	"github.com/opensds/multi-cloud/s3/pkg/helper"
 	"github.com/opensds/multi-cloud/s3/pkg/meta"
 	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 	. "github.com/opensds/multi-cloud/s3/pkg/utils"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
+)
+
+const (
+	MICRO_ENVIRONMENT = "MICRO_ENVIRONMENT"
+	K8S               = "k8s"
+
+	backendService_Docker = "backend"
+	backendService_K8S    = "soda.multicloud.v1.backend"
 )
 
 type Int2String map[int32]string
@@ -68,9 +78,16 @@ func NewS3Service() pb.S3Handler {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	metaStor := meta.New(cfg)
 	gc.Init(ctx, cancelFunc, metaStor)
+
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+	}
+
 	return &s3Service{
 		MetaStorage:   metaStor,
-		backendClient: backend.NewBackendService("backend", client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 
@@ -89,6 +106,25 @@ func GetNameFromTier(tier int32, backendType string) (string, error) {
 
 	log.Infof("storage class of tier[%d] for backend type[%s] is %s.\n", tier, backendType, v2)
 	return v2, nil
+}
+
+// This function returns the OSDS tier fromt the backend Storage Class
+func GetTierFromName(name string, backendType string, tier *int32) error {
+	v, ok := Ext2IntTierMap[backendType]
+	if !ok {
+		log.Errorf("get storage class of failed, no such backend type:%s", backendType)
+		return ErrInternalError
+	}
+
+	v2, ok := (*v)[name]
+	if !ok {
+		log.Errorf("get tier of storage class[%s] failed, backendType=%s", name, backendType)
+		return ErrInternalError
+	}
+
+	*tier = v2
+	log.Infof("Tier of storage class[%s] for backend type[%s] is %d", name, backendType, v2)
+	return nil
 }
 
 func loadAWSDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
@@ -163,15 +199,15 @@ func loadHWDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 
 func loadGCPDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	t2n := make(Int2String)
-	t2n[Tier1] = GCS_MULTI_REGIONAL
+	t2n[Tier1] = GCS_STANDARD
 	//t2n[Tier99] = GCS_NEARLINE
-	//t2n[Tier999] = GCS_COLDLINE
+	t2n[Tier999] = GCS_ARCHIVE
 	(*i2e)[OSTYPE_GCS] = &t2n
 
 	n2t := make(String2Int)
-	n2t[GCS_MULTI_REGIONAL] = Tier1
+	n2t[GCS_STANDARD] = Tier1
 	//n2t[GCS_NEARLINE] = Tier99
-	//n2t[GCS_COLDLINE] = Tier999
+	n2t[GCS_ARCHIVE] = Tier999
 	(*e2i)[OSTYPE_GCS] = &n2t
 }
 
@@ -485,7 +521,7 @@ func (s *s3Service) UpdateObjMeta(ctx context.Context, in *pb.UpdateObjMetaReque
 
 func (s *s3Service) GetBackendTypeByTier(ctx context.Context, in *pb.GetBackendTypeByTierRequest, out *pb.GetBackendTypeByTierResponse) error {
 	for k, v := range Int2ExtTierMap {
-		for k1, _ := range *v {
+		for k1 := range *v {
 			if k1 == in.Tier {
 				out.Types = append(out.Types, k)
 			}
@@ -522,6 +558,32 @@ func (s *s3Service) CountObjects(ctx context.Context, in *pb.ListObjectsRequest,
 	return nil
 }
 
+func (s *s3Service) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3, out *pb.BaseResponse) error {
+	log.Info("BackendCheck is called in s3 service.")
+	backendDetailS3 := &backend.BackendDetail{}
+	backendDetailS3.Id = backendDetail.Id
+	backendDetailS3.Name = backendDetail.Name
+	backendDetailS3.Type = backendDetail.Type
+	backendDetailS3.Region = backendDetail.Region
+	backendDetailS3.Endpoint = backendDetail.Endpoint
+	backendDetailS3.BucketName = backendDetail.BucketName
+	backendDetailS3.Access = backendDetail.Access
+	backendDetailS3.Security = backendDetail.Security
+	sd, err := driver.CreateStorageDriver(backendDetail.Type, backendDetailS3)
+	if err != nil {
+		log.Errorf("adapter creation failed, err:%v\n", err)
+		return err
+	}
+
+	err = sd.BackendCheck(ctx, backendDetail)
+	if err != nil {
+		log.Errorf("failed due to wrong backend details, err:%v\n", err)
+		return err
+	}
+
+	return nil
+}
+
 func GetErrCode(err error) (errCode int32) {
 	if err == nil {
 		errCode = int32(ErrNoErr)
@@ -540,7 +602,7 @@ func GetErrCode(err error) (errCode int32) {
 func CheckRights(ctx context.Context, tenantId4Source string) (bool, string, string, error) {
 	isAdmin, tenantId, userId, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
-		log.Errorf("get credential faied, err:%v\n", err)
+		log.Errorf("get credential failed, err:%v\n", err)
 		return isAdmin, tenantId, userId, ErrInternalError
 	}
 	if !isAdmin && tenantId != tenantId4Source {

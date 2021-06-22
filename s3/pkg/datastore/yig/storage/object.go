@@ -10,11 +10,12 @@ import (
 	"math/rand"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/opensds/multi-cloud/s3/error"
 	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
 	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
 	pb "github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 var latestQueryTime [2]time.Time // 0 is for SMALL_FILE_POOLNAME, 1 is for BIG_FILE_POOLNAME
@@ -398,4 +399,12 @@ func ParseObjectMeta(meta string) (ObjectMetaInfo, error) {
 	}
 
 	return objMeta, nil
+}
+
+func (yig *YigStorage) BackendCheck(ctx context.Context, backendDetail *pb.BackendDetailS3) error {
+	return ErrNotImplemented
+}
+
+func (yig *YigStorage) Restore(ctx context.Context, target *pb.Restore) error {
+	return ErrNotImplemented
 }

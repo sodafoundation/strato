@@ -18,12 +18,13 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
 	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	"github.com/opensds/multi-cloud/s3/proto"
-	log "github.com/sirupsen/logrus"
+	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
 func parseListBuckets(list *s3.ListBucketsResponse) ListBucketsResponse {

@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opensds/multi-cloud/backend/proto"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/block/pkg/model"
+	block "github.com/opensds/multi-cloud/block/proto"
+	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 
 	pstruct "github.com/golang/protobuf/ptypes/struct"
-	pb "github.com/opensds/multi-cloud/block/proto"
-	driverutils "github.com/opensds/multi-cloud/contrib/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -107,10 +107,10 @@ func ParseStructFields(fields map[string]*pstruct.Value) (map[string]interface{}
 	return valuesMap, nil
 }
 
-func UpdateVolumeStruct(volModel *model.Volume, volPb *pb.Volume) error {
-	var tags []*pb.Tag
+func UpdateVolumeStruct(volModel *model.Volume, volPb *block.Volume) error {
+	var tags []*block.Tag
 	for _, tag := range volModel.Tags {
-		tags = append(tags, &pb.Tag{
+		tags = append(tags, &block.Tag{
 			Key:   tag.Key,
 			Value: tag.Value,
 		})
@@ -127,7 +127,7 @@ func UpdateVolumeStruct(volModel *model.Volume, volPb *pb.Volume) error {
 	return nil
 }
 
-func UpdateVolumeModel(volPb *pb.Volume, volModel *model.Volume) error {
+func UpdateVolumeModel(volPb *block.Volume, volModel *model.Volume) error {
 
 	tags, err := ConvertTags(volPb.Tags)
 	if err != nil {
@@ -155,7 +155,7 @@ func UpdateVolumeModel(volPb *pb.Volume, volModel *model.Volume) error {
 	return nil
 }
 
-func ConvertTags(pbtags []*pb.Tag) ([]model.Tag, error) {
+func ConvertTags(pbtags []*block.Tag) ([]model.Tag, error) {
 	var tags []model.Tag
 	for _, tag := range pbtags {
 		tags = append(tags, model.Tag{
@@ -193,7 +193,7 @@ func ConvertMetadataStructToMap(metaStruct *pstruct.Struct) (map[string]interfac
 	return metaMap, nil
 }
 
-func MergeVolumeData(vol *pb.Volume, volFinal *pb.Volume) error {
+func MergeVolumeData(vol *block.Volume, volFinal *block.Volume) error {
 
 	if vol.Tags != nil || len(vol.Tags) != 0 {
 		volFinal.Tags = vol.Tags

@@ -20,6 +20,7 @@ const (
 	BackendTypeAwsBlock  = "aws-block"
 	BackendTypeIBMCos    = "ibm-cos"
 	BackendTypeObs       = "hw-obs"
+	BackendTypeHwSFS     = "hw-file"
 	BackendTypeAzure     = "azure-blob"
 	BackendTypeAzureFile = "azure-file"
 	BackendTypeCeph      = "ceph-s3"
@@ -28,4 +29,6 @@ const (
 	BackendFusionStorage = "fusionstorage-object"
 	BackendTypeYIGS3     = "yig"
 	BackendTypeAlibaba   = "alibaba-oss"
+	BackendTypeHpcBlock  = "hw-block"
+	BackendTypeSonyODA   = "sony-oda"
 )

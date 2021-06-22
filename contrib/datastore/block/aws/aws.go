@@ -16,13 +16,13 @@ package aws
 
 import (
 	"context"
+
+	block "github.com/opensds/multi-cloud/block/proto"
+	"github.com/opensds/multi-cloud/contrib/utils"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/contrib/utils"
-	. "github.com/opensds/multi-cloud/s3/error"
-
 	awsec2 "github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
 )
@@ -61,16 +61,16 @@ func (ad *AwsAdapter) ParseVolume(volumeAWS *awsec2.Volume) (*block.Volume, erro
 	}
 
 	volume := &block.Volume{
-		Size:               *volumeAWS.Size * utils.GB_FACTOR,
-		Encrypted:          *volumeAWS.Encrypted,
-		Status:             *volumeAWS.State,
-		SnapshotId:         *volumeAWS.SnapshotId,
-		Type:               *volumeAWS.VolumeType,
-		Tags:               tags,
-		Metadata:           metadata,
+		Size:       *volumeAWS.Size * utils.GB_FACTOR,
+		Encrypted:  *volumeAWS.Encrypted,
+		Status:     *volumeAWS.State,
+		SnapshotId: *volumeAWS.SnapshotId,
+		Type:       *volumeAWS.VolumeType,
+		Tags:       tags,
+		Metadata:   metadata,
 	}
 
-	if *volumeAWS.VolumeType == "gp2" || *volumeAWS.VolumeType == "io1"{
+	if *volumeAWS.VolumeType == "gp2" || *volumeAWS.VolumeType == "io1" {
 		volume.Iops = *volumeAWS.Iops
 	}
 
@@ -120,7 +120,7 @@ func (ad *AwsAdapter) DescribeVolume(input *awsec2.DescribeVolumesInput) (*awsec
 	result, err := svc.DescribeVolumes(input)
 	if err != nil {
 		log.Errorf("Error in retrieving volume list, err:%v", err)
-		return nil, ErrGetFromBackendFailed
+		return nil, err
 	}
 
 	log.Debugf("Describe AWS Volume response = %+v", result)
@@ -155,7 +155,7 @@ func (ad *AwsAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 		Encrypted:         aws.Bool(volume.Volume.Encrypted),
 	}
 
-	if volume.Volume.Type ==  "io1" {
+	if volume.Volume.Type == "io1" {
 		// Iops is required only for io1 volumes
 		input.Iops = aws.Int64(volume.Volume.Iops)
 
@@ -180,7 +180,7 @@ func (ad *AwsAdapter) CreateVolume(ctx context.Context, volume *block.CreateVolu
 		} else {
 			log.Errorf(err.Error())
 		}
-		return nil, ErrGetFromBackendFailed
+		return nil, err
 	}
 
 	log.Debugf("Create Volume response = %+v", result)
@@ -324,7 +324,7 @@ func (ad *AwsAdapter) UpdateVolume(ctx context.Context, in *block.UpdateVolumeRe
 			} else {
 				log.Errorf(err.Error())
 			}
-			return nil, ErrGetFromBackendFailed
+			return nil, err
 		}
 		log.Debugf("Update Volume response = %+v", result)
 
@@ -352,7 +352,7 @@ func (ad *AwsAdapter) DeleteVolume(ctx context.Context, volume *block.DeleteVolu
 	result, err := svc.DeleteVolume(input)
 	if err != nil {
 		log.Errorf("Error in deleting volume: %+v", input, err)
-		return nil, ErrGetFromBackendFailed
+		return nil, err
 	}
 
 	log.Debugf("Delete Volume response = %+v", result)

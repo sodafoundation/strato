@@ -82,6 +82,11 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+  - name: Backup
+    description: Multi-cloud interface for object archival and restore
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
 paths:
   '/v1/{tenantId}/backends':
     parameters:
@@ -768,6 +773,7 @@ paths:
         required: false
         schema:
           type: string
+
     put:
       tags:
         - s3
@@ -808,6 +814,112 @@ paths:
           description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
         '404':
           description: Not Found i.e. No Such Key
+
+  '/{bucketName}/{Object}':
+    parameters:
+      - name: bucketName
+        in: path
+        description: the name of bucket
+        required: true
+        schema:
+          type: string
+      - name: object
+        in: path
+        description: the name of object to be archived
+        required: true
+        schema:
+          type: string
+      - name: Range
+        in: query
+        description: >-
+          the Header parameter Range value like "bytes:1-10",used for multipart archival
+          download
+        required: false
+        schema:
+          type: string
+      - name: uploads
+        in: query
+        description: The format is '/{object}?uploads',used for init multipartarchive
+        required: false
+        schema:
+          type: string
+      - name: partNumber
+        in: query
+        description: >-
+          the format is
+          '/{object}?partNumber={partNumber}&uploadId={UploadId}',must be used
+          with uploadId parameter, used for upload and archive a part
+        required: false
+        schema:
+          type: string
+      - name: uploadId
+        in: query
+        description: >-
+          the format is '/{object}?uploadId={UploadId}',used for compelete
+          multipart archival and abort multipartarchive
+        required: false
+        schema:
+          type: string
+      - name: X-AMZ-Storage-Class
+        in: header
+        description: For archiving object, the request header to describe storage class
+        required: false
+        schema:
+          type: string
+      - name: restore
+        in: query
+        description: >-
+          the format is '/{object}?restore', used to restore archived object
+        required: false
+        schema:
+          type: string
+
+    put:
+      tags:
+        - Backup
+      summary: Upload Object into archival storage.
+      operationId: objectPut
+      responses:
+        '200':
+          description: Successful Archive Object
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Bucket
+    post:
+      tags:
+        - Backup
+      summary: Restore Object from archival storage.
+      operationId: objectPost
+      requestBody:
+        desciption: Required inputs for restoring a object.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreObject'
+      responses:
+        '200':
+          description: Successful restoration of Object initiated
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch, RestoreFailed
+        '404':
+          description: Not Found i.e. No Such Bucket
+        '409':
+          description: Restoration of object is already in porgress
+    get:
+      tags:
+        - Backup
+      summary: Download archived and restored Object
+      operationId: objectGet
+      responses:
+        '200':
+          description: Successful Download of Object
+        '403':
+          description: Forbidden; Access Denied, InvalidAccessKey, SignatureDoesNotMatch
+        '404':
+          description: Not Found i.e. No Such Key
+
   '/storageClasses':
     get:
       tags:
@@ -817,8 +929,8 @@ paths:
       responses:
         '200':
           description: >-
-           Get storage classes succesfully. There is a map between storage class name
-           and stroage tier, as default the storage classes are compatible with aws s3.
+            Get storage classes successfully. There is a map between storage class name
+            and storage tier, as default the storage classes are compatible with aws s3.
           content:
             application/xml:
               schema:
@@ -874,12 +986,80 @@ paths:
               schema:
                 type: object
                 properties:
-                  fileshares:
+                  volumes:
                     type: array
                     items:
                       $ref: '#/components/schemas/VolumeResult'
                   next:
                     type: integer
+  '/v1/{tenantId}/volumes/{id}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenantId UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: The volume ID.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Volume
+      summary: Get a volume information.
+      operationId: getVolume
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeResult'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+    put:
+      tags:
+        - Volume
+      summary: Update a volume.
+      operationId: updateVolume
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeResult'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+      requestBody:
+        $ref: '#/components/requestBodies/VolumeUpdate'
+    delete:
+      tags:
+        - Volume
+      summary: Deletes a volume.
+      operationId: deleteVolume
+      responses:
+        '200':
+          description: Delete success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Invalid ID supplied
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+        '500':
+          description: The volume can not be deleted. please check status
   '/v1/{tenantId}/file/shares':
     parameters:
       - name: tenantId
@@ -1109,7 +1289,7 @@ components:
         Value:
           description: Value of the Tag object.
           type: string
-          example: sodafs
+          example: soda
       required:
         - Name
     Fields:
@@ -1265,6 +1445,45 @@ components:
                     - bursting
                     - provisioned
                   example: 'provisioned'
+    VolumeFields:
+      type: object
+      properties:
+        CreationTimeAtBackend:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: '2020-06-17T19:44:06Z'
+        StartTimeAtBackend:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: '2020-06-17T19:44:06Z'
+        VolumeId:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                StringValue:
+                  type: string
+                  example: vol-03deedaee2de0060f
+        Progress:
+          type: object
+          properties:
+            kind:
+              type: object
+              properties:
+                NumberValue:
+                  type: integer
+                  example: 0
     Connector:
       type: object
       properties:
@@ -1601,31 +1820,113 @@ components:
             ProvisionedThroughputInMibps: 1
     Volume:
       type: object
+      required:
+        - Name
+        - BackendId
+        - Type
       properties:
+        Id:
+          description: 'The volume ID, - Optional'
+          type: string
+          example: 5ef1db51202b510001c3804c
+        UserId:
+          description: 'The user UUID in a multi-tenancy environment, - Optional'
+          type: string
+          example: 558057c4256545bd8a307c37464003c9
+        BackendId:
+          description: 'The backend ID, - Required'
+          type: string
+          example: 5ea809d2553b0f000116be32
+        Backend:
+          description: 'The backend Name, - Optional'
+          type: string
+          example: backend001
         Name:
-          description: The user defiend name of the volume
+          description: 'The volume name specified by user, - Required'
           type: string
-          example: sap_vol1
-        Size:
-          description: The size of the volume
-          type: integer
-          example: 1073741824
-        AvailabilityZone:
-          description: The availability zone associated with the volume
+          example: volume001
+        Description:
+          description: 'The volume name specified by user, - Optional'
           type: string
-          example: ap-south-1b
+          example: AWS Volume
         Type:
-          description: The type of the volume to be created
+          description: 'The volume type, - Optional'
           type: string
           example: gp2
-        BackendId:
-          description: The multi-cloud registered backedn Id
-          type: string
-          example: 5ef26d79c5d1b20001308f69
         iops:
           description: The IOPS the required for the volume as per the cloud provider
           type: integer
           example: 100
+        Size:
+          description: 'The volume size, - Optional'
+          type: integer
+          example: 1073741824
+        Region:
+          description: 'The region for the volume, - Optional'
+          type: string
+          example: ap-south-1
+        AvailabilityZone:
+          description: 'The availability zone for the volume, - Optional'
+          type: string
+          example: ap-south-1a
+        Tags:
+          description: 'The volume tags, - Optional'
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        SnapshotId:
+          description: 'The volume snapshot id, - Optional'
+          type: string
+          example: 5eea749a926e5300011a69d6
+        Encrypted:
+          description: 'Flag for encrypted volume, - Optional'
+          type: boolean
+          example: true
+        EncryptedSettings:
+          description: 'Encrypted volume Keys, - Optional'
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            KmsKeyId: 'arn:aws:kms:ap-south-1:676589967111:key/a6e1716e-0e90-407b-b494-b8ef8de91fc'
+        Metadata:
+          type: object
+          description: 'Metadata for cloud backend specific data, - Optional'
+          additionalProperties:
+            type: string
+          example:
+            VolumeId: vol-03deedaee2de0060f
+    VolumeUpdate:
+      type: object
+      properties:
+        Description:
+          description: 'The volume name specified by user, - Optional'
+          type: string
+          example: AWS Volume Update
+        Size:
+          description: 'The volume size, - Optional'
+          type: integer
+          example: 1073741824
+        Type:
+          description: 'The volume Type, - Optional'
+          type: integer
+          example: io1
+        Iops:
+          description: 'The Iops, - Optional'
+          type: integer
+          example: 200
+        Tags:
+          description: 'The volume tags, - Optional'
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        Metadata:
+          type: object
+          description: 'Metadata for cloud backend specific data, - Optional'
+          additionalProperties:
+            type: string
+          example:
+            VolumeId: vol-03deedaee2de0060f
 
     BaseResponse:
       type: object
@@ -1922,44 +2223,64 @@ components:
               $ref: '#/components/schemas/Fields'
     VolumeResult:
       type: object
-      description: Cloud Volume Response
+      description: Volume Response
       properties:
-        volumeId:
-          description: The cloud volume ID
+        Id:
+          description: 'The volume ID, generated by server'
           type: string
-          example: 'vol-0b1191d991f2bac3'
+          example: 5ef1db51202b510001c3804c
         CreatedAt:
-          description: The time at which volume was created.
+          description: The time of creation of the volume.
           type: string
           example: '2020-06-23T16:07:05'
+        UpdatedAt:
+          description: The time at which the volume was updated.
+          type: string
+          example: '2020-06-23T16:07:05'
+        TenantId:
+          description: The tenant UUID in a multi-tenancy environment.
+          type: string
+          example: 94b280022d0c4401bcf3b0ea85870519
+        UserId:
+          description: The user UUID in a multi-tenancy environment.
+          type: string
+          example: 5ea809d2553b0f000116be32
         BackendId:
           description: The backend ID
           type: string
-          example: '5ea809d2553b0f000116be32'
+          example: 5ea809d2553b0f000116be32
+        Backend:
+          description: The backend Name.
+          type: string
+          example: backend001
         Name:
           description: The volume name specified by user.
           type: string
-          example: sap_vol01
+          example: volume001
+        Description:
+          description: The volume description specified by user.
+          type: string
+          example: AWS Volume
         Type:
-          description: The volume type. Like for aws gp2, sc1, io1, st1
+          description: The volume type.
           type: string
           example: gp2
         Size:
-          description: The volume size required for the volume.
+          description: The volume size.
           type: integer
           example: 1073741824
         Region:
-          description: The region in which the volume will be created.
+          description: The region for the volume.
           type: string
           example: ap-south-1
         AvailabilityZone:
-          description: The availability zone associated with volume.
+          description: The availability zone for the volume.
           type: string
           example: ap-south-1a
-        State:
+        Status:
           description: The volume status.
           type: string
-          enum: &VOL_STATUS
+          enum:
             - available
             - creating
             - inUse
@@ -1967,6 +2288,45 @@ components:
             - updating
             - deleting
             - errorDeleting
+            - deleted
+          example: available
+        Tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        SnapshotId:
+          description: The volume snapshot id.
+          type: string
+          example: 5eea749a926e5300011a69d6
+        Encrypted:
+          description: Flag for encryted volume.
+          type: boolean
+          example: true
+        EncryptedSettings:
+          description: Encryted volume Keys.
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            KmsKeyId: 'arn:aws:kms:ap-south-1:676589967111:key/a6e1716e-0e90-407b-b494-b8ef8de91fc'
+        Metadata:
+          type: object
+          properties:
+            fields:
+              type: object
+              $ref: '#/components/schemas/VolumeFields'
+    RestoreObject:
+      type: object
+      description: Restore object request
+      properties:
+        tier:
+          type: string
+          description: the retrieval option when restoring an archived object. This is cloud vendor specific.
+          example: Expedited
+        days:
+          type: int
+          Description: The Days element is required for regular restore. Required for restoring archived object.
+          example: 1
   requestBodies:
     Backend:
       content:
@@ -2009,4 +2369,11 @@ components:
           schema:
             $ref: '#/components/schemas/Volume'
       description: Cloud volume configurations
+      required: true
+    VolumeUpdate:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/VolumeUpdate'
+      description: Cloud Volume Update configurations
       required: true
