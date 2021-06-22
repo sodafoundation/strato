@@ -44,7 +44,3 @@ func Init(iam *config.CredentialStore) {
 		fmt.Printf("Can't find Credentials driver %s!\n", iam.Driver)
 	}
 }
-
-func Exit() {
-	CredStore.Close()
-}
