@@ -27,8 +27,6 @@ import (
 	_ "github.com/sirupsen/logrus"
 )
 
-
-
 const KEYSTONE_URL = "http://192.168.20.108/identity/v3/credentials"
 
 type blob struct {
@@ -58,7 +56,6 @@ var keystone = &keystoneIam{}
 func Init(host string) *keystoneIam {
 	return keystone
 }
-
 
 func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSkOut, error) {
 	akey := utils.GenerateRandomString(16)
