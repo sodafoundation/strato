@@ -21,11 +21,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
