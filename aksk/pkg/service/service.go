@@ -87,7 +87,7 @@ func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, re
 
 func (b akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
 	log.Info("Received DeleteAkSk request.")
-	err := iam.CredStore.DeleteAkSk(ctx, in) //DeleteAKSK(ctx, in)
+	err := iam.CredStore.DeleteAkSk(ctx, in)
 	if err != nil {
 		log.Errorf("Failed to delete AKSK : %v", err)
 		return err

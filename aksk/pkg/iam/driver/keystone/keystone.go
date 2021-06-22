@@ -24,6 +24,8 @@ import (
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const KEYSTONE_URI = "/identity/v3/credentials"
@@ -99,20 +101,42 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
 
 	client := &http.Client{}
-	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest("DELETE", keystoneURL+"/"+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
+	keystoneURL := PROTOCOL+iam.host+KEYSTONE_URI
+	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
 
 	akskresp, err := client.Do(getreq)
+	defer akskresp.Body.Close()
+
 	if err != nil {
 		return err
 	}
-	//bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 
-	defer akskresp.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
+	var akskListout = &model.AkSkListOut{}
+	err = json.Unmarshal(bodyBytes, &akskListout)
+	if err != nil {
+		return err
+	}
+
+	var delresp *http.Response
+	for _, v := range akskListout.Credentials {
+		log.Info("Deleting AK SK for User %s" , v.ID )
+		delreq, err := http.NewRequest("DELETE", keystoneURL+"/"+v.ID, bytes.NewBuffer(nil))
+		delreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
+		delreq.Header.Set("Content-Type", "application/json")
+
+		delresp, err = client.Do(delreq)
+		if err != nil {
+			return err
+		}
+		log.Info("AK SK Deleted for user :  RESPONSE", delresp)
+	}
+
 	return nil
 }
+
 
 func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
 
@@ -137,6 +161,7 @@ func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*mo
 }
 
 func (iam *keystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
+
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
