@@ -577,18 +577,12 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		response.WriteError(http.StatusBadRequest, nil)
 		return
 	}
-	if len(updateTier.AddBackends) == 0 && len(updateTier.DeleteBackends) == 0 {
-		log.Error("tier can not be updated with empty addBackends and deleteBackends")
-		response.WriteError(http.StatusBadRequest, err)
-		return
-	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to get tier details: %v\n", err)
-		err1 := errors.New("failed to get tier details")
-		response.WriteError(http.StatusInternalServerError, err1)
+		fmt.Sprintf("failed to get tier details for id: %v\n, err: %v\n", id, err)
+		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -706,6 +700,21 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		res.Tier.Backends = append(res.Tier.Backends, backendId)
 	}
 
+	// Update (remove) the tenants
+	currTenants := res.Tier.Tenants
+	for _, val := range currTenants {
+		for j, val1 := range updateTier.DeleteTenants {
+			if val == val1 {
+				currTenants = append(currTenants[:j], currTenants[j+1:]...)
+			}
+		}
+	}
+	// update(Add) the tenants
+	for _, tenantId := range updateTier.AddTenants {
+		res.Tier.Tenants = append(currTenants, tenantId)
+	}
+
+	log.Info("res.Tier.Tenants======:", res.Tier.Tenants)
 	updateTierRequest := &backend.UpdateTierRequest{Tier: res.Tier}
 	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
 	if err != nil {
@@ -744,27 +753,28 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 	if !policy.Authorize(request, response, "tier:list") {
 		return
 	}
-
-	ctx := common.InitCtxWithAuthInfoNonAdmin(request)
-	listTierRequest := &backend.ListTierRequest{}
+	ctx := common.GetAdminContext()
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
 		log.Errorf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	listTierRequest.Limit = limit
-	listTierRequest.Offset = offset
 
-	sortKeys, sortDirs, err := common.GetSortParam(request)
-	if err != nil {
-		log.Errorf("get sort parameters failed: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
+	var key string
+	tenantId := request.PathParameter("tenantId")
+	if tenantId == common.DefaultAdminTenantId {
+		key = "tenantId"
+	} else {
+		key = "tenants"
 	}
-	listTierRequest.SortKeys = sortKeys
-	listTierRequest.SortDirs = sortDirs
-	res, err := s.backendClient.ListTiers(ctx, listTierRequest)
+
+	res, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{
+		Limit:  limit,
+		Offset: offset,
+		Filter: map[string]string{key: tenantId},
+	})
+
 	if err != nil {
 		log.Errorf("failed to list backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)

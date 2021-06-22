@@ -1204,7 +1204,6 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 
 		if bucket.Tiers != "" {
 			object.Location = bucket.Tiers
-			object.Tier = 000
 		}
 
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)

@@ -276,6 +276,7 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 		Name:     in.Tier.Name,
 		TenantId: in.Tier.TenantId,
 		Backends: in.Tier.Backends,
+		Tenants:  in.Tier.Tenants,
 	}
 	res, err := db.Repo.CreateTier(ctx, tier)
 	if err != nil {
@@ -287,6 +288,7 @@ func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierReques
 		Name:     res.Name,
 		TenantId: res.TenantId,
 		Backends: res.Backends,
+		Tenants:  in.Tier.Tenants,
 	}
 	log.Info("Create tier successfully.")
 	return nil
@@ -306,6 +308,7 @@ func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierReques
 		Name:     res1.Name,
 		TenantId: res1.TenantId,
 		Backends: in.Tier.Backends,
+		Tenants:  in.Tier.Tenants,
 	}
 
 	res, err := db.Repo.UpdateTier(ctx, tier)
@@ -319,6 +322,7 @@ func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierReques
 		Name:     res.Name,
 		TenantId: res.TenantId,
 		Backends: res.Backends,
+		Tenants:  in.Tier.Tenants,
 	}
 	log.Info("Update tier successfully.")
 	return nil
@@ -336,6 +340,7 @@ func (b *backendService) GetTier(ctx context.Context, in *pb.GetTierRequest, out
 		Name:     res.Name,
 		TenantId: res.TenantId,
 		Backends: res.Backends,
+		Tenants:  res.Tenants,
 	}
 	log.Info("Get Tier successfully.")
 	return nil
@@ -349,7 +354,7 @@ func (b *backendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, 
 		log.Info(msg)
 		return errors.New(msg)
 	}
-	res, err := db.Repo.ListTiers(ctx, int(in.Limit), int(in.Offset))
+	res, err := db.Repo.ListTiers(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Errorf("failed to list backend: %v\n", err)
 		return err
@@ -362,6 +367,7 @@ func (b *backendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, 
 			Name:     item.Name,
 			TenantId: item.TenantId,
 			Backends: item.Backends,
+			Tenants:  item.Tenants,
 		})
 	}
 	out.Tiers = tiers

@@ -169,21 +169,19 @@ func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) 
 	log.Info("Request for GetBackendIdFromTier received", tierName)
 	var response *restful.Response
 	var backendId string
-	tierResp, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
+	res, err := s.backendClient.ListTiers(common.GetAdminContext(), &backend.ListTierRequest{
+		Limit:  common.MaxPaginationLimit,
+		Offset: common.DefaultPaginationOffset,
+		Filter: map[string]string{"name": tierName},
+	})
+
 	if err != nil {
 		log.Error("list tier failed during getting backends from tier")
 		response.WriteError(http.StatusInternalServerError, err)
 		return ""
-	} else {
-		if len(tierResp.Tiers) > 0 {
-			for _, tier := range tierResp.Tiers {
-				if tier.Name == tierName {
-					backendId = tier.Backends[rand.Intn(len(tier.Backends))]
-					break
-				}
-			}
-		}
 	}
+	backendId = res.Tiers[0].Backends[rand.Intn(len(res.Tiers[0].Backends))]
+
 	return backendId
 }
 

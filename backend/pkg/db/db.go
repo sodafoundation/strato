@@ -34,7 +34,7 @@ type Repository interface {
 	DeleteTier(ctx context.Context, id string) error
 	UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error)
 	GetTier(ctx context.Context, id string) (*model.Tier, error)
-	ListTiers(ctx context.Context, limit, offset int) ([]*model.Tier, error)
+	ListTiers(ctx context.Context, limit, offset int, query interface{}) ([]*model.Tier, error)
 	Close()
 }
 
