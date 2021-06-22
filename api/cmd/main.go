@@ -15,7 +15,6 @@
 package main
 
 import (
-
 	"os"
 
 	akskPackage "github.com/opensds/multi-cloud/api/pkg/aksk"
