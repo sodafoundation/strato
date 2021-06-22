@@ -21,11 +21,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
 	"github.com/opensds/multi-cloud/aksk/pkg/utils"
 	pb "github.com/opensds/multi-cloud/aksk/proto"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const KEYSTONE_URI = "/identity/v3/credentials"
@@ -101,7 +101,7 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
 
 	client := &http.Client{}
-	keystoneURL := PROTOCOL+iam.host+KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 	getreq.Header.Set("Content-Type", "application/json")
@@ -122,7 +122,7 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 
 	var delresp *http.Response
 	for _, v := range akskListout.Credentials {
-		log.Info("Deleting AK SK for User %s" , v.ID )
+		log.Info("Deleting AK SK for User %s", v.ID)
 		delreq, err := http.NewRequest("DELETE", keystoneURL+"/"+v.ID, bytes.NewBuffer(nil))
 		delreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
 		delreq.Header.Set("Content-Type", "application/json")
@@ -136,7 +136,6 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 
 	return nil
 }
-
 
 func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
 
