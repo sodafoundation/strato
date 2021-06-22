@@ -77,7 +77,7 @@ func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, re
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)
-		fmt.Println("At index", idx, "value is", cred)
+		log.Info("At index", idx, "value is", cred)
 	}
 
 	log.Info("Got AKSK successfully. ", response)

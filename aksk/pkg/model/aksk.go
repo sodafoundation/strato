@@ -33,18 +33,18 @@ type AkSk struct {
 
 type GetAkSkBody struct {
 	// ProjectId or TenantId is the tenant that the user belongs to.
-	ProjectId string `json:"project_id,omitempty" bson:"project_id,omitempty"`
+	ProjectId string `json:"project_id,omitempty"`
 
 	// The id of the user for whom the AkSk is being generated.
-	UserId string `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	UserId string `json:"user_id,omitempty"`
 
 	// The json containing the accesskey and secretkey
-	Blob string `json:"blob,omitempty" bson:"blob,omitempty"`
+	Blob string `json:"blob,omitempty"`
 
 	//The type of backend ??
-	Type string `json:"type,omitempty" bson:"type,omitempty"`
+	Type string `json:"type,omitempty"`
 
-	Links string `json:"links,omitempty" bson:"links,omitempty"`
+	Links string `json:"links,omitempty"`
 }
 
 type GetAkSk struct {

@@ -16,7 +16,8 @@ package iam
 
 import (
 	"context"
-	"fmt"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/aksk/pkg/iam/driver/keystone"
 	"github.com/opensds/multi-cloud/aksk/pkg/model"
@@ -38,9 +39,9 @@ func Init(iam *config.CredentialStore) {
 	switch iam.Driver {
 	case "keystone":
 		CredStore = keystone.Init(iam.Host)
-		fmt.Printf("Initializing Keystone!\n", CredStore)
+		log.Info("Initializing Keystone!\n", CredStore)
 		return
 	default:
-		fmt.Printf("Can't find Credentials driver %s!\n", iam.Driver)
+		log.Warning("Can't find Credentials driver %s!\n", iam.Driver)
 	}
 }

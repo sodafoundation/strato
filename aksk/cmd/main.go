@@ -15,10 +15,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/micro/go-micro/v2"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/aksk/pkg/iam"
 	handler "github.com/opensds/multi-cloud/aksk/pkg/service"
@@ -41,6 +41,6 @@ func main() {
 	service.Init()
 	pb.RegisterAkSkHandler(service.Server(), handler.NewAkSkService())
 	if err := service.Run(); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 }

@@ -28,8 +28,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const KEYSTONE_URI = "/identity/v3/credentials"
-const PROTOCOL = "http://"
+const (
+	KEYSTONE_URI = "/identity/v3/credentials"
+	PROTOCOL = "http://"
+	AK_LENGTH = 16
+	SK_LENGTH = 32
+)
 
 type blob struct {
 	Access string `json:"access"`
@@ -63,8 +67,8 @@ func Init(host string) *keystoneIam {
 }
 
 func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSkOut, error) {
-	akey := utils.GenerateRandomString(16)
-	skey := utils.GenerateRandomString(32)
+	akey := utils.GenerateRandomString(AK_LENGTH)
+	skey := utils.GenerateRandomString(SK_LENGTH)
 
 	blb := &blob{Access: akey, Secret: skey}
 	blbout, err := json.Marshal(blb)
@@ -80,18 +84,16 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
 	postreq, err := http.NewRequest("POST", keystoneURL, bytes.NewBuffer(u))
+	if err != nil {
+		return nil, err
+	}
 	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
 	postreq.Header.Set("Content-Type", "application/json")
 
 	akskresp, _ := client.Do(postreq)
 	defer akskresp.Body.Close()
 
-	if err != nil {
-		return nil, err
-	}
-
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
-
 	var data *model.AkSkOut
 	json.Unmarshal(bodyBytes, &data)
 
@@ -107,11 +109,10 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	getreq.Header.Set("Content-Type", "application/json")
 
 	akskresp, err := client.Do(getreq)
-	defer akskresp.Body.Close()
-
 	if err != nil {
 		return err
 	}
+	defer akskresp.Body.Close()
 
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 	var akskListout = &model.AkSkListOut{}
