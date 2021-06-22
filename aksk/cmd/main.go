@@ -32,8 +32,7 @@ func main() {
 	iam.Init(&config.CredentialStore{
 		Driver: "keystone",
 		Host:   iamHost})
-
-	defer iam.Exit()
+	
 	obs.InitLogs()
 	service := micro.NewService(
 		micro.Name("aksk"),
