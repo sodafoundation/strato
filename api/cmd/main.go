@@ -19,8 +19,9 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/web"
+	log "github.com/sirupsen/logrus"
 
-        "github.com/opensds/multi-cloud/api/pkg/aksk"
+	"github.com/opensds/multi-cloud/api/pkg/aksk"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/block"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
@@ -31,8 +32,6 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
