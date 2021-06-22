@@ -15,7 +15,7 @@
 package config
 
 type CredentialStore struct {
-	URI 	   string `conf:"driver, /identity/v3/credentials"`
-	Driver     string `conf:"driver,keystone"`
-	Host       string `conf:"host,localhost"`
+	URI    string `conf:"driver, /identity/v3/credentials"`
+	Driver string `conf:"driver,keystone"`
+	Host   string `conf:"host,localhost"`
 }

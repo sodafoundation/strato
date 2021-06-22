@@ -30,7 +30,7 @@ import (
 func main() {
 	iamHost := os.Getenv("IAM_HOST")
 	iam.Init(&config.CredentialStore{
-		URI: "/identity/v3/credentials",
+		URI:    "/identity/v3/credentials",
 		Driver: "keystone",
 		Host:   iamHost})
 
