@@ -15,9 +15,10 @@
 package main
 
 import (
+
 	"os"
 
-	"github.com/opensds/multi-cloud/api/pkg/aksk"
+	akskPackage "github.com/opensds/multi-cloud/api/pkg/aksk"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/block"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
