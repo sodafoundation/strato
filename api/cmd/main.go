@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	akskPackage "github.com/opensds/multi-cloud/api/pkg/aksk"
+	"github.com/opensds/multi-cloud/api/pkg/aksk"
 	"github.com/opensds/multi-cloud/api/pkg/backend"
 	"github.com/opensds/multi-cloud/api/pkg/block"
 	"github.com/opensds/multi-cloud/api/pkg/dataflow"
@@ -80,7 +80,7 @@ func main() {
 		dataflow.RegisterRouter(ws)
 		block.RegisterRouter(ws)
 		file.RegisterRouter(ws)
-		akskPackage.RegisterRouter(ws)
+		aksk.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())
