@@ -44,54 +44,39 @@ const (
 	CREDENTIAL_TYPE = "ec2"
 )
 
-type blob struct {
-	Access string `json:"access"`
-	Secret string `json:"secret"`
-}
-
-type CredBody struct {
-	ProjectId string `json:"project_id"`
-	UserId    string `json:"user_id"`
-	Blob      string `json:"blob"`
-	Type      string `json:"type"`
-}
-
-type Credential struct {
-	Credential CredBody `json:"credential"`
+type KeystoneIam struct {
+	Host string
+	URI  string
 }
 
 type Client struct {
 }
 
-type keystoneIam struct {
-	host string
-	uri  string
+
+var Keystone = &KeystoneIam{}
+
+func Init(host string) *KeystoneIam {
+	Keystone.Host = host
+	return Keystone
 }
 
-var keystone = &keystoneIam{}
-
-func Init(host string) *keystoneIam {
-	keystone.host = host
-	return keystone
-}
-
-func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.AkSkOut, error) {
+func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.AkSkOut, error) {
 	akey := utils.GenerateRandomString(AK_LENGTH)
 	skey := utils.GenerateRandomString(SK_LENGTH)
 
-	blb := &blob{Access: akey, Secret: skey}
+	blb := &model.Blob{Access: akey, Secret: skey}
 	blbout, err := json.Marshal(blb)
 	if err != nil {
 		panic(err)
 	}
 
-	u, err := json.Marshal(Credential{Credential: CredBody{ProjectId: aksk.ProjectId,
+	u, err := json.Marshal(model.Credential{Credential: model.CredBody{ProjectId: aksk.ProjectId,
 		UserId: aksk.UserId,
 		Blob:   string(blbout),
 		Type:   CREDENTIAL_TYPE}})
 
 	client := &http.Client{}
-	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.Host + KEYSTONE_URI
 	postreq, err := http.NewRequest(POST, keystoneURL, bytes.NewBuffer(u))
 	if err != nil {
 		return nil, err
@@ -109,10 +94,10 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	return data, nil
 }
 
-func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
+func (iam *KeystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {
 
 	client := &http.Client{}
-	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.Host + KEYSTONE_URI
 	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
@@ -147,10 +132,10 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	return nil
 }
 
-func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
+func (iam *KeystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
 
 	client := &http.Client{}
-	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.Host + KEYSTONE_URI
 	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
@@ -169,10 +154,10 @@ func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*mo
 	return akskListout, nil
 }
 
-func (iam *keystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
+func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
 
 	client := &http.Client{}
-	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
+	keystoneURL := PROTOCOL + iam.Host + KEYSTONE_URI
 	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)

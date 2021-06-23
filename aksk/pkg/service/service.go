@@ -16,8 +16,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/aksk/pkg/iam"
@@ -46,7 +44,7 @@ func (b akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, o
 		return err
 	}
 	out.Blob = res.Credential.Blob
-	log.Info("Created AKSK successfully.", res.Credential.Blob)
+	log.Info("Created AKSK successfully.")
 	return nil
 }
 
@@ -98,7 +96,7 @@ func (b akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkReques
 	}
 
 	aksk := &pb.AkSkDetail{}
-	for idx, cred := range res.Credentials {
+	for _, cred := range res.Credentials {
 		aksk = &pb.AkSkDetail{
 			ProjectId: cred.ProjectID,
 			UserId:    cred.UserID,
@@ -106,10 +104,9 @@ func (b akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkReques
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)
-		fmt.Println("At index", idx, "value is", cred)
 	}
 
-	log.Info("Downloaded AKSK successfully. ", response)
+	log.Info("Downloaded AKSK successfully. ")
 	return nil
 
 }
