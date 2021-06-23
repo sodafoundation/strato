@@ -44,8 +44,8 @@ const (
 )
 
 type KeystoneIam struct {
-	Host string
-	URI  string
+	Host   string
+	URI    string
 	Client http.Client
 }
 
