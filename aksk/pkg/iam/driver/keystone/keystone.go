@@ -29,7 +29,6 @@ import (
 )
 
 const (
-	KEYSTONE_URI    = "/identity/v3/credentials"
 	PROTOCOL        = "http://"
 	AK_LENGTH       = 16
 	SK_LENGTH       = 32
