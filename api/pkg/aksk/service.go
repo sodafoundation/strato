@@ -104,7 +104,7 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 	akskDetail.ProjectId = actx.TenantId
 	akskDetail.UserId = actx.UserId
 	akskDetail.Token = actx.AuthToken
-	
+
 	res, err := s.akskClient.CreateAkSk(ctx, &aksk.AkSkCreateRequest{UserId: akskDetail.UserId,
 		ProjectId: akskDetail.ProjectId,
 		Token: akskDetail.Token})
