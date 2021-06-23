@@ -39,7 +39,7 @@ func Init(iam *config.CredentialStore) {
 	switch iam.Driver {
 	case "keystone":
 		CredStore = keystone.Init(iam.Host)
-		log.Info("Initializing Keystone!\n", CredStore)
+		log.Info("Initializing Keystone...", )
 		return
 	default:
 		log.Warning("Can't find Credentials driver %s!\n", iam.Driver)

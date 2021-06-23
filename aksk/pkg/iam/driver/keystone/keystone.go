@@ -41,6 +41,7 @@ const (
 	USER_QUERY_STR  = "?user_id="
 	SEPERATOR       = "/"
 	CREDENTIAL_TYPE = "ec2"
+	CREDS_URI       = "/identity/v3/credentials"
 )
 
 type KeystoneIam struct {
@@ -56,6 +57,7 @@ var Keystone = &KeystoneIam{}
 
 func Init(host string) *KeystoneIam {
 	Keystone.Host = host
+	Keystone.URI = CREDS_URI
 	return Keystone
 }
 
@@ -131,7 +133,7 @@ func (iam *KeystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 		if err != nil {
 			return err
 		}
-		log.Info("AK SK Deleted for user :  RESPONSE", delresp)
+		log.Info("AK SK Delete status :", delresp.Status)
 	}
 
 	return nil

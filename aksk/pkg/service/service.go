@@ -59,7 +59,7 @@ func (b *akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, r
 	}
 
 	aksk := &pb.AkSkDetail{}
-	for idx, cred := range res.Credentials {
+	for _, cred := range res.Credentials {
 		aksk = &pb.AkSkDetail{
 			ProjectId: cred.ProjectID,
 			UserId:    cred.UserID,
@@ -67,10 +67,9 @@ func (b *akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, r
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)
-		log.Info("At index", idx, "value is", cred)
 	}
 
-	log.Info("Got AKSK successfully. ", response)
+	log.Info("Got AKSK successfully. ")
 	return nil
 
 }
