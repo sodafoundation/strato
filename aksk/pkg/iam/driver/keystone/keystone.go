@@ -52,7 +52,6 @@ type KeystoneIam struct {
 type Client struct {
 }
 
-
 var Keystone = &KeystoneIam{}
 
 func Init(host string) *KeystoneIam {

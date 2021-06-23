@@ -47,14 +47,9 @@ type GetAkSkBody struct {
 	Links string `json:"links,omitempty"`
 }
 
-
-
-
-
 type GetAkSk struct {
 	Credentials GetAkSkBody `json:"credentials,omitempty"`
 }
-
 
 type Blob struct {
 	Access string `json:"access"`
