@@ -31,7 +31,7 @@ func NewAkSkService() pb.AkSkHandler {
 	return &akskService{}
 }
 
-func (b akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkCreateResponse) error {
+func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkCreateResponse) error {
 	log.Info("Received CreateAkSk request.")
 
 	aksk := &model.AkSk{
@@ -49,7 +49,7 @@ func (b akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, o
 	return nil
 }
 
-func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
+func (b *akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
 	log.Info("Received GetAkSk request.")
 
 	res, err := iam.CredStore.GetAkSk(ctx, request)
@@ -75,7 +75,7 @@ func (b akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, re
 
 }
 
-func (b akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
+func (b *akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, out *pb.DeleteAkSkResponse) error {
 	log.Info("Received DeleteAkSk request.")
 	err := iam.CredStore.DeleteAkSk(ctx, in)
 	if err != nil {
@@ -87,7 +87,7 @@ func (b akskService) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest, o
 	return nil
 }
 
-func (b akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
+func (b *akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkRequest, response *pb.GetAkSkResponse) error {
 	log.Info("Received GetAkSk request.")
 
 	res, err := iam.CredStore.GetAkSk(ctx, request)
