@@ -27,7 +27,7 @@ import (
 
 type IAMAuthenticator interface {
 	// AkSk
-	CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSkOut, error)
+	CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.AkSkOut, error)
 	DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error
 	GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error)
 	DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error)

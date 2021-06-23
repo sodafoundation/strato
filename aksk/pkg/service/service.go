@@ -32,14 +32,12 @@ func NewAkSkService() pb.AkSkHandler {
 	return &akskService{}
 }
 
-func (b akskService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, out *pb.CreateAkSkResponse) error {
+func (b akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkCreateResponse) error {
 	log.Info("Received CreateAkSk request.")
 
 	aksk := &model.AkSk{
-		ProjectId: in.Aksk.ProjectId,
-		UserId:    in.Aksk.UserId,
-		Type:      in.Aksk.Type,
-		Blob:      in.Aksk.Blob,
+		ProjectId: in.ProjectId,
+		UserId:    in.UserId,
 	}
 
 	res, err := iam.CredStore.CreateAkSk(aksk, in)
@@ -47,15 +45,8 @@ func (b akskService) CreateAkSk(ctx context.Context, in *pb.CreateAkSkRequest, o
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err
 	}
-
-	out.Aksk = &pb.AkSkDetail{
-		ProjectId: res.Credential.ProjectID,
-		UserId:    res.Credential.UserID,
-		Type:      res.Credential.Type,
-		Blob:      res.Credential.Blob,
-	}
-
-	log.Info("Created AKSK successfully. Response  : ", res.Credential.Blob)
+	out.Blob = res.Credential.Blob
+	log.Info("Created AKSK successfully." , res.Credential.Blob )
 	return nil
 }
 

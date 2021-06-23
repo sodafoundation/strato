@@ -5,42 +5,44 @@ option go_package = "aksk/proto";
 service AkSk {
     rpc DownloadAkSk(GetAkSkRequest) returns (GetAkSkResponse) {}
     rpc GetAkSk(GetAkSkRequest) returns (GetAkSkResponse) {}
-    rpc CreateAkSk(CreateAkSkRequest) returns (CreateAkSkResponse) {}
+    rpc CreateAkSk(AkSkCreateRequest) returns (AkSkCreateResponse) {}
     rpc DeleteAkSk(DeleteAkSkRequest) returns (DeleteAkSkResponse) {}
 }
 
 message AkSkDetail {
     string project_id = 1;
     string user_id = 2;
-    string name = 3;
-    string type = 4;
-    string blob = 5;
-    string token = 6;
+    string type = 3;
+    string blob = 4;
+    string token = 5;
+}
+
+message AkSkCreateRequest {
+    string user_id = 1;
+    string project_id = 2;
+    string token = 3;
+}
+
+message AkSkCreateResponse {
+    string blob = 1;
 }
 
 message GetAkSkRequest {
-    string id = 1;
-    AkSkDetail AkSkDetail = 2;
+    string user_id = 1;
+    string token = 2;
 }
 
 message GetAkSkResponse {
     repeated AkSkDetail AkSkDetail = 1;
 }
 
-message CreateAkSkRequest {
-    AkSkDetail aksk = 1;
-}
-
-message CreateAkSkResponse {
-    AkSkDetail aksk = 1;
-}
-
 message DeleteAkSkRequest {
-    string id = 1;
-    AkSkDetail AkSkDetail = 2;
+    string user_id = 1;
+    string token = 2;
 }
 
 message DeleteAkSkResponse {
+    string message = 1;
 }
 
 

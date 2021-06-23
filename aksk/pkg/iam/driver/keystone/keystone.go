@@ -33,6 +33,15 @@ const (
 	PROTOCOL     = "http://"
 	AK_LENGTH    = 16
 	SK_LENGTH    = 32
+	POST 		 = "POST"
+	GET			 = "GET"
+	DELETE		 = "DELETE"
+	AUTH_TOKEN   = "X-Auth-Token"
+	CONTENT_TYPE = "Content-Type"
+	APPL_JSON	 = "application/json"
+	USER_QUERY_STR = "?user_id="
+	SEPERATOR = "/"
+	CREDENTIAL_TYPE = "ec2"
 )
 
 type blob struct {
@@ -66,7 +75,7 @@ func Init(host string) *keystoneIam {
 	return keystone
 }
 
-func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) (*model.AkSkOut, error) {
+func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.AkSkOut, error) {
 	akey := utils.GenerateRandomString(AK_LENGTH)
 	skey := utils.GenerateRandomString(SK_LENGTH)
 
@@ -79,16 +88,16 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.CreateAkSkRequest) 
 	u, err := json.Marshal(Credential{Credential: CredBody{ProjectId: aksk.ProjectId,
 		UserId: aksk.UserId,
 		Blob:   string(blbout),
-		Type:   "ec2"}})
+		Type: CREDENTIAL_TYPE }})
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	postreq, err := http.NewRequest("POST", keystoneURL, bytes.NewBuffer(u))
+	postreq, err := http.NewRequest(POST, keystoneURL, bytes.NewBuffer(u))
 	if err != nil {
 		return nil, err
 	}
-	postreq.Header.Add("X-Auth-Token", req.Aksk.Token)
-	postreq.Header.Set("Content-Type", "application/json")
+	postreq.Header.Add(AUTH_TOKEN, req.Token)
+	postreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, _ := client.Do(postreq)
 	defer akskresp.Body.Close()
@@ -104,9 +113,9 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
-	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
-	getreq.Header.Set("Content-Type", "application/json")
+	getreq, err := http.NewRequest(GET, keystoneURL + USER_QUERY_STR + in.UserId, bytes.NewBuffer(nil))
+	getreq.Header.Add(AUTH_TOKEN, in.Token)
+	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, err := client.Do(getreq)
 	if err != nil {
@@ -124,9 +133,9 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	var delresp *http.Response
 	for _, v := range akskListout.Credentials {
 		log.Info("Deleting AK SK for User %s", v.ID)
-		delreq, err := http.NewRequest("DELETE", keystoneURL+"/"+v.ID, bytes.NewBuffer(nil))
-		delreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
-		delreq.Header.Set("Content-Type", "application/json")
+		delreq, err := http.NewRequest(DELETE, keystoneURL + SEPERATOR +v.ID, bytes.NewBuffer(nil))
+		delreq.Header.Add(AUTH_TOKEN, in.Token)
+		delreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 		delresp, err = client.Do(delreq)
 		if err != nil {
@@ -142,9 +151,9 @@ func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*mo
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
-	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
-	getreq.Header.Set("Content-Type", "application/json")
+	getreq, err := http.NewRequest(GET, keystoneURL + USER_QUERY_STR + in.UserId, bytes.NewBuffer(nil))
+	getreq.Header.Add(AUTH_TOKEN, in.Token)
+	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, err := client.Do(getreq)
 	defer akskresp.Body.Close()
@@ -164,9 +173,9 @@ func (iam *keystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest("GET", keystoneURL+"?user_id="+in.AkSkDetail.UserId, bytes.NewBuffer(nil))
-	getreq.Header.Add("X-Auth-Token", in.AkSkDetail.Token)
-	getreq.Header.Set("Content-Type", "application/json")
+	getreq, err := http.NewRequest(GET, keystoneURL + USER_QUERY_STR + in.UserId, bytes.NewBuffer(nil))
+	getreq.Header.Add(AUTH_TOKEN, in.Token)
+	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, err := client.Do(getreq)
 	defer akskresp.Body.Close()
@@ -176,7 +185,6 @@ func (iam *keystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	}
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 
-	// Convert response body to string
 	var akskListout = &model.AkSkListOut{}
 	json.Unmarshal(bodyBytes, &akskListout)
 	return akskListout, nil
