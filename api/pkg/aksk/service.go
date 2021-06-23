@@ -17,14 +17,14 @@ package aksk
 import (
 	"net/http"
 
+	"github.com/emicklei/go-restful"
+	"github.com/micro/go-micro/v2/client"
+	log "github.com/sirupsen/logrus"
+
 	aksk "github.com/opensds/multi-cloud/aksk/proto"
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
-
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -107,7 +107,7 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 
 	res, err := s.akskClient.CreateAkSk(ctx, &aksk.AkSkCreateRequest{UserId: akskDetail.UserId,
 		ProjectId: akskDetail.ProjectId,
-		Token: akskDetail.Token})
+		Token:     akskDetail.Token})
 
 	if err != nil {
 		log.Errorf("failed to create Ak, SK: %v\n", err)
