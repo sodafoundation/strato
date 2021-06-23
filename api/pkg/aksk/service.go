@@ -50,7 +50,7 @@ func (s *APIService) GetAkSk(request *restful.Request, response *restful.Respons
 	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
 
-	res, err := s.akskClient.GetAkSk(ctx, &aksk.GetAkSkRequest{UserId : id, Token: actx.AuthToken})
+	res, err := s.akskClient.GetAkSk(ctx, &aksk.GetAkSkRequest{UserId: id, Token: actx.AuthToken})
 	if err != nil {
 		log.Errorf("failed to get AK, SK details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -91,7 +91,7 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	akskDetail := &aksk.AkSkDetail{}
+	akskDetail := &aksk.AkSkCreateRequest{}
 	err := request.ReadEntity(&akskDetail)
 	if err != nil {
 		log.Errorf("failed to read request body: %v\n", err)
@@ -104,8 +104,11 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 	akskDetail.ProjectId = actx.TenantId
 	akskDetail.UserId = actx.UserId
 	akskDetail.Token = actx.AuthToken
+	
+	res, err := s.akskClient.CreateAkSk(ctx, &aksk.AkSkCreateRequest{UserId: akskDetail.UserId,
+		ProjectId: akskDetail.ProjectId,
+		Token: akskDetail.Token})
 
-	res, err := s.akskClient.CreateAkSk(ctx, &aksk.AkSkCreateRequest{UserId: actx.UserId, ProjectId: actx.TenantId})
 	if err != nil {
 		log.Errorf("failed to create Ak, SK: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)

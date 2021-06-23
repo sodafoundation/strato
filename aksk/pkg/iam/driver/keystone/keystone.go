@@ -29,18 +29,18 @@ import (
 )
 
 const (
-	KEYSTONE_URI = "/identity/v3/credentials"
-	PROTOCOL     = "http://"
-	AK_LENGTH    = 16
-	SK_LENGTH    = 32
-	POST 		 = "POST"
-	GET			 = "GET"
-	DELETE		 = "DELETE"
-	AUTH_TOKEN   = "X-Auth-Token"
-	CONTENT_TYPE = "Content-Type"
-	APPL_JSON	 = "application/json"
-	USER_QUERY_STR = "?user_id="
-	SEPERATOR = "/"
+	KEYSTONE_URI    = "/identity/v3/credentials"
+	PROTOCOL        = "http://"
+	AK_LENGTH       = 16
+	SK_LENGTH       = 32
+	POST            = "POST"
+	GET             = "GET"
+	DELETE          = "DELETE"
+	AUTH_TOKEN      = "X-Auth-Token"
+	CONTENT_TYPE    = "Content-Type"
+	APPL_JSON       = "application/json"
+	USER_QUERY_STR  = "?user_id="
+	SEPERATOR       = "/"
 	CREDENTIAL_TYPE = "ec2"
 )
 
@@ -88,7 +88,7 @@ func (iam *keystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	u, err := json.Marshal(Credential{Credential: CredBody{ProjectId: aksk.ProjectId,
 		UserId: aksk.UserId,
 		Blob:   string(blbout),
-		Type: CREDENTIAL_TYPE }})
+		Type:   CREDENTIAL_TYPE}})
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
@@ -113,7 +113,7 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest(GET, keystoneURL + USER_QUERY_STR + in.UserId, bytes.NewBuffer(nil))
+	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
@@ -133,7 +133,7 @@ func (iam *keystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	var delresp *http.Response
 	for _, v := range akskListout.Credentials {
 		log.Info("Deleting AK SK for User %s", v.ID)
-		delreq, err := http.NewRequest(DELETE, keystoneURL + SEPERATOR +v.ID, bytes.NewBuffer(nil))
+		delreq, err := http.NewRequest(DELETE, keystoneURL+SEPERATOR+v.ID, bytes.NewBuffer(nil))
 		delreq.Header.Add(AUTH_TOKEN, in.Token)
 		delreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
@@ -151,7 +151,7 @@ func (iam *keystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*mo
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest(GET, keystoneURL + USER_QUERY_STR + in.UserId, bytes.NewBuffer(nil))
+	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
@@ -173,7 +173,7 @@ func (iam *keystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 
 	client := &http.Client{}
 	keystoneURL := PROTOCOL + iam.host + KEYSTONE_URI
-	getreq, err := http.NewRequest(GET, keystoneURL + USER_QUERY_STR + in.UserId, bytes.NewBuffer(nil))
+	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
