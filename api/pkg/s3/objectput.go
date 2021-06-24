@@ -62,13 +62,16 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 			log.Error("the selected backends from tier doesn't exists.")
 			response.WriteError(http.StatusInternalServerError, err)
 		}
+
+		// FIXME: This code is added for tiering feature, where based on backend type, storageClass will
+		// be selected. Currently it's hardcoded. Later it can be read from some config policy
 		if backendMeta != nil {
 			backendType := backendMeta.Backend.Type
 
 			if backendType == AWS_TYPE {
-				storageClass = "GLACIER"
+				storageClass = AWS_GLACIER
 			} else if backendType == AZURE_TYPE || backendType == GCP_TYPE {
-				storageClass = "Archive"
+				storageClass = ARCHIVE
 			}
 		}
 	}

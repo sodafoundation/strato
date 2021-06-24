@@ -28,6 +28,7 @@ import (
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 )
 
+//FIXME: This const values are declared for tiering feature. Later this can be read from config file
 const (
 	AWS_TYPE                    = "aws-s3"
 	AZURE_TYPE                  = "azure-blob"
@@ -35,6 +36,8 @@ const (
 	AWS_DEFAULT_RESTORE_DAYS    = 5
 	AWS_DEFAULT_RESTORE_TIER    = "Expedited"
 	AZURE_DEFAULT_RESTORE_CLASS = "Hot"
+	AWS_GLACIER                 = "GLACIER"
+	ARCHIVE                     = "Archive"
 )
 
 //Object Restore from Archival storage
