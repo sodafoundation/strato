@@ -231,7 +231,7 @@ func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (
 	return tier, nil
 }
 
-func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int) ([]*model.Tier, error) {
+func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, query interface{}) ([]*model.Tier, error) {
 	log.Debug("received request to list tiers")
 	session := repo.session.Copy()
 	defer session.Close()
@@ -240,13 +240,17 @@ func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int) (
 	}
 	var tiers []*model.Tier
 	m := bson.M{}
+	UpdateFilter(m, query.(map[string]string))
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
 	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
-	err := session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
+	err = session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
 
 	if err != nil {
 		return nil, err
 	}
-
 	return tiers, nil
 }
 

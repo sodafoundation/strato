@@ -20,11 +20,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
 
@@ -40,6 +42,40 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 	objectKey := request.PathParameter(common.REQUEST_PATH_OBJECT_KEY)
 	backendName := request.HeaderParameter(common.REQUEST_HEADER_BACKEND)
 	storageClass := request.HeaderParameter(common.REQUEST_HEADER_STORAGE_CLASS)
+	isArchive := request.HeaderParameter(common.REQUEST_HEADER_ARCHIVE)
+
+	var err error
+	// check if specific bucket exist
+	ctx := common.InitCtxWithAuthInfo(request)
+	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorln("failed to get bucket meta. err:", err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	if isArchive == "Archive" && bucketMeta.Tiers != "" {
+		adminCtx := common.GetAdminContext()
+		backendId := s.GetBackendIdFromTier(adminCtx, bucketMeta.Tiers)
+		backendMeta, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
+		if err != nil {
+			log.Error("the selected backends from tier doesn't exists.")
+			response.WriteError(http.StatusInternalServerError, err)
+		}
+
+		// FIXME: This code is added for tiering feature, where based on backend type, storageClass will
+		// be selected. Currently it's hardcoded. Later it can be read from some config policy
+		if backendMeta != nil {
+			backendType := backendMeta.Backend.Type
+
+			if backendType == AWS_TYPE {
+				storageClass = AWS_GLACIER
+			} else if backendType == AZURE_TYPE || backendType == GCP_TYPE {
+				storageClass = ARCHIVE
+			}
+		}
+	}
+
 	// Save metadata
 	metadata := extractMetadataFromHeader(request.Request.Header)
 	if storageClass == "" {
@@ -56,7 +92,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		objectKey, bucketName)
 
 	//var authType = signature.GetRequestAuthType(r)
-	var err error
 	if !isValidObjectName(objectKey) {
 		WriteErrorResponse(response, request, s3error.ErrInvalidObjectName)
 		return
@@ -103,14 +138,6 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	// check if specific bucket exist
-	ctx := common.InitCtxWithAuthInfo(request)
-	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
-	if err != nil {
-		log.Errorln("failed to get bucket meta. err:", err)
-		WriteErrorResponse(response, request, err)
-		return
-	}
 	//log.Logf("bucket, acl:%f", bucketMeta.Acl.CannedAcl)
 	location := bucketMeta.DefaultLocation
 	if backendName != "" {

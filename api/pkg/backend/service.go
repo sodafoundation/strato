@@ -33,6 +33,7 @@ import (
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	utils "github.com/opensds/multi-cloud/api/pkg/utils"
 	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
@@ -461,9 +462,34 @@ func (s *APIService) listStorageType(ctx context.Context, request *restful.Reque
 	return storageTypes, err
 }
 
+func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string) ([]string, error) {
+	var invalidBackends []string
+	listBackendRequest := &backend.ListBackendRequest{}
+	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+	if err != nil {
+		return invalidBackends, err
+	}
+	for _, backendId := range backends {
+		exists := false
+		for _, bknd := range result.Backends {
+			if backendId == bknd.Id {
+				exists = true
+				break
+			}
+		}
+		if exists == false {
+			invalidBackends = append(invalidBackends, backendId)
+		}
+	}
+	return invalidBackends, nil
+}
+
 //tiering functions
 func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for creating tier.")
+	if !policy.Authorize(request, response, "tier:create") {
+		return
+	}
 	tier := &backend.Tier{}
 	body := ReadBody(request)
 	err := json.Unmarshal(body, &tier)
@@ -480,74 +506,58 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	actx := request.Attribute(c.KContext).(*c.Context)
-	tier.TenantId = actx.TenantId
+	tier.TenantId = request.PathParameter("tenantId")
 
-	//list tiers
-	tierResult, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
-	log.Info("The list of existing tiers:", tierResult)
+	// ValidationCheck:1:: Name should be unique. Repeated name not allowed
+	tierResult, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{
+		Filter: map[string]string{"name": tier.Name},
+	})
 	if err != nil {
 		log.Errorf("failed to list Tiers: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	//validate name
-	for _, t := range tierResult.Tiers {
-		if tier.Name == t.GetName() {
-			errMsg := fmt.Sprintf("name: %v is already exists.", tier.Name)
-			log.Error(errMsg)
-			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
-			return
-		}
-	}
-
-	//duplicate backends check:
-	var duplicates []string
-	visited := make(map[string]int, 0)
-	for _, val := range tier.Backends {
-		if visited[val] >= 1 {
-			duplicates = append(duplicates, val)
-		}
-		visited[val]++
-	}
-	if len(duplicates) != 0 {
-		errMsg := fmt.Sprintf("backends in request: %v are duplicated", duplicates)
+	if len(tierResult.Tiers) > 0 {
+		errMsg := fmt.Sprintf("name: %v is already exists.", tier.Name)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 
-	//validation of backends whether they exists in list of backends
-	listBackendRequest := &backend.ListBackendRequest{}
-	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+	// ValidationCheck:2:: Check tenants in request should not be repeated
+	dupTenants := utils.IsDuplicateItemExist(tier.Tenants)
+	if len(dupTenants) != 0 {
+		errMsg := fmt.Sprintf("duplicate tenants are found in request: %v", dupTenants)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
+	// ValidationCheck:3:: Check backends in request should not be repeated
+	dupBackends := utils.IsDuplicateItemExist(tier.Backends)
+	if len(dupBackends) != 0 {
+		errMsg := fmt.Sprintf("duplicate backends are found in request: %v", dupBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
+	// ValidationCheck:4:: validation of backends whether they are valid or not
+	invalidBackends, err := s.CheckInvalidBackends(ctx, tier.Backends)
 	if err != nil {
-		log.Errorf("failed to list backends: %v\n", err)
+		log.Errorf("failed to find invalidBackends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-
-	var failedBackends []string
-	for _, backendId := range tier.Backends {
-		exists := false
-		for _, backend := range result.Backends {
-			if backendId == backend.Id {
-				exists = true
-				break
-			}
-		}
-		if exists == false {
-			failedBackends = append(failedBackends, backendId)
-		}
-	}
-
-	if len(failedBackends) != 0 {
-		errMsg := fmt.Sprintf("invalid backends in request: %v are found", failedBackends)
+	if len(invalidBackends) > 0 {
+		errMsg := fmt.Sprintf("invalid backends are found in request: %v", invalidBackends)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 
 	}
 
+	// Now, tier can be created with backends for tenants
 	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
 	if err != nil {
 		log.Errorf("failed to create tier: %v\n", err)
@@ -563,7 +573,9 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 //here backendId can be updated
 func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for updating tier: %v\n", request.PathParameter("id"))
-
+	if !policy.Authorize(request, response, "tier:update") {
+		return
+	}
 	id := request.PathParameter("id")
 	updateTier := backend.UpdateTier{Id: id}
 	body := ReadBody(request)
@@ -573,135 +585,147 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		response.WriteError(http.StatusBadRequest, nil)
 		return
 	}
-	if len(updateTier.AddBackends) == 0 && len(updateTier.DeleteBackends) == 0 {
-		log.Error("tier can not be updated with empty addBackends and deleteBackends")
-		response.WriteError(http.StatusBadRequest, err)
-		return
-	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+
+	// ValidationCheck::BackendExists:: Check whether tier id exists or not
+	log.Info("ValidationCheck::BackendExists:: Check whether tier id exists or not")
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to get tier details: %v\n", err)
-		err1 := errors.New("failed to get tier details")
-		response.WriteError(http.StatusInternalServerError, err1)
+		errMsg := fmt.Sprintf("failed to get tier details for id: %v\n, err: %v\n", id, err)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
+	log.Info("Backend: %v exists", id)
 
-	//to check whether backends are repeated in add backends or/add delete backends:
-	var duplicates []string
-	visited := make(map[string]int, 0)
-
-	for _, val := range updateTier.AddBackends {
-		if visited[val] >= 1 {
-			duplicates = append(duplicates, val)
-		}
-		visited[val]++
-	}
-
-	for _, val := range updateTier.DeleteBackends {
-		if visited[val] >= 1 {
-			duplicates = append(duplicates, val)
-		}
-		visited[val]++
-	}
-	if len(duplicates) != 0 {
-		errMsg := fmt.Sprintf("some backends in add or/and delete in request: %v are duplicate", duplicates)
+	// ValidationCheck:DuplicateBackendsInAddBackends:: Check AddBackends in request should not be repeated
+	log.Info("ValidationCheck:Duplicate Backends In AddBackends")
+	dupBackends := utils.IsDuplicateItemExist(updateTier.AddBackends)
+	if len(dupBackends) > 0 {
+		errMsg := fmt.Sprintf("duplicate backends are found in AddBackends request: %v", dupBackends)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 
-	//validation of add backends with list of backends
-	listBackendRequest := &backend.ListBackendRequest{}
-	result, err := s.backendClient.ListBackend(ctx, listBackendRequest)
+	// ValidationCheck:DuplicateBackendsInAddBackends:: Check DeleteBackends in request should not be repeated
+	log.Info("ValidationCheck: Duplicate Backends In DeleteBackends")
+	dupBackends = utils.IsDuplicateItemExist(updateTier.DeleteBackends)
+	if len(dupBackends) > 0 {
+		errMsg := fmt.Sprintf("duplicate backends are found in DeleteBackends request: %v", dupBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
+	// ValidationCheck:2:: In the same request, same backend can not be
+	// present in AddBackends and DeleteBackends both
+	log.Info("ValidationCheck::dupItemFoundInDelandAddBackends:: Check whether tier id exists or not")
+	dupItemFoundInDelandAddBackends := utils.CompareDeleteAndAddList(updateTier.AddBackends,
+		updateTier.DeleteBackends)
+	if len(dupItemFoundInDelandAddBackends) > 0 {
+		errMsg := fmt.Sprintf("some backends found in AddBackends and DeleteBackends"+
+			"in same request, which is not allowed: %v", dupItemFoundInDelandAddBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+	log.Info("No duplicate backends found in Delete and Add Backends")
+
+	// ValidationCheck:DuplicateTenants:: Check tenants in AddTenants request should not be repeated
+	log.Info("ValidationCheck::DuplicateTenants should not allowed in AddTenants")
+	dupTenants := utils.IsDuplicateItemExist(updateTier.AddTenants)
+	if len(dupTenants) > 0 {
+		errMsg := fmt.Sprintf("duplicate tenants are found in AddTenants request: %v", dupTenants)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
+	// ValidationCheck:2:: Check tenants in DeleteTenants request should not be repeated
+	log.Info("ValidationCheck::DuplicateTenants should not allowed in DeleteTenants")
+	dupTenants = utils.IsDuplicateItemExist(updateTier.DeleteTenants)
+	if len(dupTenants) > 0 {
+		errMsg := fmt.Sprintf("duplicate tenants are found in DeleteTenants request: %v", dupTenants)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
+	// ValidationCheck:SameBackendsNotAllowedInBoth:: In the same request, same backend can not be
+	// present in AddBackends and DeleteBackends both
+	log.Info("ValidationCheck:Same Tenants should Not Allowed In Both")
+	dupItemFoundInDelandAddTenants := utils.CompareDeleteAndAddList(updateTier.AddTenants,
+		updateTier.DeleteTenants)
+	if len(dupItemFoundInDelandAddTenants) > 0 {
+		errMsg := fmt.Sprintf("some backends found in AddBackends and DeleteBackends"+
+			"in same request, which is not allowed: %v", dupItemFoundInDelandAddTenants)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
+	// ValidationCheck:5:: validation of backends whether they are valid or not
+	log.Info("Check for invalid backends")
+	invalidBackends, err := s.CheckInvalidBackends(ctx, updateTier.AddBackends)
 	if err != nil {
-		log.Errorf("failed to list backends: %v\n", err)
+		log.Errorf("failed to find invalidBackends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+	if len(invalidBackends) > 0 {
+		errMsg := fmt.Sprintf("invalid backends are found in AddBackends request: %v", invalidBackends)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
 
-	var failBackends []string
-	for _, backendId := range updateTier.AddBackends {
-		exists := false
-		for _, backend := range result.Backends {
-			if backendId == backend.Id {
-				exists = true
-				break
-			}
-		}
-		if exists == false {
-			failBackends = append(failBackends, backendId)
-		}
 	}
 
-	if len(failBackends) != 0 {
-		errMsg := fmt.Sprintf("add backends in request: %v are invalid", failBackends)
+	log.Info("Check whether backends already exists before adding")
+	backendsExist := utils.ResourcesAlreadyExists(res.Tier.Backends, updateTier.AddBackends)
+	if len(backendsExist) > 0 {
+		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", backendsExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 
-	//check whether add backends already exists in the tier
-	var failAddBackends []string
-	for _, backendId := range updateTier.AddBackends {
-		found := false
-		for _, bcknd := range res.Tier.Backends {
-			if backendId == bcknd {
-				found = true
-			}
-		}
-		if found == true {
-			failAddBackends = append(failAddBackends, backendId)
-		}
-	}
-	if len(failAddBackends) != 0 {
-		errMsg := fmt.Sprintf("add backends in request: %v already exists in tier", failAddBackends)
+	log.Info("Check backends should exists before removing")
+	backendsNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Backends, updateTier.DeleteBackends)
+	if len(backendsNotExist) > 0 {
+		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", backendsNotExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 
-	//check whether delete backends belong to tier
-	var failDelBackends []string
-	for _, backendId := range updateTier.DeleteBackends {
-		found := false
-		for _, bcknd := range res.Tier.Backends {
-			if backendId == bcknd {
-				found = true
-			}
-		}
-		if found == false {
-			failDelBackends = append(failDelBackends, backendId)
-		}
+	log.Info("Check whether Tenant already exists before adding")
+	tenantExist := utils.ResourcesAlreadyExists(res.Tier.Tenants, updateTier.AddTenants)
+	if len(tenantExist) > 0 {
+		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", tenantExist)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
 	}
-	if len(failDelBackends) != 0 {
-		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", failDelBackends)
+	log.Info("Check Tenant should exists before removing")
+	tenantNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Tenants, updateTier.DeleteTenants)
+	if len(tenantNotExist) > 0 {
+		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", tenantNotExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 
-	// delete backends to be removed from tier backends
-	var delBackends []string
-	for _, backendId := range res.Tier.Backends {
-		found := false
-		for _, bcknd := range updateTier.DeleteBackends {
-			if backendId == bcknd {
-				found = true
-			}
-		}
-		if found == false {
-			delBackends = append(delBackends, backendId)
-		}
-	}
-	res.Tier.Backends = delBackends
+	log.Info("Prepare update list with AddBackends and DeleteBackends")
+	res.Tier.Backends = utils.PrepareUpdateList(res.Tier.Backends, updateTier.AddBackends,
+		updateTier.DeleteBackends)
 
-	//add backends to be added to the tier backends
-	for _, backendId := range updateTier.AddBackends {
-		res.Tier.Backends = append(res.Tier.Backends, backendId)
-	}
+	log.Info("Prepare update list with AddTenants and DeleteTenants")
+	res.Tier.Tenants = utils.PrepareUpdateList(res.Tier.Tenants, updateTier.AddTenants,
+		updateTier.DeleteTenants)
 
+	// Now, tier details can be updated
 	updateTierRequest := &backend.UpdateTierRequest{Tier: res.Tier}
 	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
 	if err != nil {
@@ -717,6 +741,10 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 // GetTier if tierId is given then details of tier to be given
 func (s *APIService) GetTier(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for tier details: %s\n", request.PathParameter("id"))
+	if !policy.Authorize(request, response, "tier:get") {
+		return
+	}
+
 	id := request.PathParameter("id")
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
@@ -733,27 +761,31 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 //List of tiers is displayed
 func (s *APIService) ListTiers(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for tier list.")
-
-	ctx := common.InitCtxWithAuthInfo(request)
-	listTierRequest := &backend.ListTierRequest{}
+	if !policy.Authorize(request, response, "tier:list") {
+		return
+	}
+	ctx := common.GetAdminContext()
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {
 		log.Errorf("get pagination parameters failed: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	listTierRequest.Limit = limit
-	listTierRequest.Offset = offset
 
-	sortKeys, sortDirs, err := common.GetSortParam(request)
-	if err != nil {
-		log.Errorf("get sort parameters failed: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
-		return
+	var key string
+	tenantId := request.PathParameter("tenantId")
+	if tenantId == common.DefaultAdminTenantId {
+		key = "tenantId"
+	} else {
+		key = "tenants"
 	}
-	listTierRequest.SortKeys = sortKeys
-	listTierRequest.SortDirs = sortDirs
-	res, err := s.backendClient.ListTiers(ctx, listTierRequest)
+
+	res, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{
+		Limit:  limit,
+		Offset: offset,
+		Filter: map[string]string{key: tenantId},
+	})
+
 	if err != nil {
 		log.Errorf("failed to list backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -769,6 +801,10 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("id")
 	log.Infof("Received request for deleting tier: %s\n", id)
+	if !policy.Authorize(request, response, "tier:delete") {
+		return
+	}
+
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
@@ -777,7 +813,7 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 		return
 	}
 	// check whether tier is empty
-	if len(res.Tier.Backends) != 0 {
+	if len(res.Tier.Backends) > 0 {
 		log.Errorf("failed to delete tier because tier is not empty has backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return

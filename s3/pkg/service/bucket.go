@@ -68,7 +68,12 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb
 				DefaultLocation:      buckets[j].DefaultLocation,
 				Versioning:           buckets[j].Versioning,
 				ServerSideEncryption: buckets[j].ServerSideEncryption,
+				Tiers:                buckets[j].Tiers,
 			})
+
+			if buckets[j].Tiers != "" {
+				out.Buckets[j].DefaultLocation = buckets[j].Tiers
+			}
 		}
 	}
 
@@ -211,6 +216,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		Usages:               bucket.Usages,
 		Versioning:           bucket.Versioning,
 		ServerSideEncryption: bucket.ServerSideEncryption,
+		Tiers:                bucket.Tiers,
 	}
 
 	return nil
@@ -247,8 +253,14 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 		return nil
 	}
 
+	// if tiers is enabled, list all the backend using admin context
+	bkndCtx := ctx
+	if bucket.Tiers != "" {
+		bkndCtx = utils.GetAdminContext()
+	}
+
 	// We need to find the backend in which bucket will be created
-	backend, err := utils.GetBackend(ctx, s.backendClient, bucket.DefaultLocation)
+	backend, err := utils.GetBackend(bkndCtx, s.backendClient, bucket.DefaultLocation)
 	if err != nil {
 		log.Errorln("failed to get backend client with err:", err)
 		return err

@@ -474,6 +474,7 @@ message Bucket {
     int64 usages = 16;
     int32 tier = 17;
     repeated ReplicationInfo replicationInfo = 18;
+    string tiers = 19;
 }
 
 message Partion {

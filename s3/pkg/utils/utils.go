@@ -19,6 +19,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"strconv"
 
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
@@ -127,6 +128,19 @@ const (
 const (
 	RequestType_Lifecycle = "lifecycle"
 )
+
+const (
+	DefaultAdminTenantId = "94b280022d0c4401bcf3b0ea85870519"
+)
+
+func GetAdminContext() context.Context {
+	var ctx context.Context
+	ctx = metadata.NewContext(context.Background(), map[string]string{
+		"Tenantid": DefaultAdminTenantId,
+		"Isadmin":  strconv.FormatBool(true),
+	})
+	return ctx
+}
 
 func Md5Content(data []byte) (base64Encoded, hexEncoded string) {
 	md5ctx := md5.New()

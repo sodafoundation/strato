@@ -31,6 +31,8 @@ import (
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 const (
@@ -163,30 +165,37 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 	return nil
 }
 
+func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) string {
+	log.Info("Request for GetBackendIdFromTier received", tierName)
+	var response *restful.Response
+	var backendId string
+	res, err := s.backendClient.ListTiers(common.GetAdminContext(), &backend.ListTierRequest{
+		Limit:  common.MaxPaginationLimit,
+		Offset: common.DefaultPaginationOffset,
+		Filter: map[string]string{"name": tierName},
+	})
+
+	if err != nil {
+		log.Error("list tier failed during getting backends from tier")
+		response.WriteError(http.StatusInternalServerError, err)
+		return ""
+	}
+	backendId = res.Tiers[0].Backends[rand.Intn(len(res.Tiers[0].Backends))]
+
+	return backendId
+}
+
 // this method is basically for getting the backends name from tier
 func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
 	log.Info("The received tier name for getting backend name:", tierName)
 	var backendId, backendName string
 	var response *restful.Response
 
-	tierResp, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
-	if err != nil {
-		log.Error("list tier failed during getting backends from tier")
-		response.WriteError(http.StatusInternalServerError, err)
-		return ""
-	} else {
-		if len(tierResp.Tiers) > 0 {
-			for _, tier := range tierResp.Tiers {
-				if tier.Name == tierName {
-					backendId = tier.Backends[rand.Intn(len(tier.Backends))]
-					break
-				}
-			}
-		}
-	}
+	backendId = s.GetBackendIdFromTier(ctx, tierName)
 
+	adminCtx := common.GetAdminContext()
 	if backendId != "" {
-		backendRep, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
+		backendRep, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
 		if err != nil {
 			log.Error("the selected backends from tier doesn't exists.")
 			response.WriteError(http.StatusInternalServerError, err)

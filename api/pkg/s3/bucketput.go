@@ -86,13 +86,20 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		var backendName string
 		if strings.EqualFold(isTier, TrueValue) {
 			backendName = s.getBackendFromTier(ctx, createBucketConf.LocationConstraint)
+			if backendName != "" {
+				bucket.DefaultLocation = backendName
+				ctx = common.GetAdminContext()
+				bucket.Tiers = createBucketConf.LocationConstraint
+				flag = true
+			}
+
 		} else {
 			backendName = createBucketConf.LocationConstraint
-		}
-		if backendName != "" {
-			log.Infof("backendName is %v\n", backendName)
-			bucket.DefaultLocation = backendName
-			flag = s.isBackendExist(ctx, backendName)
+			if backendName != "" {
+				log.Infof("backendName is %v\n", backendName)
+				bucket.DefaultLocation = backendName
+				flag = s.isBackendExist(ctx, backendName)
+			}
 		}
 	}
 	if flag == false {

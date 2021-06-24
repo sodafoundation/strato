@@ -215,3 +215,86 @@ func GetTimeoutSec(objSize int64) int64 {
 
 	return tmoutSec
 }
+
+func IsDuplicateItemExist(itemList []string) []string {
+	var dupList []string
+	visited := make(map[string]int, 0)
+	for _, val := range itemList {
+		if visited[val] >= 1 {
+			dupList = append(dupList, val)
+		}
+		visited[val]++
+	}
+	return dupList
+}
+
+func PrepareUpdateList(currList, addList, delList []string) []string {
+	// remove delList data from currList
+	for _, val := range delList {
+		for j, cval := range currList {
+			if val == cval {
+				currList = append(currList[:j], currList[j+1:]...)
+				break
+			}
+		}
+	}
+
+	//add addList data to currList
+	for _, backendId := range addList {
+		currList = append(currList, backendId)
+	}
+
+	return currList
+}
+
+func ResourcesAlreadyExists(currList, newList []string) []string {
+	var resourceExist []string
+	for _, resourceId := range newList {
+		found := false
+		for _, currListId := range currList {
+			if resourceId == currListId {
+				found = true
+			}
+		}
+		if found == true {
+			resourceExist = append(resourceExist, resourceId)
+		}
+	}
+	return resourceExist
+}
+
+func ResourcesCheckBeforeRemove(currList, newList []string) []string {
+	var resourceNotExist []string
+	for _, resourceId := range newList {
+		found := false
+		for _, currListId := range currList {
+			if resourceId == currListId {
+				found = true
+			}
+		}
+		if found == false {
+			resourceNotExist = append(resourceNotExist, resourceId)
+		}
+	}
+	return resourceNotExist
+}
+
+func CompareDeleteAndAddList(addList, delList []string) []string {
+	var duplicates []string
+	visited := make(map[string]int, 0)
+
+	for _, val := range addList {
+		if visited[val] >= 1 {
+			duplicates = append(duplicates, val)
+		}
+		visited[val]++
+	}
+
+	for _, val := range delList {
+		if visited[val] >= 1 {
+			duplicates = append(duplicates, val)
+		}
+		visited[val]++
+	}
+	return duplicates
+}
