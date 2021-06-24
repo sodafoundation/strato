@@ -33,6 +33,7 @@ import (
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	utils "github.com/opensds/multi-cloud/api/pkg/utils"
 	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
@@ -461,18 +462,6 @@ func (s *APIService) listStorageType(ctx context.Context, request *restful.Reque
 	return storageTypes, err
 }
 
-func (s *APIService) IsDuplicateItemExist(itemList []string) []string {
-	var dupList []string
-	visited := make(map[string]int, 0)
-	for _, val := range itemList {
-		if visited[val] >= 1 {
-			dupList = append(dupList, val)
-		}
-		visited[val]++
-	}
-	return dupList
-}
-
 func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string) ([]string, error) {
 	var invalidBackends []string
 	listBackendRequest := &backend.ListBackendRequest{}
@@ -493,77 +482,6 @@ func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string
 		}
 	}
 	return invalidBackends, nil
-}
-
-func (s *APIService) PrepareUpdateList(currList, addList, delList []string) []string {
-	// remove delList data from currList
-	for _, val := range delList {
-		for j, cval := range currList {
-			if val == cval {
-				currList = append(currList[:j], currList[j+1:]...)
-				break
-			}
-		}
-	}
-
-	//add addList data to currList
-	for _, backendId := range addList {
-		currList = append(currList, backendId)
-	}
-
-	return currList
-}
-
-func (s *APIService) ResourcesAlreadyExists(currList, newList []string) []string {
-	var resourceExist []string
-	for _, resourceId := range newList {
-		found := false
-		for _, currListId := range currList {
-			if resourceId == currListId {
-				found = true
-			}
-		}
-		if found == true {
-			resourceExist = append(resourceExist, resourceId)
-		}
-	}
-	return resourceExist
-}
-
-func (s *APIService) ResourcesCheckBeforeRemove(currList, newList []string) []string {
-	var resourceNotExist []string
-	for _, resourceId := range newList {
-		found := false
-		for _, currListId := range currList {
-			if resourceId == currListId {
-				found = true
-			}
-		}
-		if found == false {
-			resourceNotExist = append(resourceNotExist, resourceId)
-		}
-	}
-	return resourceNotExist
-}
-
-func (s *APIService) CompareDeleteAndAddList(addList, delList []string) []string {
-	var duplicates []string
-	visited := make(map[string]int, 0)
-
-	for _, val := range addList {
-		if visited[val] >= 1 {
-			duplicates = append(duplicates, val)
-		}
-		visited[val]++
-	}
-
-	for _, val := range delList {
-		if visited[val] >= 1 {
-			duplicates = append(duplicates, val)
-		}
-		visited[val]++
-	}
-	return duplicates
 }
 
 //tiering functions
@@ -607,7 +525,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	// ValidationCheck:2:: Check tenants in request should not be repeated
-	dupTenants := s.IsDuplicateItemExist(tier.Tenants)
+	dupTenants := utils.IsDuplicateItemExist(tier.Tenants)
 	if len(dupTenants) != 0 {
 		errMsg := fmt.Sprintf("duplicate tenants are found in request: %v", dupTenants)
 		log.Error(errMsg)
@@ -616,7 +534,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	// ValidationCheck:3:: Check backends in request should not be repeated
-	dupBackends := s.IsDuplicateItemExist(tier.Backends)
+	dupBackends := utils.IsDuplicateItemExist(tier.Backends)
 	if len(dupBackends) != 0 {
 		errMsg := fmt.Sprintf("duplicate backends are found in request: %v", dupBackends)
 		log.Error(errMsg)
@@ -674,15 +592,16 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("ValidationCheck::BackendExists:: Check whether tier id exists or not")
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		fmt.Sprintf("failed to get tier details for id: %v\n, err: %v\n", id, err)
-		response.WriteError(http.StatusInternalServerError, err)
+		errMsg := fmt.Sprintf("failed to get tier details for id: %v\n, err: %v\n", id, err)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 	log.Info("Backend: %v exists", id)
 
 	// ValidationCheck:DuplicateBackendsInAddBackends:: Check AddBackends in request should not be repeated
 	log.Info("ValidationCheck:Duplicate Backends In AddBackends")
-	dupBackends := s.IsDuplicateItemExist(updateTier.AddBackends)
+	dupBackends := utils.IsDuplicateItemExist(updateTier.AddBackends)
 	if len(dupBackends) > 0 {
 		errMsg := fmt.Sprintf("duplicate backends are found in AddBackends request: %v", dupBackends)
 		log.Error(errMsg)
@@ -692,7 +611,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:DuplicateBackendsInAddBackends:: Check DeleteBackends in request should not be repeated
 	log.Info("ValidationCheck: Duplicate Backends In DeleteBackends")
-	dupBackends = s.IsDuplicateItemExist(updateTier.DeleteBackends)
+	dupBackends = utils.IsDuplicateItemExist(updateTier.DeleteBackends)
 	if len(dupBackends) > 0 {
 		errMsg := fmt.Sprintf("duplicate backends are found in DeleteBackends request: %v", dupBackends)
 		log.Error(errMsg)
@@ -703,7 +622,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	// ValidationCheck:2:: In the same request, same backend can not be
 	// present in AddBackends and DeleteBackends both
 	log.Info("ValidationCheck::dupItemFoundInDelandAddBackends:: Check whether tier id exists or not")
-	dupItemFoundInDelandAddBackends := s.CompareDeleteAndAddList(updateTier.AddBackends,
+	dupItemFoundInDelandAddBackends := utils.CompareDeleteAndAddList(updateTier.AddBackends,
 		updateTier.DeleteBackends)
 	if len(dupItemFoundInDelandAddBackends) > 0 {
 		errMsg := fmt.Sprintf("some backends found in AddBackends and DeleteBackends"+
@@ -716,7 +635,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:DuplicateTenants:: Check tenants in AddTenants request should not be repeated
 	log.Info("ValidationCheck::DuplicateTenants should not allowed in AddTenants")
-	dupTenants := s.IsDuplicateItemExist(updateTier.AddTenants)
+	dupTenants := utils.IsDuplicateItemExist(updateTier.AddTenants)
 	if len(dupTenants) > 0 {
 		errMsg := fmt.Sprintf("duplicate tenants are found in AddTenants request: %v", dupTenants)
 		log.Error(errMsg)
@@ -726,7 +645,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:2:: Check tenants in DeleteTenants request should not be repeated
 	log.Info("ValidationCheck::DuplicateTenants should not allowed in DeleteTenants")
-	dupTenants = s.IsDuplicateItemExist(updateTier.DeleteTenants)
+	dupTenants = utils.IsDuplicateItemExist(updateTier.DeleteTenants)
 	if len(dupTenants) > 0 {
 		errMsg := fmt.Sprintf("duplicate tenants are found in DeleteTenants request: %v", dupTenants)
 		log.Error(errMsg)
@@ -737,7 +656,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	// ValidationCheck:SameBackendsNotAllowedInBoth:: In the same request, same backend can not be
 	// present in AddBackends and DeleteBackends both
 	log.Info("ValidationCheck:Same Tenants should Not Allowed In Both")
-	dupItemFoundInDelandAddTenants := s.CompareDeleteAndAddList(updateTier.AddTenants,
+	dupItemFoundInDelandAddTenants := utils.CompareDeleteAndAddList(updateTier.AddTenants,
 		updateTier.DeleteTenants)
 	if len(dupItemFoundInDelandAddTenants) > 0 {
 		errMsg := fmt.Sprintf("some backends found in AddBackends and DeleteBackends"+
@@ -764,7 +683,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check whether backends already exists before adding")
-	backendsExist := s.ResourcesAlreadyExists(res.Tier.Backends, updateTier.AddBackends)
+	backendsExist := utils.ResourcesAlreadyExists(res.Tier.Backends, updateTier.AddBackends)
 	if len(backendsExist) > 0 {
 		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", backendsExist)
 		log.Error(errMsg)
@@ -773,7 +692,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check backends should exists before removing")
-	backendsNotExist := s.ResourcesCheckBeforeRemove(res.Tier.Backends, updateTier.DeleteBackends)
+	backendsNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Backends, updateTier.DeleteBackends)
 	if len(backendsNotExist) > 0 {
 		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", backendsNotExist)
 		log.Error(errMsg)
@@ -782,7 +701,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check whether Tenant already exists before adding")
-	tenantExist := s.ResourcesAlreadyExists(res.Tier.Tenants, updateTier.AddTenants)
+	tenantExist := utils.ResourcesAlreadyExists(res.Tier.Tenants, updateTier.AddTenants)
 	if len(tenantExist) > 0 {
 		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", tenantExist)
 		log.Error(errMsg)
@@ -790,7 +709,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 	log.Info("Check Tenant should exists before removing")
-	tenantNotExist := s.ResourcesCheckBeforeRemove(res.Tier.Tenants, updateTier.DeleteTenants)
+	tenantNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Tenants, updateTier.DeleteTenants)
 	if len(tenantNotExist) > 0 {
 		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", tenantNotExist)
 		log.Error(errMsg)
@@ -799,11 +718,11 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Prepare update list with AddBackends and DeleteBackends")
-	res.Tier.Backends = s.PrepareUpdateList(res.Tier.Backends, updateTier.AddBackends,
+	res.Tier.Backends = utils.PrepareUpdateList(res.Tier.Backends, updateTier.AddBackends,
 		updateTier.DeleteBackends)
 
 	log.Info("Prepare update list with AddTenants and DeleteTenants")
-	res.Tier.Tenants = s.PrepareUpdateList(res.Tier.Tenants, updateTier.AddTenants,
+	res.Tier.Tenants = utils.PrepareUpdateList(res.Tier.Tenants, updateTier.AddTenants,
 		updateTier.DeleteTenants)
 
 	// Now, tier details can be updated
