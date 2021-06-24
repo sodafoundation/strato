@@ -35,6 +35,7 @@ const (
 	MaxObjectSize           = 5 * 1024 * 1024 * 1024 // 5GB
 	SortDirectionAsc        = "asc"
 	SortDirectionDesc       = "desc"
+	DefaultAdminTenantId    = "94b280022d0c4401bcf3b0ea85870519"
 )
 
 const (
@@ -76,6 +77,7 @@ const (
 	REQUEST_HEADER_CONTENT_TYPE      = "Content-Type"
 	REQUEST_HEADER_SSE_KEY           = "x-amz-server-side-encryption"
 	REQUEST_HEADER_SSE_VALUE_AES256  = "AES256"
+	REQUEST_HEADER_ARCHIVE           = "X-Amz-Storage-Class"
 )
 
 const (
@@ -173,6 +175,35 @@ func InitCtxWithAuthInfo(request *restful.Request) context.Context {
 		CTX_KEY_IS_ADMIN:  strconv.FormatBool(actx.IsAdmin),
 	})
 
+	return ctx
+}
+
+// TODO: Can be optimized with above function InitCtxWithAuthInfo()
+func InitCtxWithAuthInfoNonAdmin(request *restful.Request) context.Context {
+	actx := request.Attribute(c.KContext).(*c.Context)
+	var ctx context.Context
+	if actx.IsAdmin {
+		ctx = metadata.NewContext(context.Background(), map[string]string{
+			CTX_KEY_USER_ID:   actx.UserId,
+			CTX_KEY_TENANT_ID: actx.TenantId,
+			CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
+		})
+	} else {
+		ctx = metadata.NewContext(context.Background(), map[string]string{
+			CTX_KEY_TENANT_ID: request.PathParameter("tenantId"),
+			CTX_KEY_IS_ADMIN:  strconv.FormatBool(false),
+		})
+	}
+
+	return ctx
+}
+
+func GetAdminContext() context.Context {
+	var ctx context.Context
+	ctx = metadata.NewContext(context.Background(), map[string]string{
+		CTX_KEY_TENANT_ID: DefaultAdminTenantId,
+		CTX_KEY_IS_ADMIN:  strconv.FormatBool(true),
+	})
 	return ctx
 }
 

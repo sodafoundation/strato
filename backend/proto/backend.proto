@@ -114,6 +114,7 @@ message ListTierRequest {
 	int32 offset = 2;
 	repeated string sortKeys = 3;
 	repeated string sortDirs = 4;
+	map<string, string> Filter = 5;
 }
 
 message ListTierResponse {
@@ -138,14 +139,18 @@ message DeleteTierResponse {
 
 message Tier {
 	string id = 1;
-	string tenantId = 2;
+    string tenantId = 2;
 	string name = 3;
 	repeated string backends = 4;
+	repeated string tenants = 5;
 }
 
 message UpdateTier {
-        string id = 1;
+	string id = 1;
 	repeated string AddBackends = 3;
-        repeated string DeleteBackends = 4;
+	repeated string DeleteBackends = 4;
+	repeated string AddTenants = 5;
+	repeated string DeleteTenants = 6;
+
 }
 

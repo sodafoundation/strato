@@ -36,4 +36,5 @@ type Tier struct {
 	TenantId string        `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
 	Name     string        `json:"name,omitempty" bson:"name,omitempty"`
 	Backends []string      `json:"type,omitempty" bson:"backends,omitempty"`
+	Tenants  []string      `json:"type,omitempty" bson:"tenants,omitempty"`
 }
