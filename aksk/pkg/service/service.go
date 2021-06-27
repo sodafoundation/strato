@@ -31,7 +31,7 @@ func NewAkSkService() pb.AkSkHandler {
 	return &akskService{}
 }
 
-func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkCreateResponse) error {
+func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkBlob) error {
 	log.Info("Received CreateAkSk request.")
 
 	aksk := &model.AkSk{
@@ -44,7 +44,8 @@ func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, 
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err
 	}
-	out.Blob = res.Credential.Blob
+	out.AccessKey = res.Access
+	out.SecretKey = res.Secret
 	log.Info("Created AKSK successfully.")
 	return nil
 }

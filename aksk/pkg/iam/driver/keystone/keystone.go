@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 
@@ -61,7 +62,7 @@ func Init(host string) *KeystoneIam {
 	return Keystone
 }
 
-func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.AkSkOut, error) {
+func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.Blob, error) {
 	akey := utils.GenerateRandomString(AK_LENGTH)
 	skey := utils.GenerateRandomString(SK_LENGTH)
 
@@ -97,8 +98,13 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 	var data *model.AkSkOut
 	json.Unmarshal(bodyBytes, &data)
+	akskStrg := data.Credential.Blob
 
-	return data, nil
+	var akskBlob *model.Blob
+	akskBytes, _ := strconv.Unquote("`" + akskStrg + "`")
+	err = json.Unmarshal([]byte(akskBytes), &akskBlob)
+
+	return akskBlob, nil
 }
 
 func (iam *KeystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error {

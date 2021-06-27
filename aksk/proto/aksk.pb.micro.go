@@ -44,7 +44,7 @@ func NewAkSkEndpoints() []*api.Endpoint {
 type AkSkService interface {
 	DownloadAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error)
 	GetAkSk(ctx context.Context, in *GetAkSkRequest, opts ...client.CallOption) (*GetAkSkResponse, error)
-	CreateAkSk(ctx context.Context, in *AkSkCreateRequest, opts ...client.CallOption) (*AkSkCreateResponse, error)
+	CreateAkSk(ctx context.Context, in *AkSkCreateRequest, opts ...client.CallOption) (*AkSkBlob, error)
 	DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, opts ...client.CallOption) (*DeleteAkSkResponse, error)
 }
 
@@ -80,9 +80,9 @@ func (c *akSkService) GetAkSk(ctx context.Context, in *GetAkSkRequest, opts ...c
 	return out, nil
 }
 
-func (c *akSkService) CreateAkSk(ctx context.Context, in *AkSkCreateRequest, opts ...client.CallOption) (*AkSkCreateResponse, error) {
+func (c *akSkService) CreateAkSk(ctx context.Context, in *AkSkCreateRequest, opts ...client.CallOption) (*AkSkBlob, error) {
 	req := c.c.NewRequest(c.name, "AkSk.CreateAkSk", in)
-	out := new(AkSkCreateResponse)
+	out := new(AkSkBlob)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (c *akSkService) DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, opt
 type AkSkHandler interface {
 	DownloadAkSk(context.Context, *GetAkSkRequest, *GetAkSkResponse) error
 	GetAkSk(context.Context, *GetAkSkRequest, *GetAkSkResponse) error
-	CreateAkSk(context.Context, *AkSkCreateRequest, *AkSkCreateResponse) error
+	CreateAkSk(context.Context, *AkSkCreateRequest, *AkSkBlob) error
 	DeleteAkSk(context.Context, *DeleteAkSkRequest, *DeleteAkSkResponse) error
 }
 
@@ -113,7 +113,7 @@ func RegisterAkSkHandler(s server.Server, hdlr AkSkHandler, opts ...server.Handl
 	type akSk interface {
 		DownloadAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error
 		GetAkSk(ctx context.Context, in *GetAkSkRequest, out *GetAkSkResponse) error
-		CreateAkSk(ctx context.Context, in *AkSkCreateRequest, out *AkSkCreateResponse) error
+		CreateAkSk(ctx context.Context, in *AkSkCreateRequest, out *AkSkBlob) error
 		DeleteAkSk(ctx context.Context, in *DeleteAkSkRequest, out *DeleteAkSkResponse) error
 	}
 	type AkSk struct {
@@ -135,7 +135,7 @@ func (h *akSkHandler) GetAkSk(ctx context.Context, in *GetAkSkRequest, out *GetA
 	return h.AkSkHandler.GetAkSk(ctx, in, out)
 }
 
-func (h *akSkHandler) CreateAkSk(ctx context.Context, in *AkSkCreateRequest, out *AkSkCreateResponse) error {
+func (h *akSkHandler) CreateAkSk(ctx context.Context, in *AkSkCreateRequest, out *AkSkBlob) error {
 	return h.AkSkHandler.CreateAkSk(ctx, in, out)
 }
 

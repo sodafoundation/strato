@@ -115,7 +115,7 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	response.WriteEntity(res.Blob)
+	response.WriteEntity(res)
 }
 
 func (s *APIService) DeleteAkSk(request *restful.Request, response *restful.Response) {
