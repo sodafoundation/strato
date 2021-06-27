@@ -231,7 +231,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 		tier, err := strconv.Atoi(para)
 		if err != nil {
 			log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
-			response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
+			response.WriteError(http.StatusBadRequest, errors.New("invalid service plan"))
 			return
 		}
 		s.FilterBackendByTier(ctx, request, response, int32(tier))
@@ -592,7 +592,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("ValidationCheck::BackendExists:: Check whether tier id exists or not")
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get tier details for id: %v\n, err: %v\n", id, err)
+		errMsg := fmt.Sprintf("failed to get service plan details for id: %v\n, err: %v\n", id, err)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -685,7 +685,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check whether backends already exists before adding")
 	backendsExist := utils.ResourcesAlreadyExists(res.Tier.Backends, updateTier.AddBackends)
 	if len(backendsExist) > 0 {
-		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", backendsExist)
+		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in service plan", backendsExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -694,7 +694,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check backends should exists before removing")
 	backendsNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Backends, updateTier.DeleteBackends)
 	if len(backendsNotExist) > 0 {
-		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", backendsNotExist)
+		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in service plan", backendsNotExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -703,7 +703,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check whether Tenant already exists before adding")
 	tenantExist := utils.ResourcesAlreadyExists(res.Tier.Tenants, updateTier.AddTenants)
 	if len(tenantExist) > 0 {
-		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", tenantExist)
+		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in service plan", tenantExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -711,7 +711,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check Tenant should exists before removing")
 	tenantNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Tenants, updateTier.DeleteTenants)
 	if len(tenantNotExist) > 0 {
-		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", tenantNotExist)
+		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in service plan", tenantNotExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -822,7 +822,7 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	_, err = s.backendClient.DeleteTier(ctx, &backend.DeleteTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to delete tier: %v\n", err)
-		err1 := errors.New("failed to delete tier because tier has associated backends")
+		err1 := errors.New("failed to delete service plan  because service plan  has associated backends")
 		response.WriteError(http.StatusInternalServerError, err1)
 		return
 	}
