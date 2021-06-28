@@ -105,7 +105,7 @@ paths:
         - name: project_id
           in: path
           required: true
-          description: AKSK to be generated for User of a Project
+          description: AKSK to be generated for User of a Project / Tenant. project_id is same as tenant_id.
           schema:
             type: string
       responses:
@@ -131,13 +131,13 @@ paths:
         - name: project_id
           in: path
           required: true
-          description: AKSK to be fetched for a User in project_id
+          description: AKSK to be fetched for a User in Project project_id. project_id is same as tenant_id.
           schema:
             type: string
         - name: user_id
           in: path
           required: true
-          description: AKSK to be fetched for a User of user_id in Project of project_id
+          description: AKSK to be fetched for a User of user_id in Project of project_id. project_id is same as tenant_id.
           schema:
             type: string
       responses:
@@ -152,13 +152,13 @@ paths:
         - name: project_id
           in: path
           required: true
-          description: AKSKs to be deleted for a User in project_id
+          description: AKSKs to be deleted for a User in project_id.
           schema:
             type: string
         - name: user_id
           in: path
           required: true
-          description: AKSK to be deleted for a User of user_id in Project of project_id
+          description: AKSK to be deleted for a User of user_id in Project of project_id. project_id is same as tenant_id.
           schema:
             type: string
       responses:
@@ -178,13 +178,13 @@ paths:
         - name: project_id
           in: path
           required: true
-          description: AKSKs to be downloaded for a User in project_id
+          description: AKSKs to be downloaded for a User in project_id.
           schema:
             type: string
         - name: user_id
           in: path
           required: true
-          description: AKSK to be downloaded for a User of user_id in Project of project_id
+          description: AKSK to be downloaded for a User of user_id in Project of project_id. project_id is same as tenant_id.
           schema:
             type: string
       responses:
