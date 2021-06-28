@@ -59,15 +59,21 @@ func (b *akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, r
 		return err
 	}
 
-	aksk := &pb.AkSkDetail{}
-	for _, cred := range res.Credentials {
+	for _, cred := range res {
+
+		aksk := &pb.AkSkDetail{}
+		tmpBlob := &pb.AkSkBlob{}
+		tmpBlob.AccessKey = cred.Blob.Access
+		tmpBlob.SecretKey = cred.Blob.Secret
+
 		aksk = &pb.AkSkDetail{
 			ProjectId: cred.ProjectID,
 			UserId:    cred.UserID,
-			Blob:      cred.Blob,
+			Blob:      tmpBlob,
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)
+
 	}
 
 	log.Info("Got AKSK successfully. ")
@@ -96,12 +102,17 @@ func (b *akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkReque
 		return err
 	}
 
-	aksk := &pb.AkSkDetail{}
-	for _, cred := range res.Credentials {
+	for _, cred := range res {
+
+		aksk := &pb.AkSkDetail{}
+		tmpBlob := &pb.AkSkBlob{}
+		tmpBlob.AccessKey = cred.Blob.Access
+		tmpBlob.SecretKey = cred.Blob.Secret
+
 		aksk = &pb.AkSkDetail{
 			ProjectId: cred.ProjectID,
 			UserId:    cred.UserID,
-			Blob:      cred.Blob,
+			Blob:      tmpBlob,
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)

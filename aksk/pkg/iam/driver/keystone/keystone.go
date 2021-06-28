@@ -103,6 +103,9 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	var akskBlob *model.Blob
 	akskBytes, _ := strconv.Unquote("`" + akskStrg + "`")
 	err = json.Unmarshal([]byte(akskBytes), &akskBlob)
+	if err != nil {
+		return nil, err
+	}
 
 	return akskBlob, nil
 }
@@ -112,6 +115,9 @@ func (iam *KeystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	client := &Keystone.Client
 	keystoneURL := PROTOCOL + iam.Host + iam.URI
 	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
+	if err != nil {
+		return err
+	}
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
@@ -132,6 +138,9 @@ func (iam *KeystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	for _, v := range akskListout.Credentials {
 		log.Info("Deleting AK SK for User %s", v.ID)
 		delreq, err := http.NewRequest(DELETE, keystoneURL+SEPERATOR+v.ID, bytes.NewBuffer(nil))
+		if err != nil {
+			return err
+		}
 		delreq.Header.Add(AUTH_TOKEN, in.Token)
 		delreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
@@ -145,26 +154,47 @@ func (iam *KeystoneIam) DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest
 	return nil
 }
 
-func (iam *KeystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
+func (iam *KeystoneIam) GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (model.Credentials, error) {
 
 	client := &Keystone.Client
 	keystoneURL := PROTOCOL + iam.Host + iam.URI
 	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
+	if err != nil {
+		return nil, err
+	}
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, err := client.Do(getreq)
-	defer akskresp.Body.Close()
-
 	if err != nil {
 		return nil, err
 	}
 
+	defer akskresp.Body.Close()
+
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 	var akskListout = &model.AkSkListOut{}
-	json.Unmarshal(bodyBytes, &akskListout)
 
-	return akskListout, nil
+	json.Unmarshal(bodyBytes, &akskListout)
+	var akskCredListout = model.Credentials{}
+	for _, cred := range akskListout.Credentials {
+		akskStrg := cred.Blob
+		var akskBlob *model.Blob
+		akskBytes, _ := strconv.Unquote("`" + akskStrg + "`")
+		err = json.Unmarshal([]byte(akskBytes), &akskBlob)
+		if err != nil {
+			return nil, err
+		}
+
+		akskCredListout = append(akskCredListout, model.CredBlob{
+			ProjectID: cred.ProjectID,
+			Type:      cred.Type,
+			UserID:    cred.UserID,
+			Blob:      *akskBlob,
+		})
+	}
+
+	return akskCredListout, nil
 }
 
 func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error) {
@@ -172,6 +202,9 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	client := &Keystone.Client
 	keystoneURL := PROTOCOL + iam.Host + iam.URI
 	getreq, err := http.NewRequest(GET, keystoneURL+USER_QUERY_STR+in.UserId, bytes.NewBuffer(nil))
+	if err != nil {
+		return nil, err
+	}
 	getreq.Header.Add(AUTH_TOKEN, in.Token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 

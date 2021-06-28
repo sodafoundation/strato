@@ -11,14 +11,14 @@ service AkSk {
 
 message AkSkBlob {
     string access_key = 1;
-    string secret_key = 2;    
+    string secret_key = 2;
 }
 
 message AkSkDetail {
     string project_id = 1;
     string user_id = 2;
     string type = 3;
-    string blob = 4;
+    AkSkBlob blob = 4;
     string token = 5;
 }
 
