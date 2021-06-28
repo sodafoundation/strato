@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
+	"math"
 	"strconv"
 	"strings"
 
@@ -56,18 +56,22 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 
 	if isArchive == "Archive" && bucketMeta.Tiers != "" {
 		adminCtx := common.GetAdminContext()
-		backendId := s.GetBackendIdFromTier(adminCtx, bucketMeta.Tiers)
-		backendMeta, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
-		if err != nil {
-			log.Error("the selected backends from tier doesn't exists.")
-			response.WriteError(http.StatusInternalServerError, err)
+		backendMeta, backendErr := s.backendClient.ListBackend(adminCtx, &backend.ListBackendRequest{
+			Offset: 0,
+			Limit:  math.MaxInt32,
+			Filter: map[string]string{"name": bucketMeta.DefaultLocation}},
+		)
+
+		log.Infof("backendErr is %v:", backendErr)
+		if backendErr != nil {
+			log.Infof("Get backend[name=%s] failed.", backendName)
 		}
 
+		log.Info("BackendMeta data:", backendMeta)
 		// FIXME: This code is added for tiering feature, where based on backend type, storageClass will
 		// be selected. Currently it's hardcoded. Later it can be read from some config policy
 		if backendMeta != nil {
-			backendType := backendMeta.Backend.Type
-
+			backendType := backendMeta.Backends[0].Type
 			if backendType == AWS_TYPE {
 				storageClass = AWS_GLACIER
 			} else if backendType == AZURE_TYPE || backendType == GCP_TYPE {
