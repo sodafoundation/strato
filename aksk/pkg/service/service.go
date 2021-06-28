@@ -31,7 +31,7 @@ func NewAkSkService() pb.AkSkHandler {
 	return &akskService{}
 }
 
-func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkCreateResponse) error {
+func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, out *pb.AkSkBlob) error {
 	log.Info("Received CreateAkSk request.")
 
 	aksk := &model.AkSk{
@@ -44,7 +44,8 @@ func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, 
 		log.Errorf("Failed to create AKSK : %v", err)
 		return err
 	}
-	out.Blob = res.Credential.Blob
+	out.AccessKey = res.Access
+	out.SecretKey = res.Secret
 	log.Info("Created AKSK successfully.")
 	return nil
 }
@@ -58,15 +59,21 @@ func (b *akskService) GetAkSk(ctx context.Context, request *pb.GetAkSkRequest, r
 		return err
 	}
 
-	aksk := &pb.AkSkDetail{}
-	for _, cred := range res.Credentials {
+	for _, cred := range res {
+
+		aksk := &pb.AkSkDetail{}
+		tmpBlob := &pb.AkSkBlob{}
+		tmpBlob.AccessKey = cred.Blob.Access
+		tmpBlob.SecretKey = cred.Blob.Secret
+
 		aksk = &pb.AkSkDetail{
 			ProjectId: cred.ProjectID,
 			UserId:    cred.UserID,
-			Blob:      cred.Blob,
+			Blob:      tmpBlob,
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)
+
 	}
 
 	log.Info("Got AKSK successfully. ")
@@ -95,12 +102,17 @@ func (b *akskService) DownloadAkSk(ctx context.Context, request *pb.GetAkSkReque
 		return err
 	}
 
-	aksk := &pb.AkSkDetail{}
-	for _, cred := range res.Credentials {
+	for _, cred := range res {
+
+		aksk := &pb.AkSkDetail{}
+		tmpBlob := &pb.AkSkBlob{}
+		tmpBlob.AccessKey = cred.Blob.Access
+		tmpBlob.SecretKey = cred.Blob.Secret
+
 		aksk = &pb.AkSkDetail{
 			ProjectId: cred.ProjectID,
 			UserId:    cred.UserID,
-			Blob:      cred.Blob,
+			Blob:      tmpBlob,
 			Type:      cred.Type,
 		}
 		response.AkSkDetail = append(response.AkSkDetail, aksk)

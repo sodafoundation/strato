@@ -101,3 +101,19 @@ type AkSkListOut struct {
 		Next     interface{} `json:"next"`
 	} `json:"links"`
 }
+
+type Credentials []struct {
+	UserID    string `json:"user_id"`
+	Blob      Blob   `json:"blob"`
+	ProjectID string `json:"project_id"`
+	Type      string `json:"type"`
+	ID        string `json:"id"`
+}
+
+type CredBlob struct {
+	UserID    string `json:"user_id"`
+	Blob      Blob   `json:"blob"`
+	ProjectID string `json:"project_id"`
+	Type      string `json:"type"`
+	ID        string `json:"id"`
+}

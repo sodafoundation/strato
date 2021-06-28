@@ -27,10 +27,10 @@ import (
 
 type IAMAuthenticator interface {
 	// AkSk
-	CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.AkSkOut, error)
+	CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) (*model.Blob, error)
 	DeleteAkSk(ctx context.Context, in *pb.DeleteAkSkRequest) error
-	GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error)
 	DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest) (*model.AkSkListOut, error)
+	GetAkSk(ctx context.Context, in *pb.GetAkSkRequest) (model.Credentials, error)
 }
 
 var CredStore IAMAuthenticator
