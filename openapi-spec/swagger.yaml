@@ -42,6 +42,11 @@ info:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
+  - name: AccessKey SecretKey
+    description: Interface for Access Key and Secret Key generation
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
   - name: Backend
     description: Muli-cloud cloud storage backends
     externalDocs:
@@ -87,7 +92,104 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+# schemes:
+# - http
 paths:
+  '/v1/{project_id}/aksks':
+    post:
+      tags:
+        - AKSK
+      summary: Create a new AKSK for a User.
+      operationId: addAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSK to be generated for User of a Project
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AKSK'
+        '401':
+          description: Unauthorized. Token not found in header
+        '415':
+          description: Unsupported Media Type
+      requestBody:
+        $ref: '#/components/requestBodies/AKSK'
+  '/v1/{project_id}/aksks/{user_id}':
+    get:
+      tags:
+        - AKSK
+      summary: Get the AKSK for a UserId.
+      operationId: getAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSK to be fetched for a User in project_id
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          description: AKSK to be fetched for a User of user_id in Project of project_id
+          schema:
+            type: string
+      responses:
+        '405':
+          description: Invalid input
+    delete:
+      tags:
+        - AKSK
+      summary: Delete AKSKs for a user.
+      operationId: deleteAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSKs to be deleted for a User in project_id
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          description: AKSK to be deleted for a User of user_id in Project of project_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+        '401':
+          description: Unauthorized. Token not found in header
+        '415':
+          description: Unsupported Media Type
+  '/v1/{project_id}/aksks/{user_id}/download':
+    get:
+      tags:
+        - AKSK
+      summary: Download the AKSKs for a UserId.
+      operationId: downloadAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSKs to be downloaded for a User in project_id
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          description: AKSK to be downloaded for a User of user_id in Project of project_id
+          schema:
+            type: string
+      responses:
+        '405':
+          description: Invalid input
   '/v1/{tenantId}/backends':
     parameters:
       - name: tenantId
@@ -1218,6 +1320,21 @@ components:
         The sort key and direction of items to return, string must
         like:"id:asc,name:desc"
   schemas:
+    AKSK:
+      type: object
+      properties:
+        credential:
+          type: object
+          description: The object containing the project_id and user_id.
+          properties: 
+            project_id:
+              description: The project ID that the user belongs to.
+              type: string
+              example: 5ea809d2553b0f000116be32
+            user_id:
+              description: The user ID of the User.
+              type: string
+              example: 94b280022d0c4401bcf3b0ea85870519   
     Backend:
       type: object
       properties:
@@ -2328,6 +2445,13 @@ components:
           Description: The Days element is required for regular restore. Required for restoring archived object.
           example: 1
   requestBodies:
+    AKSK:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AKSK'
+      description: AKSK Creation payload.
+      required: true
     Backend:
       content:
         application/json:
