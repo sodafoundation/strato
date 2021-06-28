@@ -195,8 +195,14 @@ paths:
           schema:
             type: string
       responses:
-        '405':
-          description: Invalid input
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist i.e. AKSK does not exist.
   '/v1/{tenantId}/backends':
     parameters:
       - name: tenantId
