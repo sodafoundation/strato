@@ -87,6 +87,11 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+  - name: Storage Service Plan
+    description: Multi-cloud Storage Service Plan(SSP)
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
 paths:
   '/v1/{tenantId}/backends':
     parameters:
@@ -878,7 +883,7 @@ paths:
       tags:
         - Backup
       summary: Upload Object into archival storage.
-      operationId: objectPut
+      operationId: backupPut
       responses:
         '200':
           description: Successful Archive Object
@@ -892,7 +897,7 @@ paths:
       summary: Restore Object from archival storage.
       operationId: objectPost
       requestBody:
-        desciption: Required inputs for restoring a object.
+        description: Required inputs for restoring a object.
         required: true
         content:
           application/json:
@@ -911,7 +916,7 @@ paths:
       tags:
         - Backup
       summary: Download archived and restored Object
-      operationId: objectGet
+      operationId: backupGet
       responses:
         '200':
           description: Successful Download of Object
@@ -1188,6 +1193,131 @@ paths:
           description: The resource does not exist.
         '500':
           description: The fileshare can not be deleted. please check status
+
+  '/v1/{tenantId}/tiers':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenant UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Storage Service Plan
+      summary: Create a Storage Service Plan(SSP)
+      operationId: createTiers
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tier'
+        '415':
+          description: Unsupported Media Type
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+      requestBody:
+        $ref: '#/components/requestBodies/Tier'
+    get:
+      tags:
+        - Storage Service Plan
+      summary: List all Storage Service Plans.
+      operationId: listTiers
+      parameters:
+        - name: name
+          in: query
+          description: Filter the tier by name.
+          schema:
+            type: string
+            example: 'Gold'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tiers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tier'
+                  next:
+                    type: integer
+  '/v1/{tenantId}/tiers/{id}':
+    parameters:
+      - name: tenantId
+        in: path
+        description: The tenantId UUID in a multi-tenancy environment.
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: The tier ID.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Storage Service Plan
+      summary: Get a Storage Service Plan information.
+      operationId: getTier
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tier'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+    put:
+      tags:
+        - Storage Service Plan
+      summary: Update a Storage Service Plan.
+      operationId: updateTier
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tier'
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+      requestBody:
+        $ref: '#/components/requestBodies/TierUpdate'
+    delete:
+      tags:
+        - Storage Service Plan
+      summary: Deletes a Storage Service Plan.
+      operationId: deleteTier
+      responses:
+        '200':
+          description: Delete success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Invalid ID supplied
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
+        '500':
+          description: The volume can not be deleted. please check status
 components:
   parameters:
     offset:
@@ -1927,6 +2057,56 @@ components:
             type: string
           example:
             VolumeId: vol-03deedaee2de0060f
+    Tier:
+      type: object
+      required:
+        - Name
+      properties:
+        Id:
+          description: 'The SSP ID'
+          type: string
+          example: 5ef1db51202b510001c3804c
+        TenantId:
+          description: 'The Tenant ID'
+          type: string
+          example: 5ef1db51202b510001c3804c
+        Name:
+          description: 'The SSP name specified by user, - Required'
+          type: string
+          example: Gold
+        Backends:
+          description: 'The backend Name, - Optional'
+          type: array
+          items:
+            example: backend001, backend002
+        Tenants:
+          description: 'The Tenants Name, - Optional'
+          type: array
+          items:
+            example: Tenants1, Tenants2
+    TierUpdate:
+      type: object
+      properties:
+        AddBackends:
+          description: 'The backend Name, - Optional'
+          type: array
+          items:
+            example: backend001, backend002
+        DeleteBackends:
+          description: 'The backend Name, - Optional'
+          type: array
+          items:
+            example: backend001, backend002
+        AddTenants:
+          description: 'The Tenants Name, - Optional'
+          type: array
+          items:
+            example: Tenants1, Tenants2
+        DeleteTenants:
+          description: 'The Tenants Name, - Optional'
+          type: array
+          items:
+            example: Tenants1, Tenants2
 
     BaseResponse:
       type: object
@@ -2324,8 +2504,8 @@ components:
           description: the retrieval option when restoring an archived object. This is cloud vendor specific.
           example: Expedited
         days:
-          type: int
-          Description: The Days element is required for regular restore. Required for restoring archived object.
+          type: integer
+          description: The Days element is required for regular restore. Required for restoring archived object.
           example: 1
   requestBodies:
     Backend:
@@ -2376,4 +2556,18 @@ components:
           schema:
             $ref: '#/components/schemas/VolumeUpdate'
       description: Cloud Volume Update configurations
+      required: true
+    Tier:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tier'
+      description: Storage Service Plan configurations
+      required: true
+    TierUpdate:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TierUpdate'
+      description: Storage Service Plan Update configurations
       required: true
