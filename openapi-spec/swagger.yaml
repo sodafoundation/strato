@@ -1250,6 +1250,10 @@ paths:
                       $ref: '#/components/schemas/Tier'
                   next:
                     type: integer
+        '401':
+          description: Unauthorized. Token not found in header
+        '404':
+          description: The resource does not exist.
   '/v1/{tenantId}/tiers/{id}':
     parameters:
       - name: tenantId
@@ -1317,7 +1321,7 @@ paths:
         '404':
           description: The resource does not exist.
         '500':
-          description: The volume can not be deleted. please check status
+          description: The storage service plan can not be deleted. please check status
 components:
   parameters:
     offset:
@@ -2065,11 +2069,34 @@ components:
         Id:
           description: 'The SSP ID'
           type: string
-          example: 5ef1db51202b510001c3804c
+          example: 60d2e32e7df895000142695d
         TenantId:
           description: 'The Tenant ID'
           type: string
-          example: 5ef1db51202b510001c3804c
+          example: a881ede44b9449e2ba795e4deb2bf807
+        Name:
+          description: 'The SSP name specified by user, - Required'
+          type: string
+          example: Gold
+        Backends:
+          description: 'The backend Name, - Optional'
+          type: array
+          items:
+            example: backend001, backend002
+        Tenants:
+          description: 'The Tenants Name, - Optional'
+          type: array
+          items:
+            example: Tenants1, Tenants2
+    TierRequest:
+      type: object
+      required:
+        - Name
+      properties:
+        Id:
+          description: 'The SSP ID'
+          type: string
+          example: a881ede44b9449e2ba795e4deb2bf808
         Name:
           description: 'The SSP name specified by user, - Required'
           type: string
@@ -2561,7 +2588,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Tier'
+            $ref: '#/components/schemas/TierRequest'
       description: Storage Service Plan configurations
       required: true
     TierUpdate:
