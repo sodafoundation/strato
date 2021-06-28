@@ -231,7 +231,7 @@ func (s *APIService) ListBackend(request *restful.Request, response *restful.Res
 		tier, err := strconv.Atoi(para)
 		if err != nil {
 			log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
-			response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
+			response.WriteError(http.StatusBadRequest, errors.New("invalid service plan"))
 			return
 		}
 		s.FilterBackendByTier(ctx, request, response, int32(tier))
@@ -486,7 +486,7 @@ func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string
 
 //tiering functions
 func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
-	log.Info("Received request for creating tier.")
+	log.Info("Received request for creating service plan.")
 	if !policy.Authorize(request, response, "tier:create") {
 		return
 	}
@@ -513,7 +513,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 		Filter: map[string]string{"name": tier.Name},
 	})
 	if err != nil {
-		log.Errorf("failed to list Tiers: %v\n", err)
+		log.Errorf("failed to list Service plans: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -560,19 +560,19 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	// Now, tier can be created with backends for tenants
 	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
 	if err != nil {
-		log.Errorf("failed to create tier: %v\n", err)
+		log.Errorf("failed to create service plan: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Created backend successfully.")
+	log.Info("Created service plan successfully.")
 	response.WriteEntity(res.Tier)
 
 }
 
 //here backendId can be updated
 func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
-	log.Infof("Received request for updating tier: %v\n", request.PathParameter("id"))
+	log.Infof("Received request for updating service plan: %v\n", request.PathParameter("id"))
 	if !policy.Authorize(request, response, "tier:update") {
 		return
 	}
@@ -589,10 +589,10 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	ctx := common.InitCtxWithAuthInfo(request)
 
 	// ValidationCheck::BackendExists:: Check whether tier id exists or not
-	log.Info("ValidationCheck::BackendExists:: Check whether tier id exists or not")
+	log.Info("ValidationCheck::BackendExists:: Check whether service plan id exists or not")
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get tier details for id: %v\n, err: %v\n", id, err)
+		errMsg := fmt.Sprintf("failed to get service plan details for id: %v\n, err: %v\n", id, err)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -685,7 +685,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check whether backends already exists before adding")
 	backendsExist := utils.ResourcesAlreadyExists(res.Tier.Backends, updateTier.AddBackends)
 	if len(backendsExist) > 0 {
-		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", backendsExist)
+		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in service plan", backendsExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -694,7 +694,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check backends should exists before removing")
 	backendsNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Backends, updateTier.DeleteBackends)
 	if len(backendsNotExist) > 0 {
-		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", backendsNotExist)
+		errMsg := fmt.Sprintf("failed to update service plan because delete backends: %v doesnt exist in service plan", backendsNotExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -703,7 +703,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check whether Tenant already exists before adding")
 	tenantExist := utils.ResourcesAlreadyExists(res.Tier.Tenants, updateTier.AddTenants)
 	if len(tenantExist) > 0 {
-		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in tier", tenantExist)
+		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in service plan", tenantExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -711,7 +711,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	log.Info("Check Tenant should exists before removing")
 	tenantNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Tenants, updateTier.DeleteTenants)
 	if len(tenantNotExist) > 0 {
-		errMsg := fmt.Sprintf("failed to update tier because delete backends: %v doesnt exist in tier", tenantNotExist)
+		errMsg := fmt.Sprintf("failed to update service plan because delete backends: %v doesnt exist in service plan", tenantNotExist)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -729,18 +729,18 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	updateTierRequest := &backend.UpdateTierRequest{Tier: res.Tier}
 	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
 	if err != nil {
-		log.Errorf("failed to update tier: %v\n", err)
+		log.Errorf("failed to update service plan: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Update tier successfully.")
+	log.Info("Update service plan successfully.")
 	response.WriteEntity(res1.Tier)
 }
 
 // GetTier if tierId is given then details of tier to be given
 func (s *APIService) GetTier(request *restful.Request, response *restful.Response) {
-	log.Infof("Received request for tier details: %s\n", request.PathParameter("id"))
+	log.Infof("Received request for service plan details: %s\n", request.PathParameter("id"))
 	if !policy.Authorize(request, response, "tier:get") {
 		return
 	}
@@ -749,18 +749,18 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to get tier details: %v\n", err)
+		log.Errorf("failed to get service plan details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	log.Info("Get tier details successfully.")
+	log.Info("Get service plan details successfully.")
 	response.WriteEntity(res.Tier)
 }
 
 //List of tiers is displayed
 func (s *APIService) ListTiers(request *restful.Request, response *restful.Response) {
-	log.Info("Received request for tier list.")
+	log.Info("Received request for service plan list.")
 	if !policy.Authorize(request, response, "tier:list") {
 		return
 	}
@@ -792,7 +792,7 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	log.Info("List tiers successfully.")
+	log.Info("List service plans successfully.")
 	response.WriteEntity(res)
 	return
 }
@@ -800,7 +800,7 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 //given tierId need to delete the tier
 func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("id")
-	log.Infof("Received request for deleting tier: %s\n", id)
+	log.Infof("Received request for deleting service plan: %s\n", id)
 	if !policy.Authorize(request, response, "tier:delete") {
 		return
 	}
@@ -808,25 +808,25 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to get tier details: %v\n", err)
+		log.Errorf("failed to get service plan details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 	// check whether tier is empty
 	if len(res.Tier.Backends) > 0 {
-		log.Errorf("failed to delete tier because tier is not empty has backends: %v\n", err)
+		log.Errorf("failed to delete service plan because service plan is not empty has backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
 	_, err = s.backendClient.DeleteTier(ctx, &backend.DeleteTierRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to delete tier: %v\n", err)
-		err1 := errors.New("failed to delete tier because tier has associated backends")
+		log.Errorf("failed to delete service plan: %v\n", err)
+		err1 := errors.New("failed to delete service plan  because service plan  has associated backends")
 		response.WriteError(http.StatusInternalServerError, err1)
 		return
 	}
-	log.Info("Delete tier  successfully.")
+	log.Info("Delete service plan successfully.")
 	response.WriteHeader(http.StatusOK)
 	return
 }
