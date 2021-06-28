@@ -42,11 +42,6 @@ info:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
-  - name: AccessKey SecretKey
-    description: Interface for Access Key and Secret Key generation
-    externalDocs:
-      description: Find out more
-      url: 'https://sodafoundation.io/'
   - name: Backend
     description: Multi-cloud cloud storage backends
     externalDocs:
@@ -92,6 +87,11 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+  - name: AccessKey SecretKey
+    description: Interface for Access Key and Secret Key generation
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
 # schemes:
 # - http
 paths:
@@ -117,8 +117,6 @@ paths:
                 $ref: '#/components/schemas/AKSK'
         '401':
           description: Unauthorized. Token not found in header
-        '415':
-          description: Unsupported Media Type
       requestBody:
         $ref: '#/components/requestBodies/AKSK'
   '/v1/{project_id}/aksks/{user_id}':
@@ -141,8 +139,14 @@ paths:
           schema:
             type: string
       responses:
-        '405':
-          description: Invalid input
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist i.e. AKSK does not exist.
     delete:
       tags:
         - AKSK
@@ -166,8 +170,6 @@ paths:
           description: successful operation
         '401':
           description: Unauthorized. Token not found in header
-        '415':
-          description: Unsupported Media Type
   '/v1/{project_id}/aksks/{user_id}/download':
     get:
       tags:
@@ -1327,12 +1329,12 @@ components:
           type: object
           description: The object containing the project_id and user_id.
           properties: 
-            project_id:
-              description: The project ID that the user belongs to.
+            access_key:
+              description: The Access Key generated for the user.
               type: string
               example: 5ea809d2553b0f000116be32
-            user_id:
-              description: The user ID of the User.
+            secret_key:
+              description: The Secret Key generated for the user.
               type: string
               example: 94b280022d0c4401bcf3b0ea85870519   
     Backend:
