@@ -43,7 +43,7 @@ info:
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
   - name: Backend
-    description: Muli-cloud cloud storage backends
+    description: Multi-cloud cloud storage backends
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
@@ -87,12 +87,122 @@ tags:
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+# schemes:
+# - http
   - name: Storage Service Plan
     description: Multi-cloud Storage Service Plan(SSP)
     externalDocs:
       description: Find out more
       url: 'https://sodafoundation.io/'
+  - name: AccessKey SecretKey
+    description: Interface for Access Key and Secret Key generation
+    externalDocs:
+      description: Find out more
+      url: 'https://sodafoundation.io/'
 paths:
+  '/v1/{project_id}/aksks':
+    post:
+      tags:
+        - AKSK
+      summary: Create a new AKSK for a User.
+      operationId: addAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSK to be generated for User of a Project / Tenant. project_id is same as tenant_id.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AKSK'
+        '401':
+          description: Unauthorized. Token not found in header
+      requestBody:
+        $ref: '#/components/requestBodies/AKSK'
+  '/v1/{project_id}/aksks/{user_id}':
+    get:
+      tags:
+        - AKSK
+      summary: Get the AKSK for a UserId.
+      operationId: getAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSK to be fetched for a User in Project project_id. project_id is same as tenant_id.
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          description: AKSK to be fetched for a User of user_id in Project of project_id. project_id is same as tenant_id.
+          schema:
+            type: string
+      responses:
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist i.e. AKSK does not exist.
+    delete:
+      tags:
+        - AKSK
+      summary: Delete AKSKs for a user.
+      operationId: deleteAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSKs to be deleted for a User in project_id.
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          description: AKSK to be deleted for a User of user_id in Project of project_id. project_id is same as tenant_id.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+        '401':
+          description: Unauthorized. Token not found in header
+  '/v1/{project_id}/aksks/{user_id}/download':
+    get:
+      tags:
+        - AKSK
+      summary: Download the AKSKs for a UserId.
+      operationId: downloadAKSK
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: AKSKs to be downloaded for a User in project_id.
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          description: AKSK to be downloaded for a User of user_id in Project of project_id. project_id is same as tenant_id.
+          schema:
+            type: string
+      responses:
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized. Token not found in header
+        '403':
+          description: Forbidden
+        '404':
+          description: The resource does not exist i.e. AKSK does not exist.
   '/v1/{tenantId}/backends':
     parameters:
       - name: tenantId
@@ -1352,6 +1462,21 @@ components:
         The sort key and direction of items to return, string must
         like:"id:asc,name:desc"
   schemas:
+    AKSK:
+      type: object
+      properties:
+        credential:
+          type: object
+          description: The object containing the project_id and user_id.
+          properties: 
+            access_key:
+              description: The Access Key generated for the user.
+              type: string
+              example: 5ea809d2553b0f000116be32
+            secret_key:
+              description: The Secret Key generated for the user.
+              type: string
+              example: 94b280022d0c4401bcf3b0ea85870519   
     Backend:
       type: object
       properties:
@@ -2535,6 +2660,13 @@ components:
           description: The Days element is required for regular restore. Required for restoring archived object.
           example: 1
   requestBodies:
+    AKSK:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AKSK'
+      description: AKSK Creation payload.
+      required: true
     Backend:
       content:
         application/json:
