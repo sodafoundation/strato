@@ -18,8 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -105,15 +103,6 @@ func NewAPIService(c client.Client) *APIService {
 		s3Client:       s3.NewS3Service(s3Service, c),
 		dataflowClient: dataflow.NewDataFlowService(dataflowService, c),
 	}
-}
-
-func ReadBody(r *restful.Request) []byte {
-	var reader io.Reader = r.Request.Body
-	b, e := ioutil.ReadAll(reader)
-	if e != nil {
-		return nil
-	}
-	return b
 }
 
 func (s *APIService) GetBackend(request *restful.Request, response *restful.Response) {
@@ -491,7 +480,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 	tier := &backend.Tier{}
-	body := ReadBody(request)
+	body := utils.ReadBody(request)
 	err := json.Unmarshal(body, &tier)
 	if err != nil {
 		log.Error("error occurred while decoding body", err)
@@ -578,7 +567,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 	id := request.PathParameter("id")
 	updateTier := backend.UpdateTier{Id: id}
-	body := ReadBody(request)
+	body := utils.ReadBody(request)
 	err := json.Unmarshal(body, &updateTier)
 	if err != nil {
 		log.Error("error occurred while decoding body", err)

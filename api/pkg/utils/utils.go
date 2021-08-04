@@ -17,12 +17,15 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"os"
 	"reflect"
 	"strconv"
 
+	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -297,4 +300,13 @@ func CompareDeleteAndAddList(addList, delList []string) []string {
 		visited[val]++
 	}
 	return duplicates
+}
+
+func ReadBody(r *restful.Request) []byte {
+	var reader io.Reader = r.Request.Body
+	b, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil
+	}
+	return b
 }

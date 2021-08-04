@@ -18,9 +18,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -40,6 +42,8 @@ const (
 	CONTENT_TYPE    = "Content-Type"
 	APPL_JSON       = "application/json"
 	USER_QUERY_STR  = "?user_id="
+	USER_DETAILS    = "/identity/v3/users/"
+	TENANT_DETAILS  = "/identity/v3/projects/"
 	SEPERATOR       = "/"
 	CREDENTIAL_TYPE = "ec2"
 	CREDS_URI       = "/identity/v3/credentials"
@@ -70,6 +74,26 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	blbout, err := json.Marshal(blb)
 	if err != nil {
 		panic(err)
+	}
+
+	// Validate UserId, TenantId .
+	if len(strings.TrimSpace(aksk.ProjectId)) == 0 || len(strings.TrimSpace(aksk.UserId)) == 0 {
+		errMsg := "TenantId or UserId is empty, Please provide valid TenantId and UserId"
+		log.Error(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	// Validate if AKSK is being created for a valid User and Tenant.
+	if !isValidTenantId(aksk.ProjectId, req.Token, iam.Host) {
+		errMsg := "TenantId is not valid, Please provide valid TenantId "
+		log.Error(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	if !isValidUserId(aksk.UserId, req.Token, iam.Host) {
+		errMsg := "UserId is not valid, Please provide valid UserId "
+		log.Error(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	u, err := json.Marshal(model.Credential{Credential: model.CredBody{ProjectId: aksk.ProjectId,
@@ -219,4 +243,59 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	var akskListout = &model.AkSkListOut{}
 	json.Unmarshal(bodyBytes, &akskListout)
 	return akskListout, nil
+}
+
+func isValidUserId(userId string, token string, host string) bool {
+
+	// Validate userId is legitimate
+	client := &Keystone.Client
+	keystoneURL := PROTOCOL + host + USER_DETAILS
+	getreq, err := http.NewRequest(GET, keystoneURL+userId, bytes.NewBuffer(nil))
+	if err != nil {
+		log.Error("Error in validating the UserId")
+		return false
+	}
+	getreq.Header.Add(AUTH_TOKEN, token)
+	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
+
+	var validationResponse *http.Response
+	validationResponse, err = client.Do(getreq)
+	if err != nil {
+		log.Error("Error in validating TenantId", err)
+		return false
+	}
+
+	if validationResponse.StatusCode == 200 {
+		log.Info("UserId is Valid")
+		return true
+	}
+
+	return false
+}
+
+func isValidTenantId(tenantId string, token string, host string) bool {
+
+	client := &Keystone.Client
+	keystoneURL := PROTOCOL + host + TENANT_DETAILS
+	getreq, err := http.NewRequest(GET, keystoneURL+tenantId, bytes.NewBuffer(nil))
+	if err != nil {
+		log.Error("Error in validating the TenantId", err)
+		return false
+	}
+	getreq.Header.Add(AUTH_TOKEN, token)
+	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
+
+	var validationResponse *http.Response
+	validationResponse, err = client.Do(getreq)
+	if err != nil {
+		log.Error("Error in validating TenantId", err)
+		return false
+	}
+
+	if validationResponse.StatusCode == 200 {
+		log.Info("TenantId is Valid")
+		return true
+	}
+
+	return false
 }
