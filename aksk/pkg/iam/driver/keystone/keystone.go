@@ -84,13 +84,13 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	}
 
 	// Validate if AKSK is being created for a valid User and Tenant.
-	if !iam.isValidTenantId(aksk.ProjectId, req.Token, iam.Host) {
+	if !iam.isValidTenantId(aksk.ProjectId, req.Token) {
 		errMsg := "TenantId is not valid, Please provide valid TenantId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
-	if !iam.isValidUserId(aksk.UserId, req.Token, iam.Host) {
+	if !iam.isValidUserId(aksk.UserId, req.Token) {
 		errMsg := "UserId is not valid, Please provide valid UserId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
