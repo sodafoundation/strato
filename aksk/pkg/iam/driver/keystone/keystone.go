@@ -273,29 +273,3 @@ func (iam *KeystoneIam) isValidId(id string, token string, uri string) bool {
 
 	return false
 }
-
-// func (iam *KeystoneIam) isValidTenantId(tenantId string, token string) bool {
-
-// 	keystoneURL := PROTOCOL + iam.Host + TENANT_DETAILS
-// 	getreq, err := http.NewRequest(GET, keystoneURL+tenantId, bytes.NewBuffer(nil))
-// 	if err != nil {
-// 		log.Error("Error in validating the TenantId", err)
-// 		return false
-// 	}
-// 	getreq.Header.Add(AUTH_TOKEN, token)
-// 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
-
-// 	var validationResponse *http.Response
-// 	validationResponse, err = iam.Client.Do(getreq)
-// 	if err != nil {
-// 		log.Error("Error in validating TenantId", err)
-// 		return false
-// 	}
-
-// 	if validationResponse.StatusCode == 200 {
-// 		log.Info("TenantId is Valid")
-// 		return true
-// 	}
-
-// 	return false
-// }
