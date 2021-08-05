@@ -84,13 +84,13 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	}
 
 	// Validate if AKSK is being created for a valid User and Tenant.
-	if !isValidTenantId(aksk.ProjectId, req.Token, iam.Host) {
+	if !iam.isValidTenantId(aksk.ProjectId, req.Token, iam.Host) {
 		errMsg := "TenantId is not valid, Please provide valid TenantId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
-	if !isValidUserId(aksk.UserId, req.Token, iam.Host) {
+	if !iam.isValidUserId(aksk.UserId, req.Token, iam.Host) {
 		errMsg := "UserId is not valid, Please provide valid UserId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
@@ -245,11 +245,10 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	return akskListout, nil
 }
 
-func isValidUserId(userId string, token string, host string) bool {
+func (iam *KeystoneIam) isValidUserId(userId string, token string) bool {
 
 	// Validate userId is legitimate
-	client := &Keystone.Client
-	keystoneURL := PROTOCOL + host + USER_DETAILS
+	keystoneURL := PROTOCOL + iam.Host + USER_DETAILS
 	getreq, err := http.NewRequest(GET, keystoneURL+userId, bytes.NewBuffer(nil))
 	if err != nil {
 		log.Error("Error in validating the UserId")
@@ -259,7 +258,7 @@ func isValidUserId(userId string, token string, host string) bool {
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	var validationResponse *http.Response
-	validationResponse, err = client.Do(getreq)
+	validationResponse, err = iam.Client.Do(getreq)
 	if err != nil {
 		log.Error("Error in validating TenantId", err)
 		return false
@@ -273,10 +272,9 @@ func isValidUserId(userId string, token string, host string) bool {
 	return false
 }
 
-func isValidTenantId(tenantId string, token string, host string) bool {
+func (iam *KeystoneIam) isValidTenantId(tenantId string, token string) bool {
 
-	client := &Keystone.Client
-	keystoneURL := PROTOCOL + host + TENANT_DETAILS
+	keystoneURL := PROTOCOL + iam.Host + TENANT_DETAILS
 	getreq, err := http.NewRequest(GET, keystoneURL+tenantId, bytes.NewBuffer(nil))
 	if err != nil {
 		log.Error("Error in validating the TenantId", err)
@@ -286,7 +284,7 @@ func isValidTenantId(tenantId string, token string, host string) bool {
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	var validationResponse *http.Response
-	validationResponse, err = client.Do(getreq)
+	validationResponse, err = iam.Client.Do(getreq)
 	if err != nil {
 		log.Error("Error in validating TenantId", err)
 		return false
