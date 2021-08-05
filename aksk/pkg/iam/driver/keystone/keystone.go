@@ -83,14 +83,16 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 		return nil, errors.New(errMsg)
 	}
 
+	uri := TENANT_DETAILS
 	// Validate if AKSK is being created for a valid User and Tenant.
-	if !iam.isValidTenantId(aksk.ProjectId, req.Token) {
+	if !iam.isValidId(aksk.ProjectId, req.Token, uri) {
 		errMsg := "TenantId is not valid, Please provide valid TenantId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
-	if !iam.isValidUserId(aksk.UserId, req.Token) {
+	uri = USER_DETAILS
+	if !iam.isValidId(aksk.UserId, req.Token, uri) {
 		errMsg := "UserId is not valid, Please provide valid UserId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
@@ -245,11 +247,11 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	return akskListout, nil
 }
 
-func (iam *KeystoneIam) isValidUserId(userId string, token string) bool {
+func (iam *KeystoneIam) isValidId(id string, token string, uri string) bool {
 
 	// Validate userId is legitimate
-	keystoneURL := PROTOCOL + iam.Host + USER_DETAILS
-	getreq, err := http.NewRequest(GET, keystoneURL+userId, bytes.NewBuffer(nil))
+	keystoneURL := PROTOCOL + iam.Host + uri
+	getreq, err := http.NewRequest(GET, keystoneURL+id, bytes.NewBuffer(nil))
 	if err != nil {
 		log.Error("Error in validating the UserId")
 		return false
@@ -260,40 +262,40 @@ func (iam *KeystoneIam) isValidUserId(userId string, token string) bool {
 	var validationResponse *http.Response
 	validationResponse, err = iam.Client.Do(getreq)
 	if err != nil {
-		log.Error("Error in validating TenantId", err)
+		log.Error("Error in validating Id", err)
 		return false
 	}
 
 	if validationResponse.StatusCode == 200 {
-		log.Info("UserId is Valid")
+		log.Info("Id is Valid")
 		return true
 	}
 
 	return false
 }
 
-func (iam *KeystoneIam) isValidTenantId(tenantId string, token string) bool {
+// func (iam *KeystoneIam) isValidTenantId(tenantId string, token string) bool {
 
-	keystoneURL := PROTOCOL + iam.Host + TENANT_DETAILS
-	getreq, err := http.NewRequest(GET, keystoneURL+tenantId, bytes.NewBuffer(nil))
-	if err != nil {
-		log.Error("Error in validating the TenantId", err)
-		return false
-	}
-	getreq.Header.Add(AUTH_TOKEN, token)
-	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
+// 	keystoneURL := PROTOCOL + iam.Host + TENANT_DETAILS
+// 	getreq, err := http.NewRequest(GET, keystoneURL+tenantId, bytes.NewBuffer(nil))
+// 	if err != nil {
+// 		log.Error("Error in validating the TenantId", err)
+// 		return false
+// 	}
+// 	getreq.Header.Add(AUTH_TOKEN, token)
+// 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
-	var validationResponse *http.Response
-	validationResponse, err = iam.Client.Do(getreq)
-	if err != nil {
-		log.Error("Error in validating TenantId", err)
-		return false
-	}
+// 	var validationResponse *http.Response
+// 	validationResponse, err = iam.Client.Do(getreq)
+// 	if err != nil {
+// 		log.Error("Error in validating TenantId", err)
+// 		return false
+// 	}
 
-	if validationResponse.StatusCode == 200 {
-		log.Info("TenantId is Valid")
-		return true
-	}
+// 	if validationResponse.StatusCode == 200 {
+// 		log.Info("TenantId is Valid")
+// 		return true
+// 	}
 
-	return false
-}
+// 	return false
+// }
