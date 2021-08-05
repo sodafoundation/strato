@@ -130,8 +130,9 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 		Token:     akskDetail.Token})
 
 	if err != nil {
-		log.Errorf("failed to create Ak, SK: %v\n", err)
-		response.WriteError(http.StatusBadRequest, err)
+		errMsg := "error in creating AKSK for the user, TenantId or UserId is invalid"
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 

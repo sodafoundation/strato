@@ -83,16 +83,17 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 		return nil, errors.New(errMsg)
 	}
 
-	uri := TENANT_DETAILS
 	// Validate if AKSK is being created for a valid User and Tenant.
-	if !iam.isValidId(aksk.ProjectId, req.Token, uri) {
+	_, err = iam.ValidateId(aksk.ProjectId, req.Token, TENANT_DETAILS)
+
+	if err != nil {
 		errMsg := "TenantId is not valid, Please provide valid TenantId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
-	uri = USER_DETAILS
-	if !iam.isValidId(aksk.UserId, req.Token, uri) {
+	_, err = iam.ValidateId(aksk.UserId, req.Token, USER_DETAILS)
+	if err != nil {
 		errMsg := "UserId is not valid, Please provide valid UserId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
@@ -247,14 +248,16 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	return akskListout, nil
 }
 
-func (iam *KeystoneIam) isValidId(id string, token string, uri string) bool {
+func (iam *KeystoneIam) ValidateId(id string, token string, uri string) (bool, error) {
 
-	// Validate userId is legitimate
+	// Validate userId , tenantId are legitimate
+	log.Info("Validating ID ", id)
 	keystoneURL := PROTOCOL + iam.Host + uri
 	getreq, err := http.NewRequest(GET, keystoneURL+id, bytes.NewBuffer(nil))
 	if err != nil {
-		log.Error("Error in validating the UserId")
-		return false
+		errMsg := "Error in validating the Id : " + id
+		log.Error(errMsg)
+		return false, err
 	}
 	getreq.Header.Add(AUTH_TOKEN, token)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
@@ -262,14 +265,18 @@ func (iam *KeystoneIam) isValidId(id string, token string, uri string) bool {
 	var validationResponse *http.Response
 	validationResponse, err = iam.Client.Do(getreq)
 	if err != nil {
-		log.Error("Error in validating Id", err)
-		return false
+		errMsg := "Error in validating the Id : " + id
+		log.Error(errMsg)
+		return false, err
 	}
 
+	log.Info("ValidationResponse ", validationResponse)
 	if validationResponse.StatusCode == 200 {
 		log.Info("Id is Valid")
-		return true
+		return true, nil
+	} else {
+		errMsg := "Error in validating the Id : " + id
+		log.Error(errMsg)
+		return false, errors.New(errMsg)
 	}
-
-	return false
 }
