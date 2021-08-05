@@ -74,8 +74,8 @@ func (m *Meta) InitBucketUsageCache() error {
 	// the map contains the bucket usage which are in cache and will be synced into database.
 	bucketUsageCacheMap := make(map[string]int64)
 	// the usage in buckets table is accurate now.
-
-	buckets, err := m.Db.GetBuckets(context.Background())
+	query := make(map[string]string)
+	buckets, err := m.Db.GetBuckets(context.Background(), query)
 	if err != nil {
 		log.Error("failed to get buckets from db. err: ", err)
 		return err

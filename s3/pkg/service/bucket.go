@@ -43,14 +43,14 @@ func isCrudSupportedCloud(slice []string, item string) bool {
 	return ok
 }
 
-func (s *s3Service) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *pb.ListBucketsResponse) error {
+func (s *s3Service) ListBuckets(ctx context.Context, in *pb.ListBucketsRequest, out *pb.ListBucketsResponse) error {
 	log.Info("ListBuckets is called in s3 service.")
 	var err error
 	defer func() {
 		out.ErrorCode = GetErrCode(err)
 	}()
 
-	buckets, err := s.MetaStorage.Db.GetBuckets(ctx)
+	buckets, err := s.MetaStorage.Db.GetBuckets(ctx, in.Filter)
 	if err != nil {
 		log.Errorf("list buckets failed, err:%v\n", err)
 		return nil

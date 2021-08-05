@@ -42,7 +42,7 @@ func NewS3Endpoints() []*api.Endpoint {
 // Client API for S3 service
 
 type S3Service interface {
-	ListBuckets(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*ListBucketsResponse, error)
+	ListBuckets(ctx context.Context, in *ListBucketsRequest, opts ...client.CallOption) (*ListBucketsResponse, error)
 	CreateBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	DeleteBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*BaseResponse, error)
 	GetBucket(ctx context.Context, in *Bucket, opts ...client.CallOption) (*GetBucketResponse, error)
@@ -107,7 +107,7 @@ func NewS3Service(name string, c client.Client) S3Service {
 	}
 }
 
-func (c *s3Service) ListBuckets(ctx context.Context, in *BaseRequest, opts ...client.CallOption) (*ListBucketsResponse, error) {
+func (c *s3Service) ListBuckets(ctx context.Context, in *ListBucketsRequest, opts ...client.CallOption) (*ListBucketsResponse, error) {
 	req := c.c.NewRequest(c.name, "S3.ListBuckets", in)
 	out := new(ListBucketsResponse)
 	err := c.c.Call(ctx, req, out, opts...)
@@ -711,7 +711,7 @@ func (c *s3Service) BackendCheck(ctx context.Context, in *BackendDetailS3, opts 
 // Server API for S3 service
 
 type S3Handler interface {
-	ListBuckets(context.Context, *BaseRequest, *ListBucketsResponse) error
+	ListBuckets(context.Context, *ListBucketsRequest, *ListBucketsResponse) error
 	CreateBucket(context.Context, *Bucket, *BaseResponse) error
 	DeleteBucket(context.Context, *Bucket, *BaseResponse) error
 	GetBucket(context.Context, *Bucket, *GetBucketResponse) error
@@ -766,7 +766,7 @@ type S3Handler interface {
 
 func RegisterS3Handler(s server.Server, hdlr S3Handler, opts ...server.HandlerOption) error {
 	type s3 interface {
-		ListBuckets(ctx context.Context, in *BaseRequest, out *ListBucketsResponse) error
+		ListBuckets(ctx context.Context, in *ListBucketsRequest, out *ListBucketsResponse) error
 		CreateBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		DeleteBucket(ctx context.Context, in *Bucket, out *BaseResponse) error
 		GetBucket(ctx context.Context, in *Bucket, out *GetBucketResponse) error
@@ -828,7 +828,7 @@ type s3Handler struct {
 	S3Handler
 }
 
-func (h *s3Handler) ListBuckets(ctx context.Context, in *BaseRequest, out *ListBucketsResponse) error {
+func (h *s3Handler) ListBuckets(ctx context.Context, in *ListBucketsRequest, out *ListBucketsResponse) error {
 	return h.S3Handler.ListBuckets(ctx, in, out)
 }
 

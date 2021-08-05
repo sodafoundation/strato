@@ -346,32 +346,21 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	log.Infof("Received request for deleting backend: %s\n", id)
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	// TODO: refactor this part
-	res1, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
+	result, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get backend details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	backendname := res1.Backend.Name
-
-	res, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
-	count := 0
-	for _, v := range res.Buckets {
-		bucket, err1 := s.s3Client.GetBucket(ctx, &s3.Bucket{Name: v.Name})
-		if err1 != nil {
-			log.Errorf("failed to get bucket details: %v\n", err1)
-			response.WriteError(http.StatusInternalServerError, err1)
-			return
-		}
-		if backendname == bucket.BucketMeta.DefaultLocation {
-			count++
-		}
-	}
+	backendname := result.Backend.Name
+	res, err := s.s3Client.ListBuckets(ctx, &s3.ListBucketsRequest{Filter: map[string]string{"location": backendname}})
 	if err != nil {
+		log.Errorf("failed to bucket list details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+
+	count := len(res.Buckets)
 	if count == 0 {
 		_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: id})
 		if err != nil {

@@ -1,7 +1,9 @@
 syntax = "proto3";
 
+option go_package = "s3/proto";
+
 service S3 {
-    rpc ListBuckets (BaseRequest) returns (ListBucketsResponse) {
+    rpc ListBuckets (ListBucketsRequest) returns (ListBucketsResponse) {
     }
     rpc CreateBucket (Bucket) returns (BaseResponse) {
     }
@@ -738,4 +740,6 @@ message BackendDetailS3 {
 	string security = 10;
 }
 
-
+message ListBucketsRequest {
+	map<string, string> Filter = 1;
+}
