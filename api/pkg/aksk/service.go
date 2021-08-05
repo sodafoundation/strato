@@ -131,7 +131,7 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 
 	if err != nil {
 		log.Errorf("failed to create Ak, SK: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		response.WriteError(http.StatusBadRequest, err)
 		return
 	}
 
