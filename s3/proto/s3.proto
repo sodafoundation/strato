@@ -741,5 +741,6 @@ message BackendDetailS3 {
 }
 
 message ListBucketsRequest {
-	map<string, string> Filter = 1;
+	string id = 1;
+	map<string, string> Filter = 2;
 }

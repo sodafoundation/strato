@@ -139,7 +139,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets []*Bucket, err error) {
 	log.Info("list buckets from tidb ...\n")
 	filter := query.(map[string]string)
-	filterLoc := filter["location"]
+	location := filter["location"]
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		return nil, ErrInternalError
@@ -149,13 +149,11 @@ func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets
 	sqltext := "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
 		"versioning,replication,update_time,tiers from buckets;"
 
-	if filterLoc != "" {
-		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-			"versioning,replication,update_time,tiers from buckets where location=?;"
-		rows, err = t.Client.Query(sqltext, filterLoc)
+	if location!= "" {
+		sqltext += "where location=?;"
+		rows, err = t.Client.Query(sqltext, location)
 	} else if !isAdmin {
-		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-			"versioning,replication,update_time,tiers from buckets where tenantid=?;"
+		sqltext += "where tenantid=?;"
 		rows, err = t.Client.Query(sqltext, tenantId)
 	} else {
 		rows, err = t.Client.Query(sqltext)
