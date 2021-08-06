@@ -269,7 +269,7 @@ func (iam *KeystoneIam) ValidateId(id string, token string, uri string) (bool, e
 		log.Error(errMsg)
 		return false, err
 	}
-
+	defer validationResponse.Body.Close()
 	log.Info("ValidationResponse ", validationResponse)
 	if validationResponse.StatusCode == 200 {
 		log.Info("Id is Valid")
