@@ -110,14 +110,14 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 
 	// Validation : ProjectId not blank
 	if len(strings.TrimSpace(akskDetail.ProjectId)) == 0 {
-		errMsg := "ProjectId is blank, provide a valid ProjectId"
+		errMsg := "projectId is blank, provide a valid projectId"
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 	// Validation : UserId not blank
 	if len(strings.TrimSpace(akskDetail.UserId)) == 0 {
-		errMsg := "UserId is blank, provide a valid UserId"
+		errMsg := "userId is blank, provide a valid userId"
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
@@ -130,7 +130,7 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 		Token:     akskDetail.Token})
 
 	if err != nil {
-		errMsg := "error in creating AKSK for the user, TenantId or UserId is invalid"
+		errMsg := "error in creating AKSK for the user, projectId or userId is invalid"
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return

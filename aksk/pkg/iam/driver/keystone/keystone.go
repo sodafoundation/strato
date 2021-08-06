@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -78,7 +79,7 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 
 	// Validate UserId, TenantId .
 	if len(strings.TrimSpace(aksk.ProjectId)) == 0 || len(strings.TrimSpace(aksk.UserId)) == 0 {
-		errMsg := "TenantId or UserId is empty, Please provide valid TenantId and UserId"
+		errMsg := "projectId or userId is empty, please provide valid projectId and userId"
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
@@ -87,14 +88,14 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	_, err = iam.ValidateId(aksk.ProjectId, req.Token, TENANT_DETAILS)
 
 	if err != nil {
-		errMsg := "TenantId is not valid, Please provide valid TenantId "
+		errMsg := "projectId is not valid, please provide valid projectId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
 
 	_, err = iam.ValidateId(aksk.UserId, req.Token, USER_DETAILS)
 	if err != nil {
-		errMsg := "UserId is not valid, Please provide valid UserId "
+		errMsg := "userId is not valid, please provide valid userId "
 		log.Error(errMsg)
 		return nil, errors.New(errMsg)
 	}
@@ -236,11 +237,11 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, err := client.Do(getreq)
-	defer akskresp.Body.Close()
 
 	if err != nil {
 		return nil, err
 	}
+	defer akskresp.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 
 	var akskListout = &model.AkSkListOut{}
@@ -251,11 +252,11 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 func (iam *KeystoneIam) ValidateId(id string, token string, uri string) (bool, error) {
 
 	// Validate userId , tenantId are legitimate
-	log.Info("Validating ID ", id)
+	log.Info("validating ID : ", id)
 	keystoneURL := PROTOCOL + iam.Host + uri
 	getreq, err := http.NewRequest(GET, keystoneURL+id, bytes.NewBuffer(nil))
+	errMsg := fmt.Sprintf("error in validating the Id : %v\n", id)
 	if err != nil {
-		errMsg := "Error in validating the Id : " + id
 		log.Error(errMsg)
 		return false, err
 	}
@@ -265,7 +266,6 @@ func (iam *KeystoneIam) ValidateId(id string, token string, uri string) (bool, e
 	var validationResponse *http.Response
 	validationResponse, err = iam.Client.Do(getreq)
 	if err != nil {
-		errMsg := "Error in validating the Id : " + id
 		log.Error(errMsg)
 		return false, err
 	}
@@ -275,7 +275,6 @@ func (iam *KeystoneIam) ValidateId(id string, token string, uri string) (bool, e
 		log.Info("Id is Valid")
 		return true, nil
 	} else {
-		errMsg := "Error in validating the Id : " + id
 		log.Error(errMsg)
 		return false, errors.New(errMsg)
 	}
