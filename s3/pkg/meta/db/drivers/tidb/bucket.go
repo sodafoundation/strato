@@ -149,7 +149,7 @@ func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets
 	sqltext := "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
 		"versioning,replication,update_time,tiers from buckets;"
 
-	if location!= "" {
+	if location != "" {
 		sqltext += "where location=?;"
 		rows, err = t.Client.Query(sqltext, location)
 	} else if !isAdmin {

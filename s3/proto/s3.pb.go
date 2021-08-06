@@ -1793,11 +1793,10 @@ type BucketVersioning struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Status string `protobuf:"bytes,1,opt,name=Status,proto3" json:"Status,omitempty"`
+	Status               string `protobuf:"bytes,1,opt,name=Status,proto3" json:"Status,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}
-        XXX_unrecognized     interface{}
-        XXX_sizecache        int
-
+	XXX_unrecognized     interface{}
+	XXX_sizecache        int
 }
 
 func (x *BucketVersioning) Reset() {
@@ -2250,12 +2249,12 @@ func (x *CopyObjPartResponse) GetEtag() string {
 }
 
 type ServerSideEncryption struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
+	state                protoimpl.MessageState
+	sizeCache            protoimpl.SizeCache
+	unknownFields        protoimpl.UnknownFields
 	XXX_NoUnkeyedLiteral struct{}
-        XXX_unrecognized     interface{}
-        XXX_sizecache        int
+	XXX_unrecognized     interface{}
+	XXX_sizecache        int
 
 	SseType             string `protobuf:"bytes,1,opt,name=sseType,proto3" json:"sseType,omitempty"`
 	EncryptionKey       []byte `protobuf:"bytes,2,opt,name=encryptionKey,proto3" json:"encryptionKey,omitempty"`
