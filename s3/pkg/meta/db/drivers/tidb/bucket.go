@@ -150,10 +150,12 @@ func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets
 		"versioning,replication,update_time,tiers from buckets;"
 
 	if location != "" {
-		sqltext += "where location=?;"
+		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
+			"versioning,replication,update_time,tiers from buckets where location=?;"
 		rows, err = t.Client.Query(sqltext, location)
 	} else if !isAdmin {
-		sqltext += "where tenantid=?;"
+		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
+			"versioning,replication,update_time,tiers from buckets where tenantid=?;"
 		rows, err = t.Client.Query(sqltext, tenantId)
 	} else {
 		rows, err = t.Client.Query(sqltext)
