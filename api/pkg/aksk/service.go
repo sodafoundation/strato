@@ -15,7 +15,10 @@
 package aksk
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
@@ -25,6 +28,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
 	"github.com/opensds/multi-cloud/api/pkg/policy"
+	"github.com/opensds/multi-cloud/api/pkg/utils"
 )
 
 const (
@@ -92,17 +96,33 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 	}
 
 	akskDetail := &aksk.AkSkCreateRequest{}
-	err := request.ReadEntity(&akskDetail)
+
+	body := utils.ReadBody(request)
+	err := json.Unmarshal(body, &akskDetail)
 	if err != nil {
-		log.Errorf("failed to read request body: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		log.Error("error occurred while decoding body", err)
+		response.WriteError(http.StatusBadRequest, err)
 		return
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	actx := request.Attribute(c.KContext).(*c.Context)
-	akskDetail.ProjectId = actx.TenantId
-	akskDetail.UserId = actx.UserId
+
+	// Validation : ProjectId not blank
+	if len(strings.TrimSpace(akskDetail.ProjectId)) == 0 {
+		errMsg := "projectId is blank, provide a valid projectId"
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+	// Validation : UserId not blank
+	if len(strings.TrimSpace(akskDetail.UserId)) == 0 {
+		errMsg := "userId is blank, provide a valid userId"
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	akskDetail.Token = actx.AuthToken
 
 	res, err := s.akskClient.CreateAkSk(ctx, &aksk.AkSkCreateRequest{UserId: akskDetail.UserId,
@@ -110,8 +130,9 @@ func (s *APIService) CreateAkSk(request *restful.Request, response *restful.Resp
 		Token:     akskDetail.Token})
 
 	if err != nil {
-		log.Errorf("failed to create Ak, SK: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		errMsg := "error in creating AKSK for the user, projectId or userId is invalid"
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 

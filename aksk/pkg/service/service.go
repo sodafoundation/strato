@@ -41,7 +41,7 @@ func (b *akskService) CreateAkSk(ctx context.Context, in *pb.AkSkCreateRequest, 
 
 	res, err := iam.CredStore.CreateAkSk(aksk, in)
 	if err != nil {
-		log.Errorf("Failed to create AKSK : %v", err)
+		log.Errorf("Failed to create AKSK", err)
 		return err
 	}
 	out.AccessKey = res.Access

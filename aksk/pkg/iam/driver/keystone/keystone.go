@@ -18,9 +18,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -40,6 +43,8 @@ const (
 	CONTENT_TYPE    = "Content-Type"
 	APPL_JSON       = "application/json"
 	USER_QUERY_STR  = "?user_id="
+	USER_DETAILS    = "/identity/v3/users/"
+	TENANT_DETAILS  = "/identity/v3/projects/"
 	SEPERATOR       = "/"
 	CREDENTIAL_TYPE = "ec2"
 	CREDS_URI       = "/identity/v3/credentials"
@@ -70,6 +75,29 @@ func (iam *KeystoneIam) CreateAkSk(aksk *model.AkSk, req *pb.AkSkCreateRequest) 
 	blbout, err := json.Marshal(blb)
 	if err != nil {
 		panic(err)
+	}
+
+	// Validate UserId, TenantId .
+	if len(strings.TrimSpace(aksk.ProjectId)) == 0 || len(strings.TrimSpace(aksk.UserId)) == 0 {
+		errMsg := "projectId or userId is empty, please provide valid projectId and userId"
+		log.Error(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	// Validate if AKSK is being created for a valid User and Tenant.
+	_, err = iam.ValidateId(aksk.ProjectId, req.Token, TENANT_DETAILS)
+
+	if err != nil {
+		errMsg := "projectId is not valid, please provide valid projectId "
+		log.Error(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	_, err = iam.ValidateId(aksk.UserId, req.Token, USER_DETAILS)
+	if err != nil {
+		errMsg := "userId is not valid, please provide valid userId "
+		log.Error(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	u, err := json.Marshal(model.Credential{Credential: model.CredBody{ProjectId: aksk.ProjectId,
@@ -209,14 +237,45 @@ func (iam *KeystoneIam) DownloadAkSk(ctx context.Context, in *pb.GetAkSkRequest)
 	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
 
 	akskresp, err := client.Do(getreq)
-	defer akskresp.Body.Close()
 
 	if err != nil {
 		return nil, err
 	}
+	defer akskresp.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(akskresp.Body)
 
 	var akskListout = &model.AkSkListOut{}
 	json.Unmarshal(bodyBytes, &akskListout)
 	return akskListout, nil
+}
+
+func (iam *KeystoneIam) ValidateId(id string, token string, uri string) (bool, error) {
+
+	// Validate userId , tenantId are legitimate
+	log.Info("validating ID : ", id)
+	keystoneURL := PROTOCOL + iam.Host + uri
+	getreq, err := http.NewRequest(GET, keystoneURL+id, bytes.NewBuffer(nil))
+	errMsg := fmt.Sprintf("error in validating the Id : %v\n", id)
+	if err != nil {
+		log.Error(errMsg)
+		return false, err
+	}
+	getreq.Header.Add(AUTH_TOKEN, token)
+	getreq.Header.Set(CONTENT_TYPE, APPL_JSON)
+
+	var validationResponse *http.Response
+	validationResponse, err = iam.Client.Do(getreq)
+	if err != nil {
+		log.Error(errMsg)
+		return false, err
+	}
+	defer validationResponse.Body.Close()
+	log.Info("ValidationResponse ", validationResponse)
+	if validationResponse.StatusCode == 200 {
+		log.Info("Id is Valid")
+		return true, nil
+	} else {
+		log.Error(errMsg)
+		return false, errors.New(errMsg)
+	}
 }
