@@ -67,7 +67,7 @@ func (s *APIService) ListBuckets(request *restful.Request, response *restful.Res
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	rsp, err := s.s3Client.ListBuckets(ctx, &s3.BaseRequest{})
+	rsp, err := s.s3Client.ListBuckets(ctx, &s3.ListBucketsRequest{})
 	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
 		log.Errorf("list bucket failed, err=%v, errCode=%d\n", err, rsp.GetErrorCode())
 		return

@@ -46,7 +46,7 @@ type DBAdapter interface {
 
 	//bucket
 	GetBucket(ctx context.Context, bucketName string) (bucket *Bucket, err error)
-	GetBuckets(ctx context.Context) (buckets []*Bucket, err error)
+	GetBuckets(ctx context.Context, query interface{}) (buckets []*Bucket, err error)
 	PutBucket(ctx context.Context, bucket *Bucket) error
 	UpdateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte, sseIV []byte) error
 	CreateBucketSSE(ctx context.Context, bucketName string, sseType string, sseKey []byte, sseIV []byte) error

@@ -136,9 +136,10 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 }
 
 // For the request that list buckets, better to filter according to tenant.
-func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err error) {
-	log.Info("list buckets from tidb ...")
-
+func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets []*Bucket, err error) {
+	log.Info("list buckets from tidb ...\n")
+	filter := query.(map[string]string)
+	location := filter["location"]
 	isAdmin, tenantId, _, err := util.GetCredentialFromCtx(ctx)
 	if err != nil {
 		return nil, ErrInternalError
@@ -148,7 +149,11 @@ func (t *TidbClient) GetBuckets(ctx context.Context) (buckets []*Bucket, err err
 	sqltext := "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
 		"versioning,replication,update_time,tiers from buckets;"
 
-	if !isAdmin {
+	if location != "" {
+		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
+			"versioning,replication,update_time,tiers from buckets where location=?;"
+		rows, err = t.Client.Query(sqltext, location)
+	} else if !isAdmin {
 		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
 			"versioning,replication,update_time,tiers from buckets where tenantid=?;"
 		rows, err = t.Client.Query(sqltext, tenantId)
