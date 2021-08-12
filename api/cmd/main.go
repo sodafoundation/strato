@@ -67,6 +67,7 @@ func main() {
 		s3ws.Filter(logging.FilterFactory())
 		s3ws.Filter(context.FilterFactory())
 		s3ws.Filter(signer.FilterFactory())
+		s3ws.Filter(auth.FilterFactory())
 		s3.RegisterRouter(s3ws)
 		wc.Add(s3ws)
 	} else {
