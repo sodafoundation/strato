@@ -702,6 +702,29 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
+	log.Info("Check Backends have any buckets before removing")
+	for _, backendId := range updateTier.DeleteBackends {
+		result, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
+		if err != nil {
+			log.Errorf("failed to get backend details: %v\n", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		backendname := result.Backend.Name
+		res, err := s.s3Client.ListBuckets(ctx, &s3.ListBucketsRequest{Filter: map[string]string{"location": backendname}})
+		if err != nil {
+			log.Errorf("failed to bucket list details: %v\n", err)
+			response.WriteError(http.StatusInternalServerError, err)
+			return
+		}
+		if len(res.Buckets) > 0 {
+			errMsg := fmt.Sprintf("failed to update service plan because delete backends: %v have buckets", backendId)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
+	}
+
 	log.Info("Prepare update list with AddBackends and DeleteBackends")
 	res.Tier.Backends = utils.PrepareUpdateList(res.Tier.Backends, updateTier.AddBackends,
 		updateTier.DeleteBackends)
