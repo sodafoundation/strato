@@ -361,7 +361,7 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	}
 
 	for _, tier := range tiersList.Tiers {
-		res := utils.ResourcesCheckBeforeRemove(tier.Backends, id_array)
+		res := utils.ResourcesAlreadyExists(tier.Backends, id_array)
 		if len(res) != 0 {
 			errMsg := fmt.Sprintf("failed to delete backend because it is associated with some SSP")
 			log.Error(errMsg)
@@ -369,8 +369,6 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 			return
 		}
 	}
-
-	//
 	if count == 0 {
 		_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: id})
 		if err != nil {
