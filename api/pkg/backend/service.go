@@ -350,6 +350,27 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	}
 
 	count := len(res.Buckets)
+
+	//checking if backend is associated with any tier:
+	id_array := []string{id}
+	tiersList, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
+	if err != nil {
+		log.Errorf("failed to list tiers: %v\n", err)
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, tier := range tiersList.Tiers {
+		res := utils.ResourcesCheckBeforeRemove(tier.Backends, id_array)
+		if len(res) != 0 {
+			errMsg := fmt.Sprintf("failed to delete backend because it is associated with some SSP")
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
+	}
+
+	//
 	if count == 0 {
 		_, err := s.backendClient.DeleteBackend(ctx, &backend.DeleteBackendRequest{Id: id})
 		if err != nil {
@@ -492,7 +513,6 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	tier.TenantId = request.PathParameter("tenantId")
-
 	// ValidationCheck:1:: Name should be unique. Repeated name not allowed
 	tierResult, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{
 		Filter: map[string]string{"name": tier.Name},
