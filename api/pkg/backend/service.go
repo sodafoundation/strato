@@ -644,6 +644,16 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	tenantid := request.PathParameter("tenantId")
+	if !ValidateTenant(token, tenantid) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantid)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
 
 	// ValidationCheck::BackendExists:: Check whether tier id exists or not
 	log.Info("ValidationCheck::BackendExists:: Check whether service plan id exists or not")
@@ -774,8 +784,6 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 	log.Info("Check Tenant are valid")
-	actx := request.Attribute(c.KContext).(*c.Context)
-	token := actx.AuthToken
 	for _, tenant := range updateTier.AddTenants {
 		if !ValidateTenant(token, tenant) {
 			errMsg := fmt.Sprintf("invalid tenant:%v is present in adding tenants in tier:", tenant)
@@ -815,6 +823,18 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 
 	id := request.PathParameter("id")
 	ctx := common.InitCtxWithAuthInfo(request)
+
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	tenantid := request.PathParameter("tenantId")
+	if !ValidateTenant(token, tenantid) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantid)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get service plan details: %v\n", err)
@@ -842,6 +862,16 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 
 	var key string
 	tenantId := request.PathParameter("tenantId")
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	if !ValidateTenant(token, tenantId) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantId)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	if tenantId == common.DefaultAdminTenantId {
 		key = "tenantId"
 	} else {
@@ -874,6 +904,17 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	tenantid := request.PathParameter("tenantId")
+	if !ValidateTenant(token, tenantid) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantid)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get service plan details: %v\n", err)
