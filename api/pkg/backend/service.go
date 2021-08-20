@@ -15,9 +15,11 @@
 package backend
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -49,6 +51,7 @@ const (
 	backendService_K8S     = "soda.multicloud.v1.backend"
 	s3Service_K8S          = "soda.multicloud.v1.s3"
 	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
+	PROJECTS_URI           = "/v3/projects"
 )
 
 // Map of object storage providers supported by s3 services. Keeping a map
@@ -469,6 +472,57 @@ func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string
 	return invalidBackends, nil
 }
 
+type GetProjects struct {
+	Links struct {
+		Self     string      `json:"self"`
+		Previous interface{} `json:"previous"`
+		Next     interface{} `json:"next"`
+	} `json:"links"`
+	Projects []struct {
+		IsDomain    bool   `json:"is_domain"`
+		Description string `json:"description"`
+		Links       struct {
+			Self string `json:"self"`
+		} `json:"links"`
+		Tags     []interface{} `json:"tags"`
+		Enabled  bool          `json:"enabled"`
+		ID       string        `json:"id"`
+		ParentID string        `json:"parent_id"`
+		DomainID string        `json:"domain_id"`
+		Name     string        `json:"name"`
+	} `json:"projects"`
+}
+
+///function to validate tenant:
+func ValidateTenant(authToken, tenantId string) bool {
+	osAuthUrl := os.Getenv("OS_AUTH_URL")
+	getreq, err := http.NewRequest("GET", osAuthUrl+PROJECTS_URI+"?domain_id=default", bytes.NewBuffer(nil))
+	errMsg := fmt.Sprintf("error in getting all projects:")
+	if err != nil {
+		log.Error(errMsg)
+		return false
+	}
+	getreq.Header.Add("X-Auth-Token", authToken)
+	getreq.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	var validationResponse *http.Response
+	validationResponse, err = client.Do(getreq)
+	if err != nil {
+		log.Error(errMsg)
+		return false
+	}
+	defer validationResponse.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(validationResponse.Body)
+	var data *GetProjects
+	json.Unmarshal(bodyBytes, &data)
+	for _, project := range data.Projects {
+		if project.ID == tenantId {
+			return true
+		}
+	}
+	return false
+}
+
 //tiering functions
 func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for creating service plan.")
@@ -540,6 +594,24 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 
+	}
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	if !ValidateTenant(token, tier.TenantId) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tier.TenantId)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+	//validation of tenants to be associated with the tier:
+	for _, tenant := range tier.Tenants {
+		if !ValidateTenant(token, tenant) {
+			errMsg := fmt.Sprintf("invalid tenant:%v is associated to tier in request:", tenant)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
 	}
 
 	// Now, tier can be created with backends for tenants
@@ -700,6 +772,17 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
+	}
+	log.Info("Check Tenant are valid")
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	for _, tenant := range updateTier.AddTenants {
+		if !ValidateTenant(token, tenant) {
+			errMsg := fmt.Sprintf("invalid tenant:%v is present in adding tenants in tier:", tenant)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
 	}
 
 	log.Info("Prepare update list with AddBackends and DeleteBackends")
