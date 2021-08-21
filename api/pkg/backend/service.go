@@ -52,6 +52,7 @@ const (
 	s3Service_K8S          = "soda.multicloud.v1.s3"
 	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
 	PROJECTS_URI           = "/v3/projects"
+	PROJECTS_QUERY_CONDN   = "?domain_id=default"
 )
 
 // Map of object storage providers supported by s3 services. Keeping a map
@@ -472,7 +473,8 @@ func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string
 	return invalidBackends, nil
 }
 
-type GetProjects struct {
+//response of projects
+type ProjectsResponse struct {
 	Links struct {
 		Self     string      `json:"self"`
 		Previous interface{} `json:"previous"`
@@ -496,7 +498,12 @@ type GetProjects struct {
 ///function to validate tenant:
 func ValidateTenant(authToken, tenantId string) bool {
 	osAuthUrl := os.Getenv("OS_AUTH_URL")
-	getreq, err := http.NewRequest("GET", osAuthUrl+PROJECTS_URI+"?domain_id=default", bytes.NewBuffer(nil))
+	if osAuthUrl != "" {
+		errMsg := fmt.Sprintf("error in getting OS_AUTH_URL")
+		log.Error(errMsg)
+		return false
+	}
+	getreq, err := http.NewRequest("GET", osAuthUrl+PROJECTS_URI+PROJECTS_QUERY_CONDN, bytes.NewBuffer(nil))
 	errMsg := fmt.Sprintf("error in getting all projects:")
 	if err != nil {
 		log.Error(errMsg)
@@ -513,7 +520,7 @@ func ValidateTenant(authToken, tenantId string) bool {
 	}
 	defer validationResponse.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(validationResponse.Body)
-	var data *GetProjects
+	var data *ProjectsResponse
 	json.Unmarshal(bodyBytes, &data)
 	for _, project := range data.Projects {
 		if project.ID == tenantId {
