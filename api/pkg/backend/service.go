@@ -498,7 +498,7 @@ type ProjectsResponse struct {
 ///function to validate tenant:
 func ValidateTenant(authToken, tenantId string) bool {
 	osAuthUrl := os.Getenv("OS_AUTH_URL")
-	if osAuthUrl != "" {
+	if osAuthUrl == "" {
 		errMsg := fmt.Sprintf("error in getting OS_AUTH_URL")
 		log.Error(errMsg)
 		return false
