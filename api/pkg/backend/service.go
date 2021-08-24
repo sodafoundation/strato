@@ -503,7 +503,7 @@ func ValidateTenant(authToken, tenantId string) bool {
 		log.Error(errMsg)
 		return false
 	}
-	getreq, err := http.NewRequest("GET", osAuthUrl + PROJECTS_URI + PROJECTS_QUERY_CONDN, bytes.NewBuffer(nil))
+	getreq, err := http.NewRequest("GET", osAuthUrl+PROJECTS_URI+PROJECTS_QUERY_CONDN, bytes.NewBuffer(nil))
 	errMsg := fmt.Sprintf("error in getting all projects:")
 	if err != nil {
 		log.Error(errMsg)
