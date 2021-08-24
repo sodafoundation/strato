@@ -503,7 +503,7 @@ func ValidateTenant(authToken, tenantId string) bool {
 		log.Error(errMsg)
 		return false
 	}
-	getreq, err := http.NewRequest("GET", osAuthUrl+PROJECTS_URI+PROJECTS_QUERY_CONDN, bytes.NewBuffer(nil))
+	getreq, err := http.NewRequest("GET", osAuthUrl + PROJECTS_URI + PROJECTS_QUERY_CONDN, bytes.NewBuffer(nil))
 	errMsg := fmt.Sprintf("error in getting all projects:")
 	if err != nil {
 		log.Error(errMsg)
@@ -614,7 +614,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	//validation of tenants to be associated with the tier:
 	for _, tenant := range tier.Tenants {
 		if !ValidateTenant(token, tenant) {
-			errMsg := fmt.Sprintf("invalid tenant:%v is associated to tier in request:", tenant)
+			errMsg := fmt.Sprintf("tenant:%v is invalid so cannot be associated to the tier:", tenant)
 			log.Error(errMsg)
 			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 			return
@@ -790,7 +790,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
-	log.Info("Check Tenant are valid")
+	log.Info("Check whether Tenants are valid")
 	for _, tenant := range updateTier.AddTenants {
 		if !ValidateTenant(token, tenant) {
 			errMsg := fmt.Sprintf("invalid tenant:%v is present in adding tenants in tier:", tenant)
