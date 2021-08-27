@@ -15,9 +15,11 @@
 package backend
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -49,6 +51,8 @@ const (
 	backendService_K8S     = "soda.multicloud.v1.backend"
 	s3Service_K8S          = "soda.multicloud.v1.s3"
 	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
+	PROJECTS_URI           = "/v3/projects"
+	PROJECTS_QUERY_CONDN   = "?domain_id=default"
 )
 
 // Map of object storage providers supported by s3 services. Keeping a map
@@ -488,6 +492,63 @@ func (s *APIService) CheckInvalidBackends(ctx context.Context, backends []string
 	return invalidBackends, nil
 }
 
+//response of projects
+type ProjectsResponse struct {
+	Links struct {
+		Self     string      `json:"self"`
+		Previous interface{} `json:"previous"`
+		Next     interface{} `json:"next"`
+	} `json:"links"`
+	Projects []struct {
+		IsDomain    bool   `json:"is_domain"`
+		Description string `json:"description"`
+		Links       struct {
+			Self string `json:"self"`
+		} `json:"links"`
+		Tags     []interface{} `json:"tags"`
+		Enabled  bool          `json:"enabled"`
+		ID       string        `json:"id"`
+		ParentID string        `json:"parent_id"`
+		DomainID string        `json:"domain_id"`
+		Name     string        `json:"name"`
+	} `json:"projects"`
+}
+
+///function to validate tenant:
+func ValidateTenant(authToken, tenantId string) bool {
+	osAuthUrl := os.Getenv("OS_AUTH_URL")
+	if osAuthUrl == "" {
+		errMsg := fmt.Sprintf("error in getting OS_AUTH_URL")
+		log.Error(errMsg)
+		return false
+	}
+	getreq, err := http.NewRequest("GET", osAuthUrl+PROJECTS_URI+PROJECTS_QUERY_CONDN, bytes.NewBuffer(nil))
+	errMsg := fmt.Sprintf("error in getting all projects:")
+	if err != nil {
+		log.Error(errMsg)
+		return false
+	}
+	getreq.Header.Add("X-Auth-Token", authToken)
+	getreq.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	var validationResponse *http.Response
+	validationResponse, err = client.Do(getreq)
+	if err != nil {
+		log.Error(errMsg)
+		return false
+	}
+	defer validationResponse.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(validationResponse.Body)
+	var data *ProjectsResponse
+	json.Unmarshal(bodyBytes, &data)
+	for _, project := range data.Projects {
+		if project.ID == tenantId {
+			return true
+		}
+	}
+	return false
+}
+
 //tiering functions
 func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for creating service plan.")
@@ -559,6 +620,24 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 		return
 
 	}
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	if !ValidateTenant(token, tier.TenantId) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tier.TenantId)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+	//validation of tenants to be associated with the tier:
+	for _, tenant := range tier.Tenants {
+		if !ValidateTenant(token, tenant) {
+			errMsg := fmt.Sprintf("tenant:%v is invalid so cannot be associated to the tier:", tenant)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
+	}
 
 	// Now, tier can be created with backends for tenants
 	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
@@ -590,6 +669,16 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	tenantid := request.PathParameter("tenantId")
+	if !ValidateTenant(token, tenantid) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantid)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
 
 	// ValidationCheck::BackendExists:: Check whether tier id exists or not
 	log.Info("ValidationCheck::BackendExists:: Check whether service plan id exists or not")
@@ -719,6 +808,15 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
+	log.Info("Check whether Tenants are valid")
+	for _, tenant := range updateTier.AddTenants {
+		if !ValidateTenant(token, tenant) {
+			errMsg := fmt.Sprintf("invalid tenant:%v is present in adding tenants in tier:", tenant)
+			log.Error(errMsg)
+			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+			return
+		}
+	}
 
 	log.Info("Check Backends have any buckets before removing")
 	for _, backendId := range updateTier.DeleteBackends {
@@ -773,6 +871,18 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 
 	id := request.PathParameter("id")
 	ctx := common.InitCtxWithAuthInfo(request)
+
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	tenantid := request.PathParameter("tenantId")
+	if !ValidateTenant(token, tenantid) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantid)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get service plan details: %v\n", err)
@@ -800,6 +910,16 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 
 	var key string
 	tenantId := request.PathParameter("tenantId")
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	if !ValidateTenant(token, tenantId) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantId)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	if tenantId == common.DefaultAdminTenantId {
 		key = "tenantId"
 	} else {
@@ -832,6 +952,17 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
+	//Validation of tenantId of tier:
+	actx := request.Attribute(c.KContext).(*c.Context)
+	token := actx.AuthToken
+	tenantid := request.PathParameter("tenantId")
+	if !ValidateTenant(token, tenantid) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantid)
+		log.Error(errMsg)
+		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+		return
+	}
+
 	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get service plan details: %v\n", err)
