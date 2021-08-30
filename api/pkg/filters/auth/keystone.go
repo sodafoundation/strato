@@ -150,6 +150,6 @@ func (k *Keystone) setPolicyContext(req *restful.Request, res *restful.Response,
 	ctx.UserId = user.ID
 	ctx.Roles = roleNames
 	ctx.IsAdminTenant = strings.ToLower(project.Name) == "admin"
-
+	ctx.IsAdmin = ctx.IsAdminTenant
 	return nil
 }
