@@ -48,4 +48,3 @@ func RegisterRouter(ws *restful.WebService) {
 		Doc("Delete ssp")
 
 }
-

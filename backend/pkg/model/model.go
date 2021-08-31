@@ -38,4 +38,3 @@ type Ssp struct {
 	Backends []string      `json:"type,omitempty" bson:"backends,omitempty"`
 	Tenants  []string      `json:"type,omitempty" bson:"tenants,omitempty"`
 }
-

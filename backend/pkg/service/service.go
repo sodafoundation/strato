@@ -389,4 +389,3 @@ func (b *backendService) DeleteSsp(ctx context.Context, in *pb.DeleteSspRequest,
 	return nil
 
 }
-

@@ -231,4 +231,3 @@ func (_m *Repository) UpdateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp
 
 	return r0, r1
 }
-

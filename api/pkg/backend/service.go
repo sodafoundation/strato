@@ -180,57 +180,57 @@ func (s *APIService) listBackendDefault(ctx context.Context, request *restful.Re
 }
 
 func (s *APIService) FilterBackendByTier(ctx context.Context, request *restful.Request, response *restful.Response,
-        tier int32) {
-        // Get those backend type which supporte the specific tier.
-        req := s3.GetBackendTypeByTierRequest{Tier: tier}
-        res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
-        req1 := &backend.ListBackendRequest{}
-        resp := &backend.ListBackendResponse{}
-        for _, v := range res.Types {
-                // Get backends with specific backend type.
-                filter := make(map[string]string)
-                filter["type"] = v
-                req1.Filter = filter
-                res1, err := s.backendClient.ListBackend(ctx, req1)
-                if err != nil {
-                        log.Errorf("failed to list backends of type[%s]: %v\n", v, err)
-                        response.WriteError(http.StatusInternalServerError, err)
-                }
-                if len(res1.Backends) != 0 {
-                        resp.Backends = append(resp.Backends, res1.Backends...)
-                }
-        }
-        //TODO: Need to consider pagination
+	tier int32) {
+	// Get those backend type which supporte the specific tier.
+	req := s3.GetBackendTypeByTierRequest{Tier: tier}
+	res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
+	req1 := &backend.ListBackendRequest{}
+	resp := &backend.ListBackendResponse{}
+	for _, v := range res.Types {
+		// Get backends with specific backend type.
+		filter := make(map[string]string)
+		filter["type"] = v
+		req1.Filter = filter
+		res1, err := s.backendClient.ListBackend(ctx, req1)
+		if err != nil {
+			log.Errorf("failed to list backends of type[%s]: %v\n", v, err)
+			response.WriteError(http.StatusInternalServerError, err)
+		}
+		if len(res1.Backends) != 0 {
+			resp.Backends = append(resp.Backends, res1.Backends...)
+		}
+	}
+	//TODO: Need to consider pagination
 
-        // do not return sensitive information
-        for _, v := range resp.Backends {
-                v.Access = ""
-                v.Security = ""
-        }
+	// do not return sensitive information
+	for _, v := range resp.Backends {
+		v.Access = ""
+		v.Security = ""
+	}
 
-        log.Info("fiterBackendByTier backends successfully.")
-        response.WriteEntity(resp)
+	log.Info("fiterBackendByTier backends successfully.")
+	response.WriteEntity(resp)
 }
 
 func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
-        if !policy.Authorize(request, response, "backend:list") {
-                return
-        }
-        log.Info("Received request for backend list.")
+	if !policy.Authorize(request, response, "backend:list") {
+		return
+	}
+	log.Info("Received request for backend list.")
 
-        ctx := common.InitCtxWithAuthInfo(request)
-        para := request.QueryParameter("tier")
-        if para != "" { //List those backends which support the specific ssp.
-                tier, err := strconv.Atoi(para)
-                if err != nil {
-                        log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
-                        response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
-                        return
-                }
-                s.FilterBackendByTier(ctx, request, response, int32(tier))
-        } else {
-                s.listBackendDefault(ctx, request, response)
-        }
+	ctx := common.InitCtxWithAuthInfo(request)
+	para := request.QueryParameter("tier")
+	if para != "" { //List those backends which support the specific ssp.
+		tier, err := strconv.Atoi(para)
+		if err != nil {
+			log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
+			response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
+			return
+		}
+		s.FilterBackendByTier(ctx, request, response, int32(tier))
+	} else {
+		s.listBackendDefault(ctx, request, response)
+	}
 }
 
 func (s *APIService) CreateBackend(request *restful.Request, response *restful.Response) {
@@ -987,4 +987,3 @@ func (s *APIService) DeleteSsp(request *restful.Request, response *restful.Respo
 	response.WriteHeader(http.StatusOK)
 	return
 }
-

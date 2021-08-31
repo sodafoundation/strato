@@ -91,7 +91,7 @@ func (b *Bucket) GetValues() (values map[string]map[string][]byte, err error) {
 		return
 	}
 	values = map[string]map[string][]byte{
-		BUCKET_COLUMN_FAMILY: map[string][]byte{
+		BUCKET_COLUMN_FAMILY: {
 			"UID":        []byte(b.TenantId),
 			"ACL":        []byte(b.Acl.CannedAcl),
 			"CORS":       cors,

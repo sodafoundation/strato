@@ -518,4 +518,3 @@ func TestDeleteSsp(t *testing.T) {
 	t.Log(err)
 	mockRepoClient.AssertExpectations(t)
 }
-

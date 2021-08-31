@@ -57,4 +57,3 @@ func Init(db *config.Database) {
 func Exit() {
 	Repo.Close()
 }
-

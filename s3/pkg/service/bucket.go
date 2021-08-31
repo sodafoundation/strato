@@ -68,7 +68,7 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.ListBucketsRequest, 
 				DefaultLocation:      buckets[j].DefaultLocation,
 				Versioning:           buckets[j].Versioning,
 				ServerSideEncryption: buckets[j].ServerSideEncryption,
-				Ssps:                buckets[j].Ssps,
+				Ssps:                 buckets[j].Ssps,
 			})
 
 			if buckets[j].Ssps != "" {
@@ -216,7 +216,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		Usages:               bucket.Usages,
 		Versioning:           bucket.Versioning,
 		ServerSideEncryption: bucket.ServerSideEncryption,
-		Ssps:                bucket.Ssps,
+		Ssps:                 bucket.Ssps,
 	}
 
 	return nil

@@ -277,4 +277,3 @@ func (repo *mongoRepository) GetSsp(ctx context.Context, id string) (*model.Ssp,
 func (repo *mongoRepository) Close() {
 	repo.session.Close()
 }
-
