@@ -48,11 +48,11 @@ type BackendService interface {
 	UpdateBackend(ctx context.Context, in *UpdateBackendRequest, opts ...client.CallOption) (*UpdateBackendResponse, error)
 	DeleteBackend(ctx context.Context, in *DeleteBackendRequest, opts ...client.CallOption) (*DeleteBackendResponse, error)
 	ListType(ctx context.Context, in *ListTypeRequest, opts ...client.CallOption) (*ListTypeResponse, error)
-	CreateTier(ctx context.Context, in *CreateTierRequest, opts ...client.CallOption) (*CreateTierResponse, error)
-	GetTier(ctx context.Context, in *GetTierRequest, opts ...client.CallOption) (*GetTierResponse, error)
-	ListTiers(ctx context.Context, in *ListTierRequest, opts ...client.CallOption) (*ListTierResponse, error)
-	UpdateTier(ctx context.Context, in *UpdateTierRequest, opts ...client.CallOption) (*UpdateTierResponse, error)
-	DeleteTier(ctx context.Context, in *DeleteTierRequest, opts ...client.CallOption) (*DeleteTierResponse, error)
+	CreateSsp(ctx context.Context, in *CreateSspRequest, opts ...client.CallOption) (*CreateSspResponse, error)
+	GetSsp(ctx context.Context, in *GetSspRequest, opts ...client.CallOption) (*GetSspResponse, error)
+	ListSsps(ctx context.Context, in *ListSspRequest, opts ...client.CallOption) (*ListSspResponse, error)
+	UpdateSsp(ctx context.Context, in *UpdateSspRequest, opts ...client.CallOption) (*UpdateSspResponse, error)
+	DeleteSsp(ctx context.Context, in *DeleteSspRequest, opts ...client.CallOption) (*DeleteSspResponse, error)
 }
 
 type backendService struct {
@@ -127,9 +127,9 @@ func (c *backendService) ListType(ctx context.Context, in *ListTypeRequest, opts
 	return out, nil
 }
 
-func (c *backendService) CreateTier(ctx context.Context, in *CreateTierRequest, opts ...client.CallOption) (*CreateTierResponse, error) {
-	req := c.c.NewRequest(c.name, "Backend.CreateTier", in)
-	out := new(CreateTierResponse)
+func (c *backendService) CreateSsp(ctx context.Context, in *CreateSspRequest, opts ...client.CallOption) (*CreateSspResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.CreateSsp", in)
+	out := new(CreateSspResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -137,9 +137,9 @@ func (c *backendService) CreateTier(ctx context.Context, in *CreateTierRequest, 
 	return out, nil
 }
 
-func (c *backendService) GetTier(ctx context.Context, in *GetTierRequest, opts ...client.CallOption) (*GetTierResponse, error) {
-	req := c.c.NewRequest(c.name, "Backend.GetTier", in)
-	out := new(GetTierResponse)
+func (c *backendService) GetSsp(ctx context.Context, in *GetSspRequest, opts ...client.CallOption) (*GetSspResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.GetSsp", in)
+	out := new(GetSspResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -147,9 +147,9 @@ func (c *backendService) GetTier(ctx context.Context, in *GetTierRequest, opts .
 	return out, nil
 }
 
-func (c *backendService) ListTiers(ctx context.Context, in *ListTierRequest, opts ...client.CallOption) (*ListTierResponse, error) {
-	req := c.c.NewRequest(c.name, "Backend.ListTiers", in)
-	out := new(ListTierResponse)
+func (c *backendService) ListSsps(ctx context.Context, in *ListSspRequest, opts ...client.CallOption) (*ListSspResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.ListSsps", in)
+	out := new(ListSspResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -157,9 +157,9 @@ func (c *backendService) ListTiers(ctx context.Context, in *ListTierRequest, opt
 	return out, nil
 }
 
-func (c *backendService) UpdateTier(ctx context.Context, in *UpdateTierRequest, opts ...client.CallOption) (*UpdateTierResponse, error) {
-	req := c.c.NewRequest(c.name, "Backend.UpdateTier", in)
-	out := new(UpdateTierResponse)
+func (c *backendService) UpdateSsp(ctx context.Context, in *UpdateSspRequest, opts ...client.CallOption) (*UpdateSspResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.UpdateSsp", in)
+	out := new(UpdateSspResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -167,9 +167,9 @@ func (c *backendService) UpdateTier(ctx context.Context, in *UpdateTierRequest, 
 	return out, nil
 }
 
-func (c *backendService) DeleteTier(ctx context.Context, in *DeleteTierRequest, opts ...client.CallOption) (*DeleteTierResponse, error) {
-	req := c.c.NewRequest(c.name, "Backend.DeleteTier", in)
-	out := new(DeleteTierResponse)
+func (c *backendService) DeleteSsp(ctx context.Context, in *DeleteSspRequest, opts ...client.CallOption) (*DeleteSspResponse, error) {
+	req := c.c.NewRequest(c.name, "Backend.DeleteSsp", in)
+	out := new(DeleteSspResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -186,11 +186,11 @@ type BackendHandler interface {
 	UpdateBackend(context.Context, *UpdateBackendRequest, *UpdateBackendResponse) error
 	DeleteBackend(context.Context, *DeleteBackendRequest, *DeleteBackendResponse) error
 	ListType(context.Context, *ListTypeRequest, *ListTypeResponse) error
-	CreateTier(context.Context, *CreateTierRequest, *CreateTierResponse) error
-	GetTier(context.Context, *GetTierRequest, *GetTierResponse) error
-	ListTiers(context.Context, *ListTierRequest, *ListTierResponse) error
-	UpdateTier(context.Context, *UpdateTierRequest, *UpdateTierResponse) error
-	DeleteTier(context.Context, *DeleteTierRequest, *DeleteTierResponse) error
+	CreateSsp(context.Context, *CreateSspRequest, *CreateSspResponse) error
+	GetSsp(context.Context, *GetSspRequest, *GetSspResponse) error
+	ListSsps(context.Context, *ListSspRequest, *ListSspResponse) error
+	UpdateSsp(context.Context, *UpdateSspRequest, *UpdateSspResponse) error
+	DeleteSsp(context.Context, *DeleteSspRequest, *DeleteSspResponse) error
 }
 
 func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server.HandlerOption) error {
@@ -201,11 +201,11 @@ func RegisterBackendHandler(s server.Server, hdlr BackendHandler, opts ...server
 		UpdateBackend(ctx context.Context, in *UpdateBackendRequest, out *UpdateBackendResponse) error
 		DeleteBackend(ctx context.Context, in *DeleteBackendRequest, out *DeleteBackendResponse) error
 		ListType(ctx context.Context, in *ListTypeRequest, out *ListTypeResponse) error
-		CreateTier(ctx context.Context, in *CreateTierRequest, out *CreateTierResponse) error
-		GetTier(ctx context.Context, in *GetTierRequest, out *GetTierResponse) error
-		ListTiers(ctx context.Context, in *ListTierRequest, out *ListTierResponse) error
-		UpdateTier(ctx context.Context, in *UpdateTierRequest, out *UpdateTierResponse) error
-		DeleteTier(ctx context.Context, in *DeleteTierRequest, out *DeleteTierResponse) error
+		CreateSsp(ctx context.Context, in *CreateSspRequest, out *CreateSspResponse) error
+		GetSsp(ctx context.Context, in *GetSspRequest, out *GetSspResponse) error
+		ListSsps(ctx context.Context, in *ListSspRequest, out *ListSspResponse) error
+		UpdateSsp(ctx context.Context, in *UpdateSspRequest, out *UpdateSspResponse) error
+		DeleteSsp(ctx context.Context, in *DeleteSspRequest, out *DeleteSspResponse) error
 	}
 	type Backend struct {
 		backend
@@ -242,22 +242,22 @@ func (h *backendHandler) ListType(ctx context.Context, in *ListTypeRequest, out 
 	return h.BackendHandler.ListType(ctx, in, out)
 }
 
-func (h *backendHandler) CreateTier(ctx context.Context, in *CreateTierRequest, out *CreateTierResponse) error {
-	return h.BackendHandler.CreateTier(ctx, in, out)
+func (h *backendHandler) CreateSsp(ctx context.Context, in *CreateSspRequest, out *CreateSspResponse) error {
+	return h.BackendHandler.CreateSsp(ctx, in, out)
 }
 
-func (h *backendHandler) GetTier(ctx context.Context, in *GetTierRequest, out *GetTierResponse) error {
-	return h.BackendHandler.GetTier(ctx, in, out)
+func (h *backendHandler) GetSsp(ctx context.Context, in *GetSspRequest, out *GetSspResponse) error {
+	return h.BackendHandler.GetSsp(ctx, in, out)
 }
 
-func (h *backendHandler) ListTiers(ctx context.Context, in *ListTierRequest, out *ListTierResponse) error {
-	return h.BackendHandler.ListTiers(ctx, in, out)
+func (h *backendHandler) ListSsps(ctx context.Context, in *ListSspRequest, out *ListSspResponse) error {
+	return h.BackendHandler.ListSsps(ctx, in, out)
 }
 
-func (h *backendHandler) UpdateTier(ctx context.Context, in *UpdateTierRequest, out *UpdateTierResponse) error {
-	return h.BackendHandler.UpdateTier(ctx, in, out)
+func (h *backendHandler) UpdateSsp(ctx context.Context, in *UpdateSspRequest, out *UpdateSspResponse) error {
+	return h.BackendHandler.UpdateSsp(ctx, in, out)
 }
 
-func (h *backendHandler) DeleteTier(ctx context.Context, in *DeleteTierRequest, out *DeleteTierResponse) error {
-	return h.BackendHandler.DeleteTier(ctx, in, out)
+func (h *backendHandler) DeleteSsp(ctx context.Context, in *DeleteSspRequest, out *DeleteSspResponse) error {
+	return h.BackendHandler.DeleteSsp(ctx, in, out)
 }

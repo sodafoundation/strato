@@ -36,9 +36,9 @@ const (
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	log.Info("Create bucket request received")
-	var isTier string
+	var isSsp string
 
-	isTier = request.HeaderParameter("tier")
+	isSsp = request.HeaderParameter("ssp")
 	bucketName := strings.ToLower(request.PathParameter(common.REQUEST_PATH_BUCKET_NAME))
 	if !isValidBucketName(bucketName) {
 		WriteErrorResponse(response, request, s3error.ErrInvalidBucketName)
@@ -84,12 +84,12 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 		}
 
 		var backendName string
-		if strings.EqualFold(isTier, TrueValue) {
-			backendName = s.getBackendFromTier(ctx, createBucketConf.LocationConstraint)
+		if strings.EqualFold(isSsp, TrueValue) {
+			backendName = s.getBackendFromSsp(ctx, createBucketConf.LocationConstraint)
 			if backendName != "" {
 				bucket.DefaultLocation = backendName
 				ctx = common.GetAdminContext()
-				bucket.Tiers = createBucketConf.LocationConstraint
+				bucket.Ssps = createBucketConf.LocationConstraint
 				flag = true
 			}
 
@@ -110,7 +110,7 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 
 	rsp, err := s.s3Client.CreateBucket(ctx, &bucket)
 	if HandleS3Error(response, request, err, rsp.GetErrorCode()) != nil {
-		log.Errorf("delete bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.GetErrorCode())
+		log.Errorf("create bucket[%s] failed, err=%v, errCode=%d\n", bucketName, err, rsp.GetErrorCode())
 		return
 	}
 

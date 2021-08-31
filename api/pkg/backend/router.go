@@ -36,15 +36,15 @@ func RegisterRouter(ws *restful.WebService) {
 	ws.Route(ws.POST("/{tenantId}/encrypt").To(handler.EncryptData)).
 		Doc("Encrypt the data")
 
-	ws.Route(ws.GET("/{tenantId}/tiers/{id}").To(handler.GetTier)).
-		Doc("Show tier details")
-	ws.Route(ws.GET("/{tenantId}/tiers").To(handler.ListTiers)).
-		Doc("list tiers")
-	ws.Route(ws.POST("/{tenantId}/tiers").To(handler.CreateTier)).
-		Doc("Create tier")
-	ws.Route(ws.PUT("/{tenantId}/tiers/{id}").To(handler.UpdateTier)).
-		Doc("Update tier")
-	ws.Route(ws.DELETE("/{tenantId}/tiers/{id}").To(handler.DeleteTier)).
-		Doc("Delete tier")
+	ws.Route(ws.GET("/{tenantId}/ssps/{id}").To(handler.GetSsp)).
+		Doc("Show ssp details")
+	ws.Route(ws.GET("/{tenantId}/ssps").To(handler.ListSsps)).
+		Doc("list ssps")
+	ws.Route(ws.POST("/{tenantId}/ssps").To(handler.CreateSsp)).
+		Doc("Create ssp")
+	ws.Route(ws.PUT("/{tenantId}/ssps/{id}").To(handler.UpdateSsp)).
+		Doc("Update ssp")
+	ws.Route(ws.DELETE("/{tenantId}/ssps/{id}").To(handler.DeleteSsp)).
+		Doc("Delete ssp")
 
 }

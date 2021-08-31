@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `buckets` (
   `versioning` varchar(255) DEFAULT NULL,
   `replication` JSON DEFAULT NULL,
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `tiers` varchar(255) DEFAULT NULL,
+  `ssps` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`bucketname`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;

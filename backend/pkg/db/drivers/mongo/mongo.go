@@ -35,7 +35,7 @@ type mongoRepository struct {
 
 var defaultDBName = "multi-cloud"
 var defaultCollection = "backends"
-var defaultTierCollection = "tiers"
+var defaultSspCollection = "ssps"
 var mutex sync.Mutex
 var mongoRepo = &mongoRepository{}
 
@@ -183,24 +183,24 @@ func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 	return backends, nil
 }
 
-func (repo *mongoRepository) CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
-	log.Debug("received request to create tier in db")
+func (repo *mongoRepository) CreateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp, error) {
+	log.Debug("received request to create ssp in db")
 	session := repo.session.Copy()
 	defer session.Close()
 
-	if tier.Id == "" {
-		tier.Id = bson.NewObjectId()
+	if ssp.Id == "" {
+		ssp.Id = bson.NewObjectId()
 	}
-	err := session.DB(defaultDBName).C(defaultTierCollection).Insert(tier)
+	err := session.DB(defaultDBName).C(defaultSspCollection).Insert(ssp)
 	if err != nil {
 		return nil, err
 	}
-	return tier, nil
+	return ssp, nil
 
 }
 
-func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
-	log.Debug("received request to delete tier from db")
+func (repo *mongoRepository) DeleteSsp(ctx context.Context, id string) error {
+	log.Debug("received request to delete ssp from db")
 
 	session := repo.session.Copy()
 	defer session.Close()
@@ -212,51 +212,51 @@ func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
 		return err
 	}
 
-	return session.DB(defaultDBName).C(defaultTierCollection).Remove(m)
+	return session.DB(defaultDBName).C(defaultSspCollection).Remove(m)
 }
 
-func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
-	log.Debug("received request to update tier")
+func (repo *mongoRepository) UpdateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp, error) {
+	log.Debug("received request to update ssp")
 	session := repo.session.Copy()
 	defer session.Close()
-	m := bson.M{"_id": tier.Id}
+	m := bson.M{"_id": ssp.Id}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, tier)
+	err = session.DB(defaultDBName).C(defaultSspCollection).Update(m, ssp)
 	if err != nil {
 		return nil, err
 	}
-	return tier, nil
+	return ssp, nil
 }
 
-func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, query interface{}) ([]*model.Tier, error) {
-	log.Debug("received request to list tiers")
+func (repo *mongoRepository) ListSsps(ctx context.Context, limit, offset int, query interface{}) ([]*model.Ssp, error) {
+	log.Debug("received request to list ssps")
 	session := repo.session.Copy()
 	defer session.Close()
 	if limit == 0 {
 		limit = math.MinInt32
 	}
-	var tiers []*model.Tier
+	var ssps []*model.Ssp
 	m := bson.M{}
 	UpdateFilter(m, query.(map[string]string))
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
-	err = session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
+	log.Infof("ListSsps, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
+	err = session.DB(defaultDBName).C(defaultSspCollection).Find(m).Skip(offset).Limit(limit).All(&ssps)
 
 	if err != nil {
 		return nil, err
 	}
-	return tiers, nil
+	return ssps, nil
 }
 
-func (repo *mongoRepository) GetTier(ctx context.Context, id string) (*model.Tier,
+func (repo *mongoRepository) GetSsp(ctx context.Context, id string) (*model.Ssp,
 	error) {
-	log.Debug("received request to get tier details")
+	log.Debug("received request to get ssp details")
 	session := repo.session.Copy()
 	defer session.Close()
 
@@ -265,13 +265,13 @@ func (repo *mongoRepository) GetTier(ctx context.Context, id string) (*model.Tie
 	if err != nil {
 		return nil, err
 	}
-	var tier = &model.Tier{}
-	collection := session.DB(defaultDBName).C(defaultTierCollection)
-	err = collection.Find(m).One(tier)
+	var ssp = &model.Ssp{}
+	collection := session.DB(defaultDBName).C(defaultSspCollection)
+	err = collection.Find(m).One(ssp)
 	if err != nil {
 		return nil, err
 	}
-	return tier, nil
+	return ssp, nil
 }
 
 func (repo *mongoRepository) Close() {

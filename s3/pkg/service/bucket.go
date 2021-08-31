@@ -68,11 +68,11 @@ func (s *s3Service) ListBuckets(ctx context.Context, in *pb.ListBucketsRequest, 
 				DefaultLocation:      buckets[j].DefaultLocation,
 				Versioning:           buckets[j].Versioning,
 				ServerSideEncryption: buckets[j].ServerSideEncryption,
-				Tiers:                buckets[j].Tiers,
+				Ssps:                 buckets[j].Ssps,
 			})
 
-			if buckets[j].Tiers != "" {
-				out.Buckets[j].DefaultLocation = buckets[j].Tiers
+			if buckets[j].Ssps != "" {
+				out.Buckets[j].DefaultLocation = buckets[j].Ssps
 			}
 		}
 	}
@@ -216,7 +216,7 @@ func (s *s3Service) GetBucket(ctx context.Context, in *pb.Bucket, out *pb.GetBuc
 		Usages:               bucket.Usages,
 		Versioning:           bucket.Versioning,
 		ServerSideEncryption: bucket.ServerSideEncryption,
-		Tiers:                bucket.Tiers,
+		Ssps:                 bucket.Ssps,
 	}
 
 	return nil
@@ -255,7 +255,7 @@ func (s *s3Service) DeleteBucket(ctx context.Context, in *pb.Bucket, out *pb.Bas
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if bucket.Tiers != "" {
+	if bucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 

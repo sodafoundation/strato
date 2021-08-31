@@ -43,22 +43,22 @@ func (_m *Repository) CreateBackend(ctx context.Context, backend *model.Backend)
 	return r0, r1
 }
 
-// CreateTier provides a mock function with given fields: ctx, tier
-func (_m *Repository) CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
-	ret := _m.Called(ctx, tier)
+// CreateSsp provides a mock function with given fields: ctx, ssp
+func (_m *Repository) CreateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp, error) {
+	ret := _m.Called(ctx, ssp)
 
-	var r0 *model.Tier
-	if rf, ok := ret.Get(0).(func(context.Context, *model.Tier) *model.Tier); ok {
-		r0 = rf(ctx, tier)
+	var r0 *model.Ssp
+	if rf, ok := ret.Get(0).(func(context.Context, *model.Ssp) *model.Ssp); ok {
+		r0 = rf(ctx, ssp)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.Tier)
+			r0 = ret.Get(0).(*model.Ssp)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *model.Tier) error); ok {
-		r1 = rf(ctx, tier)
+	if rf, ok := ret.Get(1).(func(context.Context, *model.Ssp) error); ok {
+		r1 = rf(ctx, ssp)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -80,8 +80,8 @@ func (_m *Repository) DeleteBackend(ctx context.Context, id string) error {
 	return r0
 }
 
-// DeleteTier provides a mock function with given fields: ctx, id
-func (_m *Repository) DeleteTier(ctx context.Context, id string) error {
+// DeleteSsp provides a mock function with given fields: ctx, id
+func (_m *Repository) DeleteSsp(ctx context.Context, id string) error {
 	ret := _m.Called(ctx, id)
 
 	var r0 error
@@ -117,16 +117,16 @@ func (_m *Repository) GetBackend(ctx context.Context, id string) (*model.Backend
 	return r0, r1
 }
 
-// GetTier provides a mock function with given fields: ctx, id
-func (_m *Repository) GetTier(ctx context.Context, id string) (*model.Tier, error) {
+// GetSsp provides a mock function with given fields: ctx, id
+func (_m *Repository) GetSsp(ctx context.Context, id string) (*model.Ssp, error) {
 	ret := _m.Called(ctx, id)
 
-	var r0 *model.Tier
-	if rf, ok := ret.Get(0).(func(context.Context, string) *model.Tier); ok {
+	var r0 *model.Ssp
+	if rf, ok := ret.Get(0).(func(context.Context, string) *model.Ssp); ok {
 		r0 = rf(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.Tier)
+			r0 = ret.Get(0).(*model.Ssp)
 		}
 	}
 
@@ -163,16 +163,16 @@ func (_m *Repository) ListBackend(ctx context.Context, limit int, offset int, qu
 	return r0, r1
 }
 
-// ListTiers provides a mock function with given fields: ctx, limit, offset
-func (_m *Repository) ListTiers(ctx context.Context, limit int, offset int, query interface{}) ([]*model.Tier, error) {
+// ListSsps provides a mock function with given fields: ctx, limit, offset
+func (_m *Repository) ListSsps(ctx context.Context, limit int, offset int, query interface{}) ([]*model.Ssp, error) {
 	ret := _m.Called(ctx, limit, offset)
 
-	var r0 []*model.Tier
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) []*model.Tier); ok {
+	var r0 []*model.Ssp
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) []*model.Ssp); ok {
 		r0 = rf(ctx, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*model.Tier)
+			r0 = ret.Get(0).([]*model.Ssp)
 		}
 	}
 
@@ -209,22 +209,22 @@ func (_m *Repository) UpdateBackend(ctx context.Context, backend *model.Backend)
 	return r0, r1
 }
 
-// UpdateTier provides a mock function with given fields: ctx, tier
-func (_m *Repository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
-	ret := _m.Called(ctx, tier)
+// UpdateSsp provides a mock function with given fields: ctx, ssp
+func (_m *Repository) UpdateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp, error) {
+	ret := _m.Called(ctx, ssp)
 
-	var r0 *model.Tier
-	if rf, ok := ret.Get(0).(func(context.Context, *model.Tier) *model.Tier); ok {
-		r0 = rf(ctx, tier)
+	var r0 *model.Ssp
+	if rf, ok := ret.Get(0).(func(context.Context, *model.Ssp) *model.Ssp); ok {
+		r0 = rf(ctx, ssp)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.Tier)
+			r0 = ret.Get(0).(*model.Ssp)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *model.Tier) error); ok {
-		r1 = rf(ctx, tier)
+	if rf, ok := ret.Get(1).(func(context.Context, *model.Ssp) error); ok {
+		r1 = rf(ctx, ssp)
 	} else {
 		r1 = ret.Error(1)
 	}

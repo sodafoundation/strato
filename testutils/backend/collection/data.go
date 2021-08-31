@@ -52,29 +52,29 @@ var (
 		},
 	}
 
-	////tier samples
-	SampleTiers = []backendModel.Tier{
+	////ssp samples
+	SampleSsps = []backendModel.Ssp{
 		{
 			Id:       "4769855c-a102-11e7-b772-17b880d2f530",
-			TenantId: "sample-tier-tenantID",
-			Name:     "sample-tier-name",
-			Backends: []string{"sample-tier-backend-1", "sample-tier-backend-2"},
+			TenantId: "sample-ssp-tenantID",
+			Name:     "sample-ssp-name",
+			Backends: []string{"sample-ssp-backend-1", "sample-ssp-backend-2"},
 		},
 	}
-	SampleCreateTier = []backendModel.Tier{
+	SampleCreateSsp = []backendModel.Ssp{
 		{
 			Id:       "",
-			TenantId: "sample-tier-tenantID",
-			Name:     "sample-tier-name",
-			Backends: []string{"sample-tier-backend-1", "sample-tier-backend-2"},
+			TenantId: "sample-ssp-tenantID",
+			Name:     "sample-ssp-name",
+			Backends: []string{"sample-ssp-backend-1", "sample-ssp-backend-2"},
 		},
 	}
 
-	SampleUpdateTier = []backendModel.Tier{
+	SampleUpdateSsp = []backendModel.Ssp{
 		{
 			Id:       "4769855c-a102-11e7-b772-17b880d2f531",
-			TenantId: "tier-tenant",
-			Name:     "tier-name",
+			TenantId: "ssp-tenant",
+			Name:     "ssp-name",
 			Backends: []string{"Backends"},
 		},
 	}
