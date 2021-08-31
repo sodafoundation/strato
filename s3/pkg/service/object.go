@@ -86,7 +86,7 @@ func (s *s3Service) RestoreObject(ctx context.Context, req *pb.RestoreObjectRequ
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if bucket.Tiers != "" {
+	if bucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 	// incase get backend failed
@@ -277,7 +277,7 @@ func (s *s3Service) PutObject(ctx context.Context, in pb.S3_PutObjectStream) err
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if bucket.Tiers != "" {
+	if bucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 
@@ -480,7 +480,7 @@ func (s *s3Service) GetObject(ctx context.Context, req *pb.GetObjectInput, strea
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if bucket.Tiers != "" {
+	if bucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 
@@ -645,7 +645,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if srcBucket.Tiers != "" {
+	if srcBucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 
@@ -666,7 +666,7 @@ func (s *s3Service) CopyObject(ctx context.Context, in *pb.CopyObjectRequest, ou
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx = ctx
-	if targetBucket.Tiers != "" {
+	if targetBucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 
@@ -830,7 +830,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if srcBucket.Tiers != "" {
+	if srcBucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 
@@ -888,7 +888,7 @@ func (s *s3Service) MoveObject(ctx context.Context, in *pb.MoveObjectRequest, ou
 
 		// if tiers is enabled, list all the backend using admin context
 		bkndCtx := ctx
-		if targetBucket.Tiers != "" {
+		if targetBucket.Ssps != "" {
 			bkndCtx = utils.GetAdminContext()
 		}
 
@@ -1099,7 +1099,7 @@ func (s *s3Service) removeObject(ctx context.Context, bucket *meta.Bucket, obj *
 
 	// if tiers is enabled, list all the backend using admin context
 	bkndCtx := ctx
-	if bucket.Tiers != "" {
+	if bucket.Ssps != "" {
 		bkndCtx = utils.GetAdminContext()
 	}
 	// incase get backend failed
@@ -1202,8 +1202,8 @@ func (s *s3Service) ListObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 			ObjectKey:        obj.ObjectKey,
 		}
 
-		if bucket.Tiers != "" {
-			object.Location = bucket.Tiers
+		if bucket.Ssps != "" {
+			object.Location = bucket.Ssps
 		}
 
 		object.StorageClass, _ = GetNameFromTier(obj.Tier, utils.OSTYPE_OPENSDS)

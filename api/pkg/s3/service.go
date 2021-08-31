@@ -165,39 +165,39 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 	return nil
 }
 
-func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) string {
-	log.Info("Request for GetBackendIdFromTier received", tierName)
+func (s *APIService) GetBackendIdFromSsp(ctx context.Context, sspName string) string {
+	log.Info("Request for GetBackendIdFromTier received", sspName)
 	var response *restful.Response
 	var backendId string
-	res, err := s.backendClient.ListTiers(common.GetAdminContext(), &backend.ListTierRequest{
+	res, err := s.backendClient.ListSsps(common.GetAdminContext(), &backend.ListSspRequest{
 		Limit:  common.MaxPaginationLimit,
 		Offset: common.DefaultPaginationOffset,
-		Filter: map[string]string{"name": tierName},
+		Filter: map[string]string{"name": sspName},
 	})
 
 	if err != nil {
-		log.Error("list tier failed during getting backends from tier")
+		log.Error("list ssp failed during getting backends from ssp")
 		response.WriteError(http.StatusInternalServerError, err)
 		return ""
 	}
-	backendId = res.Tiers[0].Backends[rand.Intn(len(res.Tiers[0].Backends))]
+	backendId = res.Ssps[0].Backends[rand.Intn(len(res.Ssps[0].Backends))]
 
 	return backendId
 }
 
-// this method is basically for getting the backends name from tier
-func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
-	log.Info("The received tier name for getting backend name:", tierName)
+// this method is basically for getting the backends name from ssp
+func (s *APIService) getBackendFromSsp(ctx context.Context, sspName string) string {
+	log.Info("The received ssp name for getting backend name:", sspName)
 	var backendId, backendName string
 	var response *restful.Response
 
-	backendId = s.GetBackendIdFromTier(ctx, tierName)
+	backendId = s.GetBackendIdFromSsp(ctx, sspName)
 
 	adminCtx := common.GetAdminContext()
 	if backendId != "" {
 		backendRep, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
 		if err != nil {
-			log.Error("the selected backends from tier doesn't exists.")
+			log.Error("the selected backends from ssp doesn't exists.")
 			response.WriteError(http.StatusInternalServerError, err)
 			return ""
 		}

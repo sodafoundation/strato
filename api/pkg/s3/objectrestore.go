@@ -70,7 +70,7 @@ func (s *APIService) RestoreObject(request *restful.Request, response *restful.R
 		return
 	}
 
-	// if tier is enabled, get the bucketMeta data to get all the details
+	// if ssp is enabled, get the bucketMeta data to get all the details
 	// like backend, backend type, storageClass etc.
 	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
 	if err != nil {
@@ -79,12 +79,12 @@ func (s *APIService) RestoreObject(request *restful.Request, response *restful.R
 		return
 	}
 
-	if bucketMeta.Tiers != "" {
+	if bucketMeta.Ssps != "" {
 		adminCtx := common.GetAdminContext()
-		backendId := s.GetBackendIdFromTier(adminCtx, bucketMeta.Tiers)
+		backendId := s.GetBackendIdFromSsp(adminCtx, bucketMeta.Ssps)
 		backendMeta, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
 		if err != nil {
-			log.Error("the selected backends from tier doesn't exists.")
+			log.Error("the selected backends from ssp doesn't exists.")
 			response.WriteError(http.StatusInternalServerError, err)
 		}
 		if backendMeta != nil {

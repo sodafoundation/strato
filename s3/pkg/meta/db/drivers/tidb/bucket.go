@@ -41,7 +41,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 	var row *sql.Row
 
 	sqltext := "select bucketname,tenantid,createtime,usages,location,acl,cors,lc,policy,versioning,replication," +
-		"update_time,tiers from buckets where bucketname=?;"
+		"update_time,ssps from buckets where bucketname=?;"
 	row = t.Client.QueryRow(sqltext, bucketName)
 
 	tmp := &Bucket{Bucket: &pb.Bucket{}}
@@ -59,7 +59,7 @@ func (t *TidbClient) GetBucket(ctx context.Context, bucketName string) (bucket *
 		&tmp.Versioning.Status,
 		&replication,
 		&updateTime,
-		&tmp.Tiers,
+		&tmp.Ssps,
 	)
 	if err != nil {
 		err = handleDBError(err)
@@ -147,15 +147,15 @@ func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets
 
 	var rows *sql.Rows
 	sqltext := "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-		"versioning,replication,update_time,tiers from buckets;"
+		"versioning,replication,update_time,ssps from buckets;"
 
 	if location != "" {
 		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-			"versioning,replication,update_time,tiers from buckets where location=?;"
+			"versioning,replication,update_time,ssps from buckets where location=?;"
 		rows, err = t.Client.Query(sqltext, location)
 	} else if !isAdmin {
 		sqltext = "select bucketname,tenantid,userid,createtime,usages,location,deleted,acl,cors,lc,policy," +
-			"versioning,replication,update_time,tiers from buckets where tenantid=?;"
+			"versioning,replication,update_time,ssps from buckets where tenantid=?;"
 		rows, err = t.Client.Query(sqltext, tenantId)
 	} else {
 		rows, err = t.Client.Query(sqltext)
@@ -191,7 +191,7 @@ func (t *TidbClient) GetBuckets(ctx context.Context, query interface{}) (buckets
 			&tmp.Versioning.Status,
 			&replication,
 			&updateTime,
-			&tmp.Tiers)
+			&tmp.Ssps)
 		if err != nil {
 			err = handleDBError(err)
 			return

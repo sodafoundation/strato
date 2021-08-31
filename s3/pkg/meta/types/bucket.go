@@ -69,7 +69,7 @@ func (b *Bucket) String() (s string) {
 	s += "Policy: " + fmt.Sprintf("%+v", b.BucketPolicy) + "\n"
 	s += "Versioning: " + fmt.Sprintf("%+v", b.Versioning) + "\n"
 	s += "Usage: " + humanize.Bytes(uint64(b.Usages)) + "\n"
-	s += "Tiers: " + b.Tiers + "\n"
+	s += "Ssps: " + b.Ssps + "\n"
 	return
 }
 
@@ -115,8 +115,8 @@ func (b Bucket) GetCreateSql() (string, []interface{}) {
 	log.Infof("createTime=%v\n", createTime)
 
 	sql := "insert into buckets(bucketname,tenantid,userid,createtime,usages,location,acl,cors,lc,policy,versioning," +
-		"replication,tiers) values(?,?,?,?,?,?,?,?,?,?,?,?,?);"
+		"replication,ssps) values(?,?,?,?,?,?,?,?,?,?,?,?,?);"
 	args := []interface{}{b.Name, b.TenantId, b.UserId, createTime, b.Usages, b.DefaultLocation, acl, cors, lc,
-		bucket_policy, b.Versioning.Status, replia, b.Tiers}
+		bucket_policy, b.Versioning.Status, replia, b.Ssps}
 	return sql, args
 }

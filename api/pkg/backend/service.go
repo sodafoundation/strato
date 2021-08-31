@@ -180,57 +180,57 @@ func (s *APIService) listBackendDefault(ctx context.Context, request *restful.Re
 }
 
 func (s *APIService) FilterBackendByTier(ctx context.Context, request *restful.Request, response *restful.Response,
-	tier int32) {
-	// Get those backend type which supporte the specific tier.
-	req := s3.GetBackendTypeByTierRequest{Tier: tier}
-	res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
-	req1 := &backend.ListBackendRequest{}
-	resp := &backend.ListBackendResponse{}
-	for _, v := range res.Types {
-		// Get backends with specific backend type.
-		filter := make(map[string]string)
-		filter["type"] = v
-		req1.Filter = filter
-		res1, err := s.backendClient.ListBackend(ctx, req1)
-		if err != nil {
-			log.Errorf("failed to list backends of type[%s]: %v\n", v, err)
-			response.WriteError(http.StatusInternalServerError, err)
-		}
-		if len(res1.Backends) != 0 {
-			resp.Backends = append(resp.Backends, res1.Backends...)
-		}
-	}
-	//TODO: Need to consider pagination
+        tier int32) {
+        // Get those backend type which supporte the specific tier.
+        req := s3.GetBackendTypeByTierRequest{Tier: tier}
+        res, _ := s.s3Client.GetBackendTypeByTier(context.Background(), &req)
+        req1 := &backend.ListBackendRequest{}
+        resp := &backend.ListBackendResponse{}
+        for _, v := range res.Types {
+                // Get backends with specific backend type.
+                filter := make(map[string]string)
+                filter["type"] = v
+                req1.Filter = filter
+                res1, err := s.backendClient.ListBackend(ctx, req1)
+                if err != nil {
+                        log.Errorf("failed to list backends of type[%s]: %v\n", v, err)
+                        response.WriteError(http.StatusInternalServerError, err)
+                }
+                if len(res1.Backends) != 0 {
+                        resp.Backends = append(resp.Backends, res1.Backends...)
+                }
+        }
+        //TODO: Need to consider pagination
 
-	// do not return sensitive information
-	for _, v := range resp.Backends {
-		v.Access = ""
-		v.Security = ""
-	}
+        // do not return sensitive information
+        for _, v := range resp.Backends {
+                v.Access = ""
+                v.Security = ""
+        }
 
-	log.Info("fiterBackendByTier backends successfully.")
-	response.WriteEntity(resp)
+        log.Info("fiterBackendByTier backends successfully.")
+        response.WriteEntity(resp)
 }
 
 func (s *APIService) ListBackend(request *restful.Request, response *restful.Response) {
-	if !policy.Authorize(request, response, "backend:list") {
-		return
-	}
-	log.Info("Received request for backend list.")
+        if !policy.Authorize(request, response, "backend:list") {
+                return
+        }
+        log.Info("Received request for backend list.")
 
-	ctx := common.InitCtxWithAuthInfo(request)
-	para := request.QueryParameter("tier")
-	if para != "" { //List those backends which support the specific tier.
-		tier, err := strconv.Atoi(para)
-		if err != nil {
-			log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
-			response.WriteError(http.StatusBadRequest, errors.New("invalid service plan"))
-			return
-		}
-		s.FilterBackendByTier(ctx, request, response, int32(tier))
-	} else {
-		s.listBackendDefault(ctx, request, response)
-	}
+        ctx := common.InitCtxWithAuthInfo(request)
+        para := request.QueryParameter("tier")
+        if para != "" { //List those backends which support the specific ssp.
+                tier, err := strconv.Atoi(para)
+                if err != nil {
+                        log.Errorf("list backends with tier as filter, but tier[%v] is invalid\n", tier)
+                        response.WriteError(http.StatusBadRequest, errors.New("invalid tier"))
+                        return
+                }
+                s.FilterBackendByTier(ctx, request, response, int32(tier))
+        } else {
+                s.listBackendDefault(ctx, request, response)
+        }
 }
 
 func (s *APIService) CreateBackend(request *restful.Request, response *restful.Response) {
@@ -355,19 +355,19 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 
 	count := len(res.Buckets)
 
-	//checking if backend is associated with any tier:
+	//checking if backend is associated with any ssp:
 	id_array := []string{id}
-	tiersList, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{})
+	sspsList, err := s.backendClient.ListSsps(ctx, &backend.ListSspRequest{})
 	if err != nil {
-		log.Errorf("failed to list tiers: %v\n", err)
+		log.Errorf("failed to list ssps: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	for _, tier := range tiersList.Tiers {
-		res := utils.ResourcesAlreadyExists(tier.Backends, id_array)
+	for _, ssp := range sspsList.Ssps {
+		res := utils.ResourcesAlreadyExists(ssp.Backends, id_array)
 		if len(res) != 0 {
-			errMsg := fmt.Sprintf("failed to delete backend because it is associated with %v SSP", tier.Name)
+			errMsg := fmt.Sprintf("failed to delete backend because it is associated with %v SSP", ssp.Name)
 			log.Error(errMsg)
 			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 			return
@@ -549,21 +549,21 @@ func ValidateTenant(authToken, tenantId string) bool {
 	return false
 }
 
-//tiering functions
-func (s *APIService) CreateTier(request *restful.Request, response *restful.Response) {
+//ssping functions
+func (s *APIService) CreateSsp(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for creating service plan.")
-	if !policy.Authorize(request, response, "tier:create") {
+	if !policy.Authorize(request, response, "ssp:create") {
 		return
 	}
-	tier := &backend.Tier{}
+	ssp := &backend.Ssp{}
 	body := utils.ReadBody(request)
-	err := json.Unmarshal(body, &tier)
+	err := json.Unmarshal(body, &ssp)
 	if err != nil {
 		log.Error("error occurred while decoding body", err)
 		response.WriteError(http.StatusBadRequest, nil)
 		return
 	}
-	if len(tier.Name) == 0 {
+	if len(ssp.Name) == 0 {
 		errMsg := fmt.Sprintf("\"Name\" is required parameter should not be empty")
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
@@ -571,25 +571,25 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	tier.TenantId = request.PathParameter("tenantId")
+	ssp.TenantId = request.PathParameter("tenantId")
 	// ValidationCheck:1:: Name should be unique. Repeated name not allowed
-	tierResult, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{
-		Filter: map[string]string{"name": tier.Name},
+	sspResult, err := s.backendClient.ListSsps(ctx, &backend.ListSspRequest{
+		Filter: map[string]string{"name": ssp.Name},
 	})
 	if err != nil {
 		log.Errorf("failed to list Service plans: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	if len(tierResult.Tiers) > 0 {
-		errMsg := fmt.Sprintf("name: %v is already exists.", tier.Name)
+	if len(sspResult.Ssps) > 0 {
+		errMsg := fmt.Sprintf("name: %v is already exists.", ssp.Name)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
 
 	// ValidationCheck:2:: Check tenants in request should not be repeated
-	dupTenants := utils.IsDuplicateItemExist(tier.Tenants)
+	dupTenants := utils.IsDuplicateItemExist(ssp.Tenants)
 	if len(dupTenants) != 0 {
 		errMsg := fmt.Sprintf("duplicate tenants are found in request: %v", dupTenants)
 		log.Error(errMsg)
@@ -598,7 +598,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	// ValidationCheck:3:: Check backends in request should not be repeated
-	dupBackends := utils.IsDuplicateItemExist(tier.Backends)
+	dupBackends := utils.IsDuplicateItemExist(ssp.Backends)
 	if len(dupBackends) != 0 {
 		errMsg := fmt.Sprintf("duplicate backends are found in request: %v", dupBackends)
 		log.Error(errMsg)
@@ -607,7 +607,7 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	// ValidationCheck:4:: validation of backends whether they are valid or not
-	invalidBackends, err := s.CheckInvalidBackends(ctx, tier.Backends)
+	invalidBackends, err := s.CheckInvalidBackends(ctx, ssp.Backends)
 	if err != nil {
 		log.Errorf("failed to find invalidBackends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -620,27 +620,27 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 		return
 
 	}
-	//Validation of tenantId of tier:
+	//Validation of tenantId of ssp:
 	actx := request.Attribute(c.KContext).(*c.Context)
 	token := actx.AuthToken
-	if !ValidateTenant(token, tier.TenantId) {
-		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tier.TenantId)
+	if !ValidateTenant(token, ssp.TenantId) {
+		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", ssp.TenantId)
 		log.Error(errMsg)
 		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 		return
 	}
-	//validation of tenants to be associated with the tier:
-	for _, tenant := range tier.Tenants {
+	//validation of tenants to be associated with the ssp:
+	for _, tenant := range ssp.Tenants {
 		if !ValidateTenant(token, tenant) {
-			errMsg := fmt.Sprintf("tenant:%v is invalid so cannot be associated to the tier:", tenant)
+			errMsg := fmt.Sprintf("tenant:%v is invalid so cannot be associated to the ssp:", tenant)
 			log.Error(errMsg)
 			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 			return
 		}
 	}
 
-	// Now, tier can be created with backends for tenants
-	res, err := s.backendClient.CreateTier(ctx, &backend.CreateTierRequest{Tier: tier})
+	// Now, ssp can be created with backends for tenants
+	res, err := s.backendClient.CreateSsp(ctx, &backend.CreateSspRequest{Ssp: ssp})
 	if err != nil {
 		log.Errorf("failed to create service plan: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -648,20 +648,20 @@ func (s *APIService) CreateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Created service plan successfully.")
-	response.WriteEntity(res.Tier)
+	response.WriteEntity(res.Ssp)
 
 }
 
 //here backendId can be updated
-func (s *APIService) UpdateTier(request *restful.Request, response *restful.Response) {
+func (s *APIService) UpdateSsp(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for updating service plan: %v\n", request.PathParameter("id"))
-	if !policy.Authorize(request, response, "tier:update") {
+	if !policy.Authorize(request, response, "ssp:update") {
 		return
 	}
 	id := request.PathParameter("id")
-	updateTier := backend.UpdateTier{Id: id}
+	updateSsp := backend.UpdateSsp{Id: id}
 	body := utils.ReadBody(request)
-	err := json.Unmarshal(body, &updateTier)
+	err := json.Unmarshal(body, &updateSsp)
 	if err != nil {
 		log.Error("error occurred while decoding body", err)
 		response.WriteError(http.StatusBadRequest, nil)
@@ -669,7 +669,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	//Validation of tenantId of tier:
+	//Validation of tenantId of ssp:
 	actx := request.Attribute(c.KContext).(*c.Context)
 	token := actx.AuthToken
 	tenantid := request.PathParameter("tenantId")
@@ -680,9 +680,9 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	// ValidationCheck::BackendExists:: Check whether tier id exists or not
+	// ValidationCheck::BackendExists:: Check whether ssp id exists or not
 	log.Info("ValidationCheck::BackendExists:: Check whether service plan id exists or not")
-	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+	res, err := s.backendClient.GetSsp(ctx, &backend.GetSspRequest{Id: id})
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get service plan details for id: %v\n, err: %v\n", id, err)
 		log.Error(errMsg)
@@ -693,7 +693,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:DuplicateBackendsInAddBackends:: Check AddBackends in request should not be repeated
 	log.Info("ValidationCheck:Duplicate Backends In AddBackends")
-	dupBackends := utils.IsDuplicateItemExist(updateTier.AddBackends)
+	dupBackends := utils.IsDuplicateItemExist(updateSsp.AddBackends)
 	if len(dupBackends) > 0 {
 		errMsg := fmt.Sprintf("duplicate backends are found in AddBackends request: %v", dupBackends)
 		log.Error(errMsg)
@@ -703,7 +703,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:DuplicateBackendsInAddBackends:: Check DeleteBackends in request should not be repeated
 	log.Info("ValidationCheck: Duplicate Backends In DeleteBackends")
-	dupBackends = utils.IsDuplicateItemExist(updateTier.DeleteBackends)
+	dupBackends = utils.IsDuplicateItemExist(updateSsp.DeleteBackends)
 	if len(dupBackends) > 0 {
 		errMsg := fmt.Sprintf("duplicate backends are found in DeleteBackends request: %v", dupBackends)
 		log.Error(errMsg)
@@ -713,9 +713,9 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:2:: In the same request, same backend can not be
 	// present in AddBackends and DeleteBackends both
-	log.Info("ValidationCheck::dupItemFoundInDelandAddBackends:: Check whether tier id exists or not")
-	dupItemFoundInDelandAddBackends := utils.CompareDeleteAndAddList(updateTier.AddBackends,
-		updateTier.DeleteBackends)
+	log.Info("ValidationCheck::dupItemFoundInDelandAddBackends:: Check whether ssp id exists or not")
+	dupItemFoundInDelandAddBackends := utils.CompareDeleteAndAddList(updateSsp.AddBackends,
+		updateSsp.DeleteBackends)
 	if len(dupItemFoundInDelandAddBackends) > 0 {
 		errMsg := fmt.Sprintf("some backends found in AddBackends and DeleteBackends"+
 			"in same request, which is not allowed: %v", dupItemFoundInDelandAddBackends)
@@ -727,7 +727,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:DuplicateTenants:: Check tenants in AddTenants request should not be repeated
 	log.Info("ValidationCheck::DuplicateTenants should not allowed in AddTenants")
-	dupTenants := utils.IsDuplicateItemExist(updateTier.AddTenants)
+	dupTenants := utils.IsDuplicateItemExist(updateSsp.AddTenants)
 	if len(dupTenants) > 0 {
 		errMsg := fmt.Sprintf("duplicate tenants are found in AddTenants request: %v", dupTenants)
 		log.Error(errMsg)
@@ -737,7 +737,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:2:: Check tenants in DeleteTenants request should not be repeated
 	log.Info("ValidationCheck::DuplicateTenants should not allowed in DeleteTenants")
-	dupTenants = utils.IsDuplicateItemExist(updateTier.DeleteTenants)
+	dupTenants = utils.IsDuplicateItemExist(updateSsp.DeleteTenants)
 	if len(dupTenants) > 0 {
 		errMsg := fmt.Sprintf("duplicate tenants are found in DeleteTenants request: %v", dupTenants)
 		log.Error(errMsg)
@@ -748,8 +748,8 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	// ValidationCheck:SameBackendsNotAllowedInBoth:: In the same request, same backend can not be
 	// present in AddBackends and DeleteBackends both
 	log.Info("ValidationCheck:Same Tenants should Not Allowed In Both")
-	dupItemFoundInDelandAddTenants := utils.CompareDeleteAndAddList(updateTier.AddTenants,
-		updateTier.DeleteTenants)
+	dupItemFoundInDelandAddTenants := utils.CompareDeleteAndAddList(updateSsp.AddTenants,
+		updateSsp.DeleteTenants)
 	if len(dupItemFoundInDelandAddTenants) > 0 {
 		errMsg := fmt.Sprintf("some backends found in AddBackends and DeleteBackends"+
 			"in same request, which is not allowed: %v", dupItemFoundInDelandAddTenants)
@@ -760,7 +760,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 
 	// ValidationCheck:5:: validation of backends whether they are valid or not
 	log.Info("Check for invalid backends")
-	invalidBackends, err := s.CheckInvalidBackends(ctx, updateTier.AddBackends)
+	invalidBackends, err := s.CheckInvalidBackends(ctx, updateSsp.AddBackends)
 	if err != nil {
 		log.Errorf("failed to find invalidBackends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -775,7 +775,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check whether backends already exists before adding")
-	backendsExist := utils.ResourcesAlreadyExists(res.Tier.Backends, updateTier.AddBackends)
+	backendsExist := utils.ResourcesAlreadyExists(res.Ssp.Backends, updateSsp.AddBackends)
 	if len(backendsExist) > 0 {
 		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in service plan", backendsExist)
 		log.Error(errMsg)
@@ -784,7 +784,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check backends should exists before removing")
-	backendsNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Backends, updateTier.DeleteBackends)
+	backendsNotExist := utils.ResourcesCheckBeforeRemove(res.Ssp.Backends, updateSsp.DeleteBackends)
 	if len(backendsNotExist) > 0 {
 		errMsg := fmt.Sprintf("failed to update service plan because delete backends: %v doesnt exist in service plan", backendsNotExist)
 		log.Error(errMsg)
@@ -793,7 +793,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check whether Tenant already exists before adding")
-	tenantExist := utils.ResourcesAlreadyExists(res.Tier.Tenants, updateTier.AddTenants)
+	tenantExist := utils.ResourcesAlreadyExists(res.Ssp.Tenants, updateSsp.AddTenants)
 	if len(tenantExist) > 0 {
 		errMsg := fmt.Sprintf("some backends in AddBackends request: %v already exists in service plan", tenantExist)
 		log.Error(errMsg)
@@ -801,7 +801,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 	log.Info("Check Tenant should exists before removing")
-	tenantNotExist := utils.ResourcesCheckBeforeRemove(res.Tier.Tenants, updateTier.DeleteTenants)
+	tenantNotExist := utils.ResourcesCheckBeforeRemove(res.Ssp.Tenants, updateSsp.DeleteTenants)
 	if len(tenantNotExist) > 0 {
 		errMsg := fmt.Sprintf("failed to update service plan because delete backends: %v doesnt exist in service plan", tenantNotExist)
 		log.Error(errMsg)
@@ -809,9 +809,9 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 		return
 	}
 	log.Info("Check whether Tenants are valid")
-	for _, tenant := range updateTier.AddTenants {
+	for _, tenant := range updateSsp.AddTenants {
 		if !ValidateTenant(token, tenant) {
-			errMsg := fmt.Sprintf("invalid tenant:%v is present in adding tenants in tier:", tenant)
+			errMsg := fmt.Sprintf("invalid tenant:%v is present in adding tenants in ssp:", tenant)
 			log.Error(errMsg)
 			response.WriteError(http.StatusBadRequest, errors.New(errMsg))
 			return
@@ -819,7 +819,7 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Check Backends have any buckets before removing")
-	for _, backendId := range updateTier.DeleteBackends {
+	for _, backendId := range updateSsp.DeleteBackends {
 		result, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: backendId})
 		if err != nil {
 			log.Errorf("failed to get backend details: %v\n", err)
@@ -842,16 +842,16 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Prepare update list with AddBackends and DeleteBackends")
-	res.Tier.Backends = utils.PrepareUpdateList(res.Tier.Backends, updateTier.AddBackends,
-		updateTier.DeleteBackends)
+	res.Ssp.Backends = utils.PrepareUpdateList(res.Ssp.Backends, updateSsp.AddBackends,
+		updateSsp.DeleteBackends)
 
 	log.Info("Prepare update list with AddTenants and DeleteTenants")
-	res.Tier.Tenants = utils.PrepareUpdateList(res.Tier.Tenants, updateTier.AddTenants,
-		updateTier.DeleteTenants)
+	res.Ssp.Tenants = utils.PrepareUpdateList(res.Ssp.Tenants, updateSsp.AddTenants,
+		updateSsp.DeleteTenants)
 
-	// Now, tier details can be updated
-	updateTierRequest := &backend.UpdateTierRequest{Tier: res.Tier}
-	res1, err := s.backendClient.UpdateTier(ctx, updateTierRequest)
+	// Now, ssp details can be updated
+	updateSspRequest := &backend.UpdateSspRequest{Ssp: res.Ssp}
+	res1, err := s.backendClient.UpdateSsp(ctx, updateSspRequest)
 	if err != nil {
 		log.Errorf("failed to update service plan: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -859,20 +859,20 @@ func (s *APIService) UpdateTier(request *restful.Request, response *restful.Resp
 	}
 
 	log.Info("Update service plan successfully.")
-	response.WriteEntity(res1.Tier)
+	response.WriteEntity(res1.Ssp)
 }
 
-// GetTier if tierId is given then details of tier to be given
-func (s *APIService) GetTier(request *restful.Request, response *restful.Response) {
+// GetSsp if sspId is given then details of ssp to be given
+func (s *APIService) GetSsp(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for service plan details: %s\n", request.PathParameter("id"))
-	if !policy.Authorize(request, response, "tier:get") {
+	if !policy.Authorize(request, response, "ssp:get") {
 		return
 	}
 
 	id := request.PathParameter("id")
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	//Validation of tenantId of tier:
+	//Validation of tenantId of ssp:
 	actx := request.Attribute(c.KContext).(*c.Context)
 	token := actx.AuthToken
 	tenantid := request.PathParameter("tenantId")
@@ -883,7 +883,7 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 		return
 	}
 
-	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+	res, err := s.backendClient.GetSsp(ctx, &backend.GetSspRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get service plan details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -891,13 +891,13 @@ func (s *APIService) GetTier(request *restful.Request, response *restful.Respons
 	}
 
 	log.Info("Get service plan details successfully.")
-	response.WriteEntity(res.Tier)
+	response.WriteEntity(res.Ssp)
 }
 
-//List of tiers is displayed
-func (s *APIService) ListTiers(request *restful.Request, response *restful.Response) {
+//List of ssps is displayed
+func (s *APIService) ListSsps(request *restful.Request, response *restful.Response) {
 	log.Info("Received request for service plan list.")
-	if !policy.Authorize(request, response, "tier:list") {
+	if !policy.Authorize(request, response, "ssp:list") {
 		return
 	}
 	ctx := common.GetAdminContext()
@@ -910,7 +910,7 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 
 	var key string
 	tenantId := request.PathParameter("tenantId")
-	//Validation of tenantId of tier:
+	//Validation of tenantId of ssp:
 	actx := request.Attribute(c.KContext).(*c.Context)
 	token := actx.AuthToken
 	if !ValidateTenant(token, tenantId) {
@@ -926,7 +926,7 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 		key = "tenants"
 	}
 
-	res, err := s.backendClient.ListTiers(ctx, &backend.ListTierRequest{
+	res, err := s.backendClient.ListSsps(ctx, &backend.ListSspRequest{
 		Limit:  limit,
 		Offset: offset,
 		Filter: map[string]string{key: tenantId},
@@ -943,16 +943,16 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 	return
 }
 
-//given tierId need to delete the tier
-func (s *APIService) DeleteTier(request *restful.Request, response *restful.Response) {
+//given sspId need to delete the ssp
+func (s *APIService) DeleteSsp(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("id")
 	log.Infof("Received request for deleting service plan: %s\n", id)
-	if !policy.Authorize(request, response, "tier:delete") {
+	if !policy.Authorize(request, response, "ssp:delete") {
 		return
 	}
 
 	ctx := common.InitCtxWithAuthInfo(request)
-	//Validation of tenantId of tier:
+	//Validation of tenantId of ssp:
 	actx := request.Attribute(c.KContext).(*c.Context)
 	token := actx.AuthToken
 	tenantid := request.PathParameter("tenantId")
@@ -963,20 +963,20 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	res, err := s.backendClient.GetTier(ctx, &backend.GetTierRequest{Id: id})
+	res, err := s.backendClient.GetSsp(ctx, &backend.GetSspRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to get service plan details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	// check whether tier is empty
-	if len(res.Tier.Backends) > 0 {
+	// check whether ssp is empty
+	if len(res.Ssp.Backends) > 0 {
 		log.Errorf("failed to delete service plan because service plan is not empty has backends: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 
-	_, err = s.backendClient.DeleteTier(ctx, &backend.DeleteTierRequest{Id: id})
+	_, err = s.backendClient.DeleteSsp(ctx, &backend.DeleteSspRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to delete service plan: %v\n", err)
 		err1 := errors.New("failed to delete service plan  because service plan  has associated backends")
@@ -987,3 +987,4 @@ func (s *APIService) DeleteTier(request *restful.Request, response *restful.Resp
 	response.WriteHeader(http.StatusOK)
 	return
 }
+

@@ -30,11 +30,11 @@ type Repository interface {
 	UpdateBackend(ctx context.Context, backend *model.Backend) (*model.Backend, error)
 	GetBackend(ctx context.Context, id string) (*model.Backend, error)
 	ListBackend(ctx context.Context, limit, offset int, query interface{}) ([]*model.Backend, error)
-	CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error)
-	DeleteTier(ctx context.Context, id string) error
-	UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error)
-	GetTier(ctx context.Context, id string) (*model.Tier, error)
-	ListTiers(ctx context.Context, limit, offset int, query interface{}) ([]*model.Tier, error)
+	CreateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp, error)
+	DeleteSsp(ctx context.Context, id string) error
+	UpdateSsp(ctx context.Context, ssp *model.Ssp) (*model.Ssp, error)
+	GetSsp(ctx context.Context, id string) (*model.Ssp, error)
+	ListSsps(ctx context.Context, limit, offset int, query interface{}) ([]*model.Ssp, error)
 	Close()
 }
 
@@ -57,3 +57,4 @@ func Init(db *config.Database) {
 func Exit() {
 	Repo.Close()
 }
+

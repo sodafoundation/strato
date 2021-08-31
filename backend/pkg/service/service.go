@@ -270,99 +270,99 @@ func (b *backendService) ListType(ctx context.Context, in *pb.ListTypeRequest, o
 	return nil
 }
 
-func (b *backendService) CreateTier(ctx context.Context, in *pb.CreateTierRequest, out *pb.CreateTierResponse) error {
-	log.Info("Received CreateTier request.")
-	tier := &model.Tier{
-		Name:     in.Tier.Name,
-		TenantId: in.Tier.TenantId,
-		Backends: in.Tier.Backends,
-		Tenants:  in.Tier.Tenants,
+func (b *backendService) CreateSsp(ctx context.Context, in *pb.CreateSspRequest, out *pb.CreateSspResponse) error {
+	log.Info("Received CreateSsp request.")
+	ssp := &model.Ssp{
+		Name:     in.Ssp.Name,
+		TenantId: in.Ssp.TenantId,
+		Backends: in.Ssp.Backends,
+		Tenants:  in.Ssp.Tenants,
 	}
-	res, err := db.Repo.CreateTier(ctx, tier)
+	res, err := db.Repo.CreateSsp(ctx, ssp)
 	if err != nil {
-		log.Errorf("Failed to create tier: %v", err)
+		log.Errorf("Failed to create ssp: %v", err)
 		return err
 	}
-	out.Tier = &pb.Tier{
+	out.Ssp = &pb.Ssp{
 		Id:       res.Id.Hex(),
 		Name:     res.Name,
 		TenantId: res.TenantId,
 		Backends: res.Backends,
-		Tenants:  in.Tier.Tenants,
+		Tenants:  in.Ssp.Tenants,
 	}
-	log.Info("Create tier successfully.")
+	log.Info("Create ssp successfully.")
 	return nil
 }
 
-func (b *backendService) UpdateTier(ctx context.Context, in *pb.UpdateTierRequest, out *pb.UpdateTierResponse) error {
-	log.Info("Received UpdateTier request.")
+func (b *backendService) UpdateSsp(ctx context.Context, in *pb.UpdateSspRequest, out *pb.UpdateSspResponse) error {
+	log.Info("Received UpdateSsp request.")
 
-	res1, err := db.Repo.GetTier(ctx, in.Tier.Id)
+	res1, err := db.Repo.GetSsp(ctx, in.Ssp.Id)
 	if err != nil {
-		log.Errorf("failed to update tier: %v\n", err)
+		log.Errorf("failed to update ssp: %v\n", err)
 		return err
 	}
 
-	tier := &model.Tier{
+	ssp := &model.Ssp{
 		Id:       res1.Id,
 		Name:     res1.Name,
 		TenantId: res1.TenantId,
-		Backends: in.Tier.Backends,
-		Tenants:  in.Tier.Tenants,
+		Backends: in.Ssp.Backends,
+		Tenants:  in.Ssp.Tenants,
 	}
 
-	res, err := db.Repo.UpdateTier(ctx, tier)
+	res, err := db.Repo.UpdateSsp(ctx, ssp)
 	if err != nil {
-		log.Errorf("failed to update tier: %v\n", err)
+		log.Errorf("failed to update ssp: %v\n", err)
 		return err
 	}
 
-	out.Tier = &pb.Tier{
+	out.Ssp = &pb.Ssp{
 		Id:       res.Id.Hex(),
 		Name:     res.Name,
 		TenantId: res.TenantId,
 		Backends: res.Backends,
-		Tenants:  in.Tier.Tenants,
+		Tenants:  in.Ssp.Tenants,
 	}
-	log.Info("Update tier successfully.")
+	log.Info("Update ssp successfully.")
 	return nil
 }
 
-func (b *backendService) GetTier(ctx context.Context, in *pb.GetTierRequest, out *pb.GetTierResponse) error {
-	log.Info("Received GetTier request.")
-	res, err := db.Repo.GetTier(ctx, in.Id)
+func (b *backendService) GetSsp(ctx context.Context, in *pb.GetSspRequest, out *pb.GetSspResponse) error {
+	log.Info("Received GetSsp request.")
+	res, err := db.Repo.GetSsp(ctx, in.Id)
 	if err != nil {
-		log.Errorf("failed to get tier: %v\n", err)
+		log.Errorf("failed to get ssp: %v\n", err)
 		return err
 	}
-	out.Tier = &pb.Tier{
+	out.Ssp = &pb.Ssp{
 		Id:       res.Id.Hex(),
 		Name:     res.Name,
 		TenantId: res.TenantId,
 		Backends: res.Backends,
 		Tenants:  res.Tenants,
 	}
-	log.Info("Get Tier successfully.")
+	log.Info("Get Ssp successfully.")
 	return nil
 
 }
 
-func (b *backendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, out *pb.ListTierResponse) error {
-	log.Info("Received ListTiers request.")
+func (b *backendService) ListSsps(ctx context.Context, in *pb.ListSspRequest, out *pb.ListSspResponse) error {
+	log.Info("Received ListSsps request.")
 	if in.Limit < 0 || in.Offset < 0 {
 		msg := fmt.Sprintf("invalid pagination parameter, limit = %d and offset = %d.", in.Limit, in.Offset)
 		log.Info(msg)
 		return errors.New(msg)
 	}
-	res, err := db.Repo.ListTiers(ctx, int(in.Limit), int(in.Offset), in.Filter)
+	res, err := db.Repo.ListSsps(ctx, int(in.Limit), int(in.Offset), in.Filter)
 	if err != nil {
 		log.Errorf("failed to list backend: %v\n", err)
 		return err
 	}
 
-	var tiers []*pb.Tier
+	var ssps []*pb.Ssp
 	for _, item := range res {
-		tiers = append(tiers, &pb.Tier{
+		ssps = append(ssps, &pb.Ssp{
 			Id:       item.Id.Hex(),
 			Name:     item.Name,
 			TenantId: item.TenantId,
@@ -370,22 +370,23 @@ func (b *backendService) ListTiers(ctx context.Context, in *pb.ListTierRequest, 
 			Tenants:  item.Tenants,
 		})
 	}
-	out.Tiers = tiers
+	out.Ssps = ssps
 	out.Next = in.Offset + int32(len(res))
 
-	log.Infof("List Tiers successfully, #num=%d", len(tiers))
+	log.Infof("List Ssps successfully, #num=%d", len(ssps))
 	return nil
 
 }
 
-func (b *backendService) DeleteTier(ctx context.Context, in *pb.DeleteTierRequest, out *pb.DeleteTierResponse) error {
-	log.Info("Received DeleteTier request.")
-	err := db.Repo.DeleteTier(ctx, in.Id)
+func (b *backendService) DeleteSsp(ctx context.Context, in *pb.DeleteSspRequest, out *pb.DeleteSspResponse) error {
+	log.Info("Received DeleteSsp request.")
+	err := db.Repo.DeleteSsp(ctx, in.Id)
 	if err != nil {
-		log.Errorf("failed to delete tier: %v\n", err)
+		log.Errorf("failed to delete ssp: %v\n", err)
 		return err
 	}
-	log.Info("Delete tier successfully.")
+	log.Info("Delete ssp successfully.")
 	return nil
 
 }
+

@@ -9,11 +9,11 @@ service Backend {
 	rpc UpdateBackend(UpdateBackendRequest) returns (UpdateBackendResponse) {}
 	rpc DeleteBackend(DeleteBackendRequest) returns (DeleteBackendResponse) {}
 	rpc ListType(ListTypeRequest) returns (ListTypeResponse) {}
-	rpc CreateTier(CreateTierRequest) returns (CreateTierResponse) {}
-  	rpc GetTier(GetTierRequest) returns (GetTierResponse) {}
-    	rpc ListTiers(ListTierRequest) returns (ListTierResponse) {}
-    	rpc UpdateTier(UpdateTierRequest) returns (UpdateTierResponse) {}
-    	rpc DeleteTier(DeleteTierRequest) returns (DeleteTierResponse) {}
+	rpc CreateSsp(CreateSspRequest) returns (CreateSspResponse) {}
+  	rpc GetSsp(GetSspRequest) returns (GetSspResponse) {}
+    	rpc ListSsps(ListSspRequest) returns (ListSspResponse) {}
+    	rpc UpdateSsp(UpdateSspRequest) returns (UpdateSspResponse) {}
+    	rpc DeleteSsp(DeleteSspRequest) returns (DeleteSspResponse) {}
 }
 
 message CreateBackendRequest {
@@ -93,23 +93,23 @@ message TypeDetail {
 	string description = 2;
 }
 
-message CreateTierRequest {
-	Tier tier = 1;
+message CreateSspRequest {
+	Ssp ssp = 1;
 }
 
-message CreateTierResponse {
-	Tier tier = 1;
+message CreateSspResponse {
+	Ssp ssp = 1;
 }
 
-message GetTierRequest {
+message GetSspRequest {
 	string id = 1;
 }
 
-message GetTierResponse {
-	Tier tier = 1;
+message GetSspResponse {
+	Ssp ssp = 1;
 }
 
-message ListTierRequest {
+message ListSspRequest {
 	int32 limit = 1;
 	int32 offset = 2;
 	repeated string sortKeys = 3;
@@ -117,27 +117,27 @@ message ListTierRequest {
 	map<string, string> Filter = 5;
 }
 
-message ListTierResponse {
-	repeated Tier tiers = 1;
+message ListSspResponse {
+	repeated Ssp ssps = 1;
 	int32 next = 2;
 }
 
-message UpdateTierRequest {
-	Tier tier = 1;
+message UpdateSspRequest {
+	Ssp ssp = 1;
 }
 
-message UpdateTierResponse {
-	Tier tier = 1;
+message UpdateSspResponse {
+	Ssp ssp = 1;
 }
 
-message DeleteTierRequest {
+message DeleteSspRequest {
 	string id = 1;
 }
 
-message DeleteTierResponse {
+message DeleteSspResponse {
 }
 
-message Tier {
+message Ssp {
 	string id = 1;
     string tenantId = 2;
 	string name = 3;
@@ -145,7 +145,7 @@ message Tier {
 	repeated string tenants = 5;
 }
 
-message UpdateTier {
+message UpdateSsp {
 	string id = 1;
 	repeated string AddBackends = 3;
 	repeated string DeleteBackends = 4;
@@ -153,4 +153,5 @@ message UpdateTier {
 	repeated string DeleteTenants = 6;
 
 }
+
 

@@ -31,10 +31,11 @@ type Backend struct {
 	Security   string        `json:"security,omitempty" bson:"security,omitempty"`
 }
 
-type Tier struct {
+type Ssp struct {
 	Id       bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
 	TenantId string        `json:"tenantId,omitempty" bson:"tenantId,omitempty"`
 	Name     string        `json:"name,omitempty" bson:"name,omitempty"`
 	Backends []string      `json:"type,omitempty" bson:"backends,omitempty"`
 	Tenants  []string      `json:"type,omitempty" bson:"tenants,omitempty"`
 }
+

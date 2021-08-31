@@ -3518,7 +3518,7 @@ type Bucket struct {
 	Usages                   int64                     `protobuf:"varint,16,opt,name=usages,proto3" json:"usages,omitempty"`
 	Tier                     int32                     `protobuf:"varint,17,opt,name=tier,proto3" json:"tier,omitempty"`
 	ReplicationInfo          []*ReplicationInfo        `protobuf:"bytes,18,rep,name=replicationInfo,proto3" json:"replicationInfo,omitempty"`
-	Tiers                    string                    `protobuf:"bytes,19,opt,name=tiers,proto3" json:"tiers,omitempty"`
+	Ssps                     string                     `protobuf:"bytes,19,opt,name=ssps,proto3" json:"ssps,omitempty"`
 }
 
 func (x *Bucket) Reset() {
@@ -3681,7 +3681,7 @@ func (x *Bucket) GetReplicationInfo() []*ReplicationInfo {
 
 func (x *Bucket) GetTiers() string {
 	if x != nil {
-		return x.Tiers
+		return x.Ssps
 	}
 	return ""
 }

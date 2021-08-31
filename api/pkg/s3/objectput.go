@@ -54,7 +54,7 @@ func (s *APIService) ObjectPut(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	if isArchive == "Archive" && bucketMeta.Tiers != "" {
+	if isArchive == "Archive" && bucketMeta.Ssps != "" {
 		adminCtx := common.GetAdminContext()
 		backendMeta, backendErr := s.backendClient.ListBackend(adminCtx, &backend.ListBackendRequest{
 			Offset: 0,
