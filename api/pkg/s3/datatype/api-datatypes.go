@@ -195,7 +195,7 @@ type Bucket struct {
 	LocationConstraint string
 	VersionOpts        VersioningConfiguration
 	SSEOpts            SSEConfiguration
-	TenantId	  string
+	TenantId           string
 }
 
 // added for soda
