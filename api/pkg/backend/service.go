@@ -910,15 +910,16 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 
 	var key string
 	tenantId := request.PathParameter("tenantId")
-	//Validation of tenantId of tier:
-	actx := request.Attribute(c.KContext).(*c.Context)
-	token := actx.AuthToken
-	if !ValidateTenant(token, tenantId) {
-		errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantId)
-		log.Error(errMsg)
-		response.WriteError(http.StatusBadRequest, errors.New(errMsg))
-		return
-	}
+	// TODO: FIX ME
+	// Validation of tenantId of tier:
+	// actx := request.Attribute(c.KContext).(*c.Context)
+	// token := actx.AuthToken
+	// if !ValidateTenant(token, tenantId) {
+	// 	errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantId)
+	//	log.Error(errMsg)
+	//	response.WriteError(http.StatusBadRequest, errors.New(errMsg))
+	//	return
+	// }
 
 	if tenantId == common.DefaultAdminTenantId {
 		key = "tenantId"
