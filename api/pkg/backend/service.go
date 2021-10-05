@@ -911,15 +911,8 @@ func (s *APIService) ListTiers(request *restful.Request, response *restful.Respo
 	var key string
 	tenantId := request.PathParameter("tenantId")
 	// TODO: FIX ME
-	// Validation of tenantId of tier:
-	// actx := request.Attribute(c.KContext).(*c.Context)
-	// token := actx.AuthToken
-	// if !ValidateTenant(token, tenantId) {
-	// 	errMsg := fmt.Sprintf("tenantId:%v in request is invalid:", tenantId)
-	//	log.Error(errMsg)
-	//	response.WriteError(http.StatusBadRequest, errors.New(errMsg))
-	//	return
-	// }
+	// 1. Validate the tenant of user.
+	// 2. Display the SSP for tenanats if any.
 
 	if tenantId == common.DefaultAdminTenantId {
 		key = "tenantId"
