@@ -119,7 +119,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AKSK'
+                $ref: '#/components/schemas/AKSKResponse'
         '401':
           description: Unauthorized. Token not found in header
       requestBody:
@@ -144,6 +144,12 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: successful operation.
+          content:
+            application/array:
+              schema:
+                  $ref: '#/components/schemas/AKSKGetResponse'
         '400':
           description: Bad Request
         '401':
@@ -195,6 +201,12 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: successful operation.
+          content:
+            application/array:
+              schema:
+                  $ref: '#/components/schemas/AKSKGetResponse'
         '400':
           description: Bad Request
         '401':
@@ -1464,19 +1476,17 @@ components:
   schemas:
     AKSK:
       type: object
+      required:
+        - Name
       properties:
-        credential:
-          type: object
-          description: The object containing the project_id and user_id.
-          properties: 
-            access_key:
-              description: The Access Key generated for the user.
-              type: string
-              example: 5ea809d2553b0f000116be32
-            secret_key:
-              description: The Secret Key generated for the user.
-              type: string
-              example: 94b280022d0c4401bcf3b0ea85870519   
+        project_id:
+          description: 'Valid TenantId or ProjectId'
+          type: string
+          example: 94b280022d0c4401bcf3b0ea85870519
+        user_id:
+          description: 'Valid User ID'
+          type: string
+          example: 558057c4256545bd8a307c37464003c9
     Backend:
       type: object
       properties:
@@ -2260,6 +2270,37 @@ components:
           items:
             example: Tenants1, Tenants2
 
+    AKSKResponse:
+      type: object
+      properties:
+        access_key:
+          description: 'Valid TenantId or ProjectId'
+          type: string
+          example: 1Pq7NVTqFh4uR7vy
+        secret_key:
+          description: 'Valid User ID'
+          type: string
+          example: x3Wbktxj4aSudXwAQJG6ExBmqgEMjVlq
+    AKSKGetResponse:
+      type: array
+      items:
+        properties:
+          project_id:
+            description: 'Valid TenantId or ProjectId'
+            type: string
+            example: 94b280022d0c4401bcf3b0ea85870519
+          user_id:
+            description: 'Valid User ID'
+            type: string
+            example: 558057c4256545bd8a307c37464003c9
+          type:
+            description: 'Valid User ID'
+            type: string
+            example: ec2
+          blob:
+            type: array
+            item:
+            $ref: '#/components/schemas/AKSKResponse'
     BaseResponse:
       type: object
       properties:
