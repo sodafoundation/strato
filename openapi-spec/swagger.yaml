@@ -1591,7 +1591,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: aws-s3
         description:
@@ -1602,7 +1602,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: hw-obs
         description:
@@ -1613,7 +1613,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: azure-blob
         description:
@@ -1624,7 +1624,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: ceph-s3
         description:
@@ -1635,7 +1635,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: gcp-s3
         description:
@@ -1646,7 +1646,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: fusionstorage-object
         description:
@@ -1657,7 +1657,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: ibm-cos
         description:
@@ -1668,7 +1668,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: yig
         description:
@@ -1679,7 +1679,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: alibaba-oss
         description:
@@ -1690,7 +1690,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: aws-file
         description:
@@ -1701,7 +1701,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: azure-file
         description:
@@ -1712,7 +1712,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: gcp-file
         description:
@@ -1723,7 +1723,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: aws-block
         description:
@@ -1734,7 +1734,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: hw-file
         description:
@@ -1745,7 +1745,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: hw-block
         description:
@@ -1756,7 +1756,7 @@ components:
       type: object
       properties:
         name:
-          description: The backend type name.
+          description: The backend type.
           type: string
           example: sony-oda
         description:
