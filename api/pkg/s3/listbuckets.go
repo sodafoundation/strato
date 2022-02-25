@@ -30,7 +30,7 @@ import (
 func parseListBuckets(list *s3.ListBucketsResponse) ListBucketsResponse {
 	resp := ListBucketsResponse{}
 
-	log.Infof("Parse ListBuckets: %v", list.Buckets)
+	log.Infof("Parse ListBuckets ....todo some adding messg for testing: %v", list.Buckets)
 	buckets := []Bucket{}
 	for _, value := range list.Buckets {
 		ctime := time.Unix(value.CreateTime, 0).Format(timeFormatAMZ)
