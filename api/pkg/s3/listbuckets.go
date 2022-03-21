@@ -58,6 +58,7 @@ func parseListBuckets(list *s3.ListBucketsResponse) ListBucketsResponse {
 	return resp
 }
 
+// List the all buckets
 func (s *APIService) ListBuckets(request *restful.Request, response *restful.Response) {
 	log.Infof("Received request for all buckets")
 	err := signature.PayloadCheck(request, response)
