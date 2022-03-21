@@ -17,7 +17,7 @@ It provides a backend manager which is S3 compatible to connect with any cloud v
 Currently it provides Object Storage and we are working to support file and block services from the cloud vendors.
 
 This is one of the SODA Core Projects and is maintained by SODA Foundation directly.
-
+The multi cloud project hass been renamed to STRATO
 ## Documentation
 
 [https://docs.sodafoundation.io](https://docs.sodafoundation.io/)
