@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -192,7 +192,7 @@ func GetDefaultConfig() *Config {
 }
 
 func (c *Config) Load(confFile string) {
-	gflag.StringVar(&confFile, "config-file", confFile, "The configuration file of OpenSDS")
+	gflag.StringVar(&confFile, "config-file", confFile, "The configuration file of soda")
 	c.Flag.Parse()
 	initConf(confFile, CONF)
 	c.Flag.AssignValue()

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,17 +23,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/dataflow/pkg/db"
-	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
-	s3error "github.com/opensds/multi-cloud/s3/error"
-	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	"github.com/soda/multi-cloud/api/pkg/utils/constants"
+	"github.com/soda/multi-cloud/dataflow/pkg/db"
+	"github.com/soda/multi-cloud/dataflow/pkg/kafka"
+	. "github.com/soda/multi-cloud/dataflow/pkg/model"
+	. "github.com/soda/multi-cloud/dataflow/pkg/utils"
+	datamover "github.com/soda/multi-cloud/datamover/proto"
+	s3error "github.com/soda/multi-cloud/s3/error"
+	s3utils "github.com/soda/multi-cloud/s3/pkg/utils"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
+	s3 "github.com/soda/multi-cloud/s3/proto"
 
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/metadata"

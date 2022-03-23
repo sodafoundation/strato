@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/opensds/multi-cloud/backend/pkg/db/drivers/mongo"
-	"github.com/opensds/multi-cloud/backend/pkg/model"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/config"
+	"github.com/soda/multi-cloud/backend/pkg/db/drivers/mongo"
+	"github.com/soda/multi-cloud/backend/pkg/model"
+	"github.com/soda/multi-cloud/backend/pkg/utils/config"
 )
 
 type Repository interface {

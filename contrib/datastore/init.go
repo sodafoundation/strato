@@ -15,10 +15,10 @@
 package datastore
 
 import (
-	_ "github.com/opensds/multi-cloud/contrib/datastore/block/aws"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/block/hpc"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/aws"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/azure"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/gcp"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/file/huawei"
+	_ "github.com/soda/multi-cloud/contrib/datastore/block/aws"
+	_ "github.com/soda/multi-cloud/contrib/datastore/block/hpc"
+	_ "github.com/soda/multi-cloud/contrib/datastore/file/aws"
+	_ "github.com/soda/multi-cloud/contrib/datastore/file/azure"
+	_ "github.com/soda/multi-cloud/contrib/datastore/file/gcp"
+	_ "github.com/soda/multi-cloud/contrib/datastore/file/huawei"
 )

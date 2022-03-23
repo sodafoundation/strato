@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
 )
 
 func main() {

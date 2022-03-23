@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/dataflow/pkg/utils"
+	datamover "github.com/soda/multi-cloud/datamover/proto"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 var s3client osdss3.S3Service

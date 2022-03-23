@@ -8,9 +8,9 @@ import (
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	. "github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	. "github.com/soda/multi-cloud/s3/pkg/exception"
+	. "github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 var CollMultipartUploadRecord = "multipartUploadRecords"
@@ -41,7 +41,7 @@ func (ad *adapter) DeleteMultipartUpload(ctx context.Context, record *pb.Multipa
 		return InternalError
 	}
 
-	// objectkey is unique in OpenSDS, uploadid is unique for a specific physical bucket
+	// objectkey is unique in soda, uploadid is unique for a specific physical bucket
 	err = session.DB(DataBaseName).C(CollMultipartUploadRecord).Remove(m)
 	if err != nil && err != mgo.ErrNotFound {
 		log.Errorf("delete multipart upload record[uploadid=%s] from database failed: %v\n", record.UploadId, err)

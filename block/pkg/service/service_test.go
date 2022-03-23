@@ -19,16 +19,16 @@ import (
 	"testing"
 	"time"
 
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/block/pkg/db"
-	"github.com/opensds/multi-cloud/block/pkg/utils"
-	pb "github.com/opensds/multi-cloud/block/proto"
-	_ "github.com/opensds/multi-cloud/contrib/datastore/block/aws"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
-	driverutils "github.com/opensds/multi-cloud/contrib/utils"
-	bkpb "github.com/opensds/multi-cloud/testutils/backend/proto"
-	"github.com/opensds/multi-cloud/testutils/block/collection"
-	mockrepo "github.com/opensds/multi-cloud/testutils/block/db/testing"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/block/pkg/db"
+	"github.com/soda/multi-cloud/block/pkg/utils"
+	pb "github.com/soda/multi-cloud/block/proto"
+	_ "github.com/soda/multi-cloud/contrib/datastore/block/aws"
+	"github.com/soda/multi-cloud/contrib/datastore/block/driver"
+	driverutils "github.com/soda/multi-cloud/contrib/utils"
+	bkpb "github.com/soda/multi-cloud/testutils/backend/proto"
+	"github.com/soda/multi-cloud/testutils/block/collection"
+	mockrepo "github.com/soda/multi-cloud/testutils/block/db/testing"
 )
 
 func TestGetVolume(t *testing.T) {

@@ -17,7 +17,7 @@ package driver
 import (
 	"context"
 
-	pb "github.com/opensds/multi-cloud/file/proto"
+	pb "github.com/soda/multi-cloud/file/proto"
 )
 
 // define the fileshare driver interface.

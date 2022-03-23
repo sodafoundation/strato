@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	s3error "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	c "github.com/soda/multi-cloud/api/pkg/context"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials"
+	"github.com/soda/multi-cloud/api/pkg/s3/datatype"
+	s3error "github.com/soda/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
+	s3 "github.com/soda/multi-cloud/s3/proto"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"

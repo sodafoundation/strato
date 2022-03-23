@@ -22,13 +22,13 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/stretchr/testify/mock"
 
-	bkendpb "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/file/pkg/db"
-	pb "github.com/opensds/multi-cloud/file/proto"
-	bksvc "github.com/opensds/multi-cloud/testutils/backend/proto"
-	sdtest "github.com/opensds/multi-cloud/testutils/contrib/datastore/drivers"
-	"github.com/opensds/multi-cloud/testutils/file/collection"
-	dbtest "github.com/opensds/multi-cloud/testutils/file/db/testing"
+	bkendpb "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/file/pkg/db"
+	pb "github.com/soda/multi-cloud/file/proto"
+	bksvc "github.com/soda/multi-cloud/testutils/backend/proto"
+	sdtest "github.com/soda/multi-cloud/testutils/contrib/datastore/drivers"
+	"github.com/soda/multi-cloud/testutils/file/collection"
+	dbtest "github.com/soda/multi-cloud/testutils/file/db/testing"
 )
 
 //====================Mock methods of type (_m *DBAdapter)=============================

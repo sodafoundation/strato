@@ -1,4 +1,4 @@
-// Copyright 2021 The OpenSDS Authors.
+// Copyright 2021 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 
-	aksk "github.com/opensds/multi-cloud/aksk/proto"
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	"github.com/opensds/multi-cloud/api/pkg/utils"
+	aksk "github.com/soda/multi-cloud/aksk/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	c "github.com/soda/multi-cloud/api/pkg/context"
+	"github.com/soda/multi-cloud/api/pkg/policy"
+	"github.com/soda/multi-cloud/api/pkg/utils"
 )
 
 const (

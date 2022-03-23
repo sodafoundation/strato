@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package s3
 import (
 	"github.com/emicklei/go-restful"
 
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature"
 )
 
 func (s *APIService) RouteBucketHead(request *restful.Request, response *restful.Response) {

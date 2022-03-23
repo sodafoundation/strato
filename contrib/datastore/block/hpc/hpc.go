@@ -20,9 +20,9 @@ import (
 	"context"
 	"errors"
 
-	block "github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/common"
-	"github.com/opensds/multi-cloud/contrib/utils"
+	block "github.com/soda/multi-cloud/block/proto"
+	"github.com/soda/multi-cloud/contrib/datastore/block/common"
+	"github.com/soda/multi-cloud/contrib/utils"
 
 	evs "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/evs/v2"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/evs/v2/model"

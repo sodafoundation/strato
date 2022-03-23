@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/opensds/multi-cloud/file/pkg/model"
+	"github.com/soda/multi-cloud/file/pkg/model"
 
-	"github.com/opensds/multi-cloud/file/pkg/db/drivers/mongo"
-	"github.com/opensds/multi-cloud/file/pkg/utils/config"
+	"github.com/soda/multi-cloud/file/pkg/db/drivers/mongo"
+	"github.com/soda/multi-cloud/file/pkg/utils/config"
 )
 
 // DbAdapter is a global variable that controls database module.

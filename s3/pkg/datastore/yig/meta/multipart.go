@@ -1,7 +1,7 @@
 package meta
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/types"
 )
 
 func (m *Meta) ListParts(uploadId uint64) ([]*types.PartInfo, error) {

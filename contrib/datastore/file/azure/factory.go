@@ -17,10 +17,10 @@ package azure
 import (
 	"github.com/micro/go-micro/v2/util/log"
 
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/file/driver"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	"github.com/soda/multi-cloud/contrib/datastore/file/driver"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
 )
 
 type AzureFSDriverFactory struct {

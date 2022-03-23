@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
+	. "github.com/soda/multi-cloud/datamover/pkg/utils"
 )
 
 //Sony-ODA only support standard(Tier-1)

@@ -7,7 +7,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/micro/go-micro/v2/util/log"
 
-	"github.com/opensds/multi-cloud/s3/pkg/messagebus/types"
+	"github.com/soda/multi-cloud/s3/pkg/messagebus/types"
 )
 
 type Kafka struct {

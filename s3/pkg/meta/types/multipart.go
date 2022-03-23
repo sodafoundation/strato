@@ -10,8 +10,8 @@ import (
 
 	"github.com/xxtea/xxtea-go/xxtea"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/s3/datatype"
+	s3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 type Part struct {

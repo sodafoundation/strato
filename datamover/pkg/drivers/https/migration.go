@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/datamover/pkg/db"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
-	s3utils "github.com/opensds/multi-cloud/s3/pkg/utils"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	flowtype "github.com/soda/multi-cloud/dataflow/pkg/model"
+	"github.com/soda/multi-cloud/datamover/pkg/db"
+	. "github.com/soda/multi-cloud/datamover/pkg/utils"
+	pb "github.com/soda/multi-cloud/datamover/proto"
+	s3utils "github.com/soda/multi-cloud/s3/pkg/utils"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 var simuRoutines = 10

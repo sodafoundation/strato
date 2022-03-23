@@ -5,8 +5,8 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	_ "github.com/opensds/multi-cloud/s3/pkg/datastore"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
+	_ "github.com/soda/multi-cloud/s3/pkg/datastore"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/driver"
 )
 
 func Test(t *testing.T) { TestingT(t) }

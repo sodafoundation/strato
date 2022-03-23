@@ -10,11 +10,11 @@ import (
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/s3/pkg/model"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	"github.com/soda/multi-cloud/s3/pkg/model"
+	pb "github.com/soda/multi-cloud/s3/proto"
 
-	. "github.com/opensds/multi-cloud/s3/error"
+	. "github.com/soda/multi-cloud/s3/error"
 )
 
 func (s *APIService) CompleteMultipartUpload(request *restful.Request, response *restful.Response) {

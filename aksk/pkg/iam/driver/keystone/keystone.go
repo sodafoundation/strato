@@ -27,9 +27,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/aksk/pkg/model"
-	"github.com/opensds/multi-cloud/aksk/pkg/utils"
-	pb "github.com/opensds/multi-cloud/aksk/proto"
+	"github.com/soda/multi-cloud/aksk/pkg/model"
+	"github.com/soda/multi-cloud/aksk/pkg/utils"
+	pb "github.com/soda/multi-cloud/aksk/proto"
 )
 
 const (

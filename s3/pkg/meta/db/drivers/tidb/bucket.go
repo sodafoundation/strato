@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/s3/error"
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	. "github.com/soda/multi-cloud/s3/error"
+	. "github.com/soda/multi-cloud/s3/pkg/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/meta/util"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 const TimeDur = 5000 // milisecond

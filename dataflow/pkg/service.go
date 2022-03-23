@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,15 +24,15 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/dataflow/pkg/db"
-	"github.com/opensds/multi-cloud/dataflow/pkg/job"
-	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
-	"github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/dataflow/pkg/plan"
-	"github.com/opensds/multi-cloud/dataflow/pkg/policy"
-	"github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/utils"
-	pb "github.com/opensds/multi-cloud/dataflow/proto"
+	"github.com/soda/multi-cloud/dataflow/pkg/db"
+	"github.com/soda/multi-cloud/dataflow/pkg/job"
+	"github.com/soda/multi-cloud/dataflow/pkg/kafka"
+	"github.com/soda/multi-cloud/dataflow/pkg/model"
+	"github.com/soda/multi-cloud/dataflow/pkg/plan"
+	"github.com/soda/multi-cloud/dataflow/pkg/policy"
+	"github.com/soda/multi-cloud/dataflow/pkg/utils"
+	. "github.com/soda/multi-cloud/dataflow/pkg/utils"
+	pb "github.com/soda/multi-cloud/dataflow/proto"
 )
 
 type dataflowService struct{}
@@ -197,7 +197,7 @@ func (b *dataflowService) UpdatePolicy(ctx context.Context, in *pb.UpdatePolicyR
 
 func fillRspConnector(out *pb.Connector, in *model.Connector) {
 	switch in.StorType {
-	case model.STOR_TYPE_OPENSDS:
+	case model.STOR_TYPE_soda:
 		out.BucketName = in.BucketName
 	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,
 		model.STOR_TYPE_AZURE_BLOB, model.STOR_TYPE_CEPH_S3, model.STOR_TYPE_GCP_S3, model.STOR_TYPE_ALIBABA_OSS, model.STOR_TYPE_SONY_ODA:
@@ -303,7 +303,7 @@ func (b *dataflowService) ListPlan(ctx context.Context, in *pb.ListPlanRequest, 
 
 func fillReqConnector(out *model.Connector, in *pb.Connector) error {
 	switch in.StorType {
-	case model.STOR_TYPE_OPENSDS:
+	case model.STOR_TYPE_soda:
 		out.BucketName = in.BucketName
 		return nil
 	case model.STOR_TYPE_AWS_S3, model.STOR_TYPE_HW_OBS, model.STOR_TYPE_HW_FUSIONSTORAGE, model.STOR_TYPE_HW_FUSIONCLOUD,

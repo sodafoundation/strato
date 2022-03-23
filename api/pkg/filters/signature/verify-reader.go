@@ -23,8 +23,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
-	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials"
+	. "github.com/soda/multi-cloud/s3/error"
 )
 
 // SignVerifyReader represents an io.Reader compatible interface which

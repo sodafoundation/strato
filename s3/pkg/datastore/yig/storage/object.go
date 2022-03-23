@@ -12,10 +12,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/opensds/multi-cloud/s3/error"
-	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	. "github.com/soda/multi-cloud/s3/error"
+	dscommon "github.com/soda/multi-cloud/s3/pkg/datastore/common"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/types"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 var latestQueryTime [2]time.Time // 0 is for SMALL_FILE_POOLNAME, 1 is for BIG_FILE_POOLNAME

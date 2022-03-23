@@ -20,9 +20,9 @@ import (
 
 	"github.com/huaweicloud/golangsdk"
 
-	"github.com/opensds/multi-cloud/contrib/datastore/file/huawei/sfs"
+	"github.com/soda/multi-cloud/contrib/datastore/file/huawei/sfs"
 
-	pb "github.com/opensds/multi-cloud/file/proto"
+	pb "github.com/soda/multi-cloud/file/proto"
 )
 
 type HwFSAdapter struct {

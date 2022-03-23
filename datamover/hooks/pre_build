@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The OpenSDS Authors.
+# Copyright 2019 The soda Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
 echo 'export GOPATH=$HOME/gopath' >> /etc/profile
 source /etc/profile
 cd $HOME
-mkdir -p gopath/src/github.com/opensds/multi-cloud
-cd gopath/src/github.com/opensds/multi-cloud
+mkdir -p gopath/src/github.com/soda/multi-cloud
+cd gopath/src/github.com/soda/multi-cloud
 cp -r ${BASE_DIR}/* .
 make docker
 cp datamover/datamover ${BASE_DIR}/datamover

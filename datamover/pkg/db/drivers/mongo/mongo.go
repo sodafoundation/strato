@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
 
-	backend "github.com/opensds/multi-cloud/backend/pkg/model"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
+	backend "github.com/soda/multi-cloud/backend/pkg/model"
+	. "github.com/soda/multi-cloud/dataflow/pkg/model"
 )
 
 var adap = &adapter{}

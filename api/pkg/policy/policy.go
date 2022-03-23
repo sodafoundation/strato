@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License. You may obtain
@@ -25,10 +25,10 @@ import (
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/model"
-	"github.com/opensds/multi-cloud/api/pkg/utils"
-	"github.com/opensds/multi-cloud/api/pkg/utils/constants"
+	"github.com/soda/multi-cloud/api/pkg/context"
+	"github.com/soda/multi-cloud/api/pkg/model"
+	"github.com/soda/multi-cloud/api/pkg/utils"
+	"github.com/soda/multi-cloud/api/pkg/utils/constants"
 )
 
 var enforcer *Enforcer

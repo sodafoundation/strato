@@ -17,8 +17,8 @@ package aws
 import (
 	"context"
 
-	block "github.com/opensds/multi-cloud/block/proto"
-	"github.com/opensds/multi-cloud/contrib/utils"
+	block "github.com/soda/multi-cloud/block/proto"
+	"github.com/soda/multi-cloud/contrib/utils"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"

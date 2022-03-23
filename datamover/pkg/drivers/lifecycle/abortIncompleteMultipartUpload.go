@@ -8,9 +8,9 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	datamover "github.com/soda/multi-cloud/datamover/proto"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 func doAbortUpload(acReq *datamover.LifecycleActionRequest) error {

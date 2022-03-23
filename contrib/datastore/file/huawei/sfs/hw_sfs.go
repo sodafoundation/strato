@@ -22,9 +22,9 @@ import (
 	"github.com/huaweicloud/golangsdk/openstack/sfs/v2/shares"
 	"github.com/micro/go-micro/v2/util/log"
 
-	"github.com/opensds/multi-cloud/contrib/utils"
+	"github.com/soda/multi-cloud/contrib/utils"
 
-	pb "github.com/opensds/multi-cloud/file/proto"
+	pb "github.com/soda/multi-cloud/file/proto"
 )
 
 type HwSfsAdapter struct {

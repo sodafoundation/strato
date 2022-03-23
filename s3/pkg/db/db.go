@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/opensds/multi-cloud/s3/pkg/db/drivers/mongo"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	. "github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/s3/pkg/db/drivers/mongo"
+	. "github.com/soda/multi-cloud/s3/pkg/exception"
+	. "github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 // DbAdapter is a global variable that controls database module.

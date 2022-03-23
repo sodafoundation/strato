@@ -1,4 +1,4 @@
-module github.com/opensds/multi-cloud
+module github.com/soda/multi-cloud
 
 go 1.13
 

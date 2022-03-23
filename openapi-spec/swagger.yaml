@@ -25,7 +25,7 @@ openapi: 3.0.0
 servers:
   - description: SwaggerHub API Auto Mocking
     url: 'https://virtserver.swaggerhub.com/open83/multi-cloud/1.0.0'
-  - url: 'http://virtserver.swaggerhub.com/opensds.io/OpenSDS-Multi-Cloud/1.0.0'
+  - url: 'http://virtserver.swaggerhub.com/soda.io/soda-Multi-Cloud/1.0.0'
 info:
   description: |
     SODA Multi-cloud API to manage multi-cloud backend storages.
@@ -36,7 +36,7 @@ info:
   termsOfService: '://www.linuxfoundation.org/terms'
   contact:
     name: SODA Support
-    url: 'https://opensds.slack.com'
+    url: 'https://soda.slack.com'
     email: support@sodafoundation.io
   license:
     name: Apache 2.0
@@ -1988,12 +1988,12 @@ components:
           type: string
           description: >-
             The name of bucket which is created in SODA Multi-Cloud. When the type of
-            connector is opensds-obj, this parameter should be provided.
+            connector is soda-obj, this parameter should be provided.
           example: bucket001
     ConnType:
       type: string
       description: Connector type.
-      example: opensds-obj
+      example: soda-obj
       enum: *CLOUD_BACKENDS
     Plan:
       type: object

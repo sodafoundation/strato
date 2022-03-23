@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import (
 	creds "github.com/gophercloud/gophercloud/openstack/identity/v3/credentials"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
-	"github.com/opensds/multi-cloud/api/pkg/model"
+	"github.com/soda/multi-cloud/api/pkg/filters/auth"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials"
+	"github.com/soda/multi-cloud/api/pkg/model"
 )
 
 // ProviderName is the name of the credentials provider.

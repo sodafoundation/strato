@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
-	_ "github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/db"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/storage"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/driver"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/config"
+	_ "github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/db"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/storage"
 )
 
 type YigDriverFactory struct {

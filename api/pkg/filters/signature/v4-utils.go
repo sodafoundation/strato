@@ -27,7 +27,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	. "github.com/opensds/multi-cloud/s3/error"
+	. "github.com/soda/multi-cloud/s3/error"
 )
 
 // http Header "x-amz-content-sha256" == "UNSIGNED-PAYLOAD" indicates that the

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package s3
 import (
 	"strings"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	s3error "github.com/opensds/multi-cloud/s3/error"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	s3error "github.com/soda/multi-cloud/s3/error"
+	s3 "github.com/soda/multi-cloud/s3/proto"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"

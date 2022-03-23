@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/xxtea/xxtea-go/xxtea"
 
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	. "github.com/soda/multi-cloud/s3/pkg/meta/types"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 func (t *TidbClient) GetObject(ctx context.Context, bucketName, objectName, version string) (object *Object, err error) {
@@ -118,7 +118,7 @@ func (t *TidbClient) PutObject(ctx context.Context, object *Object, tx interface
 	sqlTx, _ = tx.(*sql.Tx)
 	sql, args := object.GetCreateSql()
 	_, err = sqlTx.Exec(sql, args...)
-	// TODO: multi-part handle, see issue https://github.com/opensds/multi-cloud/issues/690
+	// TODO: multi-part handle, see issue https://github.com/soda/multi-cloud/issues/690
 
 	return err
 }

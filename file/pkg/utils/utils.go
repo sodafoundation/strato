@@ -21,14 +21,14 @@ import (
 	"strconv"
 	"strings"
 
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/file/pkg/model"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/file/pkg/model"
 
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 	log "github.com/sirupsen/logrus"
 
-	driverutils "github.com/opensds/multi-cloud/contrib/utils"
-	pb "github.com/opensds/multi-cloud/file/proto"
+	driverutils "github.com/soda/multi-cloud/contrib/utils"
+	pb "github.com/soda/multi-cloud/file/proto"
 )
 
 const (

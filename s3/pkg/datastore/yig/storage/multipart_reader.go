@@ -5,8 +5,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	s3err "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
+	s3err "github.com/soda/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/types"
 )
 
 type MultipartReader struct {

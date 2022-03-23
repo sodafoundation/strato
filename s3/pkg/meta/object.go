@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	tidbclient "github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/redis"
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	. "github.com/soda/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
+	tidbclient "github.com/soda/multi-cloud/s3/pkg/meta/db/drivers/tidb"
+	"github.com/soda/multi-cloud/s3/pkg/meta/redis"
+	. "github.com/soda/multi-cloud/s3/pkg/meta/types"
 )
 
 const (
@@ -111,7 +111,7 @@ func (m *Meta) PutObject(ctx context.Context, object, deleteObj *Object, multipa
 	// TODO: usage need to be updated for charging, and it depends on redis, and the mechanism is:
 	// 1. Update usage in redis when each put happens.
 	// 2. Update usage in database periodically based on redis.
-	// see https://github.com/opensds/multi-cloud/issues/698 for redis related issue.
+	// see https://github.com/soda/multi-cloud/issues/698 for redis related issue.
 
 	err = m.Db.CommitTrans(tx)
 	return nil
@@ -138,7 +138,7 @@ func (m *Meta) DeleteObject(ctx context.Context, object *Object) error {
 	// TODO: usage need to be updated for charging, it depends on redis, and the mechanism is:
 	// 1. Update usage in redis when each delete happens.
 	// 2. Update usage in database periodically based on redis.
-	// see https://github.com/opensds/multi-cloud/issues/698 for redis related issue.
+	// see https://github.com/soda/multi-cloud/issues/698 for redis related issue.
 
 	err = m.Db.CommitTrans(tx)
 

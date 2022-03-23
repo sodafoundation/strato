@@ -1,7 +1,7 @@
 package driver
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/config"
 )
 
 //DB Driver Interface

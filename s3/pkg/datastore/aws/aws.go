@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,13 +36,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	. "github.com/opensds/multi-cloud/s3/error"
-	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
-	"github.com/opensds/multi-cloud/s3/pkg/model"
-	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
+	. "github.com/soda/multi-cloud/s3/error"
+	dscommon "github.com/soda/multi-cloud/s3/pkg/datastore/common"
+	"github.com/soda/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/soda/multi-cloud/s3/pkg/service"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 const sampleBucket string = "sample"

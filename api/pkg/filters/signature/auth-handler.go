@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /*
- * Modifications copyright (C) 2020 The OpenSDS Authors.
+ * Modifications copyright (C) 2020 The soda Authors.
  */
 
 package signature
@@ -25,8 +25,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
-	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials"
+	. "github.com/soda/multi-cloud/s3/error"
 )
 
 const XAMZContentSha256 = "X-Amz-Content-Sha256"

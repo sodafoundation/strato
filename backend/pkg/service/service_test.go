@@ -21,12 +21,12 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/opensds/multi-cloud/backend/pkg/db"
-	"github.com/opensds/multi-cloud/backend/pkg/model"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	pb "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/testutils/backend/collection"
-	mockrepo "github.com/opensds/multi-cloud/testutils/backend/db/testing"
+	"github.com/soda/multi-cloud/backend/pkg/db"
+	"github.com/soda/multi-cloud/backend/pkg/model"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	pb "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/testutils/backend/collection"
+	mockrepo "github.com/soda/multi-cloud/testutils/backend/db/testing"
 )
 
 type MockBackendService struct {

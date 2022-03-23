@@ -20,11 +20,11 @@ import (
 	"github.com/micro/go-micro/v2"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/aksk/pkg/iam"
-	handler "github.com/opensds/multi-cloud/aksk/pkg/service"
-	"github.com/opensds/multi-cloud/aksk/pkg/utils/config"
-	pb "github.com/opensds/multi-cloud/aksk/proto"
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	"github.com/soda/multi-cloud/aksk/pkg/iam"
+	handler "github.com/soda/multi-cloud/aksk/pkg/service"
+	"github.com/soda/multi-cloud/aksk/pkg/utils/config"
+	pb "github.com/soda/multi-cloud/aksk/proto"
+	"github.com/soda/multi-cloud/api/pkg/utils/obs"
 )
 
 func main() {

@@ -20,15 +20,15 @@ import (
 
 	"github.com/micro/go-micro/v2"
 
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	"github.com/opensds/multi-cloud/block/pkg/db"
-	"github.com/opensds/multi-cloud/block/pkg/utils/config"
-	_ "github.com/opensds/multi-cloud/contrib/datastore"
+	"github.com/soda/multi-cloud/api/pkg/utils/obs"
+	"github.com/soda/multi-cloud/block/pkg/db"
+	"github.com/soda/multi-cloud/block/pkg/utils/config"
+	_ "github.com/soda/multi-cloud/contrib/datastore"
 
 	log "github.com/sirupsen/logrus"
 
-	handler "github.com/opensds/multi-cloud/block/pkg/service"
-	pb "github.com/opensds/multi-cloud/block/proto"
+	handler "github.com/soda/multi-cloud/block/pkg/service"
+	pb "github.com/soda/multi-cloud/block/proto"
 )
 
 const (

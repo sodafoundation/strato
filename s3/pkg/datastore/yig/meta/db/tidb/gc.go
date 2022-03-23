@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
-	mtypes "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/types"
+	mtypes "github.com/soda/multi-cloud/s3/pkg/meta/types"
 )
 
 func (t *Tidb) PutPartsInGc(parts []*types.PartInfo) (err error) {

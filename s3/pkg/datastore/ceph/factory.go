@@ -3,9 +3,9 @@ package ceph
 import (
 	"github.com/webrtcn/s3client"
 
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/driver"
 )
 
 type CephS3DriverFactory struct {

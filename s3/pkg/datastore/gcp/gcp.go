@@ -34,13 +34,13 @@ import (
 	"github.com/webrtcn/s3client"
 	. "github.com/webrtcn/s3client"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	. "github.com/opensds/multi-cloud/s3/error"
-	dscommon "github.com/opensds/multi-cloud/s3/pkg/datastore/common"
-	"github.com/opensds/multi-cloud/s3/pkg/model"
-	osdss3 "github.com/opensds/multi-cloud/s3/pkg/service"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
+	. "github.com/soda/multi-cloud/s3/error"
+	dscommon "github.com/soda/multi-cloud/s3/pkg/datastore/common"
+	"github.com/soda/multi-cloud/s3/pkg/model"
+	osdss3 "github.com/soda/multi-cloud/s3/pkg/service"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 type GcsAdapter struct {

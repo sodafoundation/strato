@@ -3,7 +3,7 @@ package datatype
 import (
 	"time"
 
-	s3error "github.com/opensds/multi-cloud/s3/error"
+	s3error "github.com/soda/multi-cloud/s3/error"
 )
 
 const (
