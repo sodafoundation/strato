@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
@@ -118,9 +119,15 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
+
 	if err != nil {
-		log.Errorf("failed to get backend details: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		log.Errorf("failed to get backend details: %v %s\n", err, err.Error())
+		if strings.Contains(err.Error(), "invalid input to ObjectIdHex") {
+			errMsg := fmt.Sprintf("Invalid backend id: %s", id)
+			response.WriteError(http.StatusNotFound, errors.New(errMsg))
+		} else {
+			response.WriteError(http.StatusInternalServerError, err)
+		}
 		return
 	}
 
@@ -322,8 +329,13 @@ func (s *APIService) UpdateBackend(request *restful.Request, response *restful.R
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.backendClient.UpdateBackend(ctx, &updateBackendRequest)
 	if err != nil {
-		log.Errorf("failed to update backend: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		log.Errorf("failed to get backend details: %v %s\n", err, err.Error())
+		if strings.Contains(err.Error(), "invalid input to ObjectIdHex") {
+			errMsg := fmt.Sprintf("Invalid backend id: %s", request.PathParameter("id"))
+			response.WriteError(http.StatusNotFound, errors.New(errMsg))
+		} else {
+			response.WriteError(http.StatusInternalServerError, err)
+		}
 		return
 	}
 
@@ -341,8 +353,13 @@ func (s *APIService) DeleteBackend(request *restful.Request, response *restful.R
 	ctx := common.InitCtxWithAuthInfo(request)
 	result, err := s.backendClient.GetBackend(ctx, &backend.GetBackendRequest{Id: id})
 	if err != nil {
-		log.Errorf("failed to get backend details: %v\n", err)
-		response.WriteError(http.StatusInternalServerError, err)
+		log.Errorf("failed to get backend details: %v %s\n", err, err.Error())
+		if strings.Contains(err.Error(), "invalid input to ObjectIdHex") {
+			errMsg := fmt.Sprintf("Invalid backend id: %s", request.PathParameter("id"))
+			response.WriteError(http.StatusNotFound, errors.New(errMsg))
+		} else {
+			response.WriteError(http.StatusInternalServerError, err)
+		}
 		return
 	}
 	backendname := result.Backend.Name
