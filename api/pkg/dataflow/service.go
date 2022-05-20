@@ -16,9 +16,12 @@ package dataflow
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	c "github.com/opensds/multi-cloud/api/pkg/context"
@@ -42,6 +45,7 @@ const (
 	backendService_K8S     = "soda.multicloud.v1.backend"
 	s3Service_K8S          = "soda.multicloud.v1.s3"
 	dataflowService_K8S    = "soda.multicloud.v1.dataflow"
+	jobNotExist            = "job not exist"
 )
 
 type APIService struct {
@@ -420,6 +424,11 @@ func (s *APIService) GetJob(request *restful.Request, response *restful.Response
 	ctx := common.InitCtxWithAuthInfo(request)
 	res, err := s.dataflowClient.GetJob(ctx, &dataflow.GetJobRequest{Id: id})
 	if err != nil {
+		if strings.Contains(err.Error(), jobNotExist) || strings.Contains(err.Error(), "invalid input to ObjectIdHex") {
+			msg := fmt.Sprintf("Job Id-%s does not exist in system", id)
+			response.WriteError(http.StatusNotFound, errors.New(msg))
+			return
+		}
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
