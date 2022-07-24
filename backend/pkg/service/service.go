@@ -35,6 +35,7 @@ func NewBackendService() pb.BackendHandler {
 
 func (b *backendService) CreateBackend(ctx context.Context, in *pb.CreateBackendRequest, out *pb.CreateBackendResponse) error {
 	log.Info("Received CreateBackend request.")
+	log.Info("This is just for testing... Do not merge")
 	backend := &model.Backend{
 		Name:       in.Backend.Name,
 		TenantId:   in.Backend.TenantId,
