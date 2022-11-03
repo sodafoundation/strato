@@ -17,10 +17,9 @@ var CollMultipartUploadRecord = "multipartUploadRecords"
 
 func (ad *adapter) AddMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error {
 	log.Infof("Add multipart upload: %+v\n", *record)
-	session := ad.s.Copy()
-	defer session.Close()
+	session := ad.session
 
-	err := session.DB(DataBaseName).C(CollMultipartUploadRecord).Insert(record)
+	_, err := session.Database(DataBaseName).Collection(CollMultipartUploadRecord).InsertOne(ctx, record)
 	if err != nil {
 		log.Errorf("add multipart upload record[uploadid=%s] to database failed: %v\n", record.UploadId, err)
 		return DBError
@@ -32,8 +31,7 @@ func (ad *adapter) AddMultipartUpload(ctx context.Context, record *pb.MultipartU
 
 func (ad *adapter) DeleteMultipartUpload(ctx context.Context, record *pb.MultipartUploadRecord) S3Error {
 	log.Infof("Delete multipart upload: %+v\n", *record)
-	session := ad.s.Copy()
-	defer session.Close()
+	session := ad.session
 
 	m := bson.M{DBKEY_OBJECTKEY: record.ObjectKey, DBKEY_UPLOADID: record.UploadId}
 	err := UpdateContextFilter(ctx, m)
@@ -42,7 +40,7 @@ func (ad *adapter) DeleteMultipartUpload(ctx context.Context, record *pb.Multipa
 	}
 
 	// objectkey is unique in OpenSDS, uploadid is unique for a specific physical bucket
-	err = session.DB(DataBaseName).C(CollMultipartUploadRecord).Remove(m)
+	_, err = session.Database(DataBaseName).Collection(CollMultipartUploadRecord).DeleteOne(ctx, m)
 	if err != nil && err != mgo.ErrNotFound {
 		log.Errorf("delete multipart upload record[uploadid=%s] from database failed: %v\n", record.UploadId, err)
 		return DBError

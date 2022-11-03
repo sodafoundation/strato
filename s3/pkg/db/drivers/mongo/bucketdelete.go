@@ -28,8 +28,7 @@ import (
 
 func (ad *adapter) DeleteBucket(ctx context.Context, bucketName string) S3Error {
 	//Check if the connctor exist or not
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	log.Infof("delete bucket, bucketName is %v:", bucketName)
 
@@ -40,7 +39,7 @@ func (ad *adapter) DeleteBucket(ctx context.Context, bucketName string) S3Error 
 	}
 
 	//Delete it from database
-	err = ss.DB(DataBaseName).C(BucketMD).Remove(m)
+	_, err = ss.Database(DataBaseName).Collection(BucketMD).DeleteOne(ctx, m)
 	log.Infof("err is %v:", err)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -55,7 +54,7 @@ func (ad *adapter) DeleteBucket(ctx context.Context, bucketName string) S3Error 
 		return NoError
 	}
 
-	deleteErr := ss.DB(DataBaseName).C(bucketName).DropCollection()
+	deleteErr := ss.Database(DataBaseName).Collection(bucketName).Drop(context.TODO())
 	if deleteErr != nil && deleteErr != mgo.ErrNotFound {
 		log.Errorf("delete bucket collection from database failed, err: %v.\n", deleteErr)
 		return InternalError

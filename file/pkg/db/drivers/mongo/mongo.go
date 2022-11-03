@@ -20,10 +20,12 @@ import (
 	"math"
 	"sync"
 
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/file/pkg/model"
@@ -33,30 +35,30 @@ var adapter = &mongoAdapter{}
 var mutex sync.Mutex
 var DataBaseName = "multi-cloud"
 var FileShareCollection = "fileshares"
+var mongodb = "mongodb://"
 
 func Init(host string) *mongoAdapter {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	if adapter.session != nil {
-		return adapter
-	}
-
-	session, err := mgo.Dial(host)
+	// Create a new client and connect to the server
+	uri := mongodb + host
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
-	session.SetMode(mgo.Monotonic, true)
-	adapter.session = session
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+	log.Debugln("Successfully connected and pinged.")
+
+	adapter.session = client
 	return adapter
 }
 
 func Exit() {
-	adapter.session.Close()
+	adapter.session.Disconnect(context.TODO())
 }
 
 type mongoAdapter struct {
-	session *mgo.Session
+	session *mongo.Client
 	userID  string
 }
 
@@ -92,8 +94,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 func (adapter *mongoAdapter) ListFileShare(ctx context.Context, limit, offset int,
 	query interface{}) ([]*model.FileShare, error) {
 
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	if limit == 0 {
 		limit = math.MinInt32
@@ -108,9 +109,20 @@ func (adapter *mongoAdapter) ListFileShare(ctx context.Context, limit, offset in
 	}
 	log.Infof("ListFileShares, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
 
-	err = session.DB(DataBaseName).C(FileShareCollection).Find(m).Skip(offset).Limit(limit).All(&fileshares)
+	cur, err := session.Database(DataBaseName).Collection(FileShareCollection).Find(ctx, m, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
+
 	if err != nil {
 		return nil, err
+	}
+
+	//Map result to slice
+	for cur.Next(context.TODO()) {
+		t := &model.FileShare{}
+		err := cur.Decode(&t)
+		if err != nil {
+			return fileshares, err
+		}
+		fileshares = append(fileshares, t)
 	}
 
 	return fileshares, nil
@@ -118,8 +130,7 @@ func (adapter *mongoAdapter) ListFileShare(ctx context.Context, limit, offset in
 
 func (adapter *mongoAdapter) GetFileShare(ctx context.Context, id string) (*model.FileShare,
 	error) {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
@@ -128,8 +139,8 @@ func (adapter *mongoAdapter) GetFileShare(ctx context.Context, id string) (*mode
 	}
 
 	var fileshare = &model.FileShare{}
-	collection := session.DB(DataBaseName).C(FileShareCollection)
-	err = collection.Find(m).One(fileshare)
+	collection := session.Database(DataBaseName).Collection(FileShareCollection)
+	err = collection.FindOne(ctx, m).Decode(fileshare)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +149,7 @@ func (adapter *mongoAdapter) GetFileShare(ctx context.Context, id string) (*mode
 
 func (adapter *mongoAdapter) GetFileShareByName(ctx context.Context, name string) (*model.FileShare,
 	error) {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"name": name}
 	err := UpdateContextFilter(ctx, m)
@@ -148,8 +158,8 @@ func (adapter *mongoAdapter) GetFileShareByName(ctx context.Context, name string
 	}
 
 	var fileshare = &model.FileShare{}
-	collection := session.DB(DataBaseName).C(FileShareCollection)
-	err = collection.Find(m).One(fileshare)
+	collection := session.Database(DataBaseName).Collection(FileShareCollection)
+	err = collection.FindOne(ctx, m).Decode(fileshare)
 	if err != nil {
 		return nil, err
 	}
@@ -157,14 +167,12 @@ func (adapter *mongoAdapter) GetFileShareByName(ctx context.Context, name string
 }
 
 func (adapter *mongoAdapter) CreateFileShare(ctx context.Context, fileshare *model.FileShare) (*model.FileShare, error) {
-	session := adapter.session.Copy()
-	defer session.Close()
-
+	session := adapter.session
 	if fileshare.Id == "" {
 		fileshare.Id = bson.NewObjectId()
 	}
 
-	err := session.DB(DataBaseName).C(FileShareCollection).Insert(fileshare)
+	_, err := session.Database(DataBaseName).Collection(FileShareCollection).InsertOne(ctx, fileshare)
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +180,7 @@ func (adapter *mongoAdapter) CreateFileShare(ctx context.Context, fileshare *mod
 }
 
 func (adapter *mongoAdapter) DeleteFileShare(ctx context.Context, id string) error {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
@@ -181,12 +188,12 @@ func (adapter *mongoAdapter) DeleteFileShare(ctx context.Context, id string) err
 		return err
 	}
 
-	return session.DB(DataBaseName).C(FileShareCollection).Remove(m)
+	_, err = session.Database(DataBaseName).Collection(FileShareCollection).DeleteOne(ctx, m)
+	return err
 }
 
 func (adapter *mongoAdapter) UpdateFileShare(ctx context.Context, fs *model.FileShare) (*model.FileShare, error) {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"_id": fs.Id}
 	err := UpdateContextFilter(ctx, m)
@@ -194,7 +201,7 @@ func (adapter *mongoAdapter) UpdateFileShare(ctx context.Context, fs *model.File
 		return nil, err
 	}
 
-	err = session.DB(DataBaseName).C(FileShareCollection).Update(m, fs)
+	_, err = session.Database(DataBaseName).Collection(FileShareCollection).UpdateOne(ctx, m, fs)
 	if err != nil {
 		return nil, err
 	}

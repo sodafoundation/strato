@@ -20,10 +20,12 @@ import (
 	"math"
 	"sync"
 
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/block/pkg/model"
@@ -33,30 +35,30 @@ var adapter = &mongoAdapter{}
 var mutex sync.Mutex
 var DataBaseName = "multi-cloud"
 var VolumeCollection = "volumes"
+var mongodb = "mongodb://"
 
 func Init(host string) *mongoAdapter {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	if adapter.session != nil {
-		return adapter
-	}
-
-	session, err := mgo.Dial(host)
+	// Create a new client and connect to the server
+	uri := mongodb + host
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
-	session.SetMode(mgo.Monotonic, true)
-	adapter.session = session
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+	log.Debugln("Successfully connected and pinged.")
+
+	adapter.session = client
 	return adapter
 }
 
 func Exit() {
-	adapter.session.Close()
+	adapter.session.Disconnect(context.TODO())
 }
 
 type mongoAdapter struct {
-	session *mgo.Session
+	session *mongo.Client
 	userID  string
 }
 
@@ -92,8 +94,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 func (adapter *mongoAdapter) ListVolume(ctx context.Context, limit, offset int,
 	query interface{}) ([]*model.Volume, error) {
 
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	if limit == 0 {
 		limit = math.MinInt32
@@ -108,9 +109,19 @@ func (adapter *mongoAdapter) ListVolume(ctx context.Context, limit, offset int,
 	}
 	log.Infof("ListVolumes, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
 
-	err = session.DB(DataBaseName).C(VolumeCollection).Find(m).Skip(offset).Limit(limit).All(&volumes)
+	cur, err := session.Database(DataBaseName).Collection(VolumeCollection).Find(ctx, m, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
 	if err != nil {
 		return nil, err
+	}
+
+	//Map result to slice
+	for cur.Next(context.TODO()) {
+		t := &model.Volume{}
+		err := cur.Decode(&t)
+		if err != nil {
+			return volumes, err
+		}
+		volumes = append(volumes, t)
 	}
 
 	return volumes, nil
@@ -118,8 +129,7 @@ func (adapter *mongoAdapter) ListVolume(ctx context.Context, limit, offset int,
 
 func (adapter *mongoAdapter) GetVolume(ctx context.Context, id string) (*model.Volume,
 	error) {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
@@ -128,8 +138,8 @@ func (adapter *mongoAdapter) GetVolume(ctx context.Context, id string) (*model.V
 	}
 
 	var volume = &model.Volume{}
-	collection := session.DB(DataBaseName).C(VolumeCollection)
-	err = collection.Find(m).One(volume)
+	collection := session.Database(DataBaseName).Collection(VolumeCollection)
+	err = collection.FindOne(ctx, m).Decode(&volume)
 	if err != nil {
 		return nil, err
 	}
@@ -137,14 +147,13 @@ func (adapter *mongoAdapter) GetVolume(ctx context.Context, id string) (*model.V
 }
 
 func (adapter *mongoAdapter) CreateVolume(ctx context.Context, volume *model.Volume) (*model.Volume, error) {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	if volume.Id == "" {
 		volume.Id = bson.NewObjectId()
 	}
 
-	err := session.DB(DataBaseName).C(VolumeCollection).Insert(volume)
+	_, err := session.Database(DataBaseName).Collection(VolumeCollection).InsertOne(ctx, volume)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +161,7 @@ func (adapter *mongoAdapter) CreateVolume(ctx context.Context, volume *model.Vol
 }
 
 func (adapter *mongoAdapter) UpdateVolume(ctx context.Context, volume *model.Volume) (*model.Volume, error) {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"_id": volume.Id}
 	err := UpdateContextFilter(ctx, m)
@@ -161,7 +169,7 @@ func (adapter *mongoAdapter) UpdateVolume(ctx context.Context, volume *model.Vol
 		return nil, err
 	}
 
-	err = session.DB(DataBaseName).C(VolumeCollection).Update(m, volume)
+	_, err = session.Database(DataBaseName).Collection(VolumeCollection).UpdateOne(ctx, m, volume)
 	if err != nil {
 		return nil, err
 	}
@@ -170,8 +178,7 @@ func (adapter *mongoAdapter) UpdateVolume(ctx context.Context, volume *model.Vol
 }
 
 func (adapter *mongoAdapter) DeleteVolume(ctx context.Context, id string) error {
-	session := adapter.session.Copy()
-	defer session.Close()
+	session := adapter.session
 
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
@@ -179,5 +186,6 @@ func (adapter *mongoAdapter) DeleteVolume(ctx context.Context, id string) error 
 		return err
 	}
 
-	return session.DB(DataBaseName).C(VolumeCollection).Remove(m)
+	_, err = session.Database(DataBaseName).Collection(VolumeCollection).DeleteOne(ctx, m)
+	return err
 }

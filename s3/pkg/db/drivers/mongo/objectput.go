@@ -27,8 +27,7 @@ import (
 )
 
 func (ad *adapter) CreateObject(ctx context.Context, in *pb.Object) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	m := bson.M{DBKEY_OBJECTKEY: in.ObjectKey}
 	err := UpdateContextFilter(ctx, m)
@@ -37,9 +36,9 @@ func (ad *adapter) CreateObject(ctx context.Context, in *pb.Object) S3Error {
 	}
 
 	out := pb.Object{}
-	err = ss.DB(DataBaseName).C(in.BucketName).Find(m).One(out)
+	err = ss.Database(DataBaseName).Collection(in.BucketName).FindOne(ctx, m).Decode(out)
 	if err == mgo.ErrNotFound {
-		err := ss.DB(DataBaseName).C(in.BucketName).Insert(&in)
+		_, err := ss.Database(DataBaseName).Collection(in.BucketName).InsertOne(ctx, &in)
 		if err != nil {
 			log.Info("add object to database failed, err:%v\n", err)
 			return InternalError
@@ -52,8 +51,7 @@ func (ad *adapter) CreateObject(ctx context.Context, in *pb.Object) S3Error {
 }
 
 func (ad *adapter) UpdateObject(ctx context.Context, in *pb.Object) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	m := bson.M{DBKEY_OBJECTKEY: in.ObjectKey}
 	err := UpdateContextFilter(ctx, m)
@@ -62,7 +60,7 @@ func (ad *adapter) UpdateObject(ctx context.Context, in *pb.Object) S3Error {
 	}
 
 	log.Infof("update object:%+v\n", *in)
-	err = ss.DB(DataBaseName).C(in.BucketName).Update(m, in)
+	_, err = ss.Database(DataBaseName).Collection(in.BucketName).UpdateOne(ctx, m, in)
 	if err == mgo.ErrNotFound {
 		log.Info("update object to database failed, err:%v\n", err)
 		return NoSuchObject
@@ -76,8 +74,7 @@ func (ad *adapter) UpdateObject(ctx context.Context, in *pb.Object) S3Error {
 
 func (ad *adapter) UpdateObjMeta(ctx context.Context, objKey *string, bucketName *string, lastmod int64,
 	setting map[string]interface{}) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	log.Infof("update object metadata: key=%s, bucket=%s, lastmodified=%d\n", *objKey, *bucketName, lastmod)
 
@@ -88,7 +85,7 @@ func (ad *adapter) UpdateObjMeta(ctx context.Context, objKey *string, bucketName
 	}
 
 	data := bson.M{"$set": setting}
-	err = ss.DB(DataBaseName).C(*bucketName).Update(m, data)
+	_, err = ss.Database(DataBaseName).Collection(*bucketName).UpdateOne(ctx, m, data)
 	if err != nil {
 		log.Errorf("update object[key=%s] metadata failed:%v.\n", *objKey, err)
 		return DBError

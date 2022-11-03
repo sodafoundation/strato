@@ -18,10 +18,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 )
@@ -29,29 +31,33 @@ import (
 var adap = &adapter{}
 var DataBaseName = "metadatastore"
 var BucketMD = "metadatabucket"
+var mongodb = "mongodb://"
 
 func Init(host string) *adapter {
-	//fmt.Println("edps:", deps)
-	session, err := mgo.Dial(host)
+	// Create a new client and connect to the server
+	uri := mongodb + host
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
-	//defer session.Close()
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+	log.Debugln("Successfully connected and pinged.")
 
-	session.SetMode(mgo.Monotonic, true)
-	adap.s = session
+	adap.session = client
 	adap.userID = "unknown"
 
 	return adap
 }
 
 func Exit() {
-	adap.s.Close()
+	adap.session.Disconnect(context.TODO())
 }
 
 type adapter struct {
-	s      *mgo.Session
-	userID string
+	session *mongo.Client
+	userID  string
 }
 
 func UpdateContextFilter(ctx context.Context, m bson.M) error {

@@ -15,11 +15,14 @@
 package mongo
 
 import (
+	"context"
 	"errors"
 
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	backend "github.com/opensds/multi-cloud/backend/pkg/model"
 	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
@@ -30,36 +33,41 @@ var adap = &adapter{}
 var DataBaseName = "multi-cloud"
 var CollJob = "job"
 var CollBackend = "backends"
+var mongodb = "mongodb://"
 
 func Init(host string) *adapter {
-	session, err := mgo.Dial(host)
+	// Create a new client and connect to the server
+	uri := mongodb + host
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+	log.Debugln("Successfully connected and pinged.")
 
-	session.SetMode(mgo.Monotonic, true)
-	adap.s = session
+	adap.s = client
 	adap.userID = "unknown"
 
 	return adap
 }
 
 func Exit() {
-	adap.s.Close()
+	adap.s.Disconnect(context.TODO())
 }
 
 type adapter struct {
-	s      *mgo.Session
+	s      *mongo.Client
 	userID string
 }
 
 func (ad *adapter) GetJobStatus(jobID string) string {
 	job := Job{}
-	ss := ad.s.Copy()
-	defer ss.Close()
-	c := ss.DB(DataBaseName).C(CollJob)
+	ss := ad.s
+	c := ss.Database(DataBaseName).Collection(CollJob)
 
-	err := c.Find(bson.M{"_id": bson.ObjectIdHex(jobID)}).One(&job)
+	err := c.FindOne(context.TODO(), bson.M{"_id": bson.ObjectIdHex(jobID)}).Decode(&job)
 	if err != nil {
 		log.Errorf("Get job[ID#%s] failed:%v.\n", jobID, err)
 		return ""
@@ -69,12 +77,11 @@ func (ad *adapter) GetJobStatus(jobID string) string {
 }
 
 func (ad *adapter) UpdateJob(job *Job) error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.s
 
-	c := ss.DB(DataBaseName).C(CollJob)
+	c := ss.Database(DataBaseName).Collection(CollJob)
 	j := Job{}
-	err := c.Find(bson.M{"_id": job.Id}).One(&j)
+	err := c.FindOne(context.TODO(), bson.M{"_id": job.Id}).Decode(&j)
 	if err != nil {
 		log.Errorf("Get job[id:%v] failed before update it, err:%v\n", job.Id, err)
 
@@ -106,7 +113,7 @@ func (ad *adapter) UpdateJob(job *Job) error {
 		j.Progress = job.Progress
 	}
 
-	err = c.Update(bson.M{"_id": j.Id}, &j)
+	_, err = c.UpdateOne(context.TODO(), bson.M{"_id": j.Id}, &j)
 	if err != nil {
 		log.Errorf("Update job in database failed, err:%v\n", err)
 		return errors.New("Update job in database failed.")
@@ -118,12 +125,10 @@ func (ad *adapter) UpdateJob(job *Job) error {
 
 func (ad *adapter) GetBackendByName(name string) (*backend.Backend, error) {
 	log.Infof("Get backend by name:%s\n", name)
-	session := ad.s.Copy()
-	defer session.Close()
-
+	session := ad.s
 	var backend = &backend.Backend{}
-	collection := session.DB(DataBaseName).C(CollBackend)
-	err := collection.Find(bson.M{"name": name}).One(backend)
+	collection := session.Database(DataBaseName).Collection(CollBackend)
+	err := collection.FindOne(context.TODO(), bson.M{"name": name}).Decode(backend)
 	if err != nil {
 		return nil, err
 	}
