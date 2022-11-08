@@ -29,7 +29,6 @@ require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.0.16-beta
 	github.com/journeymidnight/radoshttpd v0.0.0-20190617133011-609666b51136
 	github.com/journeymidnight/yig v2.0.0+incompatible
-	github.com/mholt/certmagic v0.9.3 // indirect
 	github.com/micro/go-log v0.1.0
 	github.com/micro/go-micro/v2 v2.9.1
 	github.com/micro/go-plugins/registry/kubernetes/v2 v2.9.1
@@ -40,19 +39,18 @@ require (
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.6.3
+	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/ugorji/go/codec v1.1.7
 	github.com/webrtcn/s3client v0.0.0-20200722082950-4e45a005eff3
 	github.com/xxtea/xxtea-go v0.0.0-20170828040851-35c4b17eecf6
-	go.mongodb.org/mongo-driver v1.11.0 // indirect
+	go.mongodb.org/mongo-driver v1.11.0
 	go.uber.org/automaxprocs v1.3.0
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.14.0
-	google.golang.org/grpc v1.26.0 // indirect
 	google.golang.org/protobuf v1.22.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	k8s.io/apimachinery v0.18.5
 )
