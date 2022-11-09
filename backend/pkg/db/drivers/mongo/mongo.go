@@ -20,14 +20,12 @@ import (
 	"math"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-
-	//"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
@@ -45,6 +43,12 @@ var mongoRepo = &mongoRepository{}
 var mongodb = "mongodb://"
 
 func Init(host string) *mongoRepository {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if mongoRepo.session != nil {
+		return mongoRepo
+	}
 	// Create a new client and connect to the server
 	uri := mongodb + host
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
@@ -113,7 +117,6 @@ func (repo *mongoRepository) CreateBackend(ctx context.Context, backend *model.B
 
 func (repo *mongoRepository) DeleteBackend(ctx context.Context, id string) error {
 	session := repo.session
-
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
@@ -127,7 +130,6 @@ func (repo *mongoRepository) DeleteBackend(ctx context.Context, id string) error
 func (repo *mongoRepository) UpdateBackend(ctx context.Context,
 	backend *model.Backend) (*model.Backend, error) {
 	session := repo.session
-
 	m := bson.M{"_id": backend.Id}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
@@ -145,7 +147,6 @@ func (repo *mongoRepository) UpdateBackend(ctx context.Context,
 func (repo *mongoRepository) GetBackend(ctx context.Context, id string) (*model.Backend,
 	error) {
 	session := repo.session
-
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
@@ -164,7 +165,6 @@ func (repo *mongoRepository) GetBackend(ctx context.Context, id string) (*model.
 func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 	query interface{}) ([]*model.Backend, error) {
 	session := repo.session
-
 	if limit == 0 {
 		limit = math.MinInt32
 	}
