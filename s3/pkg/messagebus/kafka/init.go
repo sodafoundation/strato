@@ -1,8 +1,8 @@
 package kafka
 
 import (
-	bus "github.com/opensds/multi-cloud/s3/pkg/messagebus"
-	"github.com/opensds/multi-cloud/s3/pkg/messagebus/types"
+	bus "github.com/soda/multi-cloud/s3/pkg/messagebus"
+	"github.com/soda/multi-cloud/s3/pkg/messagebus/types"
 )
 
 func init() {

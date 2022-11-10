@@ -18,9 +18,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/contrib/datastore/block/driver"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/config"

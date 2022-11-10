@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,16 @@ package service
 import (
 	"context"
 
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/driver"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/s3"
-	. "github.com/opensds/multi-cloud/s3/error"
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/s3"
+	. "github.com/soda/multi-cloud/s3/error"
+	. "github.com/soda/multi-cloud/s3/pkg/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/meta/util"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 var ENC_KEY_LEN int = 32
@@ -315,7 +315,7 @@ func (s *s3Service) PutBucketLifecycle(ctx context.Context, in *pb.PutBucketLife
 
 	bucket.LifecycleConfiguration = in.Lc
 	err = s.MetaStorage.Db.PutBucket(ctx, bucket)
-	/* TODO: enable cache, see https://github.com/opensds/multi-cloud/issues/698
+	/* TODO: enable cache, see https://github.com/soda/multi-cloud/issues/698
 	if err == nil {
 		s.MetaStorage.Cache.Remove(redis.BucketTable, meta.BUCKET_CACHE_PREFIX, bucketName)
 	}*/

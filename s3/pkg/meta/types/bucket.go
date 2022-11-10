@@ -12,8 +12,8 @@ import (
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 const (

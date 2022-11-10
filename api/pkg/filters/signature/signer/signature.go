@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License. You may obtain
@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// Package signer implements signing and signature validation for opensds multi-cloud signer.
+// Package signer implements signing and signature validation for soda multi-cloud signer.
 //
 // Provides request signing for request that need to be signed with the Signature.
 // Provides signature validation for request.
@@ -24,11 +24,11 @@ import (
 	"net/url"
 	"strings"
 
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	. "github.com/opensds/multi-cloud/api/pkg/filters/signature"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
-	"github.com/opensds/multi-cloud/api/pkg/s3"
-	s3error "github.com/opensds/multi-cloud/s3/error"
+	c "github.com/soda/multi-cloud/api/pkg/context"
+	. "github.com/soda/multi-cloud/api/pkg/filters/signature"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials"
+	"github.com/soda/multi-cloud/api/pkg/s3"
+	s3error "github.com/soda/multi-cloud/s3/error"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"

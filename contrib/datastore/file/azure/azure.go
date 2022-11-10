@@ -25,13 +25,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/azure-storage-file-go/azfile"
 
-	"github.com/opensds/multi-cloud/contrib/utils"
+	"github.com/soda/multi-cloud/contrib/utils"
 
 	log "github.com/sirupsen/logrus"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	fileUtils "github.com/opensds/multi-cloud/file/pkg/utils"
-	file "github.com/opensds/multi-cloud/file/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
+	fileUtils "github.com/soda/multi-cloud/file/pkg/utils"
+	file "github.com/soda/multi-cloud/file/proto"
 )
 
 // TryTimeout indicates the maximum time allowed for any single try of an HTTP request.

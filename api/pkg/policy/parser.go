@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License. You may obtain
@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opensds/multi-cloud/api/pkg/utils"
+	"github.com/soda/multi-cloud/api/pkg/utils"
 )
 
 type TokenPair struct {

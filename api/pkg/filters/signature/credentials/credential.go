@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ import (
 	"sync"
 )
 
-// A Value is the OpenSDS multi-cloud credentials value.
+// A Value is the soda multi-cloud credentials value.
 type Value struct {
-	// OpenSDS multi-cloud Access key ID
+	// soda multi-cloud Access key ID
 	AccessKeyID string
 
-	// OpenSDS multi-cloud Secret Access Key
+	// soda multi-cloud Secret Access Key
 	SecretAccessKey string
 
 	// TenantID
@@ -60,7 +60,7 @@ func (p ErrorProvider) Retrieve() (Value, error) {
 	return Value{ProviderName: p.ProviderName}, p.Err
 }
 
-// A Credentials provides concurrency safe retrieval of OpenSDS multi-cloud credentials Value.
+// A Credentials provides concurrency safe retrieval of soda multi-cloud credentials Value.
 type Credentials struct {
 	credentials Value
 

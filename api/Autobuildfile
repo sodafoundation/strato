@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN mkdir -p /etc/opensds
-COPY  api/pkg/examples/policy.json /etc/opensds/
+RUN mkdir -p /etc/soda
+COPY  api/pkg/examples/policy.json /etc/soda/
 COPY api/api /api
 ENTRYPOINT ["/api"]

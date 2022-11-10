@@ -1,9 +1,9 @@
 package meta
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/log"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/db"
-	tidbclient "github.com/opensds/multi-cloud/s3/pkg/meta/db/drivers/tidb"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/log"
+	"github.com/soda/multi-cloud/s3/pkg/meta/db"
+	tidbclient "github.com/soda/multi-cloud/s3/pkg/meta/db/drivers/tidb"
 )
 
 const (

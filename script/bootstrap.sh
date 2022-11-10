@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2019 The OpenSDS Authors.
+# Copyright 2019 The soda Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-OPT_DIR=/opt/opensds
+OPT_DIR=/opt/soda
 mkdir -p $OPT_DIR
 
 # Configuration
@@ -23,12 +23,12 @@ DEV_STACK_DIR=${DEV_STACK_DIR:-/opt/stack/devstack}
 GOENV_PROFILE=${GOENV_PROFILE:-/etc/profile.d/goenv.sh}
 MULTICLOUD_VERSION=${MULTICLOUD_VERSION:-v1}
 MULTICLOUD_SERVER_NAME=${MULTICLOUD_SERVER_NAME:-multicloud}
-MULTICLOUD_PASSWORD=${MULTICLOUD_PASSWORD:-opensds@123}
+MULTICLOUD_PASSWORD=${MULTICLOUD_PASSWORD:-soda@123}
 HOST_IP=${HOST_IP:-}
 
 # Log file
-LOG_DIR=/var/log/opensds
-LOGFILE=${LOGFILE:-/var/log/opensds/multi-cloud-bootstrap.log}
+LOG_DIR=/var/log/soda
+LOGFILE=${LOGFILE:-/var/log/soda/multi-cloud-bootstrap.log}
 mkdir -p $LOG_DIR
 
 # Log function
@@ -152,14 +152,14 @@ function config_keystone() {
 function install_multicloud() {
     source /etc/profile
     GOPATH=${GOPATH:-$HOME/gopath}
-    local opensds_root=${GOPATH}/src/github.com/opensds
-    local multicloud_root=${GOPATH}/src/github.com/opensds/multi-cloud
-    mkdir -p ${opensds_root}
+    local soda_root=${GOPATH}/src/github.com/soda
+    local multicloud_root=${GOPATH}/src/github.com/soda/multi-cloud
+    mkdir -p ${soda_root}
 
-    cd ${opensds_root}
+    cd ${soda_root}
     if [ ! -d ${multicloud_root} ]; then
         log "Downloading the MultiCloud source code..."
-        git clone https://github.com/opensds/multi-cloud.git
+        git clone https://github.com/soda/multi-cloud.git
     fi
 
     if [[ -z "$(which make)" ]]; then

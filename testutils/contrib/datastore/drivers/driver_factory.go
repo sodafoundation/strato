@@ -3,8 +3,8 @@
 package drivers
 
 import (
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	driver "github.com/opensds/multi-cloud/contrib/datastore/file/driver"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	driver "github.com/soda/multi-cloud/contrib/datastore/file/driver"
 
 	mock "github.com/stretchr/testify/mock"
 )

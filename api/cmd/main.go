@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@ package main
 import (
 	"os"
 
-	"github.com/opensds/multi-cloud/api/pkg/aksk"
-	"github.com/opensds/multi-cloud/api/pkg/backend"
-	"github.com/opensds/multi-cloud/api/pkg/block"
-	"github.com/opensds/multi-cloud/api/pkg/dataflow"
-	"github.com/opensds/multi-cloud/api/pkg/file"
-	"github.com/opensds/multi-cloud/api/pkg/filters/auth"
-	"github.com/opensds/multi-cloud/api/pkg/filters/context"
-	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
-	"github.com/opensds/multi-cloud/api/pkg/s3"
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
+	"github.com/soda/multi-cloud/api/pkg/aksk"
+	"github.com/soda/multi-cloud/api/pkg/backend"
+	"github.com/soda/multi-cloud/api/pkg/block"
+	"github.com/soda/multi-cloud/api/pkg/dataflow"
+	"github.com/soda/multi-cloud/api/pkg/file"
+	"github.com/soda/multi-cloud/api/pkg/filters/auth"
+	"github.com/soda/multi-cloud/api/pkg/filters/context"
+	"github.com/soda/multi-cloud/api/pkg/filters/logging"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/signer"
+	"github.com/soda/multi-cloud/api/pkg/s3"
+	"github.com/soda/multi-cloud/api/pkg/utils/obs"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/web"
@@ -61,7 +61,7 @@ func main() {
 	if flag == "s3" {
 		s3ws := new(restful.WebService)
 		s3ws.Path("/")
-		s3ws.Doc("OpenSDS Multi-Cloud S3 API")
+		s3ws.Doc("soda Multi-Cloud S3 API")
 		s3ws.Produces(restful.MIME_XML)
 
 		s3ws.Filter(logging.FilterFactory())
@@ -73,7 +73,7 @@ func main() {
 	} else {
 		ws := new(restful.WebService)
 		ws.Path("/v1")
-		ws.Doc("OpenSDS Multi-Cloud API")
+		ws.Doc("soda Multi-Cloud API")
 		ws.Consumes(restful.MIME_JSON)
 		ws.Produces(restful.MIME_JSON)
 

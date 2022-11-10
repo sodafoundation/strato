@@ -10,10 +10,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	flowtype "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	flowtype "github.com/soda/multi-cloud/dataflow/pkg/model"
+	. "github.com/soda/multi-cloud/datamover/pkg/utils"
+	pb "github.com/soda/multi-cloud/datamover/proto"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 func GetCtxTimeout(key string, min, max, def int64) time.Duration {
@@ -37,7 +37,7 @@ func GetCtxTimeout(key string, min, max, def int64) time.Duration {
 
 func getObjs(ctx context.Context, in *pb.RunJobRequest, marker string, limit int32) ([]*osdss3.Object, error) {
 	switch in.SourceConn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:
+	case flowtype.STOR_TYPE_soda:
 		return getOsdsS3Objs(ctx, in, marker, limit)
 	default:
 		log.Errorf("unsupport storage type:%v\n", in.SourceConn.Type)
@@ -66,7 +66,7 @@ func countOsdsS3Objs(ctx context.Context, in *pb.RunJobRequest) (count, size int
 
 func countObjs(ctx context.Context, in *pb.RunJobRequest) (count, size int64, err error) {
 	switch in.SourceConn.Type {
-	case flowtype.STOR_TYPE_OPENSDS:
+	case flowtype.STOR_TYPE_soda:
 		return countOsdsS3Objs(ctx, in)
 	default:
 		log.Errorf("unsupport storage type:%v\n", in.SourceConn.Type)

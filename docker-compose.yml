@@ -38,8 +38,8 @@ services:
       - OS_AUTH_AUTHSTRATEGY=keystone
       - OS_AUTH_URL=http://10.10.3.154/identity
       - OS_USER_DOMIN_ID=Default
-      - OS_USERNAME=opensds
-      - OS_PASSWORD=opensds@123
+      - OS_USERNAME=soda
+      - OS_PASSWORD=soda@123
       - OS_PROJECT_NAME=service
       - TRANSFER_SPEED_MIN=10   #Bytes/Sec
       - SVC_FLAG=ctrl
@@ -60,8 +60,8 @@ services:
       - OS_AUTH_AUTHSTRATEGY=keystone
       - OS_AUTH_URL=http://10.10.3.154/identity
       - OS_USER_DOMIN_ID=Default
-      - OS_USERNAME=opensds
-      - OS_PASSWORD=opensds@123
+      - OS_USERNAME=soda
+      - OS_PASSWORD=soda@123
       - OS_PROJECT_NAME=service
       - TRANSFER_SPEED_MIN=10   #Bytes/Sec
       - SVC_FLAG=s3
@@ -119,8 +119,8 @@ services:
       - OS_AUTH_AUTHSTRATEGY=keystone
       - OS_AUTH_URL=http://10.10.3.154/identity
       - OS_USER_DOMIN_ID=Default
-      - OS_USERNAME=opensds
-      - OS_PASSWORD=opensds@123
+      - OS_USERNAME=soda
+      - OS_PASSWORD=soda@123
       - OS_PROJECT_NAME=service
     volumes:
       - /etc/localtime:/etc/localtime

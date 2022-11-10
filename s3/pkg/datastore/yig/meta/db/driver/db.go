@@ -1,7 +1,7 @@
 package driver
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/types"
 )
 
 //DB Interface

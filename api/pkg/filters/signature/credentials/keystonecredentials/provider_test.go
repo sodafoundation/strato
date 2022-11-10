@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License. You may obtain
@@ -19,9 +19,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
-	th "github.com/opensds/multi-cloud/testhelper"
-	"github.com/opensds/multi-cloud/testhelper/gophercloudclient"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
+	th "github.com/soda/multi-cloud/testhelper"
+	"github.com/soda/multi-cloud/testhelper/gophercloudclient"
 )
 
 const ListOutput = `

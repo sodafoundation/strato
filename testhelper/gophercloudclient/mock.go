@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License. You may obtain
@@ -17,7 +17,7 @@ package gophercloudclient
 import (
 	"github.com/gophercloud/gophercloud"
 
-	"github.com/opensds/multi-cloud/testhelper"
+	"github.com/soda/multi-cloud/testhelper"
 )
 
 // Fake token to use.

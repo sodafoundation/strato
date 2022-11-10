@@ -19,7 +19,7 @@ This package includes a collection of fake stuffs for testing work.
 package collection
 
 import (
-	backendModel "github.com/opensds/multi-cloud/backend/pkg/model"
+	backendModel "github.com/soda/multi-cloud/backend/pkg/model"
 )
 
 var (

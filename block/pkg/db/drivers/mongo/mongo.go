@@ -25,8 +25,8 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/block/pkg/model"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	"github.com/soda/multi-cloud/block/pkg/model"
 )
 
 var adapter = &mongoAdapter{}

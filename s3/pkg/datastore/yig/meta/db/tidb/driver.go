@@ -6,8 +6,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/config"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/db/driver"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/config"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/db/driver"
 )
 
 const (

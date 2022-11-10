@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	STOR_TYPE_OPENSDS          = "opensds-obj"
+	STOR_TYPE_soda          = "soda-obj"
 	STOR_TYPE_AWS_S3           = "aws-s3"
 	STOR_TYPE_AZURE_BLOB       = "azure-blob"
 	STOR_TYPE_HW_OBS           = "hw-obs"
@@ -98,8 +98,8 @@ type KeyValue struct {
 }
 
 type Connector struct {
-	StorType   string     `json:"storType" bson:"storeType"`    //opensds-obj, aws-obj,azure-obj,ceph-s3,hw-obj,nas
-	BucketName string     `json:"bucketName" bson:"bucketName"` //when StorType is opensds, need this
+	StorType   string     `json:"storType" bson:"storeType"`    //soda-obj, aws-obj,azure-obj,ceph-s3,hw-obj,nas
+	BucketName string     `json:"bucketName" bson:"bucketName"` //when StorType is soda, need this
 	ConnConfig []KeyValue `json:"connConfig" bson:"connConfig"`
 }
 
@@ -144,7 +144,7 @@ type Job struct {
 	TotalCapacity    int64         `json:"totalCapacity" bson:"totalCapacity"`
 	PassedCapacity   int64         `json:"passedCapacity" bson:"passedCapacity"`
 	MigratedCapacity float64       `json:"migratedCapacity" bson:"migratedCapacity"`
-	//when the plan related connector type is OPENSDS, then location should be bucket name
+	//when the plan related connector type is soda, then location should be bucket name
 	SourceLocation string    `json:"sourceLocation" bson:"sourceLocation"`
 	DestLocation   string    `json:"destLocation" bson:"destLocation"`
 	CreateTime     time.Time `json:"createTime" bson:"createTime"`

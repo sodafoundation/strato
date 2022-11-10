@@ -23,9 +23,9 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	. "github.com/soda/multi-cloud/api/pkg/s3/datatype"
+	. "github.com/soda/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
 )
 
 // validates location constraint from the request body.

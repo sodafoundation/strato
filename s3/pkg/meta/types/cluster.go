@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
 )
 
 type Cluster struct {

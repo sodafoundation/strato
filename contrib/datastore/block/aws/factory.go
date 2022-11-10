@@ -20,10 +20,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/micro/go-micro/v2/util/log"
 
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	"github.com/opensds/multi-cloud/contrib/datastore/block/driver"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	"github.com/soda/multi-cloud/contrib/datastore/block/driver"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
 )
 
 type AwsBlockDriverFactory struct {

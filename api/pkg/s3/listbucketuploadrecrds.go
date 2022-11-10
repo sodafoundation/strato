@@ -7,10 +7,10 @@ import (
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	s3error "github.com/opensds/multi-cloud/s3/error"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	"github.com/soda/multi-cloud/api/pkg/s3/datatype"
+	s3error "github.com/soda/multi-cloud/s3/error"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 func (s *APIService) ListBucketUploadRecords(request *restful.Request, response *restful.Response) {

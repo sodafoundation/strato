@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	"github.com/opensds/multi-cloud/s3/pkg/messagebus/types"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
+	"github.com/soda/multi-cloud/s3/pkg/messagebus/types"
 )
 
 type MessageSender interface {

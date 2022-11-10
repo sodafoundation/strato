@@ -1,8 +1,8 @@
 package collection
 
 import (
-	bModel "github.com/opensds/multi-cloud/block/pkg/model"
-	bProto "github.com/opensds/multi-cloud/block/proto"
+	bModel "github.com/soda/multi-cloud/block/pkg/model"
+	bProto "github.com/soda/multi-cloud/block/proto"
 )
 
 var isEncrypted = false

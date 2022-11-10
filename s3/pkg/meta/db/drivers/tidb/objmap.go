@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"strconv"
 
-	. "github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	. "github.com/soda/multi-cloud/s3/pkg/meta/types"
 )
 
 //objmap

@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"strings"
 
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/block/pkg/model"
-	block "github.com/opensds/multi-cloud/block/proto"
-	driverutils "github.com/opensds/multi-cloud/contrib/utils"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/block/pkg/model"
+	block "github.com/soda/multi-cloud/block/proto"
+	driverutils "github.com/soda/multi-cloud/contrib/utils"
 
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 	log "github.com/sirupsen/logrus"

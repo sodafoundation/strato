@@ -28,13 +28,13 @@ jobs:
         mkdir -p $(go env GOPATH)/src/github.com/sodafoundation/multi-cloud
         sudo ln -s $(pwd) $(go env GOPATH)/src/github.com/sodafoundation/multi-cloud
 
-    - name: Create the Folder structure and symlink to opensds (TODO:-Fix vendor module from opensds to sodafoundation)
+    - name: Create the Folder structure and symlink to soda (TODO:-Fix vendor module from soda to sodafoundation)
       run: |
         echo "Check current dir: \n" 
         pwd
         echo "GOPATH: $(go env GOPATH)"
-        sudo mkdir -p $(go env GOPATH)/src/github.com/opensds
-        sudo ln -s $(go env GOPATH)/src/github.com/sodafoundation $(go env GOPATH)/src/github.com/opensds
+        sudo mkdir -p $(go env GOPATH)/src/github.com/soda
+        sudo ln -s $(go env GOPATH)/src/github.com/sodafoundation $(go env GOPATH)/src/github.com/soda
       
     - name: Install Pre-requisites
       run: |

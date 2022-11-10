@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	backend "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	backend "github.com/soda/multi-cloud/backend/proto"
 )
 
 type Database struct {
@@ -70,7 +70,7 @@ const (
 
 //Object Storage Type
 const (
-	OSTYPE_OPENSDS       = "OpenSDS"
+	OSTYPE_soda       = "soda"
 	OSTYPE_AWS           = "aws-s3"
 	OSTYPE_Azure         = "azure-blob"
 	OSTYPE_OBS           = "hw-obs"

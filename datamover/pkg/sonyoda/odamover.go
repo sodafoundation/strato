@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
+	. "github.com/soda/multi-cloud/datamover/pkg/utils"
+	pb "github.com/soda/multi-cloud/datamover/proto"
 )
 
 type ODAMover struct {

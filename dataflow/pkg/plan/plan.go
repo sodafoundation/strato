@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/dataflow/pkg/db"
-	"github.com/opensds/multi-cloud/dataflow/pkg/kafka"
-	. "github.com/opensds/multi-cloud/dataflow/pkg/model"
-	"github.com/opensds/multi-cloud/dataflow/pkg/scheduler/trigger"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	"github.com/soda/multi-cloud/dataflow/pkg/db"
+	"github.com/soda/multi-cloud/dataflow/pkg/kafka"
+	. "github.com/soda/multi-cloud/dataflow/pkg/model"
+	"github.com/soda/multi-cloud/dataflow/pkg/scheduler/trigger"
+	datamover "github.com/soda/multi-cloud/datamover/proto"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
@@ -48,8 +48,8 @@ const (
 
 func isEqual(src *Connector, dest *Connector) bool {
 	switch src.StorType {
-	case STOR_TYPE_OPENSDS:
-		if dest.StorType == STOR_TYPE_OPENSDS && src.BucketName == dest.BucketName {
+	case STOR_TYPE_soda:
+		if dest.StorType == STOR_TYPE_soda && src.BucketName == dest.BucketName {
 			return true
 		} else {
 			return false
@@ -61,8 +61,8 @@ func isEqual(src *Connector, dest *Connector) bool {
 
 func checkConnValidation(conn *Connector) error {
 	var flag int
-	if conn.StorType == STOR_TYPE_OPENSDS {
-		//If StorType is opensds-obj, no connector needed.
+	if conn.StorType == STOR_TYPE_soda {
+		//If StorType is soda-obj, no connector needed.
 		return nil
 	}
 	if conn.StorType == STOR_TYPE_CEPH_S3 {
@@ -245,7 +245,7 @@ func List(ctx context.Context, limit int, offset int, filter interface{}) ([]Pla
 
 func getLocation(conn *Connector) (string, error) {
 	switch conn.StorType {
-	case STOR_TYPE_OPENSDS:
+	case STOR_TYPE_soda:
 		return conn.BucketName, nil
 	case STOR_TYPE_HW_OBS, STOR_TYPE_AWS_S3, STOR_TYPE_HW_FUSIONSTORAGE, STOR_TYPE_HW_FUSIONCLOUD,
 		STOR_TYPE_AZURE_BLOB, STOR_TYPE_CEPH_S3, STOR_TYPE_GCP_S3, STOR_TYPE_IBM_COS, STOR_TYPE_ALIBABA_OSS, STOR_TYPE_SONY_ODA:
@@ -273,7 +273,7 @@ func sendJob(req *datamover.RunJobRequest) error {
 }
 
 func buildConn(reqConn *datamover.Connector, conn *Connector) {
-	if conn.StorType == STOR_TYPE_OPENSDS {
+	if conn.StorType == STOR_TYPE_soda {
 		reqConn.BucketName = conn.BucketName
 	} else {
 		for i := 0; i < len(conn.ConnConfig); i++ {

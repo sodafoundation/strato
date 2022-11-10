@@ -7,11 +7,11 @@ import (
 
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/block/pkg/model"
-	pb "github.com/opensds/multi-cloud/block/proto"
-	bkpb "github.com/opensds/multi-cloud/testutils/backend/proto"
-	"github.com/opensds/multi-cloud/testutils/block/collection"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/block/pkg/model"
+	pb "github.com/soda/multi-cloud/block/proto"
+	bkpb "github.com/soda/multi-cloud/testutils/backend/proto"
+	"github.com/soda/multi-cloud/testutils/block/collection"
 )
 
 func TestUpdateVolumeStruct(t *testing.T) {

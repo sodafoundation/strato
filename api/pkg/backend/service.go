@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,16 +30,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	utils "github.com/opensds/multi-cloud/api/pkg/utils"
-	"github.com/opensds/multi-cloud/api/pkg/utils/cryptography"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	dataflow "github.com/opensds/multi-cloud/dataflow/proto"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	c "github.com/soda/multi-cloud/api/pkg/context"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
+	"github.com/soda/multi-cloud/api/pkg/policy"
+	utils "github.com/soda/multi-cloud/api/pkg/utils"
+	"github.com/soda/multi-cloud/api/pkg/utils/cryptography"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	dataflow "github.com/soda/multi-cloud/dataflow/proto"
+	. "github.com/soda/multi-cloud/s3/pkg/exception"
+	s3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 const (

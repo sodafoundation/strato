@@ -140,7 +140,7 @@ type Connector struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Type        string `protobuf:"bytes,1,opt,name=Type,json=type,proto3" json:"Type,omitempty"` //opensds,aws,azure,hwcloud,etc.
+	Type        string `protobuf:"bytes,1,opt,name=Type,json=type,proto3" json:"Type,omitempty"` //soda,aws,azure,hwcloud,etc.
 	BucketName  string `protobuf:"bytes,2,opt,name=BucketName,json=bucketName,proto3" json:"BucketName,omitempty"`
 	ConnConfig  []*KV  `protobuf:"bytes,3,rep,name=ConnConfig,json=connConfig,proto3" json:"ConnConfig,omitempty"`
 	BackendName string `protobuf:"bytes,4,opt,name=BackendName,json=backendName,proto3" json:"BackendName,omitempty"`

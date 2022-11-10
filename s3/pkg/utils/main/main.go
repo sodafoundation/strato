@@ -9,7 +9,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
-	//"github.com/opensds/multi-cloud/s3/pkg/utils"
+	//"github.com/soda/multi-cloud/s3/pkg/utils"
 	"io"
 	"io/ioutil"
 )

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/api/pkg/utils/constants"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/model"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	s3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	. "github.com/soda/multi-cloud/api/pkg/utils/constants"
+	. "github.com/soda/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/s3/pkg/model"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	s3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 // Map from storage calss to tier

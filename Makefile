@@ -1,4 +1,4 @@
-# Copyright 2019 The OpenSDS Authors.
+# Copyright 2019 The soda Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,28 +30,28 @@ prebuild:
 	mkdir -p  $(BUILD_DIR)
 
 api: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/api github.com/opensds/multi-cloud/api/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/api github.com/soda/multi-cloud/api/cmd
 
 aksk: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/aksk github.com/opensds/multi-cloud/aksk/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/aksk github.com/soda/multi-cloud/aksk/cmd
 
 backend: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/backend github.com/opensds/multi-cloud/backend/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/backend github.com/soda/multi-cloud/backend/cmd
 
 s3: prebuild
-	CGO_ENABLED=1 GOOS=linux go build -ldflags '-w -s -extldflags "-dynamic"' -o $(BUILD_DIR)/s3 github.com/opensds/multi-cloud/s3/cmd
+	CGO_ENABLED=1 GOOS=linux go build -ldflags '-w -s -extldflags "-dynamic"' -o $(BUILD_DIR)/s3 github.com/soda/multi-cloud/s3/cmd
 
 dataflow: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/dataflow github.com/opensds/multi-cloud/dataflow/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/dataflow github.com/soda/multi-cloud/dataflow/cmd
 
 datamover: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/opensds/multi-cloud/datamover/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/datamover github.com/soda/multi-cloud/datamover/cmd
 
 file: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/file github.com/opensds/multi-cloud/file/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/file github.com/soda/multi-cloud/file/cmd
 
 block: prebuild
-	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/block github.com/opensds/multi-cloud/block/cmd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/block github.com/soda/multi-cloud/block/cmd
 
 docker: build
 

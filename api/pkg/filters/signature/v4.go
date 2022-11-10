@@ -35,10 +35,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials"
-	"github.com/opensds/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
-	. "github.com/opensds/multi-cloud/api/pkg/s3/datatype"
-	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials"
+	"github.com/soda/multi-cloud/api/pkg/filters/signature/credentials/keystonecredentials"
+	. "github.com/soda/multi-cloud/api/pkg/s3/datatype"
+	. "github.com/soda/multi-cloud/s3/error"
 )
 
 // AWS Signature Version '4' constants.

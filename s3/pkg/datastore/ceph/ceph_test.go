@@ -7,10 +7,10 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	. "github.com/opensds/multi-cloud/s3/pkg/exception"
-	"github.com/opensds/multi-cloud/s3/pkg/model"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
+	. "github.com/soda/multi-cloud/s3/pkg/exception"
+	"github.com/soda/multi-cloud/s3/pkg/model"
+	pb "github.com/soda/multi-cloud/s3/proto"
 
 	"io"
 	"net/http"

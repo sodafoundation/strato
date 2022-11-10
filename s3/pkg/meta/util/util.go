@@ -8,8 +8,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/xxtea/xxtea-go/xxtea"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	. "github.com/opensds/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	. "github.com/soda/multi-cloud/s3/error"
 )
 
 var XXTEA_KEY = []byte("hehehehe")

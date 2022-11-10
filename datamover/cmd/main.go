@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	datamover "github.com/opensds/multi-cloud/datamover/pkg"
+	"github.com/soda/multi-cloud/api/pkg/utils/obs"
+	datamover "github.com/soda/multi-cloud/datamover/pkg"
 
 	"github.com/micro/go-micro/v2"
 	log "github.com/sirupsen/logrus"

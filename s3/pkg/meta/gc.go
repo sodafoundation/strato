@@ -3,7 +3,7 @@ package meta
 import (
 	"context"
 
-	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/meta/types"
 )
 
 func (m *Meta) AddGcobjRecord(ctx context.Context, obj *types.Object) error {

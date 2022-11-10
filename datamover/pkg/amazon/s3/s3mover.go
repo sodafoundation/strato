@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	pb "github.com/opensds/multi-cloud/datamover/proto"
+	. "github.com/soda/multi-cloud/datamover/pkg/utils"
+	pb "github.com/soda/multi-cloud/datamover/proto"
 )
 
 type S3Mover struct {

@@ -10,13 +10,13 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	bkd "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
-	"github.com/opensds/multi-cloud/s3/pkg/meta"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/types"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	bkd "github.com/soda/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/driver"
+	"github.com/soda/multi-cloud/s3/pkg/meta"
+	"github.com/soda/multi-cloud/s3/pkg/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 var CTX context.Context

@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	migration "github.com/opensds/multi-cloud/datamover/pkg/drivers/https"
-	. "github.com/opensds/multi-cloud/datamover/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	migration "github.com/soda/multi-cloud/datamover/pkg/drivers/https"
+	. "github.com/soda/multi-cloud/datamover/pkg/utils"
+	datamover "github.com/soda/multi-cloud/datamover/proto"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 // If transition for an object is in-progress, then the next transition message will be abandoned.

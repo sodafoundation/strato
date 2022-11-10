@@ -16,7 +16,7 @@ message Filter {
 }
 
 message Connector {
-	string Type = 1; //opensds,aws,azure,hwcloud,etc.
+	string Type = 1; //soda,aws,azure,hwcloud,etc.
 	string BucketName = 2;
 	repeated KV ConnConfig = 3;
 	string BackendName = 4;

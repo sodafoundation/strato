@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/backend/pkg/db"
-	"github.com/opensds/multi-cloud/backend/pkg/model"
-	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
-	pb "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/soda/multi-cloud/backend/pkg/db"
+	"github.com/soda/multi-cloud/backend/pkg/model"
+	"github.com/soda/multi-cloud/backend/pkg/utils/constants"
+	pb "github.com/soda/multi-cloud/backend/proto"
 )
 
 type backendService struct{}

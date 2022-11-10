@@ -28,12 +28,12 @@ import (
 	"github.com/micro/go-micro/v2/util/log"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/opensds/multi-cloud/contrib/utils"
+	"github.com/soda/multi-cloud/contrib/utils"
 
 	gcpfilev1 "google.golang.org/api/file/v1"
 
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
-	file "github.com/opensds/multi-cloud/file/proto"
+	backendpb "github.com/soda/multi-cloud/backend/proto"
+	file "github.com/soda/multi-cloud/file/proto"
 )
 
 const (

@@ -1,7 +1,7 @@
 package messagebus
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
 )
 
 type MessageSenderBuilder interface {

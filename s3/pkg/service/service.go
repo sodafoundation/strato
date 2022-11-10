@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,18 +24,18 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	. "github.com/opensds/multi-cloud/s3/error"
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/driver"
-	"github.com/opensds/multi-cloud/s3/pkg/db"
-	"github.com/opensds/multi-cloud/s3/pkg/gc"
-	"github.com/opensds/multi-cloud/s3/pkg/helper"
-	"github.com/opensds/multi-cloud/s3/pkg/meta"
-	"github.com/opensds/multi-cloud/s3/pkg/meta/util"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
-	. "github.com/opensds/multi-cloud/s3/pkg/utils"
-	pb "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/utils/obs"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	. "github.com/soda/multi-cloud/s3/error"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/driver"
+	"github.com/soda/multi-cloud/s3/pkg/db"
+	"github.com/soda/multi-cloud/s3/pkg/gc"
+	"github.com/soda/multi-cloud/s3/pkg/helper"
+	"github.com/soda/multi-cloud/s3/pkg/meta"
+	"github.com/soda/multi-cloud/s3/pkg/meta/util"
+	"github.com/soda/multi-cloud/s3/pkg/utils"
+	. "github.com/soda/multi-cloud/s3/pkg/utils"
+	pb "github.com/soda/multi-cloud/s3/proto"
 )
 
 const (
@@ -155,18 +155,18 @@ func loadAlibabaDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int
 	(*e2i)[OSTYPE_ALIBABA] = &n2t
 }
 
-func loadOpenSDSDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
+func loadsodaDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
 	t2n := make(Int2String)
 	t2n[Tier1] = AWS_STANDARD
 	t2n[Tier99] = AWS_STANDARD_IA
 	t2n[Tier999] = AWS_GLACIER
-	(*i2e)[OSTYPE_OPENSDS] = &t2n
+	(*i2e)[OSTYPE_soda] = &t2n
 
 	n2t := make(String2Int)
 	n2t[AWS_STANDARD] = Tier1
 	n2t[AWS_STANDARD_IA] = Tier99
 	n2t[AWS_GLACIER] = Tier999
-	(*e2i)[OSTYPE_OPENSDS] = &n2t
+	(*e2i)[OSTYPE_soda] = &n2t
 }
 
 func loadAzureDefault(i2e *map[string]*Int2String, e2i *map[string]*String2Int) {
@@ -259,7 +259,7 @@ func loadDefaultStorageClass() error {
 	Int2ExtTierMap = make(map[string]*Int2String)
 	Ext2IntTierMap = make(map[string]*String2Int)
 	loadAWSDefault(&Int2ExtTierMap, &Ext2IntTierMap)
-	loadOpenSDSDefault(&Int2ExtTierMap, &Ext2IntTierMap)
+	loadsodaDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 	loadAzureDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 	loadHWDefault(&Int2ExtTierMap, &Ext2IntTierMap)
 	loadGCPDefault(&Int2ExtTierMap, &Ext2IntTierMap)

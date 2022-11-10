@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	"github.com/opensds/multi-cloud/datamover/pkg/utils"
-	datamover "github.com/opensds/multi-cloud/datamover/proto"
-	osdss3 "github.com/opensds/multi-cloud/s3/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	"github.com/soda/multi-cloud/datamover/pkg/utils"
+	datamover "github.com/soda/multi-cloud/datamover/proto"
+	osdss3 "github.com/soda/multi-cloud/s3/proto"
 )
 
 func doExpirationAction(acReq *datamover.LifecycleActionRequest) error {

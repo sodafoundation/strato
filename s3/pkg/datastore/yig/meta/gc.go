@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 package meta
 
 import (
-	"github.com/opensds/multi-cloud/s3/pkg/datastore/yig/meta/types"
+	"github.com/soda/multi-cloud/s3/pkg/datastore/yig/meta/types"
 )
 
 // delete multipart uploaded part objects and put them into gc

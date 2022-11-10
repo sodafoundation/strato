@@ -1,4 +1,4 @@
-// Copyright 2019 The OpenSDS Authors.
+// Copyright 2019 The soda Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ type OsdsLet struct {
 	SocketOrder  string `conf:"socket_order"`
 	AuthStrategy string `conf:"auth_strategy,noauth"`
 	Daemon       bool   `conf:"daemon,false"`
-	PolicyPath   string `conf:"policy_path,/etc/opensds/policy.json"`
+	PolicyPath   string `conf:"policy_path,/etc/soda/policy.json"`
 }
 
 type OsdsDock struct {

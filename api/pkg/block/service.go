@@ -18,18 +18,18 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/opensds/multi-cloud/block/pkg/model"
-	"github.com/opensds/multi-cloud/contrib/utils"
+	"github.com/soda/multi-cloud/block/pkg/model"
+	"github.com/soda/multi-cloud/contrib/utils"
 
 	"github.com/emicklei/go-restful"
 	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/opensds/multi-cloud/api/pkg/common"
-	c "github.com/opensds/multi-cloud/api/pkg/context"
-	"github.com/opensds/multi-cloud/api/pkg/policy"
-	backend "github.com/opensds/multi-cloud/backend/proto"
-	block "github.com/opensds/multi-cloud/block/proto"
+	"github.com/soda/multi-cloud/api/pkg/common"
+	c "github.com/soda/multi-cloud/api/pkg/context"
+	"github.com/soda/multi-cloud/api/pkg/policy"
+	backend "github.com/soda/multi-cloud/backend/proto"
+	block "github.com/soda/multi-cloud/block/proto"
 )
 
 const (
