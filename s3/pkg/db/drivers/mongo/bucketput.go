@@ -27,8 +27,7 @@ import (
 )
 
 func (ad *adapter) CreateBucket(ctx context.Context, in *pb.Bucket) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	m := bson.M{DBKEY_NAME: in.Name}
 	err := UpdateContextFilter(ctx, m)
@@ -37,9 +36,9 @@ func (ad *adapter) CreateBucket(ctx context.Context, in *pb.Bucket) S3Error {
 	}
 
 	out := pb.Bucket{}
-	err = ss.DB(DataBaseName).C(BucketMD).Find(m).One(out)
+	err = ss.Database(DataBaseName).Collection(BucketMD).FindOne(ctx, m).Decode(out)
 	if err == mgo.ErrNotFound {
-		err := ss.DB(DataBaseName).C(BucketMD).Insert(&in)
+		_, err := ss.Database(DataBaseName).Collection(BucketMD).InsertOne(ctx, &in)
 		if err != nil {
 			log.Errorf("add bucket to database failed, err:%v\n", err)
 			return InternalError
@@ -54,8 +53,7 @@ func (ad *adapter) CreateBucket(ctx context.Context, in *pb.Bucket) S3Error {
 
 func (ad *adapter) UpdateBucket(ctx context.Context, bucket *pb.Bucket) S3Error {
 	//Check if the policy exist or not
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	log.Infof("update bucket, bucket name is %s\n", bucket.Name)
 
@@ -66,7 +64,7 @@ func (ad *adapter) UpdateBucket(ctx context.Context, bucket *pb.Bucket) S3Error 
 	}
 
 	//Update database
-	err = ss.DB(DataBaseName).C(BucketMD).Update(m, bucket)
+	_, err = ss.Database(DataBaseName).Collection(BucketMD).UpdateOne(ctx, m, bucket)
 	if err == mgo.ErrNotFound {
 		log.Error("update bucket failed: the specified bucket does not exist.")
 		return NoSuchBucket

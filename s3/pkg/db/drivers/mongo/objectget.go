@@ -27,8 +27,7 @@ import (
 )
 
 func (ad *adapter) GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb.Object) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 	log.Info("Find object from database...... \n")
 
 	m := bson.M{DBKEY_OBJECTKEY: in.Key}
@@ -37,7 +36,7 @@ func (ad *adapter) GetObject(ctx context.Context, in *pb.GetObjectInput, out *pb
 		return InternalError
 	}
 
-	err = ss.DB(DataBaseName).C(in.Bucket).Find(m).One(&out)
+	err = ss.Database(DataBaseName).Collection(in.Bucket).FindOne(ctx, m).Decode(&out)
 	if err == mgo.ErrNotFound {
 		log.Error("object does not exist.")
 		return NoSuchObject

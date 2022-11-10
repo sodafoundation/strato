@@ -51,6 +51,7 @@ jobs:
 
     - name: Build the multicloud docker images
       run: |
+        go mod vendor
         make docker
         docker-compose up -d
 

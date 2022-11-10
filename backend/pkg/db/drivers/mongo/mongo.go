@@ -20,17 +20,19 @@ import (
 	"math"
 	"sync"
 
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/backend/pkg/model"
 )
 
 type mongoRepository struct {
-	session *mgo.Session
+	session *mongo.Client
 }
 
 var defaultDBName = "multi-cloud"
@@ -38,6 +40,7 @@ var defaultCollection = "backends"
 var defaultTierCollection = "tiers"
 var mutex sync.Mutex
 var mongoRepo = &mongoRepository{}
+var mongodb = "mongodb://"
 
 func Init(host string) *mongoRepository {
 	mutex.Lock()
@@ -46,13 +49,18 @@ func Init(host string) *mongoRepository {
 	if mongoRepo.session != nil {
 		return mongoRepo
 	}
-
-	session, err := mgo.Dial(host)
+	// Create a new client and connect to the server
+	uri := mongodb + host
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
-	session.SetMode(mgo.Monotonic, true)
-	mongoRepo.session = session
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+	log.Debugln("Successfully connected and pinged.")
+
+	mongoRepo.session = client
 	return mongoRepo
 }
 
@@ -89,15 +97,18 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	return nil
 }
 
-func (repo *mongoRepository) CreateBackend(ctx context.Context, backend *model.Backend) (*model.Backend, error) {
-	session := repo.session.Copy()
-	defer session.Close()
+type session struct {
+	sess *mongo.Client
+}
 
+func (repo *mongoRepository) CreateBackend(ctx context.Context, backend *model.Backend) (*model.Backend, error) {
+	session := repo.session
 	if backend.Id == "" {
 		backend.Id = bson.NewObjectId()
 	}
 
-	err := session.DB(defaultDBName).C(defaultCollection).Insert(backend)
+	_, err := session.Database(defaultDBName).Collection(defaultCollection).InsertOne(ctx, backend)
+
 	if err != nil {
 		return nil, err
 	}
@@ -105,30 +116,27 @@ func (repo *mongoRepository) CreateBackend(ctx context.Context, backend *model.B
 }
 
 func (repo *mongoRepository) DeleteBackend(ctx context.Context, id string) error {
-	session := repo.session.Copy()
-	defer session.Close()
-
+	session := repo.session
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return err
 	}
 
-	return session.DB(defaultDBName).C(defaultCollection).Remove(m)
+	_, err = session.Database(defaultDBName).Collection(defaultCollection).DeleteOne(ctx, m)
+	return nil
 }
 
 func (repo *mongoRepository) UpdateBackend(ctx context.Context,
 	backend *model.Backend) (*model.Backend, error) {
-	session := repo.session.Copy()
-	defer session.Close()
-
+	session := repo.session
 	m := bson.M{"_id": backend.Id}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
 
-	err = session.DB(defaultDBName).C(defaultCollection).Update(m, backend)
+	_, err = session.Database(defaultDBName).Collection(defaultCollection).UpdateOne(ctx, m, backend)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +146,7 @@ func (repo *mongoRepository) UpdateBackend(ctx context.Context,
 
 func (repo *mongoRepository) GetBackend(ctx context.Context, id string) (*model.Backend,
 	error) {
-	session := repo.session.Copy()
-	defer session.Close()
-
+	session := repo.session
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
@@ -148,8 +154,8 @@ func (repo *mongoRepository) GetBackend(ctx context.Context, id string) (*model.
 	}
 
 	var backend = &model.Backend{}
-	collection := session.DB(defaultDBName).C(defaultCollection)
-	err = collection.Find(m).One(backend)
+	collection := session.Database(defaultDBName).Collection(defaultCollection)
+	err = collection.FindOne(ctx, m).Decode(&backend)
 	if err != nil {
 		return nil, err
 	}
@@ -158,10 +164,7 @@ func (repo *mongoRepository) GetBackend(ctx context.Context, id string) (*model.
 
 func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 	query interface{}) ([]*model.Backend, error) {
-
-	session := repo.session.Copy()
-	defer session.Close()
-
+	session := repo.session
 	if limit == 0 {
 		limit = math.MinInt32
 	}
@@ -175,9 +178,20 @@ func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 	}
 	log.Infof("ListBackend, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
 
-	err = session.DB(defaultDBName).C(defaultCollection).Find(m).Skip(offset).Limit(limit).All(&backends)
+	cur, err := session.Database(defaultDBName).Collection(defaultCollection).Find(ctx, m, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
+
 	if err != nil {
 		return nil, err
+	}
+
+	//Map result to slice
+	for cur.Next(context.TODO()) {
+		t := &model.Backend{}
+		err := cur.Decode(&t)
+		if err != nil {
+			return backends, err
+		}
+		backends = append(backends, t)
 	}
 
 	return backends, nil
@@ -185,13 +199,12 @@ func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 
 func (repo *mongoRepository) CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
 	log.Debug("received request to create tier in db")
-	session := repo.session.Copy()
-	defer session.Close()
 
+	session := repo.session
 	if tier.Id == "" {
 		tier.Id = bson.NewObjectId()
 	}
-	err := session.DB(defaultDBName).C(defaultTierCollection).Insert(tier)
+	_, err := session.Database(defaultDBName).Collection(defaultTierCollection).InsertOne(ctx, tier)
 	if err != nil {
 		return nil, err
 	}
@@ -202,9 +215,7 @@ func (repo *mongoRepository) CreateTier(ctx context.Context, tier *model.Tier) (
 func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
 	log.Debug("received request to delete tier from db")
 
-	session := repo.session.Copy()
-	defer session.Close()
-
+	session := repo.session
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 
 	err := UpdateContextFilter(ctx, m)
@@ -212,19 +223,19 @@ func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
 		return err
 	}
 
-	return session.DB(defaultDBName).C(defaultTierCollection).Remove(m)
+	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).DeleteOne(ctx, m)
+	return err
 }
 
 func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
 	log.Debug("received request to update tier")
-	session := repo.session.Copy()
-	defer session.Close()
+	session := repo.session
 	m := bson.M{"_id": tier.Id}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	err = session.DB(defaultDBName).C(defaultTierCollection).Update(m, tier)
+	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).UpdateOne(ctx, m, tier)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +244,7 @@ func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (
 
 func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, query interface{}) ([]*model.Tier, error) {
 	log.Debug("received request to list tiers")
-	session := repo.session.Copy()
-	defer session.Close()
+	session := repo.session
 	if limit == 0 {
 		limit = math.MinInt32
 	}
@@ -246,8 +256,22 @@ func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, q
 		return nil, err
 	}
 	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
-	err = session.DB(defaultDBName).C(defaultTierCollection).Find(m).Skip(offset).Limit(limit).All(&tiers)
 
+	cur, err := session.Database(defaultDBName).Collection(defaultCollection).Find(ctx, m)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//Map result to slice
+	for cur.Next(context.TODO()) {
+		t := &model.Tier{}
+		err := cur.Decode(&t)
+		if err != nil {
+			return tiers, err
+		}
+		tiers = append(tiers, t)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -257,17 +281,15 @@ func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, q
 func (repo *mongoRepository) GetTier(ctx context.Context, id string) (*model.Tier,
 	error) {
 	log.Debug("received request to get tier details")
-	session := repo.session.Copy()
-	defer session.Close()
-
+	session := repo.session
 	m := bson.M{"_id": bson.ObjectIdHex(id)}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
 	var tier = &model.Tier{}
-	collection := session.DB(defaultDBName).C(defaultTierCollection)
-	err = collection.Find(m).One(tier)
+	err = session.Database(defaultDBName).Collection(defaultTierCollection).FindOne(ctx, m).Decode(&tier)
+
 	if err != nil {
 		return nil, err
 	}
@@ -275,5 +297,5 @@ func (repo *mongoRepository) GetTier(ctx context.Context, id string) (*model.Tie
 }
 
 func (repo *mongoRepository) Close() {
-	repo.session.Close()
+	repo.session.Disconnect(context.TODO())
 }

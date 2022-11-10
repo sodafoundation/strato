@@ -28,8 +28,7 @@ import (
 
 func (ad *adapter) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput) S3Error {
 	//Check if the connctor exist or not
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	m := bson.M{DBKEY_OBJECTKEY: in.Key}
 	err := UpdateContextFilter(ctx, m)
@@ -38,7 +37,7 @@ func (ad *adapter) DeleteObject(ctx context.Context, in *pb.DeleteObjectInput) S
 	}
 
 	//Delete it from database
-	_, err = ss.DB(DataBaseName).C(in.Bucket).RemoveAll(m)
+	_, err = ss.Database(DataBaseName).Collection(in.Bucket).DeleteMany(ctx, m)
 	if err == mgo.ErrNotFound {
 		log.Errorf("delete object %s failed, err: the specified object does not exist", in.Key)
 		return NoSuchObject

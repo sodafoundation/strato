@@ -27,8 +27,7 @@ import (
 )
 
 func (ad *adapter) GetBucketByName(ctx context.Context, bucketName string, out *pb.Bucket) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
+	ss := ad.session
 
 	log.Infof("GetBucketByName: bucketName %s", bucketName)
 
@@ -38,7 +37,7 @@ func (ad *adapter) GetBucketByName(ctx context.Context, bucketName string, out *
 		return InternalError
 	}
 
-	err = ss.DB(DataBaseName).C(BucketMD).Find(m).One(out)
+	err = ss.Database(DataBaseName).Collection(BucketMD).FindOne(ctx, m).Decode(out)
 	if err == mgo.ErrNotFound {
 		log.Error("bucket does not exist.")
 		return NoSuchBucket

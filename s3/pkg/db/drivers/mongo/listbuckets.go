@@ -25,9 +25,8 @@ import (
 )
 
 func (ad *adapter) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *[]pb.Bucket) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
-	c := ss.DB(DataBaseName).C(BucketMD)
+	ss := ad.session
+	c := ss.Database(DataBaseName).Collection(BucketMD)
 
 	log.Info("list buckets from database...... \n")
 
@@ -37,7 +36,17 @@ func (ad *adapter) ListBuckets(ctx context.Context, in *pb.BaseRequest, out *[]p
 		return InternalError
 	}
 
-	err = c.Find(m).All(out)
+	cur, err := c.Find(ctx, m)
+
+	//Map result to slice
+	for cur.Next(context.TODO()) {
+		t := pb.Bucket{}
+		err := cur.Decode(&t)
+		if err != nil {
+			return S3Error{}
+		}
+	}
+
 	if err != nil {
 		log.Errorf("find buckets from database failed, err:%v\n", err)
 		return DBError

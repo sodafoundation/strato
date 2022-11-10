@@ -28,9 +28,8 @@ import (
 )
 
 func (ad *adapter) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, out *utils.ObjsCountInfo) S3Error {
-	ss := ad.s.Copy()
-	defer ss.Close()
-	c := ss.DB(DataBaseName).C(in.Bucket)
+	ss := ad.session
+	c := ss.Database(DataBaseName).Collection(in.Bucket)
 
 	filt := ""
 	if in.Filter[common.KObjKey] != "" {
@@ -60,9 +59,10 @@ func (ad *adapter) CountObjects(ctx context.Context, in *pb.ListObjectsRequest, 
 	}
 
 	operations := []bson.M{q1, q2}
-	pipe := c.Pipe(operations)
+	pipe, err := c.Watch(ctx, operations)
+	//pipe := c.Pipe(operations)
 	var ret utils.ObjsCountInfo
-	err = pipe.One(&ret)
+	err = pipe.Decode(&ret)
 	if err == nil {
 		out.Count = ret.Count
 		out.Size = ret.Size
