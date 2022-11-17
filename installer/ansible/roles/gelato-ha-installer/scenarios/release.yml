@@ -1,0 +1,84 @@
+# Copyright 2021 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: check for multi-cloud-ha source code existed
+  stat:
+    path: "{{ gelato_work_dir }}/multi-cloud"
+  ignore_errors: yes
+  register: gelatoexisted
+
+- name: check for multi-cloud-ha deployment files existed
+  stat:
+    path: "{{ gelato_work_dir }}/multi-cloud/K8s/api-deployment.yaml"
+  register: gelatoreleasesexisted
+
+- name: download the multi-cloud-ha code if not exists
+  git:
+    repo: "{{ gelato_remote_url }}"
+    dest: "{{ gelato_work_dir }}/multi-cloud"
+    version: "{{ gelato_repo_branch }}"
+  when:
+    - gelatoexisted.stat.exists is undefined or gelatoexisted.stat.exists == false
+
+- name: Update the release version in multi-cloud deployment ymls
+  replace:
+    path: "{{ gelato_work_dir }}/multi-cloud/K8s/{{ item }}"
+    regexp: 'RELEASE_VERSION'
+    replace: '{{ gelato_release_version }}'
+  become: yes
+  with_items:
+    - api-deployment.yaml
+    - backend-deployment.yaml
+    - block-deployment.yaml
+    - datamover-deployment.yaml
+    - dataflow-deployment.yaml
+    - file-deployment.yaml
+    - s3api-deployment.yaml
+    - s3-deployment.yaml
+
+- name: Update the multi-cloud-ha [api, file, s3] deployments
+  replace:
+    path: "{{ gelato_work_dir }}/multi-cloud/K8s/{{ item }}"
+    regexp: 'KEYSTONE_IP'
+    replace: '{{ host_ip }}'
+  become: yes
+  with_items:
+    - api-deployment.yaml
+    - file-deployment.yaml
+    - s3api-deployment.yaml
+  when:
+    - hostvars["controller"]["controller_ip"] is defined
+ 
+- name: Make multi-cloud-ha k8s files executable. 
+  file: dest="{{ gelato_work_dir }}/multi-cloud/K8s/{{ item }}" mode=a+x
+  become: yes
+  with_items:
+    - k8s-clean-mongo.sh
+    - k8s-cleanup.sh
+    - k8s-delete-namespace.sh
+    - k8s-mongo.sh
+    - k8s-deploy.sh
+
+- name: Execute the multi-cloud-ha kubectl yamls.
+  become_user: "{{ k8s_user }}"
+  command: sh {{ gelato_work_dir }}/multi-cloud/K8s/{{ item }}
+  args:
+    chdir: "{{ gelato_work_dir }}/multi-cloud/K8s"
+  with_items:
+    - k8s-mongo.sh
+    - k8s-deploy.sh
+
+
+

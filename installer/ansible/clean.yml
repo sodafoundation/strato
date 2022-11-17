@@ -1,0 +1,48 @@
+# Copyright 2019 The OpenSDS Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+# Defines some clean processes when banishing the cluster.
+
+- name: destory an opensds cluster
+  hosts: 
+    - controllers
+    - worker-nodes
+    - docks
+  remote_user: root
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/auth.yml
+    - group_vars/gelato.yml
+    - group_vars/dashboard.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - import_role:
+        name: cleaner
+
+# Uninstall the Multicloud services on Kubernetes Cluster.        
+- name: uninstall multi-cloud HA services on Kubernetes Cluster.
+  hosts: k8smaster
+  remote_user:  "{{ k8s_user }}"
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/gelato-ha.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - import_role:
+        name: gelato-ha-uninstaller
+      when: gelato_ha == true
+  tags: gelato_ha

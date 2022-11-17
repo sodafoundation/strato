@@ -1,0 +1,66 @@
+# Copyright 2021 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+# Dummy variable to avoid error because ansible does not recognize the
+# file as a good configuration file when no variable in it.
+dummy:
+
+
+###########
+# GENERAL #
+###########
+
+# User permitted to access the Kubernetes Cluster to deploy the multicloud services.
+# 'ubuntu' is a sample user, it should be replaced with the actual user permitted 
+# to access the Kubernetes Cluster, when deployed in production.
+k8s_user: ubuntu  
+
+# These IPs are dummy IPs, which get updated appropriately during deployment.
+# These are populated by installer in a Multi-Cloud HA installation.
+
+gelato_ha_api_ip: 0.0.0.0
+gelato_ha_api_port: 30099
+
+gelato_ha_s3_ip: 0.0.0.0
+gelato_ha_s3_port: 30090
+
+# These fields are NOT suggested to be modifie
+gelato_work_dir: /opt/opensds-gelato-linux-amd64
+
+# The installation type of gelato-ha is container, both REPOSITORY and RELEASE will
+# use gelato image to deploy.
+gelato_image_tag: "{{ gelato_release_version }}"
+
+##############
+# REPOSITORY #
+##############
+
+# If user specifies intalling from repository, then he can choose the specific
+# repository branch
+gelato_repo_branch: "{{ repo_branch }}"
+
+# These fields are NOT suggested to be modified
+gelato_remote_url: https://github.com/sodafoundation/multi-cloud.git
+
+###########
+# RELEASE #
+###########
+
+# If user specifies intalling from release,then he can choose the specific version
+gelato_release: "{{ gelato_release_version }}"	
+
+# These fields are NOT suggested to be modified
+gelato_download_url: https://github.com/sodafoundation/multi-cloud/archive/{{ gelato_release }}.tar.gz
+gelato_tarball_dir: /tmp/gelato-{{ gelato_release }}

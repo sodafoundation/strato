@@ -1,0 +1,59 @@
+# Copyright 2021 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Note: It is assumed that the Kubernetes master node has all the prereqs for running Multicloud services. 
+
+---
+- name: create gelato-ha work directory if it doesn't exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ gelato_work_dir }}"
+
+- name: include scenarios/release.yml when installing from release
+  include: scenarios/release.yml
+ 
+- name: get the IPs of Kubernetes Nodes (API, S3 services).
+  shell: kubectl get nodes k8smaster -o wide --no-headers | awk '{print $6}'
+  register: multicloud_api_ip
+  become_user: "{{ k8s_user }}"
+
+# Used to copy the IP to Ansible installer host.
+- name: Register the host with variable
+  add_host:
+     name: "k8smaster"
+     multicloud_api_ip: "{{ multicloud_api_ip.stdout }}"
+
+- name: Update the multi-cloud [api, file, s3] deployments
+  replace:
+    path: "{{ gelato_work_dir }}/multi-cloud/K8s/{{ item }}"
+    regexp: 'KEYSTONE_IP'
+    replace: '{{ host_ip }}'
+  become: yes
+  with_items:
+    - api-deployment.yaml
+    - file-deployment.yaml
+    - s3api-deployment.yaml
+  when: 
+    - hostvars["controller"]["controller_ip"] is defined
+
+  # Get the list of services deployed.
+- name: get multi-cloud service status
+  shell: kubectl get all -n=soda-multi-cloud
+  become_user: "{{ k8s_user }}"
+
+
+

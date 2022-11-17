@@ -1,0 +1,105 @@
+# Copyright 2019 The OpenSDS Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+# Defines deployment design and assigns role to server groups
+- hosts:
+  - controllers
+  - docks
+  gather_facts: true
+  any_errors_fatal: true
+  become: True
+  
+# Defines deployment design and assigns role to server groups
+- name: Install keystone services
+  hosts: controllers
+  remote_user: root
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/auth.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - import_role:
+        name: auth-installer
+  tags: keystone
+
+# Defines deployment design and assigns role to server groups
+
+- name: Install Gelato
+  hosts: controllers
+  remote_user: root
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/auth.yml
+    - group_vars/gelato.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - import_role:
+        name: common
+      when: common_role_done is not defined  
+    - import_role:
+        name: gelato-installer
+      when:
+        - gelato_ha == false  
+  tags: gelato
+ 
+- name: Install Gelato - HA Mode
+  hosts:
+  -  k8smaster
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/gelato-ha.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - import_role:
+        name: gelato-ha-installer
+      when:
+        - gelato_ha == true
+  tags: gelato-ha
+
+- name: Update the API, S3 IPs and Ports
+  hosts: controllers
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/gelato-ha.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - import_role:
+        name: ha-ip-update
+      when:
+        - gelato_ha == true
+  tags: gelato-ha
+
+- name: deploy dashboard
+  hosts: controllers
+  remote_user: root
+  vars_files:
+    - group_vars/common.yml
+    - group_vars/auth.yml
+    - group_vars/dashboard.yml
+    - group_vars/gelato-ha.yml
+  gather_facts: false
+  become: True
+  tasks:
+    - include_vars:
+        file: group_vars/gelato-ha.yml
+    - include_role:
+        name: dashboard-installer
+      when:
+        - enable_dashboard == true
+  tags: dashboard
