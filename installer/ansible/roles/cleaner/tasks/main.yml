@@ -12,15 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: stop container where dashboard is located
-  docker_container:
-    name: dashboard
-    image: "{{ dashboard_docker_image }}"
-    state: absent
-  when: dashboard_installation_type == "container"
-  ignore_errors: true
-  tags: dashboard
-
 - name: stop all gelato services
   shell: docker-compose down
   args:
@@ -41,22 +32,12 @@
   include_tasks: scenarios/release.yml
   when: install_from == "release"
 
-- name: clean all configuration and log files
-  file:
-    path: "{{ item }}"
-    state: absent
-    force: yes
-  with_items:
-    - "{{ opensds_certs_dir }}"
-  ignore_errors: yes
-
 - name: clean all created work directories
   file:
     path: "{{ item }}"
     state: absent
     force: yes
   with_items:
-    - "{{ dashboard_work_dir }}"
     - "{{ gelato_work_dir }}"
   ignore_errors: yes
   when: source_purge is undefined or source_purge != false

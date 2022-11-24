@@ -23,7 +23,6 @@ dummy:
 ###########
 
 # This field indicates local machine host ip
-# For HA configuration, add the IP on which the Core Services (Hotpot) are reachable from the Kubernetes node.
 host_ip: 127.0.0.1
 
 #Deploy multicloud in HA mode - default is false 
@@ -32,9 +31,6 @@ gelato_ha: false
 # This field indicates which way user prefers to install, currently support
 # 'repository', 'release' and 'container'
 install_from: release
-
-# Gelato- HA / Multi-Cloud HA installation is supported only from release / container. 
-install_gelato_ha_from: release   
 
 # These fields below will specify the tag based on install_from type
 repo_branch: master
@@ -50,16 +46,6 @@ source_purge: true
 # delete database
 database_purge: true
 
-# OpenSDS configuration file
-opensds_conf_file: /etc/opensds/opensds.conf
-
 ###############
 # Respective projects release versions
-dashboard_release_version: v1.7.0
 gelato_release_version: v1.7.0
-
-# ToDo: Use this variable across the SODA Projects. Currently using this only for the SODA Dashboard.
-# Inform the SODA Dashboard whether SODA Multicloud UI should support only service plans or backends
-# If true, user will have access only to the service plans for bucket management and not to the cloud backends
-# If false, user will have access to register cloud backends and access the cloud backends for bucket management.
-enable_storage_service_plans: false

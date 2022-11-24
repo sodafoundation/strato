@@ -33,6 +33,3 @@ keystone_os_auth_url: "http://{{ host_ip }}/identity"
 
 # delete all keystone packages
 keystone_uninstall_purge: false
-
-# Certs dir
-opensds_certs_dir: "/opt/opensds-security/"

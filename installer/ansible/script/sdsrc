@@ -21,9 +21,6 @@ if [ "$HOST_IP" == "" ]; then
     die $LINENO "Could not determine host ip address. See local.conf for suggestions on setting HOST_IP."
 fi
 
-# OpenSDS configuration.
-OPENSDS_VERSION=${OPENSDS_VERSION:-v1beta}
-
 # Multi-cloud 
 MULTICLOUD_VERSION=${MULTICLOUD_VERSION:-v1}
 

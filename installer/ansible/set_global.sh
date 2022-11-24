@@ -23,6 +23,3 @@ var_path=./group_vars
 # commom
 sed -i 's/^host_ip: .*/host_ip: '"$host_ip"'/g' $var_path/common.yml
 sed -i 's/^install_from: .*/install_from: '"$install_from"'/g' $var_path/common.yml
-
-# dashboard.yml
-sed -i 's/^dashboard_installation_type: .*/dashboard_installation_type: '"$dashboard_installation_type"'/g' $var_path/dashboard.yml

@@ -83,23 +83,3 @@
       when:
         - gelato_ha == true
   tags: gelato-ha
-
-- name: deploy dashboard
-  hosts: controllers
-  remote_user: root
-  vars_files:
-    - group_vars/common.yml
-    - group_vars/auth.yml
-    - group_vars/dashboard.yml
-    - group_vars/gelato-ha.yml
-  gather_facts: false
-  become: True
-  tasks:
-    - include_vars:
-        file: group_vars/gelato-ha.yml
-    - include_role:
-        name: dashboard-installer
-      when:
-        - enable_dashboard == true
-  tags: dashboard
-  
