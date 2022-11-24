@@ -54,6 +54,3 @@
 - name: get multi-cloud service status
   shell: kubectl get all -n=soda-multi-cloud
   become_user: "{{ k8s_user }}"
-
-
-

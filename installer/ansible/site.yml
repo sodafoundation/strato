@@ -16,7 +16,6 @@
 # Defines deployment design and assigns role to server groups
 - hosts:
   - controllers
-  - docks
   gather_facts: true
   any_errors_fatal: true
   become: True
@@ -103,3 +102,4 @@
       when:
         - enable_dashboard == true
   tags: dashboard
+  

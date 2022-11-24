@@ -41,10 +41,6 @@
   include_tasks: scenarios/release.yml
   when: install_from == "release"
 
-- name: include scenarios/backend.yml for cleaning up storage backend service
-  include_tasks: scenarios/backend.yml
-  tags: dock
-
 - name: clean all configuration and log files
   file:
     path: "{{ item }}"

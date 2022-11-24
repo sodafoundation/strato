@@ -163,13 +163,13 @@ if __name__ == '__main__':
 
     debug = False
 
-    OS_AUTH_URL=os.environ['OS_AUTH_URL']
-    OS_PASSWORD=os.environ['OS_PASSWORD']
-    OS_PROJECT_DOMAIN_NAME=os.environ['OS_PROJECT_DOMAIN_NAME']
-    OS_PROJECT_NAME=os.environ['OS_PROJECT_NAME']
-    OS_USERNAME=os.environ['OS_USERNAME']
-    OS_USER_DOMAIN_NAME=os.environ['OS_USER_DOMAIN_NAME']
-    #OS_USER_DOMAIN_ID=os.environ['OS_USER_DOMAIN_ID']
+    OS_AUTH_URL = os.environ['OS_AUTH_URL']
+    OS_PASSWORD = os.environ['OS_PASSWORD']
+    OS_PROJECT_DOMAIN_NAME = os.environ['OS_PROJECT_DOMAIN_NAME']
+    OS_PROJECT_NAME = os.environ['OS_PROJECT_NAME']
+    OS_USERNAME = os.environ['OS_USERNAME']
+    OS_USER_DOMAIN_NAME = os.environ['OS_USER_DOMAIN_NAME']
+    #OS_USER_DOMAIN_ID = os.environ['OS_USER_DOMAIN_ID']
 
     # token_issue
     #   used for keystone process start up check.
@@ -191,4 +191,3 @@ if __name__ == '__main__':
     if not token:
         sys.exit(1)
     endpoint_bulk_update(token, sys.argv[2], sys.argv[3])
-

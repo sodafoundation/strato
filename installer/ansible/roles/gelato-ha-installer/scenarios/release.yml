@@ -79,6 +79,3 @@
   with_items:
     - k8s-mongo.sh
     - k8s-deploy.sh
-
-
-

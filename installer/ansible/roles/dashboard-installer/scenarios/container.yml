@@ -48,3 +48,4 @@
       OPENSDS_S3_PORT: "{{ gelato_ha_s3_port }}"
       STORAGE_SERVICE_PLAN_ENABLED: "{{ enable_storage_service_plans|string }}" 
   when: gelato_ha == true
+  

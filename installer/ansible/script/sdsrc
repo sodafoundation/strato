@@ -27,9 +27,6 @@ OPENSDS_VERSION=${OPENSDS_VERSION:-v1beta}
 # Multi-cloud 
 MULTICLOUD_VERSION=${MULTICLOUD_VERSION:-v1}
 
-# OpenSDS service name in keystone.
-OPENSDS_SERVER_NAME=${OPENSDS_SERVER_NAME:-opensds}
-
 # Multi-Cloud service name in keystone
 MULTICLOUD_SERVER_NAME=${MULTICLOUD_SERVER_NAME:-opensds}
 
@@ -42,4 +39,3 @@ STACK_BRANCH=${STACK_BRANCH:-stable/queens}
 DEV_STACK_DIR=$STACK_HOME/devstack
 
 GOPATH=${GOPATH:-$HOME/gopath}
-OPENSDS_DIR=${GOPATH}/src/github.com/opensds/opensds

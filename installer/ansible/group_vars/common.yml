@@ -44,11 +44,6 @@ release_version: v1.7.0
 # support 'Debian' and 'RedHat'
 ansible_os_family: Debian
 
-# Install as systemd process or standalone application: true / false
-# true: Will install api, dock, controller and etcd processes as a systemd services and enable them. Recommended for production use
-# false: Will install api, dock, controller and etcd as standalone processes. Recommended for development use.
-install_as_systemd: true
-
 # delete all source packages
 source_purge: true
 

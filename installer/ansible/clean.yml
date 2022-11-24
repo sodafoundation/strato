@@ -15,11 +15,9 @@
 ---
 # Defines some clean processes when banishing the cluster.
 
-- name: destory an opensds cluster
+- name: destroy an opensds cluster
   hosts: 
     - controllers
-    - worker-nodes
-    - docks
   remote_user: root
   vars_files:
     - group_vars/common.yml
