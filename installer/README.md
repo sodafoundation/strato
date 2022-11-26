@@ -15,7 +15,7 @@ apt-get update && apt-get install -y git curl wget libltdl7 libseccomp2 libffi-d
 ```bash
 git clone https://github.com/sodafoundation/multi-cloud.git
 ```
-### Install required dependencies for Multicloud (Docker, Docker-Compose, Ansible, Go)
+### Install required dependencies for Multicloud (Docker, Ansible, Go)
 ```bash
 cd multi-cloud/installer
 chmod +x install_dependencies.sh && . install_dependencies.sh

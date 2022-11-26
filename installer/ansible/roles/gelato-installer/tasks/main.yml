@@ -81,7 +81,7 @@
   when: install_from == "release" or install_from == "container"
 
 - name: start service
-  shell: docker-compose up -d
+  shell: docker compose up -d
   args:
     chdir: "{{ gelato_work_dir }}"
 

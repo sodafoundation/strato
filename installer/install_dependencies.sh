@@ -34,17 +34,7 @@ if [ "`which docker`" != ""  ]; then
     echo Docker already installed, skipping.
 else
     echo Installing docker
-    apt-get install -y docker-ce docker-ce-cli containerd.io
-fi
-
-# Install docker-compose if not present
-if [ "`which docker-compose`" != ""  ]; then
-    echo docker-compose already installed, skipping.
-else
-    echo Installing docker-compose
-    curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 fi
 
 # Install Go if not present
