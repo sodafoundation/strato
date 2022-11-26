@@ -257,7 +257,7 @@ func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, q
 	}
 	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
 
-	cur, err := session.Database(defaultDBName).Collection(defaultCollection).Find(ctx, m)
+	cur, err := session.Database(defaultDBName).Collection(defaultTierCollection).Find(ctx, m)
 
 	if err != nil {
 		return nil, err

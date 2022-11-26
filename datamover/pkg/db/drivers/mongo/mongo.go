@@ -113,7 +113,7 @@ func (ad *adapter) UpdateJob(job *Job) error {
 		j.Progress = job.Progress
 	}
 
-	_, err = c.UpdateOne(context.TODO(), bson.M{"_id": j.Id}, &j)
+	_, err = c.UpdateOne(context.TODO(), bson.M{"_id": j.Id}, bson.M{"$set": j})
 	if err != nil {
 		log.Errorf("Update job in database failed, err:%v\n", err)
 		return errors.New("Update job in database failed.")
