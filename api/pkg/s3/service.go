@@ -180,6 +180,10 @@ func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) 
 		response.WriteError(http.StatusInternalServerError, err)
 		return ""
 	}
+
+	if len(res.Tiers[0].Backends) == 0 {
+		return ""
+	}
 	backendId = res.Tiers[0].Backends[rand.Intn(len(res.Tiers[0].Backends))]
 
 	return backendId
