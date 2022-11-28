@@ -1,0 +1,51 @@
+# Copyright 2022 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+# Dummy variable to avoid error because ansible does not recognize the
+# file as a good configuration file when no variable in it.
+dummy:
+
+
+###########
+# GENERAL #
+###########
+
+# This field indicates local machine host ip
+host_ip: $HOST_IP
+
+#Deploy multicloud in HA mode - default is false 
+gelato_ha: false
+
+# This field indicates which way user prefers to install, currently support
+# 'repository', 'release' and 'container'
+install_from: release
+
+# These fields below will specify the tag based on install_from type
+repo_branch: master
+release_version: v1.7.0
+
+# This field indicates which os family the system will be running, currently
+# support 'Debian' and 'RedHat'
+ansible_os_family: Debian
+
+# delete all source packages
+source_purge: true
+
+# delete database
+database_purge: true
+
+###############
+# Respective projects release versions
+gelato_release_version: v1.7.0

@@ -1,0 +1,45 @@
+# Copyright 2022 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: install system packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - make
+    - gcc
+    - open-iscsi
+  when:  ansible_facts['distribution'] == 'Ubuntu' and (ansible_facts['distribution_major_version']|int >=16 and ansible_facts['distribution_major_version']|int <=20)
+
+- name: install requests package with pip
+  pip:
+    name: requests
+
+- name: install Ubuntu system packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - librados-dev
+    - librbd-dev
+  when:  ansible_facts['distribution'] == 'Ubuntu' and (ansible_facts['distribution_major_version']|int >=16 and ansible_facts['distribution_major_version']|int <=20)
+
+- name: export the controller ip , to be used by gelato-ha installer.
+  add_host:
+     name: "controller"
+     controller_ip: " {{ host_ip }}"
+
+- set_fact: common_role_done=True
+  when: common_role_done is not defined

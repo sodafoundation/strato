@@ -1,0 +1,37 @@
+# Copyright 2022 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+- name: Check that the gelato-ha.yml exists
+  stat:
+    path: "{{ role_path }}/../../group_vars/gelato-ha.yml"
+  register: gelatoha_stat
+
+# Same IP is used for both the services. Only Port is different (predefined)
+- name: replace the gelato_ha_api_ip and gelato_ha_s3_ip in the gelato-ha.yml
+  replace:
+    path: "{{ role_path }}/../../group_vars/gelato-ha.yml"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  with_items:
+    - { regexp: '0.0.0.0', replace: '{{ hostvars["k8smaster"]["multicloud_api_ip"] }}' }
+  become: yes
+  when:
+    - install_from == "release" or install_from == "container"
+    - gelatoha_stat.stat.exists
+    - hostvars["k8smaster"]["multicloud_api_ip"] is defined
+
+- name: Pause for 2 seconds
+  pause: seconds=2

@@ -1,0 +1,75 @@
+# Copyright 2022 The SODA Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- set_fact:
+    go_path: "{{ lookup('env', 'GOPATH') }}"
+
+- name: check go_path
+  shell: "{{ item }}"
+  with_items:
+    - echo "The environment variable GOPATH must be set and cannot be an empty string!"
+    - /bin/false
+  when: go_path == ""
+
+- name: check for gelato source code existed
+  stat:
+    path: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud"
+  ignore_errors: yes
+  register: gelatoexisted
+
+- name: download gelato source code if not exists
+  git:
+    repo: "{{ gelato_remote_url }}"
+    dest: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud"
+    version: "{{ gelato_repo_branch }}"
+  when:
+    - gelatoexisted.stat.exists is undefined or gelatoexisted.stat.exists == false
+
+- name: run go mod vendor to collect the packages required to support the build
+  shell: go mod vendor
+  environment:
+    GOPATH: "{{ go_path }}"
+  args:
+    chdir: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud"
+    
+- name: build gelato docker images
+  shell: make docker -d
+  environment:
+    GOPATH: "{{ go_path }}"
+  args:
+    chdir: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud"
+
+- name: copy gelato docker-compose.yml file into gelato work directory
+  copy:
+    src: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud/docker-compose.yml"
+    dest: "{{ gelato_work_dir }}"
+
+- name: copy gelato s3 into gelato work directory
+  copy:
+    src: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud/s3"
+    dest: "{{ gelato_work_dir }}"
+  ignore_errors: yes
+
+- name: copy gelato examples into gelato work directory
+  copy:
+    src: "{{ go_path }}/src/github.com/sodafoundation/multi-cloud/examples"
+    dest: "{{ gelato_work_dir }}"
+  ignore_errors: yes
+
+- name: copy gelato tidb_data into gelato work directory
+  file:
+    path: "{{ gelato_work_dir }}/tidb_data"
+    state: directory
+  ignore_errors: yes
