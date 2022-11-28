@@ -235,7 +235,7 @@ func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (
 	if err != nil {
 		return nil, err
 	}
-	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).UpdateOne(ctx, m, tier)
+	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).UpdateOne(ctx, m, bson.M{"$set": tier})
 	if err != nil {
 		return nil, err
 	}
