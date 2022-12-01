@@ -52,4 +52,3 @@
     - bash ./script/keystone.sh install docker
   when: opensds_auth_strategy == "keystone" and install_keystone_with_docker == true and keystone_container.exists == false
   become: yes
-  
