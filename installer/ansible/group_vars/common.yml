@@ -25,9 +25,6 @@ dummy:
 # This field indicates local machine host ip
 host_ip: $HOST_IP
 
-#Deploy multicloud in HA mode - default is false 
-gelato_ha: false
-
 # This field indicates which way user prefers to install, currently support
 # 'repository', 'release' and 'container'
 install_from: release
