@@ -131,12 +131,13 @@ func (repo *mongoRepository) UpdateBackend(ctx context.Context,
 	backend *model.Backend) (*model.Backend, error) {
 	session := repo.session
 	m := bson.M{"_id": backend.Id}
+	upd := bson.M{"$set": bson.M{"access": backend.Access, "secret": backend.Security}}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = session.Database(defaultDBName).Collection(defaultCollection).UpdateOne(ctx, m, backend)
+	_, err = session.Database(defaultDBName).Collection(defaultCollection).UpdateOne(ctx, m, upd)
 	if err != nil {
 		return nil, err
 	}
@@ -231,11 +232,12 @@ func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (
 	log.Debug("received request to update tier")
 	session := repo.session
 	m := bson.M{"_id": tier.Id}
+	upd := bson.M{"$set": bson.M{"backends": tier.Backends, "tenants": tier.Tenants}}
 	err := UpdateContextFilter(ctx, m)
 	if err != nil {
 		return nil, err
 	}
-	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).UpdateOne(ctx, m, bson.M{"$set": tier})
+	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).UpdateOne(ctx, m, upd)
 	if err != nil {
 		return nil, err
 	}
