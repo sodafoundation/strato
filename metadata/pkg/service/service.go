@@ -77,8 +77,8 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 	log.Info("Received sncMetadata request in metadata service.")
 	//svc := s3.New(session.New())
 	endpoint := "s3.ap-south-1.amazonaws.com"
-	AccessKeyID := "AKIA6NODD4LSCBMDQBPT"
-	AccessKeySecret := "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"
+	AccessKeyID := "AKIA6NODD4LSA36CQNVB"
+	AccessKeySecret := "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"
 
 	s3aksk := S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
 	creds := credentials.NewCredentials(&s3aksk)
