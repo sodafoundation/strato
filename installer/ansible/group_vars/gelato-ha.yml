@@ -22,6 +22,9 @@ dummy:
 # GENERAL #
 ###########
 
+#Deploy multicloud in HA mode - default is false
+gelato_ha: false
+
 # User permitted to access the Kubernetes Cluster to deploy the multicloud services.
 # 'ubuntu' is a sample user, it should be replaced with the actual user permitted 
 # to access the Kubernetes Cluster, when deployed in production.

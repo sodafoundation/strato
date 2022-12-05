@@ -13,12 +13,28 @@
 # limitations under the License.
 
 ---
+
+- name: Check if keystone container is available
+  docker_container_info:
+    name: opensds-authchecker
+  register: keystone_container
+
+- name: Does keystone container exist?
+  debug:
+    msg: "The container {{ 'exists' if keystone_container.exists else 'does not exist' }}"
+
+- name: Print the status of the keystone container
+  debug:
+    msg: "The keystone container status is {{ keystone_container.container['State']['Status'] }}"
+  when: keystone_container.exists
+
 - name: check port usage
   wait_for:
     port: "{{ item }}"
     timeout: 5
     state: stopped
     msg: "Port {{ item }} is not free"
+  when: opensds_auth_strategy == "keystone" and keystone_container.exists == false
   with_items:
     - 80
   become: yes
@@ -34,5 +50,5 @@
   shell: "{{ item }}"
   with_items:
     - bash ./script/keystone.sh install docker
-  when: opensds_auth_strategy == "keystone" and install_keystone_with_docker == true
+  when: opensds_auth_strategy == "keystone" and install_keystone_with_docker == true and keystone_container.exists == false
   become: yes

@@ -43,6 +43,7 @@
     - group_vars/common.yml
     - group_vars/auth.yml
     - group_vars/gelato.yml
+    - group_vars/gelato-ha.yml
   gather_facts: false
   become: True
   tasks:
