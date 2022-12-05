@@ -43,9 +43,6 @@ ansible_os_family: Debian
 # delete all source packages
 source_purge: true
 
-# delete database
-database_purge: true
-
 ###############
 # Respective projects release versions
 gelato_release_version: v1.7.1
