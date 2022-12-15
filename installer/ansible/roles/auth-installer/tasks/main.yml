@@ -14,6 +14,10 @@
 
 ---
 
+- name: install docker-py package with pip
+  pip:
+    name: docker-py
+
 - name: Check if keystone container is available
   docker_container_info:
     name: opensds-authchecker
