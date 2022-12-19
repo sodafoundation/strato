@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Install dependencies
+echo Installing dependencies
+apt-get install -y curl wget libltdl7 libseccomp2 libffi-dev apt-transport-https ca-certificates gnupg gnupg-agent lsb-release software-properties-common sshpass pv gawk 
+
 # Enable docker repository
 echo Enabling docker repository
 mkdir -p /etc/apt/keyrings
@@ -12,10 +16,6 @@ echo \
 # Update local repositories
 echo Updating local repositories
 apt-get update
-
-# Install dependencies
-echo Installing dependencies
-apt-get install -y apt-transport-https ca-certificates gnupg gnupg-agent lsb-release software-properties-common sshpass pv gawk
 
 # Install python dependencies
 echo Installing Python dependencies
