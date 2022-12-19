@@ -8,7 +8,7 @@
 
 ### Install Steps
 ```bash
-apt-get update && apt-get install -y git curl wget libltdl7 libseccomp2 libffi-dev
+apt-get update && apt-get install -y git
 git clone https://github.com/sodafoundation/multi-cloud.git
 cd multi-cloud/installer
 chmod +x install_dependencies.sh && . install_dependencies.sh
