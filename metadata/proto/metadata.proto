@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option go_package = "proto";
+
+service Metadata {
+    rpc SyncMetadata(SyncMetadataRequest) returns (SyncMetadataResponse) {}
+    rpc ListMetadata(ListMetadataRequest) returns (ListMetadataResponse) {}
+}
+
+message MetadataDetail {
+    string project_id = 1;
+    string user_id = 2;
+    string type = 3;
+}
+
+message SyncMetadataRequest {
+    string id = 1;
+}
+
+message ListMetadataRequest {
+    int32 limit = 1;
+}
+
+message SyncMetadataResponse {
+    repeated MetadataDetail MetadataDetail = 1;
+}
+
+message ListMetadataResponse {
+    repeated Bucket buckets = 1;
+}
+
+message Bucket {
+    //The uuid of the bucket.
+    string id = 1;
+    // The createdAt representing the server time when the bucket was created.
+    string creationDate = 2;
+    // The updatedAt representing the server time when the bucket was updated.
+    string updationDate = 3;
+    // The name of the bucket.
+    string name = 4;
+    string type = 5;
+    string region = 6;
+    string tags = 7;
+}
