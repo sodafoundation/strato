@@ -31,7 +31,7 @@ install_from: release
 
 # These fields below will specify the tag based on install_from type
 repo_branch: master
-release_version: v1.7.1
+release_version: v1.8.0
 
 # This field indicates which os family the system will be running, currently
 # support 'Debian' and 'RedHat'
@@ -42,4 +42,4 @@ source_purge: true
 
 ###############
 # Respective projects release versions
-gelato_release_version: v1.7.1
+gelato_release_version: v1.8.0
