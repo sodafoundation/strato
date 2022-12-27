@@ -18,7 +18,23 @@ message SyncMetadataRequest {
 }
 
 message ListMetadataRequest {
+    // the number of records at max which can be there in response
     int32 limit = 1;
+    // the index of the first record to be returned
+    int32 offset = 2;
+    //used to denote the type of cloud provider
+    string type = 3;
+    //name of the backend
+    string backendName = 4;
+    string region = 5;
+    // name of the bucket
+    string bucketName = 6;
+    // name of the object
+    string objectName = 7;
+    // the size of the object in <operator integer  unit> where operator is eq, gte,gt,lte,lt and unit is KB,MB,GB and integer is always not less than zero
+    string sizeOfObject = 8;
+    // the size of the bucket in <operator integer  unit> where operator is eq, gte,gt,lte,lt and unit is KB,MB,GB and integer is always not less than zero
+    string sizeOfBucket = 9;
 }
 
 message SyncMetadataResponse {
