@@ -59,6 +59,12 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 
 	listMetadataRequest, err := GetListMetaDataRequest(request)
 
+	if err != nil {
+		log.Errorf("Failed to construct List Metadata Request err: \n", err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
+
 	//* calling  the ListMetaData method from metadata manager m8s
 	res, err := s.metaClient.ListMetadata(ctx, &listMetadataRequest)
 	log.Info("Get metadata details res.......:.", res)
@@ -82,7 +88,7 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 	sizeOfObject := request.PathParameter("sizeOfObject")
 	sizeOfBucket := request.PathParameter("sizeOfBucket")
 
-	offset, limit, err := common.GetPaginationParam(request)
+	limit, offset, err := common.GetPaginationParam(request)
 
 	return mt.ListMetadataRequest{Type: typeOfCloudVendor, BackendName: backendName, Limit: limit, Offset: offset, BucketName: bucketName, ObjectName: objectName, SizeOfObject: sizeOfObject, SizeOfBucket: sizeOfBucket}, err
 
