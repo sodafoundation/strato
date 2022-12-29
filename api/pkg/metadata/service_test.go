@@ -17,10 +17,64 @@
 
 package metadata
 
-import "testing"
+import (
+	"github.com/emicklei/go-restful"
+	mt "github.com/opensds/multi-cloud/metadata/proto"
+	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/url"
+	"strconv"
+	"testing"
+)
 
-func TestAPIService_ListMetadata(t *testing.T) {
-	var service = NewAPIService(nil)
+func GetRequest(uri string, param url.Values, t *testing.T) *restful.Request {
+	httpReq, err := http.NewRequest("GET", uri+param.Encode(), nil)
+	if err != nil {
+		t.Fail()
+	}
+	req := restful.NewRequest(httpReq)
+	return req
+}
 
-	service.ListMetadata()
+func Test_ListMetaData_Api_Param_Fetching(t *testing.T) {
+
+	validParams := make(url.Values)
+	validParams["limit"] = []string{"100"}
+	validParams["offset"] = []string{"1"}
+
+	invalidParams := make(url.Values)
+	invalidParams["limit"] = []string{"invalid"}
+	invalidParams["offset"] = []string{"1"}
+
+	tests := []struct {
+		title          string
+		input          interface{}
+		expectedOutput interface{}
+		expectedErr    error
+	}{
+		{
+			title:          "UT to test whether the request params are read correctly for valid values",
+			input:          validParams,
+			expectedOutput: mt.ListMetadataRequest{Limit: 100, Offset: 1},
+			expectedErr:    nil,
+		},
+		{
+			title:          "UT to test whether the request params is giving error  for invalid values",
+			input:          invalidParams,
+			expectedOutput: nil,
+			expectedErr:    &strconv.NumError{},
+		},
+	}
+
+	for _, test := range tests {
+		uri := "http://localhost:41651/v1/metadata/metadata/?"
+		values := test.input.(url.Values)
+		req := GetRequest(uri, values, t)
+		res, err := GetListMetaDataRequest(req)
+		if err != nil {
+			assert.NotNil(t, test.expectedErr, test.title)
+		} else {
+			assert.Equal(t, test.expectedOutput, res, test.title)
+		}
+	}
 }
