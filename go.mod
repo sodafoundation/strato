@@ -10,7 +10,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Shopify/sarama v1.19.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.8+incompatible
-	github.com/aws/aws-sdk-go v1.30.26
+	github.com/aws/aws-sdk-go v1.33.0
 	github.com/bsm/sarama-cluster v2.1.15+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.1.0
 	github.com/dustin/go-humanize v1.0.0
