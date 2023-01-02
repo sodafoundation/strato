@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
+	validator "github.com/opensds/multi-cloud/metadata/pkg/validator"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 )
 
@@ -158,7 +159,17 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
 	log.Info("Received GetMetadata request in metadata service.")
-	res, err := db.DbAdapter.ListMetadata(ctx, in.Limit)
+
+	log.Info(" Validating ListMetadata resquest started.")
+
+	// validates the query options such as offset and limit and also the query
+	okie, err := validator.ValidateInput(in)
+
+	if !okie {
+		return err
+	}
+
+	res, err := db.DbAdapter.ListMetadata(ctx, in.Limit, in.Offset)
 	if err != nil {
 		log.Errorf("Failed to create backend: %v", err)
 		return err
