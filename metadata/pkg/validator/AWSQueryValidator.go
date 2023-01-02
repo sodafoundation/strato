@@ -17,7 +17,6 @@ func (v *AWSQueryValidator) isValidQuery(in *pb.ListMetadataRequest) (bool, erro
 	if !okie {
 		log.Errorf("Validation for List MetaData Request Failed: %v", err)
 	}
-	// TODO: validate object name if present
 
 	// validate aws region name
 	okie, err = isValidRegion(in.Region)
