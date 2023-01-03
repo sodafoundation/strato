@@ -226,7 +226,7 @@ func GetSizeRequestParamAsInt32(request *restful.Request, param string) (int32, 
 	if request.QueryParameter(param) != "" {
 		val, err := strconv.Atoi(request.QueryParameter("limit"))
 		if err != nil {
-			log.Errorf("limit is invalid: %v", err)
+			log.Errorf("Param Value is invalid: %v", err)
 			return 0, err
 		}
 
