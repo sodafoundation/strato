@@ -2,6 +2,8 @@ syntax = "proto3";
 
 option go_package = "proto";
 
+import "google/protobuf/timestamp.proto";
+
 service Metadata {
     rpc SyncMetadata(SyncMetadataRequest) returns (SyncMetadataResponse) {}
     rpc ListMetadata(ListMetadataRequest) returns (ListMetadataResponse) {}
@@ -51,7 +53,7 @@ message ListMetadataResponse {
 
 message BucketMetadata {
     // The createdAt representing the server time when the bucket was created.
-    string creationDate = 1;
+    google.protobuf.Timestamp creationDate = 1;
     // The name of the bucket.
     string name = 2;
     string region = 3;
@@ -67,7 +69,7 @@ message BucketMetadata {
 
 message ObjectMetadata {
     // The date of the last modification on the object
-    string lastModifiedDate = 1;
+    google.protobuf.Timestamp lastModifiedDate = 1;
     // The name of the object
     string name = 2;
     // The name of the bucket to which the object belongs
