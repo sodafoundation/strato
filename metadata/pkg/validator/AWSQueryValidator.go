@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	log "github.com/micro/go-micro/v2/util/log"
+	"github.com/opensds/multi-cloud/metadata/pkg/constants"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 )
 
@@ -27,17 +28,13 @@ func (v *AWSQueryValidator) isValidQuery(in *pb.ListMetadataRequest) (bool, erro
 }
 
 func isValidRegion(region string) (bool, error) {
-	validRegions := []string{"us-east-1", "us-east-2", "us-west-1", "us-west-2", "af-south-1", "ap-east-1", "ap-south-2",
-		"ap-southeast-3", "ap-south-1", "ap-northeast-3", "ap-northeast-2", "ap-southeast-1", "ap-southeast-2",
-		"ap-northeast-1", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-south-1", "eu-west-3",
-		"eu-south-2", "eu-north-1", "eu-central-2", "me-south-1", "me-central-1", "sa-east-1", "us-gov-east-1",
-		"us-gov-west-1"}
+	validRegions := constants.AWS_VALID_REGIONS
 	for _, validRegion := range validRegions {
 		if validRegion == region {
 			return true, nil
 		}
 	}
-	return false, &ValidationError{errMsg: "Not a valid region"}
+	return false, &ValidationError{errMsg: "Not a valid AWS region"}
 }
 
 //* This function checks if the bucket name is valid according to the AWS bucket naming rules found in

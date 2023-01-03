@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"github.com/opensds/multi-cloud/metadata/pkg/constants"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 )
 
@@ -27,8 +28,7 @@ func ValidateInput(in *pb.ListMetadataRequest) (okie bool, err error) {
 		validator := &GeneralQueryValidator{}
 		return validator.isValidQuery(in)
 
-		// TODO: Get Type values from pravin
-	case "AMAZON-AWS":
+	case constants.AWS_S3:
 		var validator QueryValidator = &GeneralQueryValidator{}
 		okie, err = validator.isValidQuery(in)
 		if !okie {
