@@ -32,9 +32,9 @@ message ListMetadataRequest {
     // name of the object
     string objectName = 7;
     // the size of the object in bytes
-    int32 sizeOfObjectInBytes = 8;
+    int64 sizeOfObjectInBytes = 8;
     // the size of the bucket in bytes
-    int32 sizeOfBucketInBytes = 9;
+    int64 sizeOfBucketInBytes = 9;
     // operator is eq, gte,gt,lte,lt
     string bucketSizeOperator = 10;
     // operator is eq, gte,gt,lte,lt
@@ -50,46 +50,42 @@ message ListMetadataResponse {
 }
 
 message BucketMetadata {
-    //The uuid of the bucket.
-    string id = 1;
     // The createdAt representing the server time when the bucket was created.
-    string creationDate = 2;
+    string creationDate = 1;
     // The name of the bucket.
-    string name = 3;
-    string region = 4;
-    string type = 5;
+    string name = 2;
+    string region = 3;
+    string type = 4;
     // The number of objects in the bucket
-    int32 numberOfObjects = 6;
+    int32 numberOfObjects = 5;
     // The total size occupied by the bucket
-    int32 totalSizeInBytes = 7;
+    int32 totalSizeInBytes = 6;
     // The tags of the bucket
-    string tags = 8;
-    repeated ObjectMetadata objects = 9;
+    string tags = 7;
+    repeated ObjectMetadata objects = 8;
 }
 
 message ObjectMetadata {
-    // The uuid of the object
-    string id = 1;
     // The date of the last modification on the object
-    string lastModifiedDate = 2;
+    string lastModifiedDate = 1;
     // The name of the object
-    string name = 3;
+    string name = 2;
     // The name of the bucket to which the object belongs
-    string bucketName = 4;
+    string bucketName = 3;
     // The size o the object in bytes
-    int32 sizeInBytes = 5;
-    // ??
-    string type = 6;
+    int32 sizeInBytes = 4;
+    // extension of the object
+    string type = 5;
     // true if server side encyption is enabled
-    bool serverSideEncryptionEnabled = 7;
+    bool serverSideEncryptionEnabled = 6;
     // used to store the version info of the object
-    string versionId = 9;
+    string versionId = 7;
     // used to denote the storage class of the object in the cloud vendor
-    string storageClass = 10;
-    string redirectLocation = 11;
-    string replicationStatus = 12;
-    string expiresDate = 13;
-    string grantControl = 14;
-    string tags = 15;
-    string metadata = 16;
+    string storageClass = 8;
+    string redirectLocation = 9;
+    string replicationStatus = 10;
+    string expiresDate = 11;
+    string grantControl = 12;
+    string tags = 13;
+    string metadata = 14;
 }

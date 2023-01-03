@@ -85,12 +85,12 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 	backendName := request.PathParameter("backendName")
 	bucketName := request.PathParameter("bucketName")
 	objectName := request.PathParameter("objectName")
-	sizeOfObjectInBytes, err := common.GetSizeRequestParamAsInt32(request, "sizeOfObject")
+	sizeOfObjectInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfObject")
 
 	if err != nil {
 		return mt.ListMetadataRequest{}, err
 	}
-	sizeOfBucketInBytes, err := common.GetSizeRequestParamAsInt32(request, "sizeOfBucket")
+	sizeOfBucketInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfBucket")
 
 	if err != nil {
 		return mt.ListMetadataRequest{}, err
