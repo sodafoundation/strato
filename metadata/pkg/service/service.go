@@ -164,10 +164,10 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 		return err
 	}
 
-	var buckets []*pb.Bucket
+	var buckets []*pb.BucketMetadata
 	for _, buck := range res {
 		log.Infoln("buck.........", buck)
-		bucket := &pb.Bucket{
+		bucket := &pb.BucketMetadata{
 			Name:         *buck.Name,
 			Type:         buck.Type,
 			Tags:         buck.Tags,
