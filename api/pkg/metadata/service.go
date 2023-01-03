@@ -55,8 +55,6 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	//id := request.PathParameter("id")
-
 	listMetadataRequest, err := GetListMetaDataRequest(request)
 
 	if err != nil {
