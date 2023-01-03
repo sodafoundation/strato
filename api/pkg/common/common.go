@@ -220,3 +220,19 @@ func InitCtxWithVal(request *restful.Request, md map[string]string) context.Cont
 
 	return metadata.NewContext(context.Background(), md)
 }
+
+func GetSizeRequestParamAsInt32(request *restful.Request, param string) (int32, error) {
+
+	if request.QueryParameter(param) != "" {
+		val, err := strconv.Atoi(request.QueryParameter("limit"))
+		if err != nil {
+			log.Errorf("limit is invalid: %v", err)
+			return 0, err
+		}
+
+		return int32(val), nil
+
+	}
+	return 0, nil
+
+}

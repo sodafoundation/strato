@@ -85,11 +85,23 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 	backendName := request.PathParameter("backendName")
 	bucketName := request.PathParameter("bucketName")
 	objectName := request.PathParameter("objectName")
-	sizeOfObject := request.PathParameter("sizeOfObject")
-	sizeOfBucket := request.PathParameter("sizeOfBucket")
+	sizeOfObjectInBytes, err := common.GetSizeRequestParamAsInt32(request, "sizeOfObject")
 
+	if err != nil {
+		return mt.ListMetadataRequest{}, err
+	}
+	sizeOfBucketInBytes, err := common.GetSizeRequestParamAsInt32(request, "sizeOfBucket")
+
+	if err != nil {
+		return mt.ListMetadataRequest{}, err
+	}
+
+	bucketSizeOperator := request.PathParameter("BucketSizeOperator")
+	objectSizeOperator := request.PathParameter("ObjectSizeOperator")
 	limit, offset, err := common.GetPaginationParam(request)
 
-	return mt.ListMetadataRequest{Type: typeOfCloudVendor, BackendName: backendName, Limit: limit, Offset: offset, BucketName: bucketName, ObjectName: objectName, SizeOfObject: sizeOfObject, SizeOfBucket: sizeOfBucket}, err
+	return mt.ListMetadataRequest{Type: typeOfCloudVendor, BackendName: backendName, Limit: limit, Offset: offset,
+		BucketName: bucketName, ObjectName: objectName, SizeOfObjectInBytes: sizeOfObjectInBytes,
+		SizeOfBucketInBytes: sizeOfBucketInBytes, BucketSizeOperator: bucketSizeOperator, ObjectSizeOperator: objectSizeOperator}, err
 
 }

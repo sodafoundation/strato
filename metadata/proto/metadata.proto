@@ -31,10 +31,14 @@ message ListMetadataRequest {
     string bucketName = 6;
     // name of the object
     string objectName = 7;
-    // the size of the object in <operator integer  unit> where operator is eq, gte,gt,lte,lt and unit is KB,MB,GB and integer is always not less than zero
-    string sizeOfObject = 8;
-    // the size of the bucket in <operator integer  unit> where operator is eq, gte,gt,lte,lt and unit is KB,MB,GB and integer is always not less than zero
-    string sizeOfBucket = 9;
+    // the size of the object in bytes
+    int32 sizeOfObjectInBytes = 8;
+    // the size of the bucket in bytes
+    int32 sizeOfBucketInBytes = 9;
+    // operator is eq, gte,gt,lte,lt
+    string bucketSizeOperator = 10;
+    // operator is eq, gte,gt,lte,lt
+    string objectSizeOperator = 11;
 }
 
 message SyncMetadataResponse {
