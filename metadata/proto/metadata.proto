@@ -42,10 +42,10 @@ message SyncMetadataResponse {
 }
 
 message ListMetadataResponse {
-    repeated Bucket buckets = 1;
+    repeated BucketMetadata buckets = 1;
 }
 
-message Bucket {
+message BucketMetadata {
     //The uuid of the bucket.
     string id = 1;
     // The createdAt representing the server time when the bucket was created.
@@ -60,10 +60,10 @@ message Bucket {
     int32 totalSizeInBytes = 7;
     // The tags of the bucket
     string tags = 8;
-    repeated Object objects = 9;
+    repeated ObjectMetadata objects = 9;
 }
 
-message Object {
+message ObjectMetadata {
     // The uuid of the object
     string id = 1;
     // The date of the last modification on the object
