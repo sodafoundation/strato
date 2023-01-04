@@ -22,3 +22,15 @@ var (
 		"eu-south-2", "eu-north-1", "eu-central-2", "me-south-1", "me-central-1", "sa-east-1", "us-gov-east-1",
 		"us-gov-west-1"}
 )
+
+const (
+	ZERO = 0
+)
+
+const (
+	LESS_THAN_OPERATOR          = "lt"
+	LESS_THAN_EQUAL_OPERATOR    = "lte"
+	EQUAL_OPERATOR              = "eq"
+	GREATER_THAN_OPERATOR       = "gt"
+	GREATER_THAN_EQUAL_OPERATOR = "gte"
+)
