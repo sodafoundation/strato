@@ -23,7 +23,7 @@ func (v *GeneralQueryValidator) isValidQuery(in *pb.ListMetadataRequest) (bool, 
 	return okie, err
 }
 
-func isSizeParamsValid(sizeInBytes int32, operator string) (bool, error) {
+func isSizeParamsValid(sizeInBytes int64, operator string) (bool, error) {
 	switch operator {
 	case constants.EQUAL_OPERATOR:
 
