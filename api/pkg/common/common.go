@@ -223,7 +223,7 @@ func InitCtxWithVal(request *restful.Request, md map[string]string) context.Cont
 
 func GetSizeRequestParamAsInt64(request *restful.Request, param string) (int64, error) {
 
-	val := 0
+	var val int
 	if request.QueryParameter(param) != "" {
 		val, err := strconv.Atoi(request.QueryParameter("limit"))
 		if err != nil {

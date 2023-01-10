@@ -39,7 +39,7 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func (s *APIService) SyncMetadata(request *restful.Request, response *restful.Response) {
-	log.Info("Sync Metadata called in api service.")
+	log.Info("sync metadata called in api service.")
 	ctx := common.InitCtxWithAuthInfo(request)
 	_, err := s.metaClient.SyncMetadata(ctx, &mt.SyncMetadataRequest{Id: "id"})
 	if err != nil {
@@ -51,14 +51,14 @@ func (s *APIService) SyncMetadata(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) ListMetadata(request *restful.Request, response *restful.Response) {
-	log.Infof("Received request for Listmetadata details: %s\n", request.PathParameter("id"))
+	log.Infof("received request for list metadata details: %s\n", request.PathParameter("id"))
 
 	ctx := common.InitCtxWithAuthInfo(request)
 
 	listMetadataRequest, err := GetListMetaDataRequest(request)
 
 	if err != nil {
-		log.Errorf("Failed to construct List Metadata Request err: \n", err)
+		log.Errorf("Failed to construct list metadata request err: \n", err)
 		response.WriteError(http.StatusBadRequest, err)
 		return
 	}
@@ -72,7 +72,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 		return
 	}
 
-	log.Info("Get metadata details successfully.")
+	log.Info("got metadata details successfully.")
 	response.WriteEntity(res.Buckets)
 }
 
