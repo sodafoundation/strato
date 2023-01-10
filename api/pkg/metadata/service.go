@@ -39,7 +39,7 @@ func NewAPIService(c client.Client) *APIService {
 }
 
 func (s *APIService) SyncMetadata(request *restful.Request, response *restful.Response) {
-	log.Info("Sync Metadata called in api service.")
+	log.Info("sync metadata called in api service.")
 	ctx := common.InitCtxWithAuthInfo(request)
 	_, err := s.metaClient.SyncMetadata(ctx, &mt.SyncMetadataRequest{Id: "id"})
 	if err != nil {
@@ -51,20 +51,55 @@ func (s *APIService) SyncMetadata(request *restful.Request, response *restful.Re
 }
 
 func (s *APIService) ListMetadata(request *restful.Request, response *restful.Response) {
-	log.Infof("Received request for Listmetadata details: %s\n", request.PathParameter("id"))
-
-	//id := request.PathParameter("id")
+	log.Infof("received request for list metadata details: %s\n", request.PathParameter("id"))
 
 	ctx := common.InitCtxWithAuthInfo(request)
 
-	res, err := s.metaClient.ListMetadata(ctx, &mt.ListMetadataRequest{Limit: 1000})
-	log.Info("Get metadata details res.......:.", res)
+	listMetadataRequest, err := GetListMetaDataRequest(request)
+
 	if err != nil {
-		log.Errorf("Failed to get metadata details err: \n", err)
-		response.WriteError(http.StatusNotFound, err)
+		log.Errorf("Failed to construct list metadata request err: \n", err)
+		response.WriteEntity("Invalid type for sizeOfObject or sizeOfBucket request params. It should be integer type.")
 		return
 	}
 
-	log.Info("Get metadata details successfully.")
+	//* calling  the ListMetaData method from metadata manager m8s
+	res, err := s.metaClient.ListMetadata(ctx, &listMetadataRequest)
+	log.Info("Get metadata details res.......:.", res)
+	if err != nil {
+		log.Errorf("Failed to get metadata details err: \n", err)
+		response.WriteEntity("Failed to get metadata details err")
+		return
+	}
+
+	log.Info("got metadata details successfully.")
 	response.WriteEntity(res.Buckets)
+}
+
+//* This function fetches the request parameters from the request and assigns them default values if not present.
+//* It returns ListMetadataRequest for ListMetaData API call
+func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.ListMetadataRequest, err error) {
+	typeOfCloudVendor := request.PathParameter("type")
+	backendName := request.PathParameter("backendName")
+	bucketName := request.PathParameter("bucketName")
+	objectName := request.PathParameter("objectName")
+	sizeOfObjectInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfObject")
+
+	if err != nil {
+		return mt.ListMetadataRequest{}, err
+	}
+	sizeOfBucketInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfBucket")
+
+	if err != nil {
+		return mt.ListMetadataRequest{}, err
+	}
+
+	bucketSizeOperator := request.PathParameter("BucketSizeOperator")
+	objectSizeOperator := request.PathParameter("ObjectSizeOperator")
+	limit, offset, err := common.GetPaginationParam(request)
+
+	return mt.ListMetadataRequest{Type: typeOfCloudVendor, BackendName: backendName, Limit: limit, Offset: offset,
+		BucketName: bucketName, ObjectName: objectName, SizeOfObjectInBytes: sizeOfObjectInBytes,
+		SizeOfBucketInBytes: sizeOfBucketInBytes, BucketSizeOperator: bucketSizeOperator, ObjectSizeOperator: objectSizeOperator}, err
+
 }
