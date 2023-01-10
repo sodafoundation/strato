@@ -59,7 +59,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 
 	if err != nil {
 		log.Errorf("Failed to construct list metadata request err: \n", err)
-		response.WriteError(http.StatusBadRequest, err)
+		response.WriteEntity("Invalid type for sizeOfObject or sizeOfBucket request params. It should be integer type.")
 		return
 	}
 
@@ -68,7 +68,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 	log.Info("Get metadata details res.......:.", res)
 	if err != nil {
 		log.Errorf("Failed to get metadata details err: \n", err)
-		response.WriteError(http.StatusNotFound, err)
+		response.WriteEntity("Failed to get metadata details err")
 		return
 	}
 
