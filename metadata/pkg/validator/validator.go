@@ -18,11 +18,6 @@ func (e *ValidationError) Error() string {
 }
 
 func ValidateInput(in *pb.ListMetadataRequest) (okie bool, err error) {
-	okie, err = isValidQueryOptions(in)
-	if !okie {
-		return
-	}
-
 	switch in.Type {
 	case "":
 		validator := &GeneralQueryValidator{}
