@@ -169,7 +169,7 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 		return err
 	}
 
-	res, err := db.DbAdapter.ListMetadata(ctx, in.Limit, in.Offset)
+	res, err := db.DbAdapter.ListMetadata(ctx, in.Limit)
 	if err != nil {
 		log.Errorf("Failed to create backend: %v", err)
 		return err
