@@ -68,7 +68,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 	log.Info("Get metadata details res.......:.", res)
 	if err != nil {
 		log.Errorf("Failed to get metadata details err: \n", err)
-		response.WriteEntity("Failed to get metadata details err")
+		response.WriteEntity(err)
 		return
 	}
 
@@ -79,10 +79,11 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 //* This function fetches the request parameters from the request and assigns them default values if not present.
 //* It returns ListMetadataRequest for ListMetaData API call
 func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.ListMetadataRequest, err error) {
-	typeOfCloudVendor := request.PathParameter("type")
-	backendName := request.PathParameter("backendName")
-	bucketName := request.PathParameter("bucketName")
-	objectName := request.PathParameter("objectName")
+	typeOfCloudVendor := request.QueryParameter("type")
+	backendName := request.QueryParameter("backendName")
+	bucketName := request.QueryParameter("bucketName")
+	objectName := request.QueryParameter("objectName")
+	region := request.QueryParameter("region")
 	sizeOfObjectInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfObject")
 
 	if err != nil {
@@ -94,12 +95,12 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 		return mt.ListMetadataRequest{}, err
 	}
 
-	bucketSizeOperator := request.PathParameter("BucketSizeOperator")
-	objectSizeOperator := request.PathParameter("ObjectSizeOperator")
+	bucketSizeOperator := request.QueryParameter("BucketSizeOperator")
+	objectSizeOperator := request.QueryParameter("ObjectSizeOperator")
 	limit, offset, err := common.GetPaginationParam(request)
 
 	return mt.ListMetadataRequest{Type: typeOfCloudVendor, BackendName: backendName, Limit: limit, Offset: offset,
 		BucketName: bucketName, ObjectName: objectName, SizeOfObjectInBytes: sizeOfObjectInBytes,
-		SizeOfBucketInBytes: sizeOfBucketInBytes, BucketSizeOperator: bucketSizeOperator, ObjectSizeOperator: objectSizeOperator}, err
+		SizeOfBucketInBytes: sizeOfBucketInBytes, BucketSizeOperator: bucketSizeOperator, ObjectSizeOperator: objectSizeOperator, Region: region}, err
 
 }
