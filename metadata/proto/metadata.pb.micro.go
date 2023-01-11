@@ -42,7 +42,7 @@ func NewMetadataEndpoints() []*api.Endpoint {
 // Client API for Metadata service
 
 type MetadataService interface {
-	SyncMetadata(ctx context.Context, in *SyncMetadataRequest, opts ...client.CallOption) (*SyncMetadataResponse, error)
+	SyncMetadata(ctx context.Context, in *SyncMetadataRequest, opts ...client.CallOption) (*BaseResponse, error)
 	ListMetadata(ctx context.Context, in *ListMetadataRequest, opts ...client.CallOption) (*ListMetadataResponse, error)
 }
 
@@ -58,9 +58,9 @@ func NewMetadataService(name string, c client.Client) MetadataService {
 	}
 }
 
-func (c *metadataService) SyncMetadata(ctx context.Context, in *SyncMetadataRequest, opts ...client.CallOption) (*SyncMetadataResponse, error) {
+func (c *metadataService) SyncMetadata(ctx context.Context, in *SyncMetadataRequest, opts ...client.CallOption) (*BaseResponse, error) {
 	req := c.c.NewRequest(c.name, "Metadata.SyncMetadata", in)
-	out := new(SyncMetadataResponse)
+	out := new(BaseResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -81,13 +81,13 @@ func (c *metadataService) ListMetadata(ctx context.Context, in *ListMetadataRequ
 // Server API for Metadata service
 
 type MetadataHandler interface {
-	SyncMetadata(context.Context, *SyncMetadataRequest, *SyncMetadataResponse) error
+	SyncMetadata(context.Context, *SyncMetadataRequest, *BaseResponse) error
 	ListMetadata(context.Context, *ListMetadataRequest, *ListMetadataResponse) error
 }
 
 func RegisterMetadataHandler(s server.Server, hdlr MetadataHandler, opts ...server.HandlerOption) error {
 	type metadata interface {
-		SyncMetadata(ctx context.Context, in *SyncMetadataRequest, out *SyncMetadataResponse) error
+		SyncMetadata(ctx context.Context, in *SyncMetadataRequest, out *BaseResponse) error
 		ListMetadata(ctx context.Context, in *ListMetadataRequest, out *ListMetadataResponse) error
 	}
 	type Metadata struct {
@@ -101,7 +101,7 @@ type metadataHandler struct {
 	MetadataHandler
 }
 
-func (h *metadataHandler) SyncMetadata(ctx context.Context, in *SyncMetadataRequest, out *SyncMetadataResponse) error {
+func (h *metadataHandler) SyncMetadata(ctx context.Context, in *SyncMetadataRequest, out *BaseResponse) error {
 	return h.MetadataHandler.SyncMetadata(ctx, in, out)
 }
 

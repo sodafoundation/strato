@@ -73,7 +73,7 @@ func (myc *S3Cred) Retrieve() (credentials.Value, error) {
 	return cred, nil
 }
 
-func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest, out *pb.SyncMetadataResponse) error {
+func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest, out *pb.BaseResponse) error {
 	log.Info("Received sncMetadata request in metadata service.")
 	//svc := s3.New(session.New())
 	endpoint := "s3.ap-south-1.amazonaws.com"

@@ -47,7 +47,7 @@ func (s *APIService) SyncMetadata(request *restful.Request, response *restful.Re
 		response.WriteError(http.StatusInternalServerError, err)
 		return
 	}
-	response.WriteEntity("syncing successful...")
+	response.WriteEntity("sync request sent successfully")
 }
 
 func (s *APIService) ListMetadata(request *restful.Request, response *restful.Response) {
