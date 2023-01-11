@@ -158,14 +158,15 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 }
 
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
-	log.Info("Received GetMetadata request in metadata service.")
+	log.Info("received GetMetadata request in metadata service.")
 
-	log.Info(" Validating ListMetadata resquest started.")
+	log.Info(" validating list metadata resquest started.")
 
 	// validates the query options such as offset and limit and also the query
 	okie, err := validator.ValidateInput(in)
 
 	if !okie {
+		log.Errorf("Failed to validate list metadata request: %v", err)
 		return err
 	}
 
