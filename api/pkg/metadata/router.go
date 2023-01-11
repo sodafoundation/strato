@@ -21,6 +21,6 @@ import (
 
 func RegisterRouter(ws *restful.WebService) {
 	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.GET("/metadata/sync").To(handler.SyncMetadata)).Doc("Sync metdata from cloud")
-	ws.Route(ws.GET("/metadata/metadata").To(handler.ListMetadata)).Doc("Show metdata details")
+	ws.Route(ws.POST("/backends/sync").To(handler.SyncMetadata)).Doc("Sync metdata from cloud")
+	ws.Route(ws.GET("/backends/metadata").To(handler.ListMetadata)).Doc("Show metdata details")
 }

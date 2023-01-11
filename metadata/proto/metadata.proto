@@ -3,7 +3,7 @@ syntax = "proto3";
 option go_package = "proto";
 
 service Metadata {
-    rpc SyncMetadata(SyncMetadataRequest) returns (SyncMetadataResponse) {}
+    rpc SyncMetadata(SyncMetadataRequest) returns (BaseResponse) {}
     rpc ListMetadata(ListMetadataRequest) returns (ListMetadataResponse) {}
 }
 
@@ -39,6 +39,11 @@ message ListMetadataRequest {
     string bucketSizeOperator = 10;
     // operator is eq, gte,gt,lte,lt
     string objectSizeOperator = 11;
+}
+
+message BaseResponse {
+    int32 errorCode = 1;
+    string msg = 2;
 }
 
 message SyncMetadataResponse {
