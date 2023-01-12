@@ -267,6 +267,61 @@ func (x *ListMetadataRequest) GetObjectSizeOperator() string {
 	return ""
 }
 
+type BaseResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ErrorCode int32  `protobuf:"varint,1,opt,name=errorCode,proto3" json:"errorCode,omitempty"`
+	Msg       string `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+}
+
+func (x *BaseResponse) Reset() {
+	*x = BaseResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_metadata_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BaseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BaseResponse) ProtoMessage() {}
+
+func (x *BaseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_metadata_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BaseResponse.ProtoReflect.Descriptor instead.
+func (*BaseResponse) Descriptor() ([]byte, []int) {
+	return file_metadata_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BaseResponse) GetErrorCode() int32 {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return 0
+}
+
+func (x *BaseResponse) GetMsg() string {
+	if x != nil {
+		return x.Msg
+	}
+	return ""
+}
+
 type SyncMetadataResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -278,7 +333,7 @@ type SyncMetadataResponse struct {
 func (x *SyncMetadataResponse) Reset() {
 	*x = SyncMetadataResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_metadata_proto_msgTypes[3]
+		mi := &file_metadata_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -291,7 +346,7 @@ func (x *SyncMetadataResponse) String() string {
 func (*SyncMetadataResponse) ProtoMessage() {}
 
 func (x *SyncMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_proto_msgTypes[3]
+	mi := &file_metadata_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -304,7 +359,7 @@ func (x *SyncMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncMetadataResponse.ProtoReflect.Descriptor instead.
 func (*SyncMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_proto_rawDescGZIP(), []int{3}
+	return file_metadata_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SyncMetadataResponse) GetMetadataDetail() []*MetadataDetail {
@@ -325,7 +380,7 @@ type ListMetadataResponse struct {
 func (x *ListMetadataResponse) Reset() {
 	*x = ListMetadataResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_metadata_proto_msgTypes[4]
+		mi := &file_metadata_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -338,7 +393,7 @@ func (x *ListMetadataResponse) String() string {
 func (*ListMetadataResponse) ProtoMessage() {}
 
 func (x *ListMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_proto_msgTypes[4]
+	mi := &file_metadata_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -351,7 +406,7 @@ func (x *ListMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMetadataResponse.ProtoReflect.Descriptor instead.
 func (*ListMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_proto_rawDescGZIP(), []int{4}
+	return file_metadata_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListMetadataResponse) GetBuckets() []*BucketMetadata {
@@ -384,7 +439,7 @@ type BucketMetadata struct {
 func (x *BucketMetadata) Reset() {
 	*x = BucketMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_metadata_proto_msgTypes[5]
+		mi := &file_metadata_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -397,7 +452,7 @@ func (x *BucketMetadata) String() string {
 func (*BucketMetadata) ProtoMessage() {}
 
 func (x *BucketMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_proto_msgTypes[5]
+	mi := &file_metadata_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +465,7 @@ func (x *BucketMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BucketMetadata.ProtoReflect.Descriptor instead.
 func (*BucketMetadata) Descriptor() ([]byte, []int) {
-	return file_metadata_proto_rawDescGZIP(), []int{5}
+	return file_metadata_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BucketMetadata) GetCreationDate() string {
@@ -501,7 +556,7 @@ type ObjectMetadata struct {
 func (x *ObjectMetadata) Reset() {
 	*x = ObjectMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_metadata_proto_msgTypes[6]
+		mi := &file_metadata_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -514,7 +569,7 @@ func (x *ObjectMetadata) String() string {
 func (*ObjectMetadata) ProtoMessage() {}
 
 func (x *ObjectMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_proto_msgTypes[6]
+	mi := &file_metadata_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -527,7 +582,7 @@ func (x *ObjectMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectMetadata.ProtoReflect.Descriptor instead.
 func (*ObjectMetadata) Descriptor() ([]byte, []int) {
-	return file_metadata_proto_rawDescGZIP(), []int{6}
+	return file_metadata_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ObjectMetadata) GetLastModifiedDate() string {
@@ -665,7 +720,11 @@ var file_metadata_proto_rawDesc = []byte{
 	0x74, 0x53, 0x69, 0x7a, 0x65, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x12, 0x2e, 0x0a,
 	0x12, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x69, 0x7a, 0x65, 0x4f, 0x70, 0x65, 0x72, 0x61,
 	0x74, 0x6f, 0x72, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x12, 0x6f, 0x62, 0x6a, 0x65, 0x63,
-	0x74, 0x53, 0x69, 0x7a, 0x65, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x22, 0x4f, 0x0a,
+	0x74, 0x53, 0x69, 0x7a, 0x65, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x22, 0x3e, 0x0a,
+	0x0c, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c, 0x0a,
+	0x09, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x43, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x09, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x43, 0x6f, 0x64, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x6d,
+	0x73, 0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6d, 0x73, 0x67, 0x22, 0x4f, 0x0a,
 	0x14, 0x53, 0x79, 0x6e, 0x63, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x37, 0x0a, 0x0e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
 	0x61, 0x44, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0f, 0x2e,
@@ -723,17 +782,16 @@ var file_metadata_proto_rawDesc = []byte{
 	0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x61,
 	0x67, 0x73, 0x18, 0x0d, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x61, 0x67, 0x73, 0x12, 0x1a,
 	0x0a, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x32, 0x88, 0x01, 0x0a, 0x08, 0x4d,
-	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x3d, 0x0a, 0x0c, 0x53, 0x79, 0x6e, 0x63, 0x4d,
+	0x52, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x32, 0x80, 0x01, 0x0a, 0x08, 0x4d,
+	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x35, 0x0a, 0x0c, 0x53, 0x79, 0x6e, 0x63, 0x4d,
 	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x14, 0x2e, 0x53, 0x79, 0x6e, 0x63, 0x4d, 0x65,
-	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e,
-	0x53, 0x79, 0x6e, 0x63, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x3d, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65,
-	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x14, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x74,
-	0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x4c,
-	0x69, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x07, 0x5a, 0x05, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0d, 0x2e,
+	0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x3d,
+	0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x14,
+	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x07, 0x5a,
+	0x05, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -748,24 +806,25 @@ func file_metadata_proto_rawDescGZIP() []byte {
 	return file_metadata_proto_rawDescData
 }
 
-var file_metadata_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_metadata_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_metadata_proto_goTypes = []interface{}{
 	(*MetadataDetail)(nil),       // 0: MetadataDetail
 	(*SyncMetadataRequest)(nil),  // 1: SyncMetadataRequest
 	(*ListMetadataRequest)(nil),  // 2: ListMetadataRequest
-	(*SyncMetadataResponse)(nil), // 3: SyncMetadataResponse
-	(*ListMetadataResponse)(nil), // 4: ListMetadataResponse
-	(*BucketMetadata)(nil),       // 5: BucketMetadata
-	(*ObjectMetadata)(nil),       // 6: ObjectMetadata
+	(*BaseResponse)(nil),         // 3: BaseResponse
+	(*SyncMetadataResponse)(nil), // 4: SyncMetadataResponse
+	(*ListMetadataResponse)(nil), // 5: ListMetadataResponse
+	(*BucketMetadata)(nil),       // 6: BucketMetadata
+	(*ObjectMetadata)(nil),       // 7: ObjectMetadata
 }
 var file_metadata_proto_depIdxs = []int32{
 	0, // 0: SyncMetadataResponse.MetadataDetail:type_name -> MetadataDetail
-	5, // 1: ListMetadataResponse.buckets:type_name -> BucketMetadata
-	6, // 2: BucketMetadata.objects:type_name -> ObjectMetadata
+	6, // 1: ListMetadataResponse.buckets:type_name -> BucketMetadata
+	7, // 2: BucketMetadata.objects:type_name -> ObjectMetadata
 	1, // 3: Metadata.SyncMetadata:input_type -> SyncMetadataRequest
 	2, // 4: Metadata.ListMetadata:input_type -> ListMetadataRequest
-	3, // 5: Metadata.SyncMetadata:output_type -> SyncMetadataResponse
-	4, // 6: Metadata.ListMetadata:output_type -> ListMetadataResponse
+	3, // 5: Metadata.SyncMetadata:output_type -> BaseResponse
+	5, // 6: Metadata.ListMetadata:output_type -> ListMetadataResponse
 	5, // [5:7] is the sub-list for method output_type
 	3, // [3:5] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -816,7 +875,7 @@ func file_metadata_proto_init() {
 			}
 		}
 		file_metadata_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SyncMetadataResponse); i {
+			switch v := v.(*BaseResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -828,7 +887,7 @@ func file_metadata_proto_init() {
 			}
 		}
 		file_metadata_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListMetadataResponse); i {
+			switch v := v.(*SyncMetadataResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -840,7 +899,7 @@ func file_metadata_proto_init() {
 			}
 		}
 		file_metadata_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BucketMetadata); i {
+			switch v := v.(*ListMetadataResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -852,6 +911,18 @@ func file_metadata_proto_init() {
 			}
 		}
 		file_metadata_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BucketMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_metadata_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ObjectMetadata); i {
 			case 0:
 				return &v.state
@@ -870,7 +941,7 @@ func file_metadata_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_metadata_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
