@@ -1,13 +1,10 @@
 package constants
 
 const (
-	CACHE_NAME = "cachename"
-
-	KEYDB_URL = "localhost:5380"
-
+	CACHE_NAME     = "cachename"
+	KEYDB_URL      = "localhost:5380"
 	KEYDB_PASSWORD = ""
-
-	KEYDB_DB = 0
+	KEYDB_DB       = 0
 )
 
 // type constants for cloud vendors

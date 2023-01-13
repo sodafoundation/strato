@@ -108,7 +108,7 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 }
 
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
-	log.Info("received GetMetadata request in metadata service.")
+	log.Info("received get metadata request in metadata service.")
 
 	log.Info(" validating list metadata resquest started.")
 
