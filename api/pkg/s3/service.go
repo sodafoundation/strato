@@ -19,7 +19,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
-	"math/rand"
 	"net/http"
 	"os"
 
@@ -167,20 +166,7 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 
 func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) string {
 	log.Info("Request for GetBackendIdFromTier received", tierName)
-	var response *restful.Response
 	var backendId string
-	res, err := s.backendClient.ListTiers(common.GetAdminContext(), &backend.ListTierRequest{
-		Limit:  common.MaxPaginationLimit,
-		Offset: common.DefaultPaginationOffset,
-		Filter: map[string]string{"name": tierName},
-	})
-
-	if err != nil {
-		log.Error("list tier failed during getting backends from tier")
-		response.WriteError(http.StatusInternalServerError, err)
-		return ""
-	}
-	backendId = res.Tiers[0].Backends[rand.Intn(len(res.Tiers[0].Backends))]
 
 	return backendId
 }
