@@ -18,18 +18,15 @@ import (
 	"context"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
-	"github.com/opensds/multi-cloud/metadata/pkg/model"
+	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
+	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 const (
@@ -38,10 +35,13 @@ const (
 
 	metadataService_Docker = "metadata"
 	metadataService_K8S    = "soda.multicloud.v1.metadata"
+	backendService_Docker  = "backend"
+	backendService_K8S     = "soda.multicloud.v1.backend"
 )
 
 type metadataService struct {
-	metaClient pb.MetadataService
+	metaClient    pb.MetadataService
+	backendClient backend.BackendService
 }
 
 func NewMetaService() pb.MetadataHandler {
@@ -54,8 +54,15 @@ func NewMetaService() pb.MetadataHandler {
 		metaService = metadataService_K8S
 	}
 
+	backendService := backendService_Docker
+
+	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
+		backendService = backendService_K8S
+	}
+
 	return &metadataService{
-		metaClient: pb.NewMetadataService(metaService, client.DefaultClient),
+		metaClient:    pb.NewMetadataService(metaService, client.DefaultClient),
+		backendClient: backend.NewBackendService(backendService, client.DefaultClient),
 	}
 }
 
@@ -74,85 +81,27 @@ func (myc *S3Cred) Retrieve() (credentials.Value, error) {
 }
 
 func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest, out *pb.BaseResponse) error {
-	log.Info("Received sncMetadata request in metadata service.")
-	//svc := s3.New(session.New())
-	endpoint := "s3.ap-south-1.amazonaws.com"
-	AccessKeyID := "AKIA6NODD4LSA36CQNVB"
-	AccessKeySecret := "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"
-
-	s3aksk := S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
-	creds := credentials.NewCredentials(&s3aksk)
-
-	disableSSL := true
-	sess, err := session.NewSession(&aws.Config{
-		//Region:      &region,
-		Endpoint:    &endpoint,
-		Credentials: creds,
-		DisableSSL:  &disableSSL,
-	})
+	log.Infoln("Received sncMetadata request in metadata service.")
+	// We need to find the backend in which bucket will be created
+	backendName := "demo-aws"
+	backend, err := utils.GetBackend(ctx, f.backendClient, backendName)
 	if err != nil {
+		log.Errorln("failed to get backend client with err:", err)
+		return err
+	}
+	log.Infoln("the backend we got now....:%+v", backend)
+	sd, err := driver.CreateStorageDriver(backend.Type, backend)
+	if err != nil {
+		log.Errorln("failed to create driver. err:", err)
 		return err
 	}
 
-	svc := s3.New(sess, aws.NewConfig().WithRegion("ap-south-1"))
-	log.Info("svc done..")
-	input := &s3.ListBucketsInput{}
-	log.Info("input done..")
-
-	result, err := svc.ListBuckets(input)
-	log.Info("result done..")
+	err = sd.SyncMetadata(ctx, in)
 	if err != nil {
-		log.Infof("error is not nil..%s", err)
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				log.Infoln(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			log.Infoln("else err:", err.Error())
-		}
-		return nil
-	}
-
-	lres, err := db.DbAdapter.ListMetadata(ctx, 1000)
-	if err != nil {
-		log.Errorf("Failed to create backend: %v", err)
-		return err
-	}
-	buckName := map[string]string{}
-	for _, res := range lres {
-		if _, ok := buckName[*res.Name]; !ok {
-			buckName[*res.Name] = ""
-		}
-	}
-
-	log.Infoln("result...:", result)
-
-	var buckets []*model.MetaBucket
-	for _, buck := range result.Buckets {
-		if _, ok := buckName[*buck.Name]; !ok {
-			bucket := &model.MetaBucket{
-				Name:         buck.Name,
-				Id:           bson.NewObjectId(),
-				CreationDate: buck.CreationDate,
-				Type:         "aws",
-				Region:       endpoint,
-			}
-			buckets = append(buckets, bucket)
-		}
-	}
-	log.Infoln("buckets...:", buckets)
-	log.Infoln("bucketName...:%+v", buckName)
-
-	err = db.DbAdapter.CreateMetadata(ctx, buckets)
-	if err != nil {
-		log.Errorf("Failed to create backend: %v", err)
+		log.Errorln("failed to sync metadata in s3 service:", err)
 		return err
 	}
 
-	log.Info("Got metadata successfully.")
 	return nil
 }
 

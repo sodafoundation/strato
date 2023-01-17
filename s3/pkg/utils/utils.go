@@ -153,7 +153,7 @@ func Md5Content(data []byte) (base64Encoded, hexEncoded string) {
 
 func GetBackend(ctx context.Context, backedClient backend.BackendService, backendName string) (*backend.BackendDetail,
 	error) {
-	log.Infof("backendName is %v:\n", backendName)
+	log.Infof("backendName is:%s", backendName)
 	backendRep, backendErr := backedClient.ListBackend(ctx, &backend.ListBackendRequest{
 		Offset: 0,
 		Limit:  1,

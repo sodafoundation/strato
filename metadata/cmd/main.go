@@ -20,6 +20,7 @@ import (
 	"github.com/micro/go-micro/v2"
 
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
+	_ "github.com/opensds/multi-cloud/metadata/pkg/drivers"
 	"github.com/opensds/multi-cloud/metadata/pkg/utils/config"
 
 	log "github.com/sirupsen/logrus"
