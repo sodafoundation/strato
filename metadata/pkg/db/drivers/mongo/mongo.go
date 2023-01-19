@@ -19,9 +19,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -32,8 +32,8 @@ import (
 
 var adap = &adapter{}
 var mutex sync.Mutex
-var DataBaseName = "metadatastore"
-var BucketMD = "metadatabucket"
+var MetadataDataBaseName = "metadatastore"
+var MetadataCollectionName = "metadatabucket"
 var mongodb = "mongodb://"
 
 func Init(host string) *adapter {
@@ -88,21 +88,19 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	return nil
 }
 
-func (ad *adapter) CreateMetadata(ctx context.Context, buckets []*model.MetaBucket) error {
+func (ad *adapter) CreateMetadata(ctx context.Context, backendID string, buckets []model.MetaBucket) error {
 	log.Infoln("I am in CreateMetadta in db..........")
 	session := ad.session
-	for _, bucket := range buckets {
-		if bucket.Id == "" {
-			bucket.Id = bson.NewObjectId()
-		}
 
-		_, err := session.Database(DataBaseName).Collection(BucketMD).InsertOne(ctx, bucket)
-		if err != nil {
-			return err
-		}
-		log.Infof("the value of in:%s", bucket)
+	filter := bson.M{"id": backendID}
+	update := bson.M{"$set": bson.M{"buckets": buckets}}
+	upsert := true
+	options := options.UpdateOptions{Upsert: &upsert}
+	_, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).UpdateOne(ctx, filter, update, &options)
+	if err != nil {
+		return err
 	}
-
+	log.Infoln("metadata successfully synced with database")
 	return nil
 }
 
@@ -118,7 +116,7 @@ func (ad *adapter) ListMetadata(ctx context.Context, limit int32) ([]*model.Meta
 
 	log.Infof("ListMetadata, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
 
-	cur, err := session.Database(DataBaseName).Collection(BucketMD).Find(ctx, m, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
+	cur, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).Find(ctx, m, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
 	if err != nil {
 		return nil, err
 	}
