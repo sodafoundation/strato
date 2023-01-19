@@ -17,6 +17,7 @@ package service
 import (
 	"context"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
+	resultpaginator "github.com/opensds/multi-cloud/metadata/pkg/result-paginator"
 	"os"
 
 	"github.com/micro/go-micro/v2/client"
@@ -131,11 +132,13 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 		return err
 	}
 
-	var backendMetaDatas []*pb.BackendMetadata
+	log.Debugln("the un-paginated result is:", unPaginatedResult)
 
-	out.Backends = backendMetaDatas
+	paginatedResult := resultpaginator.Paginate(unPaginatedResult, in.GetLimit(), in.GetOffset())
 
-	protoBackends := metautils.GetBackends(unPaginatedResult)
+	protoBackends := metautils.GetBackends(paginatedResult)
 	out.Backends = protoBackends
+	log.Info("resultant backends for user's query:", protoBackends)
+
 	return nil
 }

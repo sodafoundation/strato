@@ -57,6 +57,9 @@ const (
 	INCLUDE_FIELD          = 1
 	IN                     = "in"
 	ELEMMATCH_AGG_OPERATOR = "$elemMatch"
+	SORT_AGG_OPERATOR      = "$sort"
+
+	ASCENDING_ORDER = 1
 )
 
 const (

@@ -23,6 +23,13 @@ func Translate(in *pb.ListMetadataRequest) []bson.D {
 	aggOperations = constructAggOperationForBackendLevel(in, aggOperations)
 	aggOperations = constructAggOperationForBucketLevel(in, aggOperations)
 	aggOperations = constructAggOperationForObjectLevel(in, aggOperations)
+	aggOperations = sortAggOperation(aggOperations, constants.BACKEND_NAME)
+	return aggOperations
+}
+
+func sortAggOperation(aggOperations []bson.D, fieldName string) []bson.D {
+	sortAgg := bson.D{{constants.SORT_AGG_OP, bson.D{{fieldName, constants.ASCENDING_ORDER}}}}
+	aggOperations = append(aggOperations, sortAgg)
 	return aggOperations
 }
 
