@@ -38,6 +38,11 @@ func isValidQuery(in *pb.ListMetadataRequest) (bool, error) {
 }
 
 func isSizeParamsValid(sizeInBytes int64, operator string) (bool, error) {
+
+	if sizeInBytes == 0 && operator == "" {
+		return true, nil
+	}
+
 	switch operator {
 	case constants.EQUAL_OPERATOR:
 

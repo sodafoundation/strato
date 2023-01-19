@@ -73,7 +73,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 	}
 
 	log.Info("got metadata details successfully.")
-	response.WriteEntity(res.Buckets)
+	response.WriteEntity(res.Backends)
 }
 
 //* This function fetches the request parameters from the request and assigns them default values if not present.
