@@ -138,7 +138,7 @@ func constructAggOperationForBucketLevel(in *pb.ListMetadataRequest, aggOperatio
 			}},
 		}
 		bucketLevelAggOperations := []bson.D{
-			//findMatchingDocuments,
+			findMatchingDocuments,
 			filterOnlyRequiredObjects,
 		}
 		aggOperations = append(aggOperations, bucketLevelAggOperations...)
