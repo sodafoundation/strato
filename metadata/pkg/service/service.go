@@ -24,9 +24,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
-	"github.com/opensds/multi-cloud/metadata/pkg/model"
 	queryrunner "github.com/opensds/multi-cloud/metadata/pkg/query-runner"
 	querytranslator "github.com/opensds/multi-cloud/metadata/pkg/query-translator"
+	metautils "github.com/opensds/multi-cloud/metadata/pkg/utils"
 	validator "github.com/opensds/multi-cloud/metadata/pkg/validator"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -137,69 +137,9 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 
 	out.Backends = backendMetadatas
 
-	protoBackends := GetProtoBackends(unPaginatedResult)
+	protoBackends := metautils.GetProtoBackends(unPaginatedResult)
 	out.Backends = protoBackends
 	log.Info("proto backends:", protoBackends)
 
 	return nil
-}
-
-func GetProtoBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
-	var protoBackends []*pb.BackendMetadata
-	for _, backend := range unPaginatedResult {
-		var protoBuckets []*pb.BucketMetadata
-		protoBuckets = GetProtoBuckets(backend, protoBuckets)
-		protoBackend := &pb.BackendMetadata{
-			BackendName: backend.BackendName,
-			Region:      backend.Region,
-			Type:        backend.Type,
-			Buckets:     protoBuckets,
-		}
-		protoBackends = append(protoBackends, protoBackend)
-	}
-	return protoBackends
-}
-
-func GetProtoBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) []*pb.BucketMetadata {
-	for _, bucket := range backend.Buckets {
-
-		protoObjects := GetProtoObjects(bucket)
-
-		protoBucket := &pb.BucketMetadata{
-			Name:             bucket.Name,
-			Type:             bucket.Type,
-			Region:           bucket.Region,
-			TotalSizeInBytes: bucket.TotalSize,
-			NumberOfObjects:  int32(bucket.NumberOfObjects),
-			CreationDate:     bucket.CreationDate.String(),
-			Tags:             bucket.BucketTags,
-			Objects:          protoObjects,
-		}
-		protoBuckets = append(protoBuckets, protoBucket)
-	}
-	return protoBuckets
-}
-
-func GetProtoObjects(bucket model.MetaBucket) []*pb.ObjectMetadata {
-	var protoObjects []*pb.ObjectMetadata
-
-	for _, object := range bucket.Objects {
-		protoObject := &pb.ObjectMetadata{
-			Name:                        object.ObjectName,
-			LastModifiedDate:            object.LastModifiedDate.String(),
-			SizeInBytes:                 int32(object.Size),
-			BucketName:                  bucket.Name,
-			Type:                        object.ObjectType,
-			ServerSideEncryptionEnabled: object.ServerSideEncryptionEnabled,
-			ExpiresDate:                 object.ExpiresDate.String(),
-			GrantControl:                object.GrantControl,
-			VersionId:                   string(object.VersionId),
-			RedirectLocation:            object.RedirectLocation,
-			ReplicationStatus:           object.ReplicationStatus,
-			Tags:                        object.ObjectTags,
-			Metadata:                    object.Metadata,
-		}
-		protoObjects = append(protoObjects, protoObject)
-	}
-	return protoObjects
 }
