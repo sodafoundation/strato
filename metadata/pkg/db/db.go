@@ -21,6 +21,7 @@ import (
 	"github.com/opensds/multi-cloud/metadata/pkg/db/drivers/mongo"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
 	"github.com/opensds/multi-cloud/metadata/pkg/utils/config"
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
 )
 
 // DbAdapter is a global variable that controls database module.
@@ -54,6 +55,6 @@ func Exit(db *config.Database) {
 }
 
 type DBAdapter interface {
-	CreateMetadata(ctx context.Context, backendID string, bucket []model.MetaBucket) error
+	CreateMetadata(ctx context.Context, backend *backendpb.BackendDetail, bucket []model.MetaBucket) error
 	ListMetadata(ctx context.Context, limit int32) ([]*model.MetaBucket, error)
 }

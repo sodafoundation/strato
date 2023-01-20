@@ -117,9 +117,9 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 	// for _, buck := range res {
 	// 	log.Infoln("buck.........", buck)
 	// 	bucket := &pb.BucketMetadata{
-	// 		Name:         buck.Name,
-	// 		Type:         buck.BucketType,
-	// 		Tags:         buck.BucketTags,
+	// 		Name:         *buck.Name,
+	// 		Type:         buck.Type,
+	// 		Tags:         buck.Tags,
 	// 		Region:       buck.Region,
 	// 		CreationDate: buck.CreationDate.String(),
 	// 	}

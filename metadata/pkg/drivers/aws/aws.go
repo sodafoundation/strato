@@ -16,7 +16,6 @@ package aws
 
 import (
 	"context"
-	// "encoding/json"
 	"sync"
 	"time"
 
@@ -49,8 +48,8 @@ type AwsAdapter struct {
 	Session *session.Session
 }
 
-func ObjectList(ad *AwsAdapter, bucket *model.MetaBucket) error {
-	svc := s3.New(ad.Session)
+func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
+	svc := s3.New(sess)
 	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
 	if err != nil {
 		return err
@@ -96,8 +95,8 @@ func ObjectList(ad *AwsAdapter, bucket *model.MetaBucket) error {
 	return err
 }
 
-func BucketList(ad *AwsAdapter) ([]model.MetaBucket, error) {
-	svc := s3.New(ad.Session)
+func BucketList(sess *session.Session) ([]model.MetaBucket, error) {
+	svc := s3.New(sess)
 
 	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
@@ -121,9 +120,9 @@ func BucketList(ad *AwsAdapter) ([]model.MetaBucket, error) {
 				tagset[*tag.Key] = *tag.Value
 			}
 			buck.BucketTags = tagset
-			newAdap := ad
-			newAdap.Session.Config.Region = &buck.Region
-			err := ObjectList(newAdap, &buck)
+			newSess := sess
+			newSess.Config.Region = &buck.Region
+			err := ObjectList(newSess, &buck)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -136,9 +135,8 @@ func BucketList(ad *AwsAdapter) ([]model.MetaBucket, error) {
 
 func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest) error {
 
-	buckArr, _ := BucketList(ad)
-	// out, _ := json.MarshalIndent(buckArr, "", "   ")
-	db.DbAdapter.CreateMetadata(ctx, ad.Backend.Id, buckArr)
+	buckArr, _ := BucketList(ad.Session)
+	db.DbAdapter.CreateMetadata(ctx, ad.Backend, buckArr)
 	return nil
 }
 
