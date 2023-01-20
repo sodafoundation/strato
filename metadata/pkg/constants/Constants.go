@@ -25,8 +25,7 @@ const (
 	ZERO          = 0
 	DOLLAR_SYMBOL = "$"
 	DOLLAR_DOLLAR = "$$"
-
-	DOT = "."
+	DOT           = "."
 )
 
 const (
@@ -51,13 +50,11 @@ const (
 	//comparioson operators
 	DOLLAR_EQUAL_OPERATOR = "$eq"
 	//logical_operators
-	OR_OPERATOR  = "$or"
-	AND_OPERATOR = "$and"
-
-	MAP_AGG_OPERATOR     = "$map"
-	PROJECT_AGG_OPERATOR = "$project"
-	INCLUDE_FIELD        = 1
-
+	OR_OPERATOR            = "$or"
+	AND_OPERATOR           = "$and"
+	MAP_AGG_OPERATOR       = "$map"
+	PROJECT_AGG_OPERATOR   = "$project"
+	INCLUDE_FIELD          = 1
 	IN                     = "in"
 	ELEMMATCH_AGG_OPERATOR = "$elemMatch"
 )

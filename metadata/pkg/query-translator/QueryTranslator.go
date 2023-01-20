@@ -8,13 +8,14 @@ import (
 )
 
 func Translate(in *pb.ListMetadataRequest) []bson.D {
-	aggOperations := constructAggOperationForBackendLevel(in, make([]bson.D, 0))
+	var aggOperations []bson.D
+	aggOperations = constructAggOperationForBackendLevel(in, aggOperations)
 	aggOperations = constructAggOperationForBucketLevel(in, aggOperations)
-	aggOperations = constructAggOperationForObjectLevel2(in, aggOperations)
+	aggOperations = constructAggOperationForObjectLevel(in, aggOperations)
 	return aggOperations
 }
 
-func constructAggOperationForObjectLevel2(in *pb.ListMetadataRequest, aggOperations []bson.D) []bson.D {
+func constructAggOperationForObjectLevel(in *pb.ListMetadataRequest, aggOperations []bson.D) []bson.D {
 	filterConditions := bson.A{}
 	var matchConditions []bson.E
 
