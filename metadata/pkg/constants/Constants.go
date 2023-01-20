@@ -66,8 +66,7 @@ const (
 	REGION       = "region"
 	BUCKETS      = "buckets"
 	BUCKET       = "bucket"
-
-	NAME = "name"
+	NAME         = "name"
 	//* bucket.+ actual field name
 	BUCKET_NAME        = "bucket.name"
 	BUCKETS_NAME       = "buckets.name"
@@ -76,16 +75,13 @@ const (
 	TOTAL_SIZE         = "totalSize"
 	OBJECTS            = "objects"
 	OBJECT             = "object"
-
 	//* object.+ actual field name
-	OBJECT_SIZE = "object.size"
-	OBJECT_NAME = "object.name"
-
+	OBJECT_SIZE       = "object.size"
+	OBJECT_NAME       = "object.name"
 	OBJECTS_SIZE      = "objects.size"
 	OBJECTS_NAME      = "objects.name"
 	CREATION_DATE     = "creationDate"
 	ACCESS            = "access"
 	NUMBER_OF_OBJECTS = "numberOfObjects"
-
-	TAGS = "tags"
+	TAGS              = "tags"
 )
