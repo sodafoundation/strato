@@ -121,7 +121,7 @@ func (s *APIService) GetBackend(request *restful.Request, response *restful.Resp
 
 	if err != nil {
 		log.Errorf("failed to get backend details: %v %s\n", err, err.Error())
-		if strings.Contains(err.Error(), "invalid input to ObjectIdHex") {
+		if strings.Contains(err.Error(), "invalid input to ObjectIdHex") || strings.Contains(err.Error(), "mongo: no documents in result") {
 			errMsg := fmt.Sprintf("Invalid backend id: %s", id)
 			response.WriteError(http.StatusNotFound, errors.New(errMsg))
 		} else {
