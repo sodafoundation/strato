@@ -41,40 +41,12 @@ func constructAggOperationForObjectLevel(in *pb.ListMetadataRequest, aggOperatio
 
 		log.Debugln("matching documents query for object level:", findMatchingDocuments)
 
-		filterOnlyRequiredObjects := bson.D{{constants.PROJECT_AGG_OPERATOR, bson.D{{constants.ID, constants.INCLUDE_FIELD},
+		filterOnlyRequiredObjects := bson.D{{constants.PROJECT_AGG_OPERATOR, bson.D{
+			{constants.ID, constants.INCLUDE_FIELD},
 			{constants.BACKEND_NAME, constants.INCLUDE_FIELD},
 			{constants.REGION, constants.INCLUDE_FIELD},
 			{constants.TYPE, constants.INCLUDE_FIELD},
-			{constants.BUCKETS, bson.D{
-				{constants.MAP_AGG_OPERATOR, bson.D{
-					{constants.INPUT, constants.DOLLAR_SYMBOL + constants.BUCKETS},
-					{constants.AS, constants.BUCKET},
-					{constants.IN, bson.D{
-						//* asking to include all the rest of bucket fields in the map output
-						{constants.CREATION_DATE, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.CREATION_DATE},
-						{constants.NAME, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.REGION},
-						{constants.REGION, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.REGION},
-						{constants.TYPE, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.TYPE},
-						{constants.ACCESS, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.ACCESS},
-						{constants.NUMBER_OF_OBJECTS, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.NUMBER_OF_OBJECTS},
-						{constants.TOTAL_SIZE, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.TOTAL_SIZE},
-						{constants.TAGS, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.TAGS},
-						//* asking to filter the objects array based on the object level queries given by user
-						{constants.OBJECTS, bson.D{
-							{constants.FILTER_AGG_OP, bson.D{
-								{constants.INPUT, constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + constants.OBJECTS},
-								{constants.AS, constants.OBJECT},
-								{constants.COND_OPERATOR, bson.D{{constants.AND_OPERATOR, filterConditions}}},
-							},
-							},
-						},
-						},
-					},
-					},
-				},
-				},
-			},
-			},
+			getBucketsHavingFilteredObjectsQuery(filterConditions),
 		}}}
 		objectLevelAggOperations := []bson.D{
 			findMatchingDocuments,
@@ -84,6 +56,47 @@ func constructAggOperationForObjectLevel(in *pb.ListMetadataRequest, aggOperatio
 	}
 
 	return aggOperations
+}
+
+func getBucketsHavingFilteredObjectsQuery(filterConditions bson.A) bson.E {
+	return bson.E{constants.BUCKETS, bson.D{
+		{constants.MAP_AGG_OPERATOR, bson.D{
+			{constants.INPUT, constants.DOLLAR_SYMBOL + constants.BUCKETS},
+			{constants.AS, constants.BUCKET},
+			{constants.IN, bson.D{
+				//* asking to include all the rest of bucket fields in the map output
+				{constants.CREATION_DATE, getQualifiedNameForMapBucket(constants.CREATION_DATE)},
+				{constants.NAME, getQualifiedNameForMapBucket(constants.REGION)},
+				{constants.REGION, getQualifiedNameForMapBucket(constants.REGION)},
+				{constants.TYPE, getQualifiedNameForMapBucket(constants.TYPE)},
+				{constants.ACCESS, getQualifiedNameForMapBucket(constants.ACCESS)},
+				{constants.NUMBER_OF_OBJECTS, getQualifiedNameForMapBucket(constants.NUMBER_OF_OBJECTS)},
+				{constants.TOTAL_SIZE, getQualifiedNameForMapBucket(constants.TOTAL_SIZE)},
+				{constants.TAGS, getQualifiedNameForMapBucket(constants.TAGS)},
+				//* asking to filter the objects array based on the object level queries given by user
+				getFilteredObjectsQuery(filterConditions),
+			},
+			},
+		},
+		},
+	},
+	}
+}
+
+func getFilteredObjectsQuery(filterConditions bson.A) bson.E {
+	return bson.E{constants.OBJECTS, bson.D{
+		{constants.FILTER_AGG_OP, bson.D{
+			{constants.INPUT, getQualifiedNameForMapBucket(constants.OBJECTS)},
+			{constants.AS, constants.OBJECT},
+			{constants.COND_OPERATOR, bson.D{{constants.AND_OPERATOR, filterConditions}}},
+		},
+		},
+	},
+	}
+}
+
+func getQualifiedNameForMapBucket(fieldName string) string {
+	return constants.DOLLAR_DOLLAR + constants.BUCKET + constants.DOT + fieldName
 }
 
 func constructAggOperationForBackendLevel(in *pb.ListMetadataRequest, aggOperations []bson.D) []bson.D {
