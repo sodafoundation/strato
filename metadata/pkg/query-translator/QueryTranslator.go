@@ -39,7 +39,7 @@ func constructAggOperationForObjectLevel(in *pb.ListMetadataRequest, aggOperatio
 			}},
 		}}}}
 
-		log.Debugln("matching documents query for object level.....", findMatchingDocuments)
+		log.Debugln("matching documents query for object level:", findMatchingDocuments)
 
 		filterOnlyRequiredObjects := bson.D{{constants.PROJECT_AGG_OPERATOR, bson.D{{constants.ID, constants.INCLUDE_FIELD},
 			{constants.BACKEND_NAME, constants.INCLUDE_FIELD},
@@ -120,7 +120,7 @@ func constructAggOperationForBucketLevel(in *pb.ListMetadataRequest, aggOperatio
 			}},
 		}}}}
 
-		log.Infoln("matching query for bucket level ...", findMatchingDocuments)
+		log.Debugln("matching query for bucket level ", findMatchingDocuments)
 		filterOnlyRequiredObjects := bson.D{
 			{constants.PROJECT_AGG_OP, bson.D{
 				{constants.ID, constants.INCLUDE_FIELD},

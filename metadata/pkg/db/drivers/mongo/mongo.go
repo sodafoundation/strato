@@ -107,7 +107,7 @@ func (ad *adapter) CreateMetadata(ctx context.Context, backends []*model.MetaBac
 }
 
 func (ad *adapter) ListMetadata(ctx context.Context, query []bson2.D) ([]*model.MetaBackend, error) {
-	log.Infoln("i am in get bucket..........")
+	log.Infoln("received list metadata request")
 	session := ad.session
 
 	//TODO: change database and collection name
@@ -115,20 +115,19 @@ func (ad *adapter) ListMetadata(ctx context.Context, query []bson2.D) ([]*model.
 
 	// pass the pipeline to the Aggregate() method
 
-	log.Infoln("pipeline query..........", pipeline)
+	log.Debugln("pipeline query:", pipeline)
 
 	database := session.Database(MetadataDataBaseName)
 	collection := database.Collection(MetadataCollectionName)
 
-	log.Infoln("database..........", database.Name())
-	log.Infoln("collection name .....", collection.Name())
+	log.Debugln("database:", database.Name())
+	log.Debugln("collection name:", collection.Name())
 
 	cur, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).Aggregate(ctx, pipeline)
 	if err != nil {
 		log.Errorf("Failed to execute query in database: %v", err)
 		return nil, err
 	}
-	log.Infoln("the cur...:", cur)
 
 	//Map result to slice
 	var results []*model.MetaBackend = make([]*model.MetaBackend, 0)

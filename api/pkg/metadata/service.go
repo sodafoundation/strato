@@ -76,7 +76,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 	response.WriteEntity(res.Backends)
 }
 
-//* This function fetches the request parameters from the request and assigns them default values if not present.
+// GetListMetaDataRequest * This function fetches the request parameters from the request and assigns them default values if not present.
 //* It returns ListMetadataRequest for ListMetaData API call
 func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.ListMetadataRequest, err error) {
 	typeOfCloudVendor := request.QueryParameter("type")
@@ -99,8 +99,22 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 	objectSizeOperator := request.QueryParameter("ObjectSizeOperator")
 	limit, offset, err := common.GetPaginationParam(request)
 
-	return mt.ListMetadataRequest{Type: typeOfCloudVendor, BackendName: backendName, Limit: limit, Offset: offset,
-		BucketName: bucketName, ObjectName: objectName, SizeOfObjectInBytes: sizeOfObjectInBytes,
-		SizeOfBucketInBytes: sizeOfBucketInBytes, BucketSizeOperator: bucketSizeOperator, ObjectSizeOperator: objectSizeOperator, Region: region}, err
+	if err != nil {
+		return mt.ListMetadataRequest{}, err
+	}
+
+	return mt.ListMetadataRequest{
+		Type:                typeOfCloudVendor,
+		BackendName:         backendName,
+		Limit:               limit,
+		Offset:              offset,
+		BucketName:          bucketName,
+		ObjectName:          objectName,
+		SizeOfObjectInBytes: sizeOfObjectInBytes,
+		SizeOfBucketInBytes: sizeOfBucketInBytes,
+		BucketSizeOperator:  bucketSizeOperator,
+		ObjectSizeOperator:  objectSizeOperator,
+		Region:              region,
+	}, nil
 
 }

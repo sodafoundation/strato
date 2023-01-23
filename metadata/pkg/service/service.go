@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"os"
 
 	"github.com/micro/go-micro/v2/client"
@@ -24,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
-	queryrunner "github.com/opensds/multi-cloud/metadata/pkg/query-runner"
 	querytranslator "github.com/opensds/multi-cloud/metadata/pkg/query-translator"
 	metautils "github.com/opensds/multi-cloud/metadata/pkg/utils"
 	validator "github.com/opensds/multi-cloud/metadata/pkg/validator"
@@ -92,7 +92,7 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 		log.Errorln("failed to get backend client with err:", err)
 		return err
 	}
-	log.Infoln("the backend we got now....:%+v", backend)
+	log.Debugln("the backend we got now....:%+v", backend)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create driver. err:", err)
@@ -124,22 +124,18 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 	translatedQuery := querytranslator.Translate(in)
 
 	//* executes the translated query in the database and returns the result
-	unPaginatedResult, err := queryrunner.ExecuteQuery(ctx, translatedQuery)
+	unPaginatedResult, err := db.DbAdapter.ListMetadata(ctx, translatedQuery)
 
 	if err != nil {
 		log.Errorf("Failed to execute query in database: %v", err)
 		return err
 	}
 
-	var backendMetadatas []*pb.BackendMetadata
+	var backendMetaDatas []*pb.BackendMetadata
 
-	log.Info("unPaginatedResult......:", unPaginatedResult)
-
-	out.Backends = backendMetadatas
+	out.Backends = backendMetaDatas
 
 	protoBackends := metautils.GetProtoBackends(unPaginatedResult)
 	out.Backends = protoBackends
-	log.Info("proto backends:", protoBackends)
-
 	return nil
 }
