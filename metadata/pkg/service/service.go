@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"os"
 
 	"github.com/micro/go-micro/v2/client"
@@ -23,8 +24,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	backend "github.com/opensds/multi-cloud/backend/proto"
-	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
+	querytranslator "github.com/opensds/multi-cloud/metadata/pkg/query-translator"
+	metautils "github.com/opensds/multi-cloud/metadata/pkg/utils"
+	validator "github.com/opensds/multi-cloud/metadata/pkg/validator"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
@@ -89,7 +92,7 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 		log.Errorln("failed to get backend client with err:", err)
 		return err
 	}
-	log.Infoln("the backend we got now....:%+v", backend)
+	log.Debugln("the backend we got now....:%+v", backend)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create driver. err:", err)
@@ -104,29 +107,35 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 
 	return nil
 }
-
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
-	log.Info("Received GetMetadata request in metadata service.")
-	res, err := db.DbAdapter.ListMetadata(ctx, in.Limit)
-	if err != nil {
-		log.Errorf("Failed to create backend: %v", err)
+	log.Infof("received GetMetadata request in metadata service:%+v", in)
+
+	log.Info(" validating list metadata resquest started.")
+
+	//* validates the query options such as offset and limit and also the query
+	okie, err := validator.ValidateInput(in)
+
+	if !okie {
+		log.Errorf("Failed to validate list metadata request: %v", err)
 		return err
 	}
 
-	var buckets []*pb.BucketMetadata
-	for _, buck := range res {
-		log.Infoln("buck.........", buck)
-		bucket := &pb.BucketMetadata{
-			Name:         *buck.Name,
-			Type:         buck.Type,
-			Tags:         buck.Tags,
-			Region:       buck.Region,
-			CreationDate: buck.CreationDate.String(),
-		}
-		buckets = append(buckets, bucket)
-	}
-	log.Info("bucket:", buckets)
+	//* translates the query into database understood language
+	translatedQuery := querytranslator.Translate(in)
 
-	out.Buckets = buckets
+	//* executes the translated query in the database and returns the result
+	unPaginatedResult, err := db.DbAdapter.ListMetadata(ctx, translatedQuery)
+
+	if err != nil {
+		log.Errorf("Failed to execute query in database: %v", err)
+		return err
+	}
+
+	var backendMetaDatas []*pb.BackendMetadata
+
+	out.Backends = backendMetaDatas
+
+	protoBackends := metautils.GetBackends(unPaginatedResult)
+	out.Backends = protoBackends
 	return nil
 }
