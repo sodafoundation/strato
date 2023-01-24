@@ -9,6 +9,17 @@ import (
 
 func Translate(in *pb.ListMetadataRequest) []bson.D {
 	var aggOperations []bson.D
+
+	//* Below is a sample aggregation , we are using to query the database
+	//db.metadatabucket.aggregate( [
+	//
+	//   {
+	//      $match: { backendName: "bakend1" }
+	//   }
+	// ] )
+	// Info on implementing aggregation in golang can be found in
+	//* https://www.mongodb.com/docs/drivers/go/current/fundamentals/aggregation/
+
 	aggOperations = constructAggOperationForBackendLevel(in, aggOperations)
 	aggOperations = constructAggOperationForBucketLevel(in, aggOperations)
 	aggOperations = constructAggOperationForObjectLevel(in, aggOperations)

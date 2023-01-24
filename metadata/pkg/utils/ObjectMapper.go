@@ -7,11 +7,11 @@ import (
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 )
 
-func GetProtoBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
+func GetBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
 	var protoBackends []*pb.BackendMetadata
 	for _, backend := range unPaginatedResult {
 		var protoBuckets []*pb.BucketMetadata
-		protoBuckets = GetProtoBuckets(backend, protoBuckets)
+		protoBuckets = GetBuckets(backend, protoBuckets)
 		protoBackend := &pb.BackendMetadata{
 			BackendName: backend.BackendName,
 			Region:      backend.Region,
@@ -23,10 +23,10 @@ func GetProtoBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetad
 	return protoBackends
 }
 
-func GetProtoBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) []*pb.BucketMetadata {
+func GetBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) []*pb.BucketMetadata {
 	for _, bucket := range backend.Buckets {
 
-		protoObjects := GetProtoObjects(bucket)
+		protoObjects := GetObjects(bucket)
 
 		protoBucket := &pb.BucketMetadata{
 			Name:             bucket.Name,
@@ -42,7 +42,7 @@ func GetProtoBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetada
 	}
 	return protoBuckets
 }
-func GetProtoObjects(bucket model.MetaBucket) []*proto.ObjectMetadata {
+func GetObjects(bucket model.MetaBucket) []*proto.ObjectMetadata {
 	var protoObjects []*proto.ObjectMetadata
 
 	for _, object := range bucket.Objects {

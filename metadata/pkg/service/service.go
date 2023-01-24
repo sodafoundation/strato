@@ -108,7 +108,7 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 	return nil
 }
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
-	log.Info("received GetMetadata request in metadata service.")
+	log.Infof("received GetMetadata request in metadata service:%+v", in)
 
 	log.Info(" validating list metadata resquest started.")
 
@@ -135,7 +135,7 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 
 	out.Backends = backendMetaDatas
 
-	protoBackends := metautils.GetProtoBackends(unPaginatedResult)
+	protoBackends := metautils.GetBackends(unPaginatedResult)
 	out.Backends = protoBackends
 	return nil
 }
