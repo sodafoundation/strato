@@ -32,9 +32,24 @@ func isValidQuery(in *pb.ListMetadataRequest) (bool, error) {
 		return okie, err
 	}
 
+	okie, err = isSortParamValid(in.SortOrder)
+	if !okie {
+		return okie, err
+	}
 	// validate region
 	okie, err = isValidRegion(in.Region, in.Type)
 	return okie, err
+}
+
+func isSortParamValid(sortOrder string) (bool, error) {
+	switch sortOrder {
+	case "desc":
+		return true, nil
+	case "asc":
+		return true, nil
+	default:
+		return false, &ValidationError{errMsg: "Invalid sort order"}
+	}
 }
 
 func isSizeParamsValid(sizeInBytes int64, operator string) (bool, error) {
@@ -53,7 +68,6 @@ func isSizeParamsValid(sizeInBytes int64, operator string) (bool, error) {
 	case constants.GREATER_THAN_EQUAL_OPERATOR:
 
 	case constants.GREATER_THAN_OPERATOR:
-		// operator is valid
 
 	default:
 		return false, &ValidationError{errMsg: "Operator for size should be  lte, gt, eq, gte or lt"}
@@ -74,7 +88,7 @@ func isValidRegion(region string, cloudType string) (bool, error) {
 		validRegions = constants.AWS_VALID_REGIONS
 
 	case "":
-		// if cloudType is empty, then we wont check for validity
+		// if cloudType is empty, then we won't check for validity
 		return true, nil
 
 	default:

@@ -136,9 +136,9 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 
 	paginatedResult := resultpaginator.Paginate(unPaginatedResult, in.GetLimit(), in.GetOffset())
 
-	protoBackends := metautils.GetBackends(paginatedResult)
-	out.Backends = protoBackends
-	log.Info("resultant backends for user's query:", protoBackends)
+	backends := metautils.GetBackends(paginatedResult)
+	out.Backends = backends
+	log.Info("resultant backends for user's query:", backends)
 
 	return nil
 }

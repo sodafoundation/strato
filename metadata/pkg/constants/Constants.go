@@ -59,6 +59,7 @@ const (
 	ELEMMATCH_AGG_OPERATOR = "$elemMatch"
 	SORT_AGG_OPERATOR      = "$sort"
 	ASCENDING_ORDER        = 1
+	DESCENDING_ORDER       = -1
 )
 
 const (

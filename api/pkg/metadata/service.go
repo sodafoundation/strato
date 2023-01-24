@@ -97,6 +97,7 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 
 	bucketSizeOperator := request.QueryParameter("BucketSizeOperator")
 	objectSizeOperator := request.QueryParameter("ObjectSizeOperator")
+	sortOrder := request.QueryParameter("sort")
 	limit, offset, err := common.GetPaginationParam(request)
 
 	if err != nil {
@@ -115,6 +116,7 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 		BucketSizeOperator:  bucketSizeOperator,
 		ObjectSizeOperator:  objectSizeOperator,
 		Region:              region,
+		SortOrder:           sortOrder,
 	}, nil
 
 }

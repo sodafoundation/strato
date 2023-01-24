@@ -7,6 +7,7 @@ import (
 
 func Paginate(unPaginatedResult []*model.MetaBackend, limit int32, offset int32) []*model.MetaBackend {
 	lengthOfUnPaginatedResult := int32(len(unPaginatedResult))
+
 	if offset >= lengthOfUnPaginatedResult {
 		return []*model.MetaBackend{}
 	} else {
