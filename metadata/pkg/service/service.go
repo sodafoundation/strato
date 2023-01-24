@@ -23,7 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	backend "github.com/opensds/multi-cloud/backend/proto"
-	// "github.com/opensds/multi-cloud/metadata/pkg/db"
+	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
@@ -106,27 +106,27 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 }
 
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
-	// log.Info("Received GetMetadata request in metadata service.")
-	// res, err := db.DbAdapter.ListMetadata(ctx, in.Limit)
-	// if err != nil {
-	// 	log.Errorf("Failed to create backend: %v", err)
-	// 	return err
-	// }
+	log.Info("Received GetMetadata request in metadata service.")
+	res, err := db.DbAdapter.ListMetadata(ctx, in.Limit)
+	if err != nil {
+		log.Errorf("Failed to create backend: %v", err)
+		return err
+	}
 
-	// var buckets []*pb.BucketMetadata
-	// for _, buck := range res {
-	// 	log.Infoln("buck.........", buck)
-	// 	bucket := &pb.BucketMetadata{
-	// 		Name:         *buck.Name,
-	// 		Type:         buck.Type,
-	// 		Tags:         buck.Tags,
-	// 		Region:       buck.Region,
-	// 		CreationDate: buck.CreationDate.String(),
-	// 	}
-	// 	buckets = append(buckets, bucket)
-	// }
-	// log.Info("bucket:", buckets)
+	var buckets []*pb.BucketMetadata
+	for _, buck := range res {
+		log.Infoln("buck.........", buck)
+		bucket := &pb.BucketMetadata{
+			Name:         *buck.Name,
+			Type:         buck.Type,
+			Tags:         buck.Tags,
+			Region:       buck.Region,
+			CreationDate: buck.CreationDate.String(),
+		}
+		buckets = append(buckets, bucket)
+	}
+	log.Info("bucket:", buckets)
 
-	// out.Buckets = buckets
+	out.Buckets = buckets
 	return nil
 }

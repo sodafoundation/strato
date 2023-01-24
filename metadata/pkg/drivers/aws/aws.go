@@ -83,8 +83,8 @@ func iterateObjects(i int, object *s3.Object, svc *s3.S3, bucketName string, obj
 	objectArray[i] = obj
 }
 
-func (ad *AwsAdapter) ObjectList(bucket *model.MetaBucket) error {
-	svc := s3.New(ad.Session, aws.NewConfig().WithRegion(bucket.Region))
+func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
+	svc := s3.New(sess, aws.NewConfig().WithRegion(bucket.Region))
 	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
 	if err != nil {
 		log.Errorf("unable to list objects in bucket %v. failed with error: %v\n", bucket.Name, err)
@@ -105,19 +105,19 @@ func (ad *AwsAdapter) ObjectList(bucket *model.MetaBucket) error {
 	return nil
 }
 
-func iterateBuckets(i int, bucket *s3.Bucket, ad *AwsAdapter, bucketArray []model.MetaBucket, wg *sync.WaitGroup) {
+func iterateBuckets(i int, bucket *s3.Bucket, sess *session.Session, bucketArray []model.MetaBucket, wg *sync.WaitGroup) {
 	defer wg.Done()
 	buck := model.MetaBucket{}
 	buck.CreationDate = *bucket.CreationDate
 	buck.Name = *bucket.Name
-	svc := s3.New(ad.Session)
+	svc := s3.New(sess)
 	loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name})
 	if err != nil {
 		log.Errorf("unable to get bucket location. failed with error: %v\n", err)
 	} else {
 		buck.Region = *loc.LocationConstraint
 	}
-	newSvc := s3.New(ad.Session, aws.NewConfig().WithRegion(buck.Region))
+	newSvc := s3.New(sess, aws.NewConfig().WithRegion(buck.Region))
 	tags, err := newSvc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
 	if err != nil && !strings.Contains(err.Error(), "NoSuchTagSet") {
@@ -129,15 +129,15 @@ func iterateBuckets(i int, bucket *s3.Bucket, ad *AwsAdapter, bucketArray []mode
 		}
 		buck.BucketTags = tagset
 	}
-	err = ad.ObjectList(&buck)
+	err = ObjectList(sess, &buck)
 	if err != nil {
 		log.Errorf("error while collecting object metadata for bucket %v. failed with error: %v\n", buck.Name, err)
 	}
 	bucketArray[i] = buck
 }
 
-func (ad *AwsAdapter) BucketList() ([]model.MetaBucket, error) {
-	svc := s3.New(ad.Session)
+func BucketList(sess *session.Session) ([]model.MetaBucket, error) {
+	svc := s3.New(sess)
 
 	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
@@ -149,7 +149,7 @@ func (ad *AwsAdapter) BucketList() ([]model.MetaBucket, error) {
 	wg := sync.WaitGroup{}
 	for i, bucket := range output.Buckets {
 		wg.Add(1)
-		go iterateBuckets(i, bucket, ad, bucketArray, &wg)
+		go iterateBuckets(i, bucket, sess, bucketArray, &wg)
 	}
 	wg.Wait()
 	return bucketArray, err
@@ -157,7 +157,7 @@ func (ad *AwsAdapter) BucketList() ([]model.MetaBucket, error) {
 
 func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest) error {
 
-	buckArr, err := ad.BucketList()
+	buckArr, err := BucketList(ad.Session)
 	if err != nil {
 		log.Errorf("metadata collection failed with error: %v\n", err)
 		return err
