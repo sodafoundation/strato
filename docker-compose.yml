@@ -100,15 +100,27 @@ services:
   
   metadata:
     image: sodafoundation/multi-cloud-metadata
+    depends_on:
+      - keydb
     environment:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
+      # use container-name of keydb:container port of keydb as the value
+      - KEY_DB_URI=keydb:6380
     volumes:
       - /etc/localtime:/etc/localtime
       - /var/log/multi-cloud:/var/log/multi-cloud
       - ./examples/multi-cloud.conf:/etc/multi-cloud/multi-cloud.conf
     restart: always
 
+  keydb:
+    image: eqalpha/keydb:x86_64_v6.2.2
+    container_name: keydb
+    ports:
+      - "6380:6380"
+    volumes:
+      - ./examples/keydb.conf:/etc/keydb/keydb.conf
+    restart: always
 
   block:
     image: sodafoundation/multi-cloud-block
