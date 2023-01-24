@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
+	bson2 "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -103,34 +104,34 @@ func (ad *adapter) CreateMetadata(ctx context.Context, backend *backendpb.Backen
 	return nil
 }
 
-func (ad *adapter) ListMetadata(ctx context.Context, limit int32) ([]*model.MetaBucket, error) {
-	log.Infoln("I am in GetBucket..........")
+func (ad *adapter) ListMetadata(ctx context.Context, query []bson2.D) ([]*model.MetaBackend, error) {
+	log.Infoln("received list metadata request")
 	session := ad.session
 
-	m := bson.M{}
-	limit = 1000
-	offset := 0
+	//TODO: change database and collection name
+	pipeline := mongo.Pipeline(query)
 
-	var bucket []*model.MetaBucket
+	// pass the pipeline to the Aggregate() method
 
-	log.Infof("ListMetadata, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
+	log.Debugln("pipeline query:", pipeline)
 
-	cur, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).Find(ctx, m, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
+	database := session.Database(MetadataDataBaseName)
+	collection := database.Collection(MetadataCollectionName)
+
+	log.Debugln("database:", database.Name())
+	log.Debugln("collection name:", collection.Name())
+
+	cur, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).Aggregate(ctx, pipeline)
 	if err != nil {
+		log.Errorf("Failed to execute query in database: %v", err)
 		return nil, err
 	}
-	log.Infoln("the cur...:", cur)
+
 	//Map result to slice
-	for cur.Next(context.TODO()) {
-		log.Infoln("the cur Next.......:", cur)
-		t := &model.MetaBucket{}
-		err := cur.Decode(&t)
-		if err != nil {
-			return bucket, err
-		}
-		log.Infoln("the t Next.......:", t)
-		bucket = append(bucket, t)
+	var results []*model.MetaBackend = make([]*model.MetaBackend, 0)
+	if err = cur.All(context.TODO(), &results); err != nil {
+		log.Errorf("Error constructing model.MetaBucket objects from database result: %v", err)
+		return nil, err
 	}
-	log.Infoln("the bucket in metdata/mongo.go.....:", bucket)
-	return bucket, nil
+	return results, nil
 }

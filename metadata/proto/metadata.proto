@@ -51,7 +51,14 @@ message SyncMetadataResponse {
 }
 
 message ListMetadataResponse {
-    repeated BucketMetadata buckets = 1;
+    repeated BackendMetadata backends = 1;
+}
+
+message BackendMetadata {
+    string backendName = 1;
+    string region = 2;
+    string type = 3;
+    repeated BucketMetadata buckets = 4;
 }
 
 message BucketMetadata {
@@ -64,9 +71,9 @@ message BucketMetadata {
     // The number of objects in the bucket
     int32 numberOfObjects = 5;
     // The total size occupied by the bucket
-    int32 totalSizeInBytes = 6;
+    int64 totalSizeInBytes = 6;
     // The tags of the bucket
-    string tags = 7;
+    map<string, string> tags = 7;
     repeated ObjectMetadata objects = 8;
 }
 
@@ -91,6 +98,6 @@ message ObjectMetadata {
     string replicationStatus = 10;
     string expiresDate = 11;
     string grantControl = 12;
-    string tags = 13;
-    string metadata = 14;
+    map<string, string> tags = 13;
+    map<string, string> metadata = 14;
 }

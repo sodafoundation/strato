@@ -22,6 +22,7 @@ import (
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
 	"github.com/opensds/multi-cloud/metadata/pkg/utils/config"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // DbAdapter is a global variable that controls database module.
@@ -56,5 +57,5 @@ func Exit(db *config.Database) {
 
 type DBAdapter interface {
 	CreateMetadata(ctx context.Context, backend *backendpb.BackendDetail, bucket []model.MetaBucket) error
-	ListMetadata(ctx context.Context, limit int32) ([]*model.MetaBucket, error)
+	ListMetadata(ctx context.Context, query []bson.D) ([]*model.MetaBackend, error)
 }
