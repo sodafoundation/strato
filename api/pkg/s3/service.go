@@ -19,7 +19,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
-	"net/http"
 	"os"
 
 	"github.com/micro/go-micro/v2/client"
@@ -30,8 +29,6 @@ import (
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/opensds/multi-cloud/api/pkg/common"
 )
 
 const (
@@ -162,35 +159,4 @@ func HandleS3Error(response *restful.Response, request *restful.Request, err err
 	}
 
 	return nil
-}
-
-func (s *APIService) GetBackendIdFromTier(ctx context.Context, tierName string) string {
-	log.Info("Request for GetBackendIdFromTier received", tierName)
-	var backendId string
-
-	return backendId
-}
-
-// this method is basically for getting the backends name from tier
-func (s *APIService) getBackendFromTier(ctx context.Context, tierName string) string {
-	log.Info("The received tier name for getting backend name:", tierName)
-	var backendId, backendName string
-	var response *restful.Response
-
-	backendId = s.GetBackendIdFromTier(ctx, tierName)
-
-	adminCtx := common.GetAdminContext()
-	if backendId != "" {
-		backendRep, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
-		if err != nil {
-			log.Error("the selected backends from tier doesn't exists.")
-			response.WriteError(http.StatusInternalServerError, err)
-			return ""
-		}
-		if backendRep != nil {
-			backendName = backendRep.Backend.Name
-		}
-	}
-
-	return backendName
 }
