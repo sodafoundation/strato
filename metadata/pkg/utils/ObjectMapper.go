@@ -47,19 +47,19 @@ func GetObjects(bucket model.MetaBucket) []*proto.ObjectMetadata {
 
 	for _, object := range bucket.Objects {
 		protoObject := &proto.ObjectMetadata{
-			Name:                        object.ObjectName,
-			LastModifiedDate:            object.LastModifiedDate.String(),
-			SizeInBytes:                 int32(object.Size),
-			BucketName:                  bucket.Name,
-			Type:                        object.ObjectType,
-			ServerSideEncryptionEnabled: object.ServerSideEncryptionEnabled,
-			ExpiresDate:                 object.ExpiresDate.String(),
-			GrantControl:                object.GrantControl,
-			VersionId:                   string(object.VersionId),
-			RedirectLocation:            object.RedirectLocation,
-			ReplicationStatus:           object.ReplicationStatus,
-			Tags:                        object.ObjectTags,
-			Metadata:                    object.Metadata,
+			Name:                 object.ObjectName,
+			LastModifiedDate:     object.LastModifiedDate.String(),
+			SizeInBytes:          int32(object.Size),
+			BucketName:           bucket.Name,
+			Type:                 object.ObjectType,
+			ServerSideEncryption: object.ServerSideEncryption,
+			ExpiresDate:          object.ExpiresDate.String(),
+			GrantControl:         object.GrantControl,
+			VersionId:            string(object.VersionId),
+			RedirectLocation:     object.RedirectLocation,
+			ReplicationStatus:    object.ReplicationStatus,
+			Tags:                 object.ObjectTags,
+			Metadata:             object.Metadata,
 		}
 		protoObjects = append(protoObjects, protoObject)
 	}
