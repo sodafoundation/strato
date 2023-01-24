@@ -19,7 +19,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -91,7 +91,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 func (ad *adapter) CreateMetadata(ctx context.Context, backend *backendpb.BackendDetail, buckets []model.MetaBucket) error {
 	log.Infoln("I am in CreateMetadta in db..........")
 	session := ad.session
-	filter := bson.M{"_id": bson.ObjectId(backend.Id), "backendName": backend.Name, "type": backend.Type, "region": backend.Region}
+	filter := bson.M{"_id": backend.Id, "backendName": backend.Name, "type": backend.Type, "region": backend.Region}
 	update := bson.M{"$set": bson.M{"buckets": buckets}}
 	upsert := true
 	options := options.UpdateOptions{Upsert: &upsert}
