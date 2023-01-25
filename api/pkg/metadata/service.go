@@ -85,12 +85,11 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 	objectName := request.QueryParameter("objectName")
 	region := request.QueryParameter("region")
 	sizeOfObjectInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfObject")
-
 	if err != nil {
 		return mt.ListMetadataRequest{}, err
 	}
-	sizeOfBucketInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfBucket")
 
+	sizeOfBucketInBytes, err := common.GetSizeRequestParamAsInt64(request, "sizeOfBucket")
 	if err != nil {
 		return mt.ListMetadataRequest{}, err
 	}
@@ -99,7 +98,6 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 	objectSizeOperator := request.QueryParameter("ObjectSizeOperator")
 	sortOrder := request.QueryParameter("sort")
 	limit, offset, err := common.GetPaginationParam(request)
-
 	if err != nil {
 		return mt.ListMetadataRequest{}, err
 	}
