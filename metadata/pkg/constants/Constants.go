@@ -88,3 +88,8 @@ const (
 	NUMBER_OF_OBJECTS = "numberOfObjects"
 	TAGS              = "tags"
 )
+
+const (
+	ASC  = "asc"
+	DESC = "desc"
+)

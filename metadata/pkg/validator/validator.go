@@ -43,9 +43,11 @@ func isValidQuery(in *pb.ListMetadataRequest) (bool, error) {
 
 func isSortParamValid(sortOrder string) (bool, error) {
 	switch sortOrder {
-	case "desc":
+	case constants.DESC:
 		return true, nil
-	case "asc":
+	case constants.ASC:
+		return true, nil
+	case "":
 		return true, nil
 	default:
 		return false, &ValidationError{errMsg: "Invalid sort order"}
