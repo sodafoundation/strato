@@ -10,14 +10,14 @@
 
 ## Introduction
 
-SODA Multi-cloud project provides a cloud vendor agnostic data management for hybrid cloud, intercloud or intracloud. It provides an s3-compatible interface. It can be hosted on prem or cloud native.
+SODA Multi-cloud project provides a cloud vendor agnostic data management for hybrid cloud, intercloud or intracloud. It provides an s3-compatible interface. It can be hosted on-premise or cloud native.
 
-It provides a backend manager which is S3 compatible to connect with any cloud vendors. It supports various cloud backends like MS Azure, GCP, AWS, Huawei, IBM and more. It also supports Ceph backed to enable on-prem. We have also integrated some optimizations and also YIG-Ceph backend from China Unicom YIG project.
+It provides a backend manager which is S3 compatible to connect with any cloud vendors. It supports various cloud backends like MS Azure, GCP, AWS, Huawei, IBM and more. It also supports Ceph backed to enable on-premise. We have also integrated some optimizations and also YIG-Ceph backend from China Unicom YIG project.
 
 Currently it provides Object Storage and we are working to support file and block services from the cloud vendors.
 
 This is one of the SODA Core Projects and is maintained by SODA Foundation directly.
-The multi cloud project has been renamed to STRATO
+The multi cloud project has been renamed to STRATO.
 
 ## Documentation
 
@@ -51,7 +51,7 @@ Checkout [https://github.com/sodafoundation/multi-cloud/issues](https://github.c
 
 ## Project Roadmap
 
-We envision to build a SODA Distributed Data Store (SODA DDS) which can support File, Block and Object across Edge, On-prem and Cloud. We are exploring to transform or integrate SODA Multicloud to other SODA Projects to build SODA DDS.
+We envision to build a SODA Distributed Data Store (SODA DDS) which can support Files, Blocks and Objects across Edge, On-premise and Cloud. We are exploring to transform or integrate SODA Multicloud to other SODA Projects to build SODA DDS.
 
 [https://docs.sodafoundation.io](https://docs.sodafoundation.io/)
 
