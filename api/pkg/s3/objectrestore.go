@@ -15,12 +15,14 @@
 package s3
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/emicklei/go-restful"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/opensds/multi-cloud/api/pkg/common"
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	s3error "github.com/opensds/multi-cloud/s3/error"
 	"github.com/opensds/multi-cloud/s3/pkg/model"
 	s3 "github.com/opensds/multi-cloud/s3/proto"
@@ -66,6 +68,35 @@ func (s *APIService) RestoreObject(request *restful.Request, response *restful.R
 		log.Errorf("failed to invoke restore object: %v", err)
 		WriteErrorResponse(response, request, err)
 		return
+	}
+
+	// if tier is enabled, get the bucketMeta data to get all the details
+	// like backend, backend type, storageClass etc.
+	bucketMeta, err := s.getBucketMeta(ctx, bucketName)
+	if err != nil {
+		log.Errorln("failed to get bucket meta. err:", err)
+		WriteErrorResponse(response, request, err)
+		return
+	}
+
+	if bucketMeta.Tiers != "" {
+		adminCtx := common.GetAdminContext()
+		backendId := s.GetBackendIdFromTier(adminCtx, bucketMeta.Tiers)
+		backendMeta, err := s.backendClient.GetBackend(adminCtx, &backend.GetBackendRequest{Id: backendId})
+		if err != nil {
+			log.Error("the selected backends from tier doesn't exists.")
+			response.WriteError(http.StatusInternalServerError, err)
+		}
+		if backendMeta != nil {
+			backendType := backendMeta.Backend.Type
+
+			if backendType == AWS_TYPE {
+				restoreObjDetail.Days = AWS_DEFAULT_RESTORE_DAYS
+				restoreObjDetail.Tier = AWS_DEFAULT_RESTORE_TIER
+			} else if backendType == AZURE_TYPE {
+				restoreObjDetail.StorageClass = AZURE_DEFAULT_RESTORE_CLASS
+			}
+		}
 	}
 
 	resObj := &s3.Restore{

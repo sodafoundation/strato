@@ -196,6 +196,106 @@ func (repo *mongoRepository) ListBackend(ctx context.Context, limit, offset int,
 
 	return backends, nil
 }
+
+func (repo *mongoRepository) CreateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
+	log.Debug("received request to create tier in db")
+
+	session := repo.session
+	if tier.Id == "" {
+		tier.Id = bson.NewObjectId()
+	}
+	_, err := session.Database(defaultDBName).Collection(defaultTierCollection).InsertOne(ctx, tier)
+	if err != nil {
+		return nil, err
+	}
+	return tier, nil
+
+}
+
+func (repo *mongoRepository) DeleteTier(ctx context.Context, id string) error {
+	log.Debug("received request to delete tier from db")
+
+	session := repo.session
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return err
+	}
+
+	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).DeleteOne(ctx, m)
+	return err
+}
+
+func (repo *mongoRepository) UpdateTier(ctx context.Context, tier *model.Tier) (*model.Tier, error) {
+	log.Debug("received request to update tier")
+	session := repo.session
+	m := bson.M{"_id": tier.Id}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	_, err = session.Database(defaultDBName).Collection(defaultTierCollection).UpdateOne(ctx, m, tier)
+	if err != nil {
+		return nil, err
+	}
+	return tier, nil
+}
+
+func (repo *mongoRepository) ListTiers(ctx context.Context, limit, offset int, query interface{}) ([]*model.Tier, error) {
+	log.Debug("received request to list tiers")
+	session := repo.session
+	if limit == 0 {
+		limit = math.MinInt32
+	}
+	var tiers []*model.Tier
+	m := bson.M{}
+	UpdateFilter(m, query.(map[string]string))
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("ListTiers, limit=%d, offset=%d, m=%+v\n", limit, offset, m)
+
+	cur, err := session.Database(defaultDBName).Collection(defaultCollection).Find(ctx, m)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//Map result to slice
+	for cur.Next(context.TODO()) {
+		t := &model.Tier{}
+		err := cur.Decode(&t)
+		if err != nil {
+			return tiers, err
+		}
+		tiers = append(tiers, t)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return tiers, nil
+}
+
+func (repo *mongoRepository) GetTier(ctx context.Context, id string) (*model.Tier,
+	error) {
+	log.Debug("received request to get tier details")
+	session := repo.session
+	m := bson.M{"_id": bson.ObjectIdHex(id)}
+	err := UpdateContextFilter(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	var tier = &model.Tier{}
+	err = session.Database(defaultDBName).Collection(defaultTierCollection).FindOne(ctx, m).Decode(&tier)
+
+	if err != nil {
+		return nil, err
+	}
+	return tier, nil
+}
+
 func (repo *mongoRepository) Close() {
 	repo.session.Disconnect(context.TODO())
 }
