@@ -36,9 +36,6 @@ const (
 
 func (s *APIService) BucketPut(request *restful.Request, response *restful.Response) {
 	log.Info("Create bucket request received")
-	var isTier string
-
-	isTier = request.HeaderParameter("tier")
 	bucketName := strings.ToLower(request.PathParameter(common.REQUEST_PATH_BUCKET_NAME))
 	if !isValidBucketName(bucketName) {
 		WriteErrorResponse(response, request, s3error.ErrInvalidBucketName)
@@ -81,25 +78,6 @@ func (s *APIService) BucketPut(request *restful.Request, response *restful.Respo
 			log.Infof("unmarshal failed, body:%v, err:%v\n", body, err)
 			WriteErrorResponse(response, request, s3error.ErrUnmarshalFailed)
 			return
-		}
-
-		var backendName string
-		if strings.EqualFold(isTier, TrueValue) {
-			backendName = s.getBackendFromTier(ctx, createBucketConf.LocationConstraint)
-			if backendName != "" {
-				bucket.DefaultLocation = backendName
-				ctx = common.GetAdminContext()
-				bucket.Tiers = createBucketConf.LocationConstraint
-				flag = true
-			}
-
-		} else {
-			backendName = createBucketConf.LocationConstraint
-			if backendName != "" {
-				log.Infof("backendName is %v\n", backendName)
-				bucket.DefaultLocation = backendName
-				flag = s.isBackendExist(ctx, backendName)
-			}
 		}
 	}
 	if flag == false {

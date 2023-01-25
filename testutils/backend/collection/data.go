@@ -51,31 +51,4 @@ var (
 			Security:   "sample-backend-security",
 		},
 	}
-
-	////tier samples
-	SampleTiers = []backendModel.Tier{
-		{
-			Id:       "4769855c-a102-11e7-b772-17b880d2f530",
-			TenantId: "sample-tier-tenantID",
-			Name:     "sample-tier-name",
-			Backends: []string{"sample-tier-backend-1", "sample-tier-backend-2"},
-		},
-	}
-	SampleCreateTier = []backendModel.Tier{
-		{
-			Id:       "",
-			TenantId: "sample-tier-tenantID",
-			Name:     "sample-tier-name",
-			Backends: []string{"sample-tier-backend-1", "sample-tier-backend-2"},
-		},
-	}
-
-	SampleUpdateTier = []backendModel.Tier{
-		{
-			Id:       "4769855c-a102-11e7-b772-17b880d2f531",
-			TenantId: "tier-tenant",
-			Name:     "tier-name",
-			Backends: []string{"Backends"},
-		},
-	}
 )

@@ -47,36 +47,6 @@ func (_m *BackendService) CreateBackend(ctx context.Context, in *proto.CreateBac
 	return r0, r1
 }
 
-// CreateTier provides a mock function with given fields: ctx, in, opts
-func (_m *BackendService) CreateTier(ctx context.Context, in *proto.CreateTierRequest, opts ...client.CallOption) (*proto.CreateTierResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *proto.CreateTierResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *proto.CreateTierRequest, ...client.CallOption) *proto.CreateTierResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*proto.CreateTierResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *proto.CreateTierRequest, ...client.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // DeleteBackend provides a mock function with given fields: ctx, in, opts
 func (_m *BackendService) DeleteBackend(ctx context.Context, in *proto.DeleteBackendRequest, opts ...client.CallOption) (*proto.DeleteBackendResponse, error) {
 	_va := make([]interface{}, len(opts))
@@ -99,36 +69,6 @@ func (_m *BackendService) DeleteBackend(ctx context.Context, in *proto.DeleteBac
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *proto.DeleteBackendRequest, ...client.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// DeleteTier provides a mock function with given fields: ctx, in, opts
-func (_m *BackendService) DeleteTier(ctx context.Context, in *proto.DeleteTierRequest, opts ...client.CallOption) (*proto.DeleteTierResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *proto.DeleteTierResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *proto.DeleteTierRequest, ...client.CallOption) *proto.DeleteTierResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*proto.DeleteTierResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *proto.DeleteTierRequest, ...client.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -167,36 +107,6 @@ func (_m *BackendService) GetBackend(ctx context.Context, in *proto.GetBackendRe
 	return r0, r1
 }
 
-// GetTier provides a mock function with given fields: ctx, in, opts
-func (_m *BackendService) GetTier(ctx context.Context, in *proto.GetTierRequest, opts ...client.CallOption) (*proto.GetTierResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *proto.GetTierResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *proto.GetTierRequest, ...client.CallOption) *proto.GetTierResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*proto.GetTierResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *proto.GetTierRequest, ...client.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // ListBackend provides a mock function with given fields: ctx, in, opts
 func (_m *BackendService) ListBackend(ctx context.Context, in *proto.ListBackendRequest, opts ...client.CallOption) (*proto.ListBackendResponse, error) {
 	_va := make([]interface{}, len(opts))
@@ -219,36 +129,6 @@ func (_m *BackendService) ListBackend(ctx context.Context, in *proto.ListBackend
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *proto.ListBackendRequest, ...client.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// ListTiers provides a mock function with given fields: ctx, in, opts
-func (_m *BackendService) ListTiers(ctx context.Context, in *proto.ListTierRequest, opts ...client.CallOption) (*proto.ListTierResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *proto.ListTierResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *proto.ListTierRequest, ...client.CallOption) *proto.ListTierResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*proto.ListTierResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *proto.ListTierRequest, ...client.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -316,34 +196,3 @@ func (_m *BackendService) UpdateBackend(ctx context.Context, in *proto.UpdateBac
 
 	return r0, r1
 }
-
-// UpdateTier provides a mock function with given fields: ctx, in, opts
-func (_m *BackendService) UpdateTier(ctx context.Context, in *proto.UpdateTierRequest, opts ...client.CallOption) (*proto.UpdateTierResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *proto.UpdateTierResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *proto.UpdateTierRequest, ...client.CallOption) *proto.UpdateTierResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*proto.UpdateTierResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *proto.UpdateTierRequest, ...client.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
