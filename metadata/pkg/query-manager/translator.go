@@ -44,7 +44,7 @@ func Translate(in *pb.ListMetadataRequest) []bson.D {
 func sortAggOperation(aggOperations []bson.D, fieldName string, order string) []bson.D {
 	sortOrder := constants.ASCENDING_ORDER
 
-	if order == "desc" {
+	if order == constants.DESC {
 		sortOrder = constants.DESCENDING_ORDER
 	}
 
