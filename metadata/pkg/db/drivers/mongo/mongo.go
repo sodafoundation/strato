@@ -19,14 +19,14 @@ import (
 	"errors"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"github.com/micro/go-micro/v2/metadata"
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
-	bson2 "go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
+
 	"github.com/opensds/multi-cloud/api/pkg/common"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
 )
@@ -104,7 +104,7 @@ func (ad *adapter) CreateMetadata(ctx context.Context, backend *backendpb.Backen
 	return nil
 }
 
-func (ad *adapter) ListMetadata(ctx context.Context, query []bson2.D) ([]*model.MetaBackend, error) {
+func (ad *adapter) ListMetadata(ctx context.Context, query []bson.D) ([]*model.MetaBackend, error) {
 	log.Infoln("received list metadata request")
 	session := ad.session
 
