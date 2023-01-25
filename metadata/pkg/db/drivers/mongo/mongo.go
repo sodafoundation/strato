@@ -90,7 +90,6 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 }
 
 func (ad *adapter) CreateMetadata(ctx context.Context, backend *backendpb.BackendDetail, buckets []model.MetaBucket) error {
-	log.Infoln("I am in CreateMetadta in db..........")
 	session := ad.session
 	filter := bson.M{"_id": backend.Id, "backendName": backend.Name, "type": backend.Type, "region": backend.Region}
 	update := bson.M{"$set": bson.M{"buckets": buckets}}
@@ -100,7 +99,8 @@ func (ad *adapter) CreateMetadata(ctx context.Context, backend *backendpb.Backen
 	if err != nil {
 		return err
 	}
-	log.Infoln("metadata successfully synced with database")
+
+	log.Infoln("metadata successfully synced with database!!")
 	return nil
 }
 
