@@ -51,7 +51,7 @@ Checkout [https://github.com/sodafoundation/multi-cloud/issues](https://github.c
 
 ## Project Roadmap
 
-We envision to build a SODA Distributed Data Store (SODA DDS) which can support File, Block and Object across Edge, On-prem and Cloud. We are exploring to transform or integrate SODA Multicloud to other SODA Projects to build SODA DDS.
+We envision to build a SODA Distributed Data Store (SODA DDS) which can support Files, Blocks and Objects across Edge, On-premise and Cloud. We are exploring to transform or integrate SODA Multicloud to other SODA Projects to build SODA DDS.
 
 [https://docs.sodafoundation.io](https://docs.sodafoundation.io/)
 
