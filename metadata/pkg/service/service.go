@@ -1,4 +1,4 @@
-// Copyright 2020 The SODA Authors.
+// Copyright 2023 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package service
 import (
 	"context"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
+	querymanager "github.com/opensds/multi-cloud/metadata/pkg/query-manager"
 	"os"
 
 	"github.com/micro/go-micro/v2/client"
@@ -25,9 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
-	querytranslator "github.com/opensds/multi-cloud/metadata/pkg/query-translator"
 	metautils "github.com/opensds/multi-cloud/metadata/pkg/utils"
-	validator "github.com/opensds/multi-cloud/metadata/pkg/validator"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
@@ -113,7 +112,7 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 	log.Info(" validating list metadata resquest started.")
 
 	//* validates the query options such as offset and limit and also the query
-	okie, err := validator.ValidateInput(in)
+	okie, err := querymanager.ValidateInput(in)
 
 	if !okie {
 		log.Errorf("Failed to validate list metadata request: %v", err)
@@ -121,21 +120,19 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 	}
 
 	//* translates the query into database understood language
-	translatedQuery := querytranslator.Translate(in)
+	translatedQuery := querymanager.Translate(in)
 
 	//* executes the translated query in the database and returns the result
 	unPaginatedResult, err := db.DbAdapter.ListMetadata(ctx, translatedQuery)
-
 	if err != nil {
 		log.Errorf("Failed to execute query in database: %v", err)
 		return err
 	}
 
-	var backendMetaDatas []*pb.BackendMetadata
+	paginatedResult := querymanager.Paginate(unPaginatedResult, in.GetLimit(), in.GetOffset())
+	backends := metautils.GetBackends(paginatedResult)
+	out.Backends = backends
+	log.Infoln("resultant backends for user's query:", backends)
 
-	out.Backends = backendMetaDatas
-
-	protoBackends := metautils.GetBackends(unPaginatedResult)
-	out.Backends = protoBackends
 	return nil
 }

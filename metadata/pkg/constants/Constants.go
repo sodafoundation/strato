@@ -57,6 +57,9 @@ const (
 	INCLUDE_FIELD          = 1
 	IN                     = "in"
 	ELEMMATCH_AGG_OPERATOR = "$elemMatch"
+	SORT_AGG_OPERATOR      = "$sort"
+	ASCENDING_ORDER        = 1
+	DESCENDING_ORDER       = -1
 )
 
 const (
@@ -84,4 +87,9 @@ const (
 	ACCESS            = "access"
 	NUMBER_OF_OBJECTS = "numberOfObjects"
 	TAGS              = "tags"
+)
+
+const (
+	ASC  = "asc"
+	DESC = "desc"
 )
