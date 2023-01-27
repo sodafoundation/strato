@@ -60,7 +60,8 @@ message BackendMetadata {
     string backendName = 1;
     string region = 2;
     string type = 3;
-    repeated BucketMetadata buckets = 4;
+    int32 numberOfBuckets = 4;
+    repeated BucketMetadata buckets = 5;
 }
 
 message BucketMetadata {
