@@ -16,9 +16,10 @@ package service
 
 import (
 	"context"
+	"os"
+
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	querymanager "github.com/opensds/multi-cloud/metadata/pkg/query-manager"
-	"os"
 
 	"github.com/micro/go-micro/v2/client"
 	log "github.com/sirupsen/logrus"
@@ -26,9 +27,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
-	metautils "github.com/opensds/multi-cloud/metadata/pkg/utils"
+	utils "github.com/opensds/multi-cloud/metadata/pkg/utils"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
-	"github.com/opensds/multi-cloud/s3/pkg/utils"
 )
 
 const (
@@ -82,15 +82,7 @@ func (myc *S3Cred) Retrieve() (credentials.Value, error) {
 	return cred, nil
 }
 
-func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest, out *pb.BaseResponse) error {
-	log.Infoln("Received sncMetadata request in metadata service.")
-	// We need to find the backend in which bucket will be created
-	backendName := "demo-aws"
-	backend, err := utils.GetBackend(ctx, f.backendClient, backendName)
-	if err != nil {
-		log.Errorln("failed to get backend client with err:", err)
-		return err
-	}
+func Sync(ctx context.Context, backend *backend.BackendDetail, in *pb.SyncMetadataRequest) error {
 	log.Debugln("the backend we got now....:%+v", backend)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
@@ -103,9 +95,32 @@ func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataR
 		log.Errorln("failed to sync metadata in s3 service:", err)
 		return err
 	}
+	return nil
+}
+
+func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest, out *pb.BaseResponse) error {
+	log.Infoln("received sncMetadata request in metadata service:%+v", in)
+	if in.Id != "" {
+		backend, err := utils.GetBackend(ctx, f.backendClient, in.Id)
+		if err != nil {
+			log.Errorln("failed to get backend client with err:", err)
+			return err
+		}
+		Sync(ctx, backend, in)
+	} else {
+		backends, err := utils.ListBackend(ctx, f.backendClient)
+		if err != nil {
+			log.Errorln("failed to get backend client with err:", err)
+			return err
+		}
+		for _, backend := range backends {
+			go Sync(ctx, backend, in)
+		}
+	}
 
 	return nil
 }
+
 func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataRequest, out *pb.ListMetadataResponse) error {
 	log.Infof("received GetMetadata request in metadata service:%+v", in)
 
@@ -130,7 +145,7 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 	}
 
 	paginatedResult := querymanager.Paginate(unPaginatedResult, in.GetLimit(), in.GetOffset())
-	backends := metautils.GetBackends(paginatedResult)
+	backends := utils.GetBackends(paginatedResult)
 	out.Backends = backends
 	log.Infoln("resultant backends for user's query:", backends)
 

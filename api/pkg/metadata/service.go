@@ -41,7 +41,10 @@ func NewAPIService(c client.Client) *APIService {
 func (s *APIService) SyncMetadata(request *restful.Request, response *restful.Response) {
 	log.Info("sync metadata called in api service.")
 	ctx := common.InitCtxWithAuthInfo(request)
-	_, err := s.metaClient.SyncMetadata(ctx, &mt.SyncMetadataRequest{Id: "id"})
+	var id string
+	id = request.PathParameter("backendID")
+	log.Infof("the request recieved for backend is:%s", id)
+	_, err := s.metaClient.SyncMetadata(ctx, &mt.SyncMetadataRequest{Id: id})
 	if err != nil {
 		log.Errorf("failed to sync metadata details: %v\n", err)
 		response.WriteError(http.StatusInternalServerError, err)
@@ -65,7 +68,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 
 	//* calling  the ListMetaData method from metadata manager m8s
 	res, err := s.metaClient.ListMetadata(ctx, &listMetadataRequest)
-	log.Info("Get metadata details res.......:.", res)
+	log.Info("Get metadata details res:.", res)
 	if err != nil {
 		log.Errorf("Failed to get metadata details err: \n", err)
 		response.WriteEntity(err)
