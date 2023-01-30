@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/micro/go-micro/v2/metadata"
-	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -76,7 +75,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 		return errors.New("get context failed")
 	}
 
-	isAdmin, _ := md[common.CTX_KEY_IS_ADMIN]
+	isAdmin := md[common.CTX_KEY_IS_ADMIN]
 	if isAdmin != common.CTX_VAL_TRUE {
 		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
 		if !ok {
@@ -89,18 +88,19 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 	return nil
 }
 
-func (ad *adapter) CreateMetadata(ctx context.Context, backend *backendpb.BackendDetail, buckets []model.MetaBucket) error {
+func (ad *adapter) CreateMetadata(ctx context.Context, metaBackend model.MetaBackend) error {
 	session := ad.session
-	filter := bson.M{"_id": backend.Id, "backendName": backend.Name, "type": backend.Type, "region": backend.Region}
-	update := bson.M{"$set": bson.M{"buckets": buckets}}
+	filter := bson.M{"_id": metaBackend.Id}
 	upsert := true
-	options := options.UpdateOptions{Upsert: &upsert}
-	_, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).UpdateOne(ctx, filter, update, &options)
+	options := options.ReplaceOptions{Upsert: &upsert}
+
+	_, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).ReplaceOne(ctx, filter, metaBackend, &options)
+
 	if err != nil {
 		return err
 	}
 
-	log.Infoln("metadata successfully synced with database!!")
+	log.Infoln("metadata successfully synced with database")
 	return nil
 }
 

@@ -24,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/globalsign/mgo/bson"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
@@ -50,39 +51,6 @@ type AwsAdapter struct {
 	Session *session.Session
 }
 
-func iterateObjects(i int, object *s3.Object, svc *s3.S3, bucketName string, objectArray []model.MetaObject, wg *sync.WaitGroup) {
-	defer wg.Done()
-	obj := model.MetaObject{}
-	obj.LastModifiedDate = *object.LastModified
-	obj.ObjectName = *object.Key
-	obj.Size = *object.Size
-	obj.StorageClass = *object.StorageClass
-
-	meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: &bucketName, Key: object.Key})
-	if err != nil {
-		log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v\n", *object.Key, bucketName, err)
-	}
-	if meta.ServerSideEncryption != nil {
-		obj.ServerSideEncryption = *meta.ServerSideEncryption
-	}
-	if meta.VersionId != nil {
-		obj.VersionId = *meta.VersionId
-	}
-	obj.ObjectType = *meta.ContentType
-	if meta.Expires != nil {
-		expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
-		if err != nil {
-			log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field\n", err)
-		} else {
-			obj.ExpiresDate = expiresTime
-		}
-	}
-	if meta.ReplicationStatus != nil {
-		obj.ReplicationStatus = *meta.ReplicationStatus
-	}
-	objectArray[i] = obj
-}
-
 func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 	svc := s3.New(sess, aws.NewConfig().WithRegion(bucket.Region))
 	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
@@ -92,33 +60,68 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 	}
 
 	numObjects := len(output.Contents)
+	var totSize int64
+	totSize = 0
+	objectArray := make([]*model.MetaObject, numObjects)
+	for objIdx, object := range output.Contents {
+		obj := &model.MetaObject{}
+		objectArray[objIdx] = obj
+		obj.LastModifiedDate = *object.LastModified
+		obj.ObjectName = *object.Key
+		obj.Size = *object.Size
+		totSize += obj.Size
+		obj.StorageClass = *object.StorageClass
 
-	objectArray := make([]model.MetaObject, numObjects)
-	wg := sync.WaitGroup{}
-	for i, object := range output.Contents {
-		wg.Add(1)
-		go iterateObjects(i, object, svc, bucket.Name, objectArray, &wg)
+		meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: &bucket.Name, Key: object.Key})
+		if err != nil {
+			log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v\n", *object.Key, bucket.Name, err)
+			return err
+		}
+		if meta.ServerSideEncryption != nil {
+			obj.ServerSideEncryption = *meta.ServerSideEncryption
+		}
+		if meta.VersionId != nil {
+			obj.VersionId = *meta.VersionId
+		}
+		obj.ObjectType = *meta.ContentType
+		if meta.Expires != nil {
+			expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
+			if err != nil {
+				log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field\n", err)
+			} else {
+				obj.ExpiresDate = expiresTime
+			}
+		}
+		if meta.ReplicationStatus != nil {
+			obj.ReplicationStatus = *meta.ReplicationStatus
+		}
 	}
-	wg.Wait()
 	bucket.NumberOfObjects = numObjects
+	bucket.TotalSize = totSize
 	bucket.Objects = objectArray
 	return nil
 }
 
-func iterateBuckets(i int, bucket *s3.Bucket, sess *session.Session, bucketArray []model.MetaBucket, wg *sync.WaitGroup) {
+func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) error {
 	defer wg.Done()
-	buck := model.MetaBucket{}
+	buck := &model.MetaBucket{}
+	bucketArray[buckIdx] = buck
 	buck.CreationDate = *bucket.CreationDate
 	buck.Name = *bucket.Name
 	svc := s3.New(sess)
 	loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name})
 	if err != nil {
 		log.Errorf("unable to get bucket location. failed with error: %v\n", err)
-	} else {
-		buck.Region = *loc.LocationConstraint
+		return err
 	}
-	newSvc := s3.New(sess, aws.NewConfig().WithRegion(buck.Region))
-	tags, err := newSvc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
+
+	buck.Region = *loc.LocationConstraint
+
+	if *sess.Config.Region != buck.Region {
+		svc = s3.New(sess, aws.NewConfig().WithRegion(buck.Region))
+	}
+
+	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
 	if err != nil && !strings.Contains(err.Error(), "NoSuchTagSet") {
 		log.Errorf("unable to get bucket tags. failed with error: %v\n", err)
@@ -129,14 +132,16 @@ func iterateBuckets(i int, bucket *s3.Bucket, sess *session.Session, bucketArray
 		}
 		buck.BucketTags = tagset
 	}
-	err = ObjectList(sess, &buck)
+
+	err = ObjectList(sess, buck)
 	if err != nil {
 		log.Errorf("error while collecting object metadata for bucket %v. failed with error: %v\n", buck.Name, err)
+		return err
 	}
-	bucketArray[i] = buck
+	return nil
 }
 
-func BucketList(sess *session.Session) ([]model.MetaBucket, error) {
+func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
 	svc := s3.New(sess)
 
 	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
@@ -145,11 +150,11 @@ func BucketList(sess *session.Session) ([]model.MetaBucket, error) {
 		return nil, err
 	}
 	numBuckets := len(output.Buckets)
-	bucketArray := make([]model.MetaBucket, numBuckets)
+	bucketArray := make([]*model.MetaBucket, numBuckets)
 	wg := sync.WaitGroup{}
 	for i, bucket := range output.Buckets {
 		wg.Add(1)
-		go iterateBuckets(i, bucket, sess, bucketArray, &wg)
+		go GetBucketMeta(i, bucket, sess, bucketArray, &wg)
 	}
 	wg.Wait()
 	return bucketArray, err
@@ -162,7 +167,14 @@ func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataReque
 		log.Errorf("metadata collection failed with error: %v\n", err)
 		return err
 	}
-	db.DbAdapter.CreateMetadata(ctx, ad.Backend, buckArr)
+
+	metaBackend := model.MetaBackend{}
+	metaBackend.Id = bson.ObjectId(ad.Backend.Id)
+	metaBackend.BackendName = ad.Backend.Name
+	metaBackend.Type = ad.Backend.Type
+	metaBackend.Region = ad.Backend.Region
+	metaBackend.Buckets = buckArr
+	db.DbAdapter.CreateMetadata(ctx, metaBackend)
 	return nil
 }
 
