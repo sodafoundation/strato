@@ -15,8 +15,12 @@
 package utils
 
 import (
+	"context"
+
+	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func GetBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
@@ -54,6 +58,7 @@ func GetBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) [
 	}
 	return protoBuckets
 }
+
 func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
 	var protoObjects []*pb.ObjectMetadata
 
@@ -76,4 +81,26 @@ func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
 		protoObjects = append(protoObjects, protoObject)
 	}
 	return protoObjects
+}
+
+func GetBackend(ctx context.Context, backedClient backend.BackendService, backendID string) (*backend.BackendDetail,
+	error) {
+	backend, err := backedClient.GetBackend(ctx, &backend.GetBackendRequest{
+		Id: backendID,
+	})
+	if err != nil {
+		log.Errorf("get backend %s failed.", backendID)
+		return nil, err
+	}
+	return backend.Backend, nil
+}
+
+func ListBackend(ctx context.Context, backedClient backend.BackendService) ([]*backend.BackendDetail,
+	error) {
+	backend, err := backedClient.ListBackend(ctx, &backend.ListBackendRequest{})
+	if err != nil {
+		log.Errorf("failed to list backends for sync metadata")
+		return nil, err
+	}
+	return backend.Backends, nil
 }

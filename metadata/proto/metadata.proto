@@ -39,6 +39,8 @@ message ListMetadataRequest {
     string bucketSizeOperator = 10;
     // operator is eq, gte,gt,lte,lt
     string objectSizeOperator = 11;
+    // can have values desc or asc
+    string sortOrder = 12;
 }
 
 message BaseResponse {

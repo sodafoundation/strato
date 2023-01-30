@@ -17,10 +17,7 @@ func RegisterDriverFactory(driverType string, factory DriverFactory) {
 }
 
 func CreateStorageDriver(driverType string, detail *backendpb.BackendDetail) (CloudDriver, error) {
-	log.Infoln("i am here to Create Storage driverTYpe...", driverType)
-	log.Infoln("detail in Create storageDRiver...", detail)
-	factory, ok := driverFactoryMgr[driverType]
-	log.Infoln("the driverFactoryManager......:", factory, ok)
+	log.Infof("Creting driver of type:%s", driverType)
 
 	if factory, ok := driverFactoryMgr[driverType]; ok {
 		return factory.CreateDriver(detail)

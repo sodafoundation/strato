@@ -1,4 +1,4 @@
-// Copyright 2021 The OpenSDS Authors.
+// Copyright 2023 The SODA Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package gcp
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/micro/go-micro/v2/client"
+	"context"
+
+	backendpb "github.com/opensds/multi-cloud/backend/proto"
+	pb "github.com/opensds/multi-cloud/metadata/proto"
+	log "github.com/sirupsen/logrus"
+	"github.com/webrtcn/s3client"
 )
 
-func RegisterRouter(ws *restful.WebService) {
-	handler := NewAPIService(client.DefaultClient)
-	ws.Route(ws.POST("/backends/sync").To(handler.SyncMetadata)).Doc("Sync metdata from cloud")
-	ws.Route(ws.POST("/backends/{backendID}/sync").To(handler.SyncMetadata)).Doc(
-		"Sync metdata from cloud for a particular backend")
-	ws.Route(ws.GET("/backends/metadata").To(handler.ListMetadata)).Doc("Show metdata details")
+type GcpAdapter struct {
+	backend *backendpb.BackendDetail
+	session *s3client.Client
+}
+
+func (ad *GcpAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest) error {
+	log.Infoln("Implement me (gcp) driver")
+	return nil
+}
+func (ad *GcpAdapter) DownloadObject() {
+	log.Info("Implement me (gcp) driver")
 }

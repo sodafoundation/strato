@@ -1,4 +1,18 @@
-package querytranslator
+// Copyright 2023 The SODA Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package query_manager
 
 import (
 	"github.com/opensds/multi-cloud/metadata/pkg/constants"
@@ -23,6 +37,19 @@ func Translate(in *pb.ListMetadataRequest) []bson.D {
 	aggOperations = constructAggOperationForBackendLevel(in, aggOperations)
 	aggOperations = constructAggOperationForBucketLevel(in, aggOperations)
 	aggOperations = constructAggOperationForObjectLevel(in, aggOperations)
+	aggOperations = sortAggOperation(aggOperations, constants.BACKEND_NAME, in.SortOrder)
+	return aggOperations
+}
+
+func sortAggOperation(aggOperations []bson.D, fieldName string, order string) []bson.D {
+	sortOrder := constants.ASCENDING_ORDER
+
+	if order == constants.DESC {
+		sortOrder = constants.DESCENDING_ORDER
+	}
+
+	sortAgg := bson.D{{constants.SORT_AGG_OP, bson.D{{fieldName, sortOrder}}}}
+	aggOperations = append(aggOperations, sortAgg)
 	return aggOperations
 }
 
