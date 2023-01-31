@@ -97,10 +97,11 @@ func (ad *adapter) CreateMetadata(ctx context.Context, metaBackend model.MetaBac
 	_, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).ReplaceOne(ctx, filter, metaBackend, &options)
 
 	if err != nil {
+		log.Errorf("failed to sync metadata for backend id: %v. failed with error: %v", metaBackend.Id, err)
 		return err
 	}
 
-	log.Infoln("metadata successfully synced with database")
+	log.Infof("metadata successfully synced for backend id: %v", metaBackend.Id)
 	return nil
 }
 
