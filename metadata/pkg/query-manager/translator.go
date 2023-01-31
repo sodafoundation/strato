@@ -106,7 +106,7 @@ func getBucketsHavingFilteredObjectsQuery(filterConditions bson.A) bson.E {
 			{constants.IN, bson.D{
 				//* asking to include all the rest of bucket fields in the map output
 				{constants.CREATION_DATE, getQualifiedNameForMapBucket(constants.CREATION_DATE)},
-				{constants.NAME, getQualifiedNameForMapBucket(constants.REGION)},
+				{constants.NAME, getQualifiedNameForMapBucket(constants.NAME)},
 				{constants.REGION, getQualifiedNameForMapBucket(constants.REGION)},
 				{constants.TYPE, getQualifiedNameForMapBucket(constants.TYPE)},
 				{constants.ACCESS, getQualifiedNameForMapBucket(constants.ACCESS)},
