@@ -25,7 +25,7 @@ type MetaBackend struct {
 	BackendName string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
 	Type        string        `json:"type,omitempty" bson:"type,omitempty"`
 	Region      string        `json:"region" bson:"region"`
-	Buckets     []MetaBucket  `json:"buckets,omitempty" bson:"buckets,omitempty"`
+	Buckets     []*MetaBucket `json:"buckets,omitempty" bson:"buckets,omitempty"`
 }
 
 type MetaBucket struct {
@@ -35,23 +35,23 @@ type MetaBucket struct {
 	Region          string            `json:"region,omitempty" bson:"region,omitempty"`
 	Access          string            `json:"access,omitempty" bson:"access,omitempty"`
 	NumberOfObjects int               `json:"numberOfObjects,omitempty" bson:"numberOfObjects,omitempty"`
-	Objects         []MetaObject      `json:"objects,omitempty" bson:"objects"`
+	Objects         []*MetaObject     `json:"objects,omitempty" bson:"objects"`
 	TotalSize       int64             `json:"totalSize,omitempty" bson:"totalSize,omitempty"`
 	BucketTags      map[string]string `json:"tags,omitempty" bson:"tags,omitempty"`
 }
 
 type MetaObject struct {
-	ObjectName                  string            `json:"name" bson:"name"`
-	LastModifiedDate            time.Time         `type:"timestamp" json:"lastModifiedDate" bson:"lastModifiedDate"`
-	Size                        int64             `json:"size" bson:"size"`
-	ServerSideEncryptionEnabled bool              `json:"serverSideEncryptionEnabled" bson:"serverSideEncryptionEnabled"`
-	VersionId                   int32             `json:"versionId,omitempty" bson:"versionId,omitempty"`
-	StorageClass                string            `json:"storageClass,omitempty" bson:"storageClass,omitempty"`
-	RedirectLocation            string            `json:"redirectLocation,omitempty" bson:"redirectLocation,omitempty"`
-	ReplicationStatus           string            `json:"replicationStatus,omitempty" bson:"replicationStatus,omitempty"`
-	ExpiresDate                 time.Time         `json:"expiresDate,omitempty" bson:"expiresDate,omitempty"`
-	GrantControl                string            `json:"grantControl,omitempty" bson:"grantControl,omitempty"`
-	ObjectTags                  map[string]string `json:"objectTags,omitempty" bson:"objectTags,omitempty"`
-	Metadata                    map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
-	ObjectType                  string            `json:"objectType,omitempty" bson:"objectType,omitempty"`
+	ObjectName           string            `json:"name" bson:"name"`
+	LastModifiedDate     time.Time         `type:"timestamp" json:"lastModifiedDate" bson:"lastModifiedDate"`
+	Size                 int64             `json:"size" bson:"size"`
+	ServerSideEncryption string            `json:"serverSideEncryption" bson:"serverSideEncryption"`
+	VersionId            string            `json:"versionId,omitempty" bson:"versionId,omitempty"`
+	StorageClass         string            `json:"storageClass,omitempty" bson:"storageClass,omitempty"`
+	RedirectLocation     string            `json:"redirectLocation,omitempty" bson:"redirectLocation,omitempty"`
+	ReplicationStatus    string            `json:"replicationStatus,omitempty" bson:"replicationStatus,omitempty"`
+	ExpiresDate          time.Time         `json:"expiresDate,omitempty" bson:"expiresDate,omitempty"`
+	GrantControl         string            `json:"grantControl,omitempty" bson:"grantControl,omitempty"`
+	ObjectTags           map[string]string `json:"objectTags,omitempty" bson:"objectTags,omitempty"`
+	Metadata             map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
+	ObjectType           string            `json:"objectType,omitempty" bson:"objectType,omitempty"`
 }

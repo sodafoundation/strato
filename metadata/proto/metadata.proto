@@ -91,7 +91,7 @@ message ObjectMetadata {
     // extension of the object
     string type = 5;
     // true if server side encyption is enabled
-    bool serverSideEncryptionEnabled = 6;
+    string serverSideEncryption = 6;
     // used to store the version info of the object
     string versionId = 7;
     // used to denote the storage class of the object in the cloud vendor

@@ -55,6 +55,6 @@ func Exit(db *config.Database) {
 }
 
 type DBAdapter interface {
-	CreateMetadata(ctx context.Context, bucket []*model.MetaBackend) error
+	CreateMetadata(ctx context.Context, metaBackend model.MetaBackend) error
 	ListMetadata(ctx context.Context, query []bson.D) ([]*model.MetaBackend, error)
 }

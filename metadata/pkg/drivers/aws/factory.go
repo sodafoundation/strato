@@ -30,7 +30,6 @@ type AwsS3DriverFactory struct {
 
 func (factory *AwsS3DriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.CloudDriver, error) {
 	log.Infoln("got the request to create driver in aws factory")
-	endpoint := backend.Endpoint
 	AccessKeyID := backend.Access
 	AccessKeySecret := backend.Security
 	region := backend.Region
@@ -41,7 +40,6 @@ func (factory *AwsS3DriverFactory) CreateDriver(backend *backendpb.BackendDetail
 	disableSSL := true
 	sess, err := session.NewSession(&aws.Config{
 		Region:      &region,
-		Endpoint:    &endpoint,
 		Credentials: creds,
 		DisableSSL:  &disableSSL,
 	})

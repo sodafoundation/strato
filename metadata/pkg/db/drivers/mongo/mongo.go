@@ -19,10 +19,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/micro/go-micro/v2/metadata"
 	log "github.com/sirupsen/logrus"
-	bson2 "go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -76,7 +75,7 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 		return errors.New("get context failed")
 	}
 
-	isAdmin, _ := md[common.CTX_KEY_IS_ADMIN]
+	isAdmin := md[common.CTX_KEY_IS_ADMIN]
 	if isAdmin != common.CTX_VAL_TRUE {
 		tenantId, ok := md[common.CTX_KEY_TENANT_ID]
 		if !ok {
@@ -88,25 +87,25 @@ func UpdateContextFilter(ctx context.Context, m bson.M) error {
 
 	return nil
 }
-func (ad *adapter) CreateMetadata(ctx context.Context, backends []*model.MetaBackend) error {
-	log.Infoln("I am in CreateMetadta in db..........")
-	session := ad.session
-	for _, backend := range backends {
-		if backend.Id == "" {
-			backend.Id = bson.NewObjectId()
-		}
 
-		_, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).InsertOne(ctx, backend)
-		if err != nil {
-			return err
-		}
-		log.Infof("the value of in:%s", backend)
+func (ad *adapter) CreateMetadata(ctx context.Context, metaBackend model.MetaBackend) error {
+	session := ad.session
+	filter := bson.M{"_id": metaBackend.Id}
+	upsert := true
+	options := options.ReplaceOptions{Upsert: &upsert}
+
+	_, err := session.Database(MetadataDataBaseName).Collection(MetadataCollectionName).ReplaceOne(ctx, filter, metaBackend, &options)
+
+	if err != nil {
+		log.Errorf("failed to sync metadata for backend id: %v. failed with error: %v", metaBackend.Id, err)
+		return err
 	}
 
+	log.Infof("metadata successfully synced for backend id: %v", metaBackend.Id)
 	return nil
 }
 
-func (ad *adapter) ListMetadata(ctx context.Context, query []bson2.D) ([]*model.MetaBackend, error) {
+func (ad *adapter) ListMetadata(ctx context.Context, query []bson.D) ([]*model.MetaBackend, error) {
 	log.Infoln("received list metadata request")
 	session := ad.session
 

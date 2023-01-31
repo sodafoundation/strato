@@ -36,7 +36,7 @@ services:
       - MICRO_SERVER_ADDRESS=:8089
       - MICRO_REGISTRY=mdns
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://11.242.181.143/identity
+      - OS_AUTH_URL=http://$HOST_IP/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
@@ -58,7 +58,7 @@ services:
       - MICRO_SERVER_ADDRESS=:8090
       - MICRO_REGISTRY=mdns
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://11.242.181.143/identity
+      - OS_AUTH_URL=http://$HOST_IP/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123
@@ -129,7 +129,7 @@ services:
       - MICRO_REGISTRY=mdns
       - DB_HOST=datastore:27017
       - OS_AUTH_AUTHSTRATEGY=keystone
-      - OS_AUTH_URL=http://11.242.181.143/identity
+      - OS_AUTH_URL=http://$HOST_IP/identity
       - OS_USER_DOMIN_ID=Default
       - OS_USERNAME=opensds
       - OS_PASSWORD=opensds@123

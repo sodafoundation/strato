@@ -17,11 +17,9 @@ package utils
 import (
 	"context"
 
-	"github.com/opensds/multi-cloud/metadata/pkg/model"
-	"github.com/opensds/multi-cloud/metadata/proto"
-	pb "github.com/opensds/multi-cloud/metadata/proto"
-
 	backend "github.com/opensds/multi-cloud/backend/proto"
+	"github.com/opensds/multi-cloud/metadata/pkg/model"
+	pb "github.com/opensds/multi-cloud/metadata/proto"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,24 +58,25 @@ func GetBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) [
 	}
 	return protoBuckets
 }
-func GetObjects(bucket model.MetaBucket) []*proto.ObjectMetadata {
-	var protoObjects []*proto.ObjectMetadata
+
+func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
+	var protoObjects []*pb.ObjectMetadata
 
 	for _, object := range bucket.Objects {
-		protoObject := &proto.ObjectMetadata{
-			Name:                        object.ObjectName,
-			LastModifiedDate:            object.LastModifiedDate.String(),
-			SizeInBytes:                 int32(object.Size),
-			BucketName:                  bucket.Name,
-			Type:                        object.ObjectType,
-			ServerSideEncryptionEnabled: object.ServerSideEncryptionEnabled,
-			ExpiresDate:                 object.ExpiresDate.String(),
-			GrantControl:                object.GrantControl,
-			VersionId:                   string(object.VersionId),
-			RedirectLocation:            object.RedirectLocation,
-			ReplicationStatus:           object.ReplicationStatus,
-			Tags:                        object.ObjectTags,
-			Metadata:                    object.Metadata,
+		protoObject := &pb.ObjectMetadata{
+			Name:                 object.ObjectName,
+			LastModifiedDate:     object.LastModifiedDate.String(),
+			SizeInBytes:          int32(object.Size),
+			BucketName:           bucket.Name,
+			Type:                 object.ObjectType,
+			ServerSideEncryption: object.ServerSideEncryption,
+			ExpiresDate:          object.ExpiresDate.String(),
+			GrantControl:         object.GrantControl,
+			VersionId:            string(object.VersionId),
+			RedirectLocation:     object.RedirectLocation,
+			ReplicationStatus:    object.ReplicationStatus,
+			Tags:                 object.ObjectTags,
+			Metadata:             object.Metadata,
 		}
 		protoObjects = append(protoObjects, protoObject)
 	}
