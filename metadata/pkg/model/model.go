@@ -21,11 +21,12 @@ import (
 )
 
 type MetaBackend struct {
-	Id          bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-	BackendName string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
-	Type        string        `json:"type,omitempty" bson:"type,omitempty"`
-	Region      string        `json:"region" bson:"region"`
-	Buckets     []*MetaBucket `json:"buckets,omitempty" bson:"buckets,omitempty"`
+	Id              bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
+	BackendName     string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
+	Type            string        `json:"type,omitempty" bson:"type,omitempty"`
+	Region          string        `json:"region" bson:"region"`
+	Buckets         []*MetaBucket  `json:"buckets,omitempty" bson:"buckets,omitempty"`
+	NumberOfBuckets int32         `json:"numberOfBuckets,omitempty" bson:"numberOfBuckets,omitempty"`
 }
 
 type MetaBucket struct {

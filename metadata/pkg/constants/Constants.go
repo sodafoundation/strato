@@ -63,13 +63,14 @@ const (
 )
 
 const (
-	ID           = "_id"
-	BACKEND_NAME = "backendName"
-	TYPE         = "type"
-	REGION       = "region"
-	BUCKETS      = "buckets"
-	BUCKET       = "bucket"
-	NAME         = "name"
+	ID                = "_id"
+	BACKEND_NAME      = "backendName"
+	TYPE              = "type"
+	REGION            = "region"
+	BUCKETS           = "buckets"
+	NUMBER_OF_BUCKETS = "numberOfBuckets"
+	BUCKET            = "bucket"
+	NAME              = "name"
 	//* bucket.+ actual field name
 	BUCKET_NAME        = "bucket.name"
 	BUCKETS_NAME       = "buckets.name"

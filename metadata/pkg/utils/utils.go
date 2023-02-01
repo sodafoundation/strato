@@ -29,10 +29,11 @@ func GetBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
 		var protoBuckets []*pb.BucketMetadata
 		protoBuckets = GetBuckets(backend, protoBuckets)
 		protoBackend := &pb.BackendMetadata{
-			BackendName: backend.BackendName,
-			Region:      backend.Region,
-			Type:        backend.Type,
-			Buckets:     protoBuckets,
+			BackendName:     backend.BackendName,
+			Region:          backend.Region,
+			Type:            backend.Type,
+			Buckets:         protoBuckets,
+			NumberOfBuckets: backend.NumberOfBuckets,
 		}
 		protoBackends = append(protoBackends, protoBackend)
 	}
