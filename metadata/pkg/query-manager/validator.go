@@ -35,6 +35,7 @@ func ValidateInput(in *pb.ListMetadataRequest) (okie bool, err error) {
 func isValidQuery(in *pb.ListMetadataRequest) (bool, error) {
 	// TODO: validate backend name if present is valid according to backend naming conventions
 
+	in.Type = strings.ToLower(in.Type)
 	// validate size of object and operator is valid
 	okie, err := isSizeParamsValid(in.SizeOfBucketInBytes, in.BucketSizeOperator)
 	if !okie {
