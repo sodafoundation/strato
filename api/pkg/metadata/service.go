@@ -68,7 +68,6 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 
 	//* calling  the ListMetaData method from metadata manager m8s
 	res, err := s.metaClient.ListMetadata(ctx, &listMetadataRequest)
-	log.Info("Get metadata details res:.", res)
 	if err != nil {
 		log.Errorf("Failed to get metadata details err: \n", err)
 		response.WriteEntity(err)
