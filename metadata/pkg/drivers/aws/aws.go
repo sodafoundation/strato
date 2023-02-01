@@ -75,7 +75,7 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) {
 		meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: &bucket.Name, Key: object.Key})
 		if err != nil {
 			log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v", *object.Key, bucket.Name, err)
-			return
+			continue
 		}
 		if meta.ServerSideEncryption != nil {
 			obj.ServerSideEncryption = *meta.ServerSideEncryption
