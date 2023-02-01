@@ -107,6 +107,10 @@ func isValidRegion(region string, cloudType string) (bool, error) {
 		return false, &ValidationError{errMsg: "Not a valid cloud type"}
 	}
 
+	if region == "" {
+		return true, nil
+	}
+
 	for _, validRegion := range validRegions {
 		if validRegion == region {
 			return true, nil
