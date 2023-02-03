@@ -77,7 +77,7 @@ message BucketMetadata {
     int32 numberOfObjects = 5;
     int32 numberOfFilteredObjects = 6;
     // The total size occupied by the bucket
-    int64 totalSizeInBytes = 7;
+    int64 bucketSizeInBytes = 7;
     int64 filteredBucketSize = 8;
     // The tags of the bucket
     map<string, string> tags = 9;
@@ -92,7 +92,7 @@ message ObjectMetadata {
     // The name of the bucket to which the object belongs
     string bucketName = 3;
     // The size o the object in bytes
-    int32 sizeInBytes = 4;
+    int32 objectSizeInBytes = 4;
     // extension of the object
     string type = 5;
     // true if server side encyption is enabled
