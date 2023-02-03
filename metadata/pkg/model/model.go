@@ -21,24 +21,27 @@ import (
 )
 
 type MetaBackend struct {
-	Id              bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-	BackendName     string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
-	Type            string        `json:"type,omitempty" bson:"type,omitempty"`
-	Region          string        `json:"region" bson:"region"`
-	Buckets         []*MetaBucket `json:"buckets" bson:"buckets"`
-	NumberOfBuckets int32         `json:"numberOfBuckets" bson:"numberOfBuckets"`
+	Id                      bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
+	BackendName             string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
+	Type                    string        `json:"type,omitempty" bson:"type,omitempty"`
+	Region                  string        `json:"region" bson:"region"`
+	Buckets                 []*MetaBucket `json:"buckets" bson:"buckets"`
+	NumberOfBuckets         int32         `json:"numberOfBuckets" bson:"numberOfBuckets"`
+	NumberOfFilteredBuckets int32         `json:"numberOFilteredBuckets" bson:"numberOFilteredBuckets"`
 }
 
 type MetaBucket struct {
-	CreationDate    *time.Time        `type:"timestamp" json:"creationDate,omitempty" bson:"creationDate,omitempty"`
-	Name            string            `type:"string" json:"name" bson:"name"`
-	Type            string            `json:"type,omitempty" bson:"type,omitempty"`
-	Region          string            `json:"region,omitempty" bson:"region,omitempty"`
-	Access          string            `json:"access,omitempty" bson:"access,omitempty"`
-	NumberOfObjects int               `json:"numberOfObjects,omitempty" bson:"numberOfObjects,omitempty"`
-	Objects         []*MetaObject     `json:"objects" bson:"objects"`
-	TotalSize       int64             `json:"totalSize,omitempty" bson:"totalSize"`
-	BucketTags      map[string]string `json:"tags,omitempty" bson:"tags,omitempty"`
+	CreationDate            *time.Time        `type:"timestamp" json:"creationDate,omitempty" bson:"creationDate,omitempty"`
+	Name                    string            `type:"string" json:"name" bson:"name"`
+	Type                    string            `json:"type,omitempty" bson:"type,omitempty"`
+	Region                  string            `json:"region,omitempty" bson:"region,omitempty"`
+	Access                  string            `json:"access,omitempty" bson:"access,omitempty"`
+	NumberOfObjects         int               `json:"numberOfObjects,omitempty" bson:"numberOfObjects,omitempty"`
+	NumberOfFilteredObjects int               `json:"numberOfFilteredObjects,omitempty" bson:"numberOfFilteredObjects,omitempty"`
+	Objects                 []*MetaObject     `json:"objects" bson:"objects"`
+	TotalSize               int64             `json:"totalSize,omitempty" bson:"totalSize"`
+	FilteredBucketSize      int64             `json:"filteredBucketSize,omitempty" bson:"filteredBucketSize"`
+	BucketTags              map[string]string `json:"tags,omitempty" bson:"tags,omitempty"`
 }
 
 type MetaObject struct {

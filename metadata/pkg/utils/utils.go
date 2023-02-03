@@ -29,12 +29,13 @@ func GetBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
 		var protoBuckets []*pb.BucketMetadata
 		protoBuckets = GetBuckets(backend, protoBuckets)
 		protoBackend := &pb.BackendMetadata{
-			Id:              string(backend.Id),
-			BackendName:     backend.BackendName,
-			Region:          backend.Region,
-			Type:            backend.Type,
-			Buckets:         protoBuckets,
-			NumberOfBuckets: backend.NumberOfBuckets,
+			Id:                      string(backend.Id),
+			BackendName:             backend.BackendName,
+			Region:                  backend.Region,
+			Type:                    backend.Type,
+			Buckets:                 protoBuckets,
+			NumberOfBuckets:         backend.NumberOfBuckets,
+			NumberOfFilteredBuckets: backend.NumberOfFilteredBuckets,
 		}
 		protoBackends = append(protoBackends, protoBackend)
 	}
@@ -47,14 +48,16 @@ func GetBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) [
 		protoObjects := GetObjects(bucket)
 
 		protoBucket := &pb.BucketMetadata{
-			Name:             bucket.Name,
-			Type:             bucket.Type,
-			Region:           bucket.Region,
-			TotalSizeInBytes: bucket.TotalSize,
-			NumberOfObjects:  int32(bucket.NumberOfObjects),
-			CreationDate:     bucket.CreationDate.String(),
-			Tags:             bucket.BucketTags,
-			Objects:          protoObjects,
+			Name:                    bucket.Name,
+			Type:                    bucket.Type,
+			Region:                  bucket.Region,
+			TotalSizeInBytes:        bucket.TotalSize,
+			FilteredBucketSize:      bucket.FilteredBucketSize,
+			NumberOfObjects:         int32(bucket.NumberOfObjects),
+			NumberOfFilteredObjects: int32(bucket.NumberOfFilteredObjects),
+			CreationDate:            bucket.CreationDate.String(),
+			Tags:                    bucket.BucketTags,
+			Objects:                 protoObjects,
 		}
 		protoBuckets = append(protoBuckets, protoBucket)
 	}
