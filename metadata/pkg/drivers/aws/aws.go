@@ -65,7 +65,7 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 	for objIdx, object := range output.Contents {
 		obj := &model.MetaObject{}
 		objectArray[objIdx] = obj
-		obj.LastModifiedDate = *object.LastModified
+		obj.LastModifiedDate = object.LastModified
 		obj.ObjectName = *object.Key
 		obj.Size = *object.Size
 		totSize += obj.Size
@@ -88,7 +88,7 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 			if err != nil {
 				log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field", err)
 			} else {
-				obj.ExpiresDate = expiresTime
+				obj.ExpiresDate = &expiresTime
 			}
 		}
 		if meta.ReplicationStatus != nil {

@@ -30,7 +30,7 @@ type MetaBackend struct {
 }
 
 type MetaBucket struct {
-	CreationDate    time.Time         `type:"timestamp" json:"creationDate,omitempty" bson:"creationDate,omitempty"`
+	CreationDate    *time.Time        `type:"timestamp" json:"creationDate,omitempty" bson:"creationDate,omitempty"`
 	Name            string            `type:"string" json:"name" bson:"name"`
 	Type            string            `json:"type,omitempty" bson:"type,omitempty"`
 	Region          string            `json:"region,omitempty" bson:"region,omitempty"`
@@ -43,14 +43,14 @@ type MetaBucket struct {
 
 type MetaObject struct {
 	ObjectName           string            `json:"name" bson:"name"`
-	LastModifiedDate     time.Time         `type:"timestamp" json:"lastModifiedDate" bson:"lastModifiedDate"`
+	LastModifiedDate     *time.Time        `type:"timestamp" json:"lastModifiedDate" bson:"lastModifiedDate"`
 	Size                 int64             `json:"size" bson:"size"`
 	ServerSideEncryption string            `json:"serverSideEncryption" bson:"serverSideEncryption"`
 	VersionId            string            `json:"versionId,omitempty" bson:"versionId,omitempty"`
 	StorageClass         string            `json:"storageClass,omitempty" bson:"storageClass,omitempty"`
 	RedirectLocation     string            `json:"redirectLocation,omitempty" bson:"redirectLocation,omitempty"`
 	ReplicationStatus    string            `json:"replicationStatus,omitempty" bson:"replicationStatus,omitempty"`
-	ExpiresDate          time.Time         `json:"expiresDate,omitempty" bson:"expiresDate,omitempty"`
+	ExpiresDate          *time.Time        `json:"expiresDate,omitempty" bson:"expiresDate,omitempty"`
 	GrantControl         string            `json:"grantControl,omitempty" bson:"grantControl,omitempty"`
 	ObjectTags           map[string]string `json:"objectTags,omitempty" bson:"objectTags,omitempty"`
 	Metadata             map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`

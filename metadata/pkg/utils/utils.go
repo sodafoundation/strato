@@ -64,6 +64,13 @@ func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
 	var protoObjects []*pb.ObjectMetadata
 
 	for _, object := range bucket.Objects {
+		var expiresDateStr string
+		if object.ExpiresDate == nil {
+			expiresDateStr = ""
+		} else {
+			expiresDateStr = object.ExpiresDate.String()
+		}
+
 		protoObject := &pb.ObjectMetadata{
 			Name:                 object.ObjectName,
 			LastModifiedDate:     object.LastModifiedDate.String(),
@@ -71,7 +78,7 @@ func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
 			BucketName:           bucket.Name,
 			Type:                 object.ObjectType,
 			ServerSideEncryption: object.ServerSideEncryption,
-			ExpiresDate:          object.ExpiresDate.String(),
+			ExpiresDate:          expiresDateStr,
 			GrantControl:         object.GrantControl,
 			VersionId:            string(object.VersionId),
 			RedirectLocation:     object.RedirectLocation,
