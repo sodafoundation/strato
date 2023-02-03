@@ -57,11 +57,12 @@ message ListMetadataResponse {
 }
 
 message BackendMetadata {
-    string backendName = 1;
-    string region = 2;
-    string type = 3;
-    int32 numberOfBuckets = 4;
-    repeated BucketMetadata buckets = 5;
+    string id = 1;
+    string backendName = 2;
+    string region = 3;
+    string type = 4;
+    int32 numberOfBuckets = 5;
+    repeated BucketMetadata buckets = 6;
 }
 
 message BucketMetadata {

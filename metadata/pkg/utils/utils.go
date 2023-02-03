@@ -29,6 +29,7 @@ func GetBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
 		var protoBuckets []*pb.BucketMetadata
 		protoBuckets = GetBuckets(backend, protoBuckets)
 		protoBackend := &pb.BackendMetadata{
+			Id:              string(backend.Id),
 			BackendName:     backend.BackendName,
 			Region:          backend.Region,
 			Type:            backend.Type,
