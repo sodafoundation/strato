@@ -25,8 +25,8 @@ type MetaBackend struct {
 	BackendName     string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
 	Type            string        `json:"type,omitempty" bson:"type,omitempty"`
 	Region          string        `json:"region" bson:"region"`
-	Buckets         []*MetaBucket  `json:"buckets,omitempty" bson:"buckets,omitempty"`
-	NumberOfBuckets int32         `json:"numberOfBuckets,omitempty" bson:"numberOfBuckets,omitempty"`
+	Buckets         []*MetaBucket `json:"buckets,omitempty" bson:"buckets"`
+	NumberOfBuckets int32         `json:"numberOfBuckets" bson:"numberOfBuckets"`
 }
 
 type MetaBucket struct {
@@ -37,7 +37,7 @@ type MetaBucket struct {
 	Access          string            `json:"access,omitempty" bson:"access,omitempty"`
 	NumberOfObjects int               `json:"numberOfObjects,omitempty" bson:"numberOfObjects,omitempty"`
 	Objects         []*MetaObject     `json:"objects,omitempty" bson:"objects"`
-	TotalSize       int64             `json:"totalSize,omitempty" bson:"totalSize,omitempty"`
+	TotalSize       int64             `json:"totalSize,omitempty" bson:"totalSize"`
 	BucketTags      map[string]string `json:"tags,omitempty" bson:"tags,omitempty"`
 }
 
