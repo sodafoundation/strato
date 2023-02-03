@@ -68,7 +68,6 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 
 	//* calling  the ListMetaData method from metadata manager m8s
 	res, err := s.metaClient.ListMetadata(ctx, &listMetadataRequest)
-	log.Info("Get metadata details res:.", res)
 	if err != nil {
 		log.Errorf("Failed to get metadata details err: \n", err)
 		response.WriteEntity(err)
@@ -97,8 +96,8 @@ func GetListMetaDataRequest(request *restful.Request) (listMetadataRequest mt.Li
 		return mt.ListMetadataRequest{}, err
 	}
 
-	bucketSizeOperator := request.QueryParameter("BucketSizeOperator")
-	objectSizeOperator := request.QueryParameter("ObjectSizeOperator")
+	bucketSizeOperator := request.QueryParameter("bucketSizeOperator")
+	objectSizeOperator := request.QueryParameter("objectSizeOperator")
 	sortOrder := request.QueryParameter("sort")
 	limit, offset, err := common.GetPaginationParam(request)
 	if err != nil {

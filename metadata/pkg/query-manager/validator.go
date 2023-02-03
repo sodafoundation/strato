@@ -35,6 +35,7 @@ func ValidateInput(in *pb.ListMetadataRequest) (okie bool, err error) {
 func isValidQuery(in *pb.ListMetadataRequest) (bool, error) {
 	// TODO: validate backend name if present is valid according to backend naming conventions
 
+	in.Type = strings.ToLower(in.Type)
 	// validate size of object and operator is valid
 	okie, err := isSizeParamsValid(in.SizeOfBucketInBytes, in.BucketSizeOperator)
 	if !okie {
@@ -105,6 +106,10 @@ func isValidRegion(region string, cloudType string) (bool, error) {
 
 	default:
 		return false, &ValidationError{errMsg: "Not a valid cloud type"}
+	}
+
+	if region == "" {
+		return true, nil
 	}
 
 	for _, validRegion := range validRegions {

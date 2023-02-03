@@ -9,7 +9,7 @@ const (
 
 // type constants for cloud vendors
 const (
-	AWS_S3 = "AWS-S3"
+	AWS_S3 = "aws-s3"
 )
 
 // valid region for AWS
