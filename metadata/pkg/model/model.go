@@ -21,9 +21,9 @@ import (
 )
 
 type MetaBackend struct {
-	Id                      bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-	BackendName             string        `json:"backendName,omitempty" bson:"backendName,omitempty"`
-	Type                    string        `json:"type,omitempty" bson:"type,omitempty"`
+	Id                      bson.ObjectId `json:"id" bson:"_id"`
+	BackendName             string        `json:"backendName" bson:"backendName"`
+	Type                    string        `json:"type" bson:"type"`
 	Region                  string        `json:"region" bson:"region"`
 	Buckets                 []*MetaBucket `json:"buckets" bson:"buckets"`
 	NumberOfBuckets         int32         `json:"numberOfBuckets" bson:"numberOfBuckets"`
@@ -36,10 +36,10 @@ type MetaBucket struct {
 	Type                    string            `json:"type,omitempty" bson:"type,omitempty"`
 	Region                  string            `json:"region,omitempty" bson:"region,omitempty"`
 	Access                  string            `json:"access,omitempty" bson:"access,omitempty"`
-	NumberOfObjects         int               `json:"numberOfObjects,omitempty" bson:"numberOfObjects,omitempty"`
+	NumberOfObjects         int               `json:"numberOfObjects" bson:"numberOfObjects,omitempty"`
 	NumberOfFilteredObjects int               `json:"numberOfFilteredObjects,omitempty" bson:"numberOfFilteredObjects,omitempty"`
 	Objects                 []*MetaObject     `json:"objects" bson:"objects"`
-	TotalSize               int64             `json:"totalSize,omitempty" bson:"totalSize"`
+	TotalSize               int64             `json:"totalSize" bson:"totalSize"`
 	FilteredBucketSize      int64             `json:"filteredBucketSize,omitempty" bson:"filteredBucketSize"`
 	BucketTags              map[string]string `json:"tags,omitempty" bson:"tags,omitempty"`
 }
