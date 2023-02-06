@@ -101,18 +101,18 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 	return nil
 }
 
-func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucketArray []*model.MetaBucket, numBuckets *int, wg *sync.WaitGroup) error {
+func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	svc := s3.New(sess)
 	loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name})
 	if err != nil {
 		log.Errorf("unable to get bucket location. failed with error: %v", err)
-		return err
+		return
 	}
 
 	if *loc.LocationConstraint != *sess.Config.Region {
-		return nil
+		return
 	}
 
 	buck := &model.MetaBucket{}
@@ -122,7 +122,7 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 
 	err = ObjectList(sess, buck)
 	if err != nil {
-		return err
+		return
 	}
 
 	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
@@ -137,8 +137,6 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 		buck.BucketTags = tagset
 	}
 	bucketArray[buckIdx] = buck
-	*numBuckets += 1
-	return nil
 }
 
 func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
@@ -149,21 +147,18 @@ func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
 		log.Errorf("unable to list buckets. failed with error: %v", err)
 		return nil, err
 	}
-	numBuckets := 0
 	bucketArray := make([]*model.MetaBucket, len(output.Buckets))
 	wg := sync.WaitGroup{}
-	for i, bucket := range output.Buckets {
+	for idx, bucket := range output.Buckets {
 		wg.Add(1)
-		go GetBucketMeta(i, bucket, sess, bucketArray, &numBuckets, &wg)
+		go GetBucketMeta(idx, bucket, sess, bucketArray, &wg)
 	}
 	wg.Wait()
 
-	bucketArrayFiltered := make([]*model.MetaBucket, numBuckets)
-	buckNum := 0
+	bucketArrayFiltered := make([]*model.MetaBucket, 0)
 	for _, buck := range bucketArray {
 		if buck != nil {
-			bucketArrayFiltered[buckNum] = buck
-			buckNum += 1
+			bucketArrayFiltered = append(bucketArrayFiltered, buck)
 		}
 	}
 
