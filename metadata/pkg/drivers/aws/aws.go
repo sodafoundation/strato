@@ -127,14 +127,14 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 
 	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
-	if err != nil && !strings.Contains(err.Error(), "NoSuchTagSet") {
-		log.Errorf("unable to get bucket tags. failed with error: %v", err)
-	} else if err == nil {
+	if err == nil {
 		tagset := make(map[string]string)
 		for _, tag := range tags.TagSet {
 			tagset[*tag.Key] = *tag.Value
 		}
 		buck.BucketTags = tagset
+	} else if !strings.Contains(err.Error(), "NoSuchTagSet") {
+		log.Errorf("unable to get bucket tags. failed with error: %v", err)
 	}
 	bucketArray[buckIdx] = buck
 }
