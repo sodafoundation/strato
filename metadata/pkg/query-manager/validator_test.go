@@ -149,9 +149,9 @@ func TestIsValidRegion(t *testing.T) {
 		region    string
 		expected  bool
 	}{
-		{"AWS-S3", "us-west-1", true},
-		{"AWS-S3", "us-west-2", true},
-		{"AWS-S3", "abc", false},
+		{"aws-s3", "us-west-1", true},
+		{"aws-s3", "us-west-2", true},
+		{"aws-s3", "abc", false},
 		{"", "", true},
 		{"abc", "us-west-1", false},
 	}
