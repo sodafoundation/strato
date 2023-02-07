@@ -116,7 +116,7 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 
 	buck := &model.MetaBucket{}
 	buck.Name = *bucket.Name
-	buck.CreationDate = *bucket.CreationDate
+	buck.CreationDate = bucket.CreationDate
 	buck.Region = *loc.LocationConstraint
 
 	err = ObjectList(sess, buck)
