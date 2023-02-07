@@ -29,11 +29,13 @@ func GetBackends(unPaginatedResult []*model.MetaBackend) []*pb.BackendMetadata {
 		var protoBuckets []*pb.BucketMetadata
 		protoBuckets = GetBuckets(backend, protoBuckets)
 		protoBackend := &pb.BackendMetadata{
-			BackendName:     backend.BackendName,
-			Region:          backend.Region,
-			Type:            backend.Type,
-			Buckets:         protoBuckets,
-			NumberOfBuckets: backend.NumberOfBuckets,
+			Id:                      string(backend.Id),
+			BackendName:             backend.BackendName,
+			Region:                  backend.Region,
+			Type:                    backend.Type,
+			Buckets:                 protoBuckets,
+			NumberOfBuckets:         backend.NumberOfBuckets,
+			NumberOfFilteredBuckets: backend.NumberOfFilteredBuckets,
 		}
 		protoBackends = append(protoBackends, protoBackend)
 	}
@@ -46,14 +48,16 @@ func GetBuckets(backend *model.MetaBackend, protoBuckets []*pb.BucketMetadata) [
 		protoObjects := GetObjects(bucket)
 
 		protoBucket := &pb.BucketMetadata{
-			Name:             bucket.Name,
-			Type:             bucket.Type,
-			Region:           bucket.Region,
-			TotalSizeInBytes: bucket.TotalSize,
-			NumberOfObjects:  int32(bucket.NumberOfObjects),
-			CreationDate:     bucket.CreationDate.String(),
-			Tags:             bucket.BucketTags,
-			Objects:          protoObjects,
+			Name:                    bucket.Name,
+			Type:                    bucket.Type,
+			Region:                  bucket.Region,
+			BucketSizeInBytes:       bucket.TotalSize,
+			FilteredBucketSize:      bucket.FilteredBucketSize,
+			NumberOfObjects:         int32(bucket.NumberOfObjects),
+			NumberOfFilteredObjects: int32(bucket.NumberOfFilteredObjects),
+			CreationDate:            bucket.CreationDate.String(),
+			Tags:                    bucket.BucketTags,
+			Objects:                 protoObjects,
 		}
 		protoBuckets = append(protoBuckets, protoBucket)
 	}
@@ -64,14 +68,21 @@ func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
 	var protoObjects []*pb.ObjectMetadata
 
 	for _, object := range bucket.Objects {
+		var expiresDateStr string
+		if object.ExpiresDate == nil {
+			expiresDateStr = ""
+		} else {
+			expiresDateStr = object.ExpiresDate.String()
+		}
+
 		protoObject := &pb.ObjectMetadata{
 			Name:                 object.ObjectName,
 			LastModifiedDate:     object.LastModifiedDate.String(),
-			SizeInBytes:          int32(object.Size),
+			ObjectSizeInBytes:    int32(object.Size),
 			BucketName:           bucket.Name,
 			Type:                 object.ObjectType,
 			ServerSideEncryption: object.ServerSideEncryption,
-			ExpiresDate:          object.ExpiresDate.String(),
+			ExpiresDate:          expiresDateStr,
 			GrantControl:         object.GrantControl,
 			VersionId:            string(object.VersionId),
 			RedirectLocation:     object.RedirectLocation,

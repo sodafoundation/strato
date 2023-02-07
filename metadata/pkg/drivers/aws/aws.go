@@ -60,12 +60,11 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 
 	numObjects := len(output.Contents)
 	var totSize int64
-	totSize = 0
 	objectArray := make([]*model.MetaObject, numObjects)
 	for objIdx, object := range output.Contents {
 		obj := &model.MetaObject{}
 		objectArray[objIdx] = obj
-		obj.LastModifiedDate = *object.LastModified
+		obj.LastModifiedDate = object.LastModified
 		obj.ObjectName = *object.Key
 		obj.Size = *object.Size
 		totSize += obj.Size
@@ -88,7 +87,7 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 			if err != nil {
 				log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field", err)
 			} else {
-				obj.ExpiresDate = expiresTime
+				obj.ExpiresDate = &expiresTime
 			}
 		}
 		if meta.ReplicationStatus != nil {
@@ -117,7 +116,7 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 
 	buck := &model.MetaBucket{}
 	buck.Name = *bucket.Name
-	buck.CreationDate = *bucket.CreationDate
+	buck.CreationDate = bucket.CreationDate
 	buck.Region = *loc.LocationConstraint
 
 	err = ObjectList(sess, buck)

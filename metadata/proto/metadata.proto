@@ -57,11 +57,13 @@ message ListMetadataResponse {
 }
 
 message BackendMetadata {
-    string backendName = 1;
-    string region = 2;
-    string type = 3;
-    int32 numberOfBuckets = 4;
-    repeated BucketMetadata buckets = 5;
+    string id = 1;
+    string backendName = 2;
+    string region = 3;
+    string type = 4;
+    int32 numberOfBuckets = 5;
+    int32 numberOfFilteredBuckets = 6;
+    repeated BucketMetadata buckets = 7;
 }
 
 message BucketMetadata {
@@ -73,11 +75,13 @@ message BucketMetadata {
     string type = 4;
     // The number of objects in the bucket
     int32 numberOfObjects = 5;
+    int32 numberOfFilteredObjects = 6;
     // The total size occupied by the bucket
-    int64 totalSizeInBytes = 6;
+    int64 bucketSizeInBytes = 7;
+    int64 filteredBucketSize = 8;
     // The tags of the bucket
-    map<string, string> tags = 7;
-    repeated ObjectMetadata objects = 8;
+    map<string, string> tags = 9;
+    repeated ObjectMetadata objects = 10;
 }
 
 message ObjectMetadata {
@@ -88,7 +92,7 @@ message ObjectMetadata {
     // The name of the bucket to which the object belongs
     string bucketName = 3;
     // The size o the object in bytes
-    int32 sizeInBytes = 4;
+    int32 objectSizeInBytes = 4;
     // extension of the object
     string type = 5;
     // true if server side encyption is enabled
