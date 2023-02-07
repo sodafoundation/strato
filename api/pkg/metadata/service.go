@@ -61,7 +61,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 	listMetadataRequest, err := GetListMetaDataRequest(request)
 
 	if err != nil {
-		log.Errorf("Failed to construct list metadata request err: \n", err)
+		log.Errorf("Failed to construct list metadata request err: %v", err)
 		response.WriteEntity("Invalid type for sizeOfObject or sizeOfBucket request params. It should be integer type.")
 		return
 	}
@@ -69,7 +69,7 @@ func (s *APIService) ListMetadata(request *restful.Request, response *restful.Re
 	//* calling  the ListMetaData method from metadata manager m8s
 	res, err := s.metaClient.ListMetadata(ctx, &listMetadataRequest)
 	if err != nil {
-		log.Errorf("Failed to get metadata details err: \n", err)
+		log.Errorf("Failed to get metadata details err: %v", err)
 		response.WriteEntity(err)
 		return
 	}
