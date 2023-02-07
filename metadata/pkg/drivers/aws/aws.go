@@ -60,7 +60,6 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 
 	numObjects := len(output.Contents)
 	var totSize int64
-	totSize = 0
 	objectArray := make([]*model.MetaObject, numObjects)
 	for objIdx, object := range output.Contents {
 		obj := &model.MetaObject{}
