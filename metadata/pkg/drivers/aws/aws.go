@@ -20,7 +20,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -51,12 +50,12 @@ type AwsAdapter struct {
 	Session *session.Session
 }
 
-func ObjectList(sess *session.Session, bucket *model.MetaBucket) {
-	svc := s3.New(sess, aws.NewConfig().WithRegion(bucket.Region))
+func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
+	svc := s3.New(sess)
 	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
 	if err != nil {
 		log.Errorf("unable to list objects in bucket %v. failed with error: %v", bucket.Name, err)
-		return
+		return err
 	}
 
 	numObjects := len(output.Contents)
@@ -99,44 +98,45 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) {
 	bucket.NumberOfObjects = numObjects
 	bucket.TotalSize = totSize
 	bucket.Objects = objectArray
+	return nil
 }
 
-func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) error {
+func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) {
 	defer wg.Done()
-	buck := &model.MetaBucket{}
-	bucketArray[buckIdx] = buck
-	buck.CreationDate = *bucket.CreationDate
-	buck.Name = *bucket.Name
+
 	svc := s3.New(sess)
 	loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name})
 	if err != nil {
 		log.Errorf("unable to get bucket location. failed with error: %v", err)
-		return err
+		return
 	}
 
+	if *loc.LocationConstraint != *sess.Config.Region {
+		return
+	}
+
+	buck := &model.MetaBucket{}
+	buck.Name = *bucket.Name
+	buck.CreationDate = *bucket.CreationDate
 	buck.Region = *loc.LocationConstraint
 
-	if *sess.Config.Region != buck.Region {
-		svc = s3.New(sess, aws.NewConfig().WithRegion(buck.Region))
+	err = ObjectList(sess, buck)
+	if err != nil {
+		return
 	}
 
 	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
-	if err != nil && !strings.Contains(err.Error(), "NoSuchTagSet") {
-		log.Errorf("unable to get bucket tags. failed with error: %v", err)
-	} else {
+	if err == nil {
 		tagset := make(map[string]string)
 		for _, tag := range tags.TagSet {
 			tagset[*tag.Key] = *tag.Value
 		}
 		buck.BucketTags = tagset
+	} else if !strings.Contains(err.Error(), "NoSuchTagSet") {
+		log.Errorf("unable to get bucket tags. failed with error: %v", err)
 	}
-
-	ObjectList(sess, buck)
-	if err != nil {
-		return err
-	}
-	return nil
+	bucketArray[buckIdx] = buck
 }
 
 func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
@@ -147,15 +147,22 @@ func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
 		log.Errorf("unable to list buckets. failed with error: %v", err)
 		return nil, err
 	}
-	numBuckets := len(output.Buckets)
-	bucketArray := make([]*model.MetaBucket, numBuckets)
+	bucketArray := make([]*model.MetaBucket, len(output.Buckets))
 	wg := sync.WaitGroup{}
-	for i, bucket := range output.Buckets {
+	for idx, bucket := range output.Buckets {
 		wg.Add(1)
-		go GetBucketMeta(i, bucket, sess, bucketArray, &wg)
+		go GetBucketMeta(idx, bucket, sess, bucketArray, &wg)
 	}
 	wg.Wait()
-	return bucketArray, err
+
+	bucketArrayFiltered := make([]*model.MetaBucket, 0)
+	for _, buck := range bucketArray {
+		if buck != nil {
+			bucketArrayFiltered = append(bucketArrayFiltered, buck)
+		}
+	}
+
+	return bucketArrayFiltered, err
 }
 
 func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest) error {
@@ -172,6 +179,7 @@ func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataReque
 	metaBackend.Type = ad.Backend.Type
 	metaBackend.Region = ad.Backend.Region
 	metaBackend.Buckets = buckArr
+	metaBackend.NumberOfBuckets = int32(len(buckArr))
 	newContext := context.TODO()
 	err = db.DbAdapter.CreateMetadata(newContext, metaBackend)
 
