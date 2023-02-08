@@ -89,6 +89,7 @@ func GetObjects(bucket *model.MetaBucket) []*pb.ObjectMetadata {
 			ReplicationStatus:    object.ReplicationStatus,
 			Tags:                 object.ObjectTags,
 			Metadata:             object.Metadata,
+			StorageClass:         object.StorageClass,
 		}
 		protoObjects = append(protoObjects, protoObject)
 	}
