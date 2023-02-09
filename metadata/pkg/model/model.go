@@ -16,12 +16,10 @@ package model
 
 import (
 	"time"
-
-	"github.com/globalsign/mgo/bson"
 )
 
 type MetaBackend struct {
-	Id                      bson.ObjectId `json:"id" bson:"_id"`
+	Id                      string        `json:"id" bson:"_id"`
 	BackendName             string        `json:"backendName" bson:"backendName"`
 	Type                    string        `json:"type" bson:"type"`
 	Region                  string        `json:"region" bson:"region"`
