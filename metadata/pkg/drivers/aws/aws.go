@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/globalsign/mgo/bson"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
@@ -173,7 +172,7 @@ func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataReque
 	}
 
 	metaBackend := model.MetaBackend{}
-	metaBackend.Id = bson.ObjectId(ad.Backend.Id)
+	metaBackend.Id = ad.Backend.Id
 	metaBackend.BackendName = ad.Backend.Name
 	metaBackend.Type = ad.Backend.Type
 	metaBackend.Region = ad.Backend.Region
