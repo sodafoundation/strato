@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
+	"github.com/opensds/multi-cloud/metadata/pkg/drivers/utils"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	log "github.com/sirupsen/logrus"
@@ -69,28 +70,58 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 		totSize += obj.Size
 		obj.StorageClass = *object.StorageClass
 
+		tags, err := svc.GetObjectTagging(&s3.GetObjectTaggingInput{Bucket: &bucket.Name, Key: &obj.ObjectName})
+
+		if err == nil {
+			tagset := make(map[string]string)
+			for _, tag := range tags.TagSet {
+				tagset[*tag.Key] = *tag.Value
+			}
+			obj.ObjectTags = tagset
+			if tags.VersionId != nil {
+				obj.VersionId = *tags.VersionId
+			}
+		} else {
+			log.Errorf("unable to get object tags. failed with error: %v", err)
+		}
+
+		acl, err := svc.GetObjectAcl(&s3.GetObjectAclInput{Bucket: &bucket.Name, Key: &obj.ObjectName})
+		if err != nil {
+			log.Errorf("unable to get object Acl. failed with error: %v", err)
+		} else {
+			access := make([]*model.Access, len(acl.Grants))
+			for idx, grant := range acl.Grants {
+				access[idx] = utils.AclMapper(grant)
+			}
+		}
+
 		meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: &bucket.Name, Key: object.Key})
 		if err != nil {
 			log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v", *object.Key, bucket.Name, err)
-			continue
-		}
-		if meta.ServerSideEncryption != nil {
-			obj.ServerSideEncryption = *meta.ServerSideEncryption
-		}
-		if meta.VersionId != nil {
-			obj.VersionId = *meta.VersionId
-		}
-		obj.ObjectType = *meta.ContentType
-		if meta.Expires != nil {
-			expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
-			if err != nil {
-				log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field", err)
-			} else {
-				obj.ExpiresDate = &expiresTime
+		} else {
+			if meta.ServerSideEncryption != nil {
+				obj.ServerSideEncryption = *meta.ServerSideEncryption
 			}
-		}
-		if meta.ReplicationStatus != nil {
-			obj.ReplicationStatus = *meta.ReplicationStatus
+			obj.ObjectType = *meta.ContentType
+			if meta.Expires != nil {
+				expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
+				if err != nil {
+					log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field", err)
+				} else {
+					obj.ExpiresDate = &expiresTime
+				}
+			}
+			if meta.ReplicationStatus != nil {
+				obj.ReplicationStatus = *meta.ReplicationStatus
+			}
+			if meta.WebsiteRedirectLocation != nil {
+				obj.RedirectLocation = *meta.WebsiteRedirectLocation
+			}
+			metadata := make(map[string]string)
+			for key, val := range meta.Metadata {
+				metadata[key] = *val
+			}
+			obj.Metadata = metadata
 		}
 	}
 	bucket.NumberOfObjects = numObjects
@@ -123,6 +154,8 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 		return
 	}
 
+	bucketArray[buckIdx] = buck
+
 	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
 	if err == nil {
@@ -134,7 +167,17 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 	} else if !strings.Contains(err.Error(), "NoSuchTagSet") {
 		log.Errorf("unable to get bucket tags. failed with error: %v", err)
 	}
-	bucketArray[buckIdx] = buck
+
+	acl, err := svc.GetBucketAcl(&s3.GetBucketAclInput{Bucket: bucket.Name})
+	if err != nil {
+		log.Errorf("unable to get bucket Acl. failed with error: %v", err)
+	} else {
+		access := make([]*model.Access, len(acl.Grants))
+		for idx, grant := range acl.Grants {
+			access[idx] = utils.AclMapper(grant)
+		}
+		buck.BucketAcl = access
+	}
 }
 
 func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {

@@ -73,15 +73,16 @@ message BucketMetadata {
     string name = 2;
     string region = 3;
     string type = 4;
+    repeated access bucketAcl = 5;
     // The number of objects in the bucket
-    int32 numberOfObjects = 5;
-    int32 numberOfFilteredObjects = 6;
+    int32 numberOfObjects = 6;
+    int32 numberOfFilteredObjects = 7;
     // The total size occupied by the bucket
-    int64 bucketSizeInBytes = 7;
-    int64 filteredBucketSize = 8;
+    int64 bucketSizeInBytes = 8;
+    int64 filteredBucketSize = 9;
     // The tags of the bucket
-    map<string, string> tags = 9;
-    repeated ObjectMetadata objects = 10;
+    map<string, string> bucketTags = 10;
+    repeated ObjectMetadata objects = 11;
 }
 
 message ObjectMetadata {
@@ -104,7 +105,16 @@ message ObjectMetadata {
     string redirectLocation = 9;
     string replicationStatus = 10;
     string expiresDate = 11;
-    string grantControl = 12;
-    map<string, string> tags = 13;
+    repeated access objectAcl = 12;
+    map<string, string> objectTags = 13;
     map<string, string> metadata = 14;
+}
+
+message access {
+    string displayName = 1;
+    string emailAddress = 2;
+    string id = 3;
+    string type = 4;
+    string uri = 5;
+    string permission = 6;
 }
