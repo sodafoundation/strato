@@ -17,6 +17,7 @@ package utils
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	backend "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
@@ -135,4 +136,28 @@ func ListBackend(ctx context.Context, backedClient backend.BackendService) ([]*b
 		return nil, err
 	}
 	return backend.Backends, nil
+}
+
+func AclMapper(grant *s3.Grant) *model.Access {
+	access := &model.Access{}
+	if grant.Grantee.DisplayName != nil {
+		access.DisplayName = *grant.Grantee.DisplayName
+	}
+	if grant.Grantee.EmailAddress != nil {
+		access.EmailAddress = *grant.Grantee.EmailAddress
+	}
+	if grant.Grantee.ID != nil {
+		access.ID = *grant.Grantee.ID
+	}
+	if grant.Grantee.Type != nil {
+		access.Type = *grant.Grantee.Type
+	}
+	if grant.Grantee.URI != nil {
+		access.URI = *grant.Grantee.URI
+	}
+	if grant.Permission != nil {
+		access.Permission = *grant.Permission
+	}
+
+	return access
 }

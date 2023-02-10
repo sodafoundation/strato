@@ -87,11 +87,11 @@ const (
 	OBJECTS_SIZE                      = "objects.size"
 	OBJECTS_NAME                      = "objects.name"
 	CREATION_DATE                     = "creationDate"
-	ACCESS                            = "access"
+	BUCKET_ACL                        = "bucketAcl"
 	NUMBER_OF_OBJECTS                 = "numberOfObjects"
 	NUMBER_OF_FILTERED_OBJECTS        = "numberOfFilteredObjects"
 	BUCKET_NUMBER_OF_FILTERED_OBJECTS = "bucket.numberOfFilteredObjects"
-	TAGS                              = "tags"
+	BUCKET_TAGS                       = "bucketTags"
 )
 
 const (

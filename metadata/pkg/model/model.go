@@ -33,13 +33,13 @@ type MetaBucket struct {
 	Name                    string            `type:"string" json:"name" bson:"name"`
 	Type                    string            `json:"type,omitempty" bson:"type,omitempty"`
 	Region                  string            `json:"region,omitempty" bson:"region,omitempty"`
-	BucketAcl               []*Access         `json:"access,omitempty" bson:"access,omitempty"`
+	BucketAcl               []*Access         `json:"bucketAcl,omitempty" bson:"bucketAcl,omitempty"`
 	NumberOfObjects         int               `json:"numberOfObjects" bson:"numberOfObjects"`
 	NumberOfFilteredObjects int               `json:"numberOfFilteredObjects,omitempty" bson:"numberOfFilteredObjects,omitempty"`
 	Objects                 []*MetaObject     `json:"objects" bson:"objects"`
 	TotalSize               int64             `json:"totalSize" bson:"totalSize"`
 	FilteredBucketSize      int64             `json:"filteredBucketSize,omitempty" bson:"filteredBucketSize"`
-	BucketTags              map[string]string `json:"tags,omitempty" bson:"tags,omitempty"`
+	BucketTags              map[string]string `json:"bucketTags,omitempty" bson:"bucketTags,omitempty"`
 }
 
 type MetaObject struct {
@@ -52,7 +52,7 @@ type MetaObject struct {
 	RedirectLocation     string            `json:"redirectLocation,omitempty" bson:"redirectLocation,omitempty"`
 	ReplicationStatus    string            `json:"replicationStatus,omitempty" bson:"replicationStatus,omitempty"`
 	ExpiresDate          *time.Time        `json:"expiresDate,omitempty" bson:"expiresDate,omitempty"`
-	ObjectAcl            []*Access         `json:"grantControl,omitempty" bson:"grantControl,omitempty"`
+	ObjectAcl            []*Access         `json:"objectAcl,omitempty" bson:"objectAcl,omitempty"`
 	ObjectTags           map[string]string `json:"objectTags,omitempty" bson:"objectTags,omitempty"`
 	Metadata             map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 	ObjectType           string            `json:"objectType,omitempty" bson:"objectType,omitempty"`

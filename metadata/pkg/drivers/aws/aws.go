@@ -25,8 +25,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
-	"github.com/opensds/multi-cloud/metadata/pkg/drivers/utils"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
+	"github.com/opensds/multi-cloud/metadata/pkg/utils"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	log "github.com/sirupsen/logrus"
 )
