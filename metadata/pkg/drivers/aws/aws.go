@@ -26,6 +26,7 @@ import (
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
+	"github.com/opensds/multi-cloud/metadata/pkg/utils"
 	pb "github.com/opensds/multi-cloud/metadata/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -49,6 +50,38 @@ type AwsAdapter struct {
 	Session *session.Session
 }
 
+func GetHeadObject(sess *session.Session, bucketName *string, obj *model.MetaObject) {
+	svc := s3.New(sess)
+	meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: bucketName, Key: &obj.ObjectName})
+	if err != nil {
+		log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v", obj.ObjectName, *bucketName, err)
+		return
+	}
+	if meta.ServerSideEncryption != nil {
+		obj.ServerSideEncryption = *meta.ServerSideEncryption
+	}
+	obj.ObjectType = *meta.ContentType
+	if meta.Expires != nil {
+		expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
+		if err != nil {
+			log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field", err)
+		} else {
+			obj.ExpiresDate = &expiresTime
+		}
+	}
+	if meta.ReplicationStatus != nil {
+		obj.ReplicationStatus = *meta.ReplicationStatus
+	}
+	if meta.WebsiteRedirectLocation != nil {
+		obj.RedirectLocation = *meta.WebsiteRedirectLocation
+	}
+	metadata := map[string]string{}
+	for key, val := range meta.Metadata {
+		metadata[key] = *val
+	}
+	obj.Metadata = metadata
+}
+
 func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 	svc := s3.New(sess)
 	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
@@ -69,29 +102,33 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 		totSize += obj.Size
 		obj.StorageClass = *object.StorageClass
 
-		meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: &bucket.Name, Key: object.Key})
-		if err != nil {
-			log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v", *object.Key, bucket.Name, err)
-			continue
-		}
-		if meta.ServerSideEncryption != nil {
-			obj.ServerSideEncryption = *meta.ServerSideEncryption
-		}
-		if meta.VersionId != nil {
-			obj.VersionId = *meta.VersionId
-		}
-		obj.ObjectType = *meta.ContentType
-		if meta.Expires != nil {
-			expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
-			if err != nil {
-				log.Errorf("unable to parse given string to time type. error: %v. skipping ExpiresDate field", err)
-			} else {
-				obj.ExpiresDate = &expiresTime
+		tags, err := svc.GetObjectTagging(&s3.GetObjectTaggingInput{Bucket: &bucket.Name, Key: &obj.ObjectName})
+
+		if err == nil {
+			tagset := map[string]string{}
+			for _, tag := range tags.TagSet {
+				tagset[*tag.Key] = *tag.Value
 			}
+			obj.ObjectTags = tagset
+			if tags.VersionId != nil {
+				obj.VersionId = *tags.VersionId
+			}
+		} else {
+			log.Errorf("unable to get object tags. failed with error: %v", err)
 		}
-		if meta.ReplicationStatus != nil {
-			obj.ReplicationStatus = *meta.ReplicationStatus
+
+		acl, err := svc.GetObjectAcl(&s3.GetObjectAclInput{Bucket: &bucket.Name, Key: &obj.ObjectName})
+		if err != nil {
+			log.Errorf("unable to get object Acl. failed with error: %v", err)
+		} else {
+			access := []*model.Access{}
+			for _, grant := range acl.Grants {
+				access = append(access, utils.AclMapper(grant))
+			}
+			obj.ObjectAcl = access
 		}
+
+		GetHeadObject(sess, &bucket.Name, obj)
 	}
 	bucket.NumberOfObjects = numObjects
 	bucket.TotalSize = totSize
@@ -123,10 +160,12 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 		return
 	}
 
+	bucketArray[buckIdx] = buck
+
 	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
 	if err == nil {
-		tagset := make(map[string]string)
+		tagset := map[string]string{}
 		for _, tag := range tags.TagSet {
 			tagset[*tag.Key] = *tag.Value
 		}
@@ -134,7 +173,17 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 	} else if !strings.Contains(err.Error(), "NoSuchTagSet") {
 		log.Errorf("unable to get bucket tags. failed with error: %v", err)
 	}
-	bucketArray[buckIdx] = buck
+
+	acl, err := svc.GetBucketAcl(&s3.GetBucketAclInput{Bucket: bucket.Name})
+	if err != nil {
+		log.Errorf("unable to get bucket Acl. failed with error: %v", err)
+	} else {
+		access := []*model.Access{}
+		for _, grant := range acl.Grants {
+			access = append(access, utils.AclMapper(grant))
+		}
+		buck.BucketAcl = access
+	}
 }
 
 func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
@@ -153,7 +202,7 @@ func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
 	}
 	wg.Wait()
 
-	bucketArrayFiltered := make([]*model.MetaBucket, 0)
+	bucketArrayFiltered := []*model.MetaBucket{}
 	for _, buck := range bucketArray {
 		if buck != nil {
 			bucketArrayFiltered = append(bucketArrayFiltered, buck)
