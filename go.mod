@@ -74,7 +74,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.0.0 // indirect
 	github.com/go-git/go-git/v5 v5.1.0 // indirect
 	github.com/go-log/log v0.1.0 // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
