@@ -54,10 +54,7 @@ func InitCache(uri string) *Adapter {
 }
 
 func ExitCache() {
-	err := adap.session.Close()
-	if err != nil {
-		panic(err)
-	}
+	adap.session.Close()
 }
 
 type Adapter struct {
