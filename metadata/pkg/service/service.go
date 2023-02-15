@@ -151,7 +151,7 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 		storeQueryResultInCache(ctx, err, unPaginatedResult, translatedQuery)
 		result = unPaginatedResult
 	} else {
-		log.Infoln("Result fetched from Cache")
+		log.Infoln("result fetched from Cache")
 	}
 
 	paginatedResult := querymanager.Paginate(result, in.GetLimit(), in.GetOffset())
@@ -173,6 +173,6 @@ func storeQueryResultInCache(ctx context.Context, err error, unPaginatedResult [
 	if err = db.Cacheadapter.StoreData(ctx, unPaginatedResult, translatedQuery); err != nil {
 		log.Errorf("Failed to store query result in cache: %v", err)
 	} else {
-		log.Infoln("Result of query stored in cache")
+		log.Infoln("result of query stored in cache")
 	}
 }
