@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
 	"github.com/opensds/multi-cloud/metadata/pkg/model"
@@ -50,8 +51,7 @@ type AwsAdapter struct {
 	Session *session.Session
 }
 
-func GetHeadObject(sess *session.Session, bucketName *string, obj *model.MetaObject) {
-	svc := s3.New(sess)
+func GetHeadObject(svc s3iface.S3API, bucketName *string, obj *model.MetaObject) {
 	meta, err := svc.HeadObject(&s3.HeadObjectInput{Bucket: bucketName, Key: &obj.ObjectName})
 	if err != nil {
 		log.Errorf("cannot perform head object on object %v in bucket %v. failed with error: %v", obj.ObjectName, *bucketName, err)
@@ -60,7 +60,9 @@ func GetHeadObject(sess *session.Session, bucketName *string, obj *model.MetaObj
 	if meta.ServerSideEncryption != nil {
 		obj.ServerSideEncryption = *meta.ServerSideEncryption
 	}
-	obj.ObjectType = *meta.ContentType
+	if meta.ContentType != nil {
+		obj.ObjectType = *meta.ContentType
+	}
 	if meta.Expires != nil {
 		expiresTime, err := time.Parse(time.RFC3339, *meta.Expires)
 		if err != nil {
@@ -82,8 +84,7 @@ func GetHeadObject(sess *session.Session, bucketName *string, obj *model.MetaObj
 	obj.Metadata = metadata
 }
 
-func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
-	svc := s3.New(sess)
+func ObjectList(svc s3iface.S3API, bucket *model.MetaBucket) error {
 	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
 	if err != nil {
 		log.Errorf("unable to list objects in bucket %v. failed with error: %v", bucket.Name, err)
@@ -128,7 +129,7 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 			obj.ObjectAcl = access
 		}
 
-		GetHeadObject(sess, &bucket.Name, obj)
+		GetHeadObject(svc, &bucket.Name, obj)
 	}
 	bucket.NumberOfObjects = numObjects
 	bucket.TotalSize = totSize
@@ -136,17 +137,16 @@ func ObjectList(sess *session.Session, bucket *model.MetaBucket) error {
 	return nil
 }
 
-func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) {
+func GetBucketMeta(buckIdx int, bucket *s3.Bucket, svc s3iface.S3API, backendRegion *string, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	svc := s3.New(sess)
 	loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name})
 	if err != nil {
 		log.Errorf("unable to get bucket location. failed with error: %v", err)
 		return
 	}
 
-	if *loc.LocationConstraint != *sess.Config.Region {
+	if *loc.LocationConstraint != *backendRegion {
 		return
 	}
 
@@ -155,7 +155,7 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 	buck.CreationDate = bucket.CreationDate
 	buck.Region = *loc.LocationConstraint
 
-	err = ObjectList(sess, buck)
+	err = ObjectList(svc, buck)
 	if err != nil {
 		return
 	}
@@ -164,13 +164,13 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 
 	tags, err := svc.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: bucket.Name})
 
-	if err == nil {
+	if err == nil || strings.Contains(err.Error(), "NoSuchTagSet") {
 		tagset := map[string]string{}
 		for _, tag := range tags.TagSet {
 			tagset[*tag.Key] = *tag.Value
 		}
 		buck.BucketTags = tagset
-	} else if !strings.Contains(err.Error(), "NoSuchTagSet") {
+	} else {
 		log.Errorf("unable to get bucket tags. failed with error: %v", err)
 	}
 
@@ -186,8 +186,7 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, sess *session.Session, bucket
 	}
 }
 
-func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
-	svc := s3.New(sess)
+func BucketList(svc s3iface.S3API, backendRegion *string) ([]*model.MetaBucket, error) {
 
 	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
@@ -198,7 +197,7 @@ func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
 	wg := sync.WaitGroup{}
 	for idx, bucket := range output.Buckets {
 		wg.Add(1)
-		go GetBucketMeta(idx, bucket, sess, bucketArray, &wg)
+		go GetBucketMeta(idx, bucket, svc, backendRegion, bucketArray, &wg)
 	}
 	wg.Wait()
 
@@ -213,8 +212,9 @@ func BucketList(sess *session.Session) ([]*model.MetaBucket, error) {
 }
 
 func (ad *AwsAdapter) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest) error {
-
-	buckArr, err := BucketList(ad.Session)
+	svc := s3.New(ad.Session)
+	backendRegion := ad.Session.Config.Region
+	buckArr, err := BucketList(svc, backendRegion)
 	if err != nil {
 		log.Errorf("metadata collection for backend id: %v failed with error: %v", ad.Backend.Id, err)
 		return err
