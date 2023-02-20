@@ -61,23 +61,24 @@ type Adapter struct {
 	session *redis.Client
 }
 
-func (a Adapter) StoreData(ctx context.Context, result interface{}, query interface{}) error {
+func (a Adapter) StoreData(ctx context.Context, result []*model.MetaBackend, query interface{}) error {
 	queryStr, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	resultStr, err := json.Marshal(result)
+	resultAfterConversion := model.ListMetaDataResponse(result)
+	resultByteArr, err := resultAfterConversion.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	if len(resultStr) >= constants.CACHE_LIMIT {
+	if len(resultByteArr) >= constants.CACHE_LIMIT {
 		return errors.New("size of result is more than allowed limit for cache")
 	}
 
 	txPipeline := a.session.TxPipeline()
-	txPipeline.Do(constants.HSET, CACHE_HASH, string(queryStr), string(resultStr))
+	txPipeline.Do(constants.HSET, CACHE_HASH, string(queryStr), resultByteArr)
 	//* Setting the TTL
 	txPipeline.Do(constants.EXPIREMEMBER, CACHE_HASH, string(queryStr), constants.CACHE_TTL_IN_SECONDS)
 	_, err = txPipeline.Exec()
@@ -86,7 +87,7 @@ func (a Adapter) StoreData(ctx context.Context, result interface{}, query interf
 
 func (a Adapter) FetchData(ctx context.Context, query interface{}) ([]*model.MetaBackend, error) {
 	queryStr, err := json.Marshal(query)
-	var result []*model.MetaBackend
+	var result model.ListMetaDataResponse
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (a Adapter) FetchData(ctx context.Context, query interface{}) ([]*model.Met
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(cachedResultStr), &result)
+	err = result.UnmarshalJSON([]byte(cachedResultStr))
 	if err != nil {
 		return nil, err
 	}

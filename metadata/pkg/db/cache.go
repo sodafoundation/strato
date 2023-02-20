@@ -46,6 +46,6 @@ func ExitCache(db *config.Database) {
 }
 
 type CacheAdapter interface {
-	StoreData(ctx context.Context, backends interface{}, query interface{}) error
+	StoreData(ctx context.Context, backends []*model.MetaBackend, query interface{}) error
 	FetchData(ctx context.Context, query interface{}) ([]*model.MetaBackend, error)
 }
