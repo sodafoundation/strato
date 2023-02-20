@@ -84,11 +84,11 @@ func GetHeadObject(svc s3iface.S3API, bucketName *string, obj *model.MetaObject)
 	obj.Metadata = metadata
 }
 
-func ObjectList(svc s3iface.S3API, bucket *model.MetaBucket) error {
-	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucket.Name})
+var ObjectList = func(svc s3iface.S3API, bucketName string) ([]*model.MetaObject, int64, error) {
+	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: &bucketName})
 	if err != nil {
-		log.Errorf("unable to list objects in bucket %v. failed with error: %v", bucket.Name, err)
-		return err
+		log.Errorf("unable to list objects in bucket %v. failed with error: %v", bucketName, err)
+		return nil, 0, err
 	}
 
 	numObjects := len(output.Contents)
@@ -103,7 +103,7 @@ func ObjectList(svc s3iface.S3API, bucket *model.MetaBucket) error {
 		totSize += obj.Size
 		obj.StorageClass = *object.StorageClass
 
-		tags, err := svc.GetObjectTagging(&s3.GetObjectTaggingInput{Bucket: &bucket.Name, Key: &obj.ObjectName})
+		tags, err := svc.GetObjectTagging(&s3.GetObjectTaggingInput{Bucket: &bucketName, Key: &obj.ObjectName})
 
 		if err == nil {
 			tagset := map[string]string{}
@@ -118,7 +118,7 @@ func ObjectList(svc s3iface.S3API, bucket *model.MetaBucket) error {
 			log.Errorf("unable to get object tags. failed with error: %v", err)
 		}
 
-		acl, err := svc.GetObjectAcl(&s3.GetObjectAclInput{Bucket: &bucket.Name, Key: &obj.ObjectName})
+		acl, err := svc.GetObjectAcl(&s3.GetObjectAclInput{Bucket: &bucketName, Key: &obj.ObjectName})
 		if err != nil {
 			log.Errorf("unable to get object Acl. failed with error: %v", err)
 		} else {
@@ -129,12 +129,9 @@ func ObjectList(svc s3iface.S3API, bucket *model.MetaBucket) error {
 			obj.ObjectAcl = access
 		}
 
-		GetHeadObject(svc, &bucket.Name, obj)
+		GetHeadObject(svc, &bucketName, obj)
 	}
-	bucket.NumberOfObjects = numObjects
-	bucket.TotalSize = totSize
-	bucket.Objects = objectArray
-	return nil
+	return objectArray, totSize, nil
 }
 
 func GetBucketMeta(buckIdx int, bucket *s3.Bucket, svc s3iface.S3API, backendRegion *string, bucketArray []*model.MetaBucket, wg *sync.WaitGroup) {
@@ -155,10 +152,15 @@ func GetBucketMeta(buckIdx int, bucket *s3.Bucket, svc s3iface.S3API, backendReg
 	buck.CreationDate = bucket.CreationDate
 	buck.Region = *loc.LocationConstraint
 
-	err = ObjectList(svc, buck)
+	objectArray, totalSize, err := ObjectList(svc, *bucket.Name)
+
 	if err != nil {
 		return
 	}
+
+	buck.Objects = objectArray
+	buck.NumberOfObjects = len(objectArray)
+	buck.TotalSize = totalSize
 
 	bucketArray[buckIdx] = buck
 
