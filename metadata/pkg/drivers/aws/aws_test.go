@@ -1,3 +1,17 @@
+// Copyright 2023 The SODA Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package aws
 
 import (
@@ -12,6 +26,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/stretchr/testify/assert"
 )
+
+func MockObjectList(svc s3iface.S3API, bucketName string) ([]*model.MetaObject, int64, error) {
+	if bucketName == "ppp" {
+		return nil, 0, errors.New("ListObjectsV2Error")
+	}
+	return []*model.MetaObject{}, 0, nil
+}
 
 type MockS3Client struct {
 	s3iface.S3API
@@ -31,6 +52,7 @@ type MockS3Client struct {
 	GetObjectAclError      error
 	HeadObjectResp         *s3.HeadObjectOutput
 	HeadObjectError        error
+	BucketName             string
 }
 
 type Test struct {
@@ -51,11 +73,271 @@ type Test struct {
 	GetObjectAclError      error
 	HeadObjectResp         *s3.HeadObjectOutput
 	HeadObjectError        error
-	ExpectedResp           []*model.MetaBucket
+	ExpectedBucketResp     []*model.MetaBucket
+	ExpectedObjectResp     []*model.MetaObject
 	ExpectedError          error
+	BucketName             string
+	ExpectedBucketSize     int64
 }
 
 var TIMEVAL = time.Date(2023, time.February, 12, 9, 23, 34, 45, time.UTC)
+
+func TestObjectList(t *testing.T) {
+	tests := []Test{
+		{
+			TestNumber: 1,
+			BucketName: "abc",
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+				{Key: aws.String("object2"), LastModified: &TIMEVAL, Size: aws.Int64(425), StorageClass: aws.String("GLACIER_IR")},
+				{Key: aws.String("object3"), LastModified: &TIMEVAL, Size: aws.Int64(435), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectError:       errors.New("HeadObjectError"),
+			GetObjectAclError:     errors.New("GetObjectAclError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+
+			ExpectedObjectResp: []*model.MetaObject{
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             415,
+					StorageClass:     "STANDARD",
+				},
+				{
+					ObjectName:       "object2",
+					LastModifiedDate: &TIMEVAL,
+					Size:             425,
+					StorageClass:     "GLACIER_IR",
+				},
+				{
+					ObjectName:       "object3",
+					LastModifiedDate: &TIMEVAL,
+					Size:             435,
+					StorageClass:     "STANDARD",
+				},
+			},
+			ExpectedBucketSize: 1275,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber: 2,
+			BucketName: "abc",
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(1533), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectError:       errors.New("HeadObjectError"),
+			GetObjectAclError:     errors.New("GetObjectAclError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+
+			ExpectedObjectResp: []*model.MetaObject{
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             1533,
+					StorageClass:     "STANDARD",
+				},
+			},
+			ExpectedBucketSize: 1533,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber:            3,
+			BucketName:            "abc",
+			ListObjectsV2Resp:     &s3.ListObjectsV2Output{},
+			HeadObjectError:       errors.New("HeadObjectError"),
+			GetObjectAclError:     errors.New("GetObjectAclError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+
+			ExpectedObjectResp: []*model.MetaObject{},
+			ExpectedBucketSize: 0,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber: 4,
+			BucketName: "ghi",
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectResp: &s3.HeadObjectOutput{
+				ServerSideEncryption:    aws.String("AE256"),
+				ContentType:             aws.String("msword"),
+				Expires:                 aws.String("2023-02-12T09:23:34.000000045Z"),
+				ReplicationStatus:       aws.String("confirmed"),
+				WebsiteRedirectLocation: aws.String("/something"),
+				Metadata: map[string]*string{
+					"k1": aws.String("v1"),
+					"k2": aws.String("v2"),
+				}},
+			GetObjectAclError:     errors.New("GetObjectAclError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+
+			ExpectedObjectResp: []*model.MetaObject{
+				{
+					ObjectName:           "object1",
+					LastModifiedDate:     &TIMEVAL,
+					Size:                 415,
+					StorageClass:         "STANDARD",
+					ServerSideEncryption: "AE256",
+					ObjectType:           "msword",
+					ExpiresDate:          &TIMEVAL,
+					ReplicationStatus:    "confirmed",
+					RedirectLocation:     "/something",
+					Metadata:             map[string]string{"k1": "v1", "k2": "v2"},
+				},
+				{
+					ObjectName:           "object1",
+					LastModifiedDate:     &TIMEVAL,
+					Size:                 415,
+					StorageClass:         "STANDARD",
+					ServerSideEncryption: "AE256",
+					ObjectType:           "msword",
+					ExpiresDate:          &TIMEVAL,
+					ReplicationStatus:    "confirmed",
+					RedirectLocation:     "/something",
+					Metadata:             map[string]string{"k1": "v1", "k2": "v2"},
+				},
+			},
+			ExpectedBucketSize: 830,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber: 5,
+			BucketName: "vui",
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectResp: &s3.HeadObjectOutput{
+				Expires:                 aws.String("2022-11-.000Z"),
+				WebsiteRedirectLocation: aws.String("/something"),
+			},
+			GetObjectAclError:     errors.New("GetObjectAclError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+
+			ExpectedObjectResp: []*model.MetaObject{
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             415,
+					StorageClass:     "STANDARD",
+					RedirectLocation: "/something",
+					Metadata:         map[string]string{},
+				},
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             415,
+					StorageClass:     "STANDARD",
+					RedirectLocation: "/something",
+					Metadata:         map[string]string{},
+				},
+			},
+			ExpectedBucketSize: 830,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber:         6,
+			BucketName:         "abc",
+			ListObjectsV2Error: errors.New("ListObjectsForbidden"),
+
+			ExpectedObjectResp: nil,
+			ExpectedError:      errors.New("ListObjectsForbidden"),
+		},
+
+		{
+			TestNumber: 7,
+			BucketName: "xyz",
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectError:      errors.New("HeadObjectError"),
+			GetObjectTaggingResp: &s3.GetObjectTaggingOutput{TagSet: []*s3.Tag{{Key: aws.String("key1"), Value: aws.String("val1")}}, VersionId: aws.String("dubwvnkewv.fewvbib")},
+			GetObjectAclError:    errors.New("GetObjectAclError"),
+
+			ExpectedObjectResp: []*model.MetaObject{
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             415,
+					StorageClass:     "STANDARD",
+					ObjectTags:       map[string]string{"key1": "val1"},
+					VersionId:        "dubwvnkewv.fewvbib",
+				},
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             415,
+					StorageClass:     "STANDARD",
+					ObjectTags:       map[string]string{"key1": "val1"},
+					VersionId:        "dubwvnkewv.fewvbib",
+				},
+			},
+			ExpectedBucketSize: 830,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber: 8,
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectError:       errors.New("HeadObjectError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+			GetObjectAclResp:      &s3.GetObjectAclOutput{Grants: []*s3.Grant{{Grantee: &s3.Grantee{ID: aws.String("ewwiubibu")}, Permission: aws.String("FULL_CONTROL")}}},
+
+			ExpectedObjectResp: []*model.MetaObject{
+				{
+					ObjectName:       "object1",
+					LastModifiedDate: &TIMEVAL,
+					Size:             415,
+					StorageClass:     "STANDARD",
+					ObjectAcl:        []*model.Access{{ID: "ewwiubibu", Permission: "FULL_CONTROL"}},
+				},
+			},
+			ExpectedBucketSize: 415,
+			ExpectedError:      nil,
+		},
+
+		{
+			TestNumber: 9,
+			BucketName: "ppp",
+			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
+				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
+			}},
+			HeadObjectError:       errors.New("HeadObjectError"),
+			GetObjectAclError:     errors.New("GetObjectAclError"),
+			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+
+			ExpectedObjectResp: nil,
+			ExpectedBucketSize: 0,
+			ExpectedError:      errors.New("ListObjectsV2Error"),
+		},
+	}
+	for _, test := range tests {
+		mockSvc := &MockS3Client{
+			HeadObjectResp:        test.HeadObjectResp,
+			HeadObjectError:       test.HeadObjectError,
+			GetObjectAclResp:      test.GetObjectAclResp,
+			GetObjectAclError:     test.GetObjectAclError,
+			ListObjectsV2Resp:     test.ListObjectsV2Resp,
+			ListObjectsV2Error:    test.ListObjectsV2Error,
+			GetObjectTaggingResp:  test.GetObjectTaggingResp,
+			GetObjectTaggingError: test.GetObjectTaggingError,
+			BucketName:            test.BucketName,
+		}
+		objectArray, totalSize, err := ObjectList(mockSvc, mockSvc.BucketName)
+		assert.Equal(t, test.ExpectedObjectResp, objectArray, test.TestNumber)
+		assert.Equal(t, test.ExpectedBucketSize, totalSize, test.TestNumber)
+		assert.Equal(t, test.ExpectedError, err, test.TestNumber)
+	}
+}
 
 func TestBucketList(t *testing.T) {
 	tests := []Test{
@@ -70,44 +352,17 @@ func TestBucketList(t *testing.T) {
 				{Key: aws.String("test1"), Value: aws.String("test2")},
 				{Key: aws.String("sample1"), Value: aws.String("sample2")},
 			}},
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-				{Key: aws.String("object2"), LastModified: &TIMEVAL, Size: aws.Int64(425), StorageClass: aws.String("GLACIER_IR")},
-				{Key: aws.String("object3"), LastModified: &TIMEVAL, Size: aws.Int64(435), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetBucketAclError:     errors.New("GetBucketAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
+			GetBucketAclError: errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "abc",
 					Region:          "ap-south-1",
-					NumberOfObjects: 3,
-					TotalSize:       1275,
+					NumberOfObjects: 0,
+					TotalSize:       0,
 					BucketTags:      map[string]string{"test1": "test2", "sample1": "sample2"},
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-						},
-						{
-							ObjectName:       "object2",
-							LastModifiedDate: &TIMEVAL,
-							Size:             425,
-							StorageClass:     "GLACIER_IR",
-						},
-						{
-							ObjectName:       "object3",
-							LastModifiedDate: &TIMEVAL,
-							Size:             435,
-							StorageClass:     "STANDARD",
-						},
-					},
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -117,8 +372,8 @@ func TestBucketList(t *testing.T) {
 			TestNumber:       2,
 			ListBucketsError: errors.New("ListBucketsForbidden"),
 
-			ExpectedResp:  nil,
-			ExpectedError: errors.New("ListBucketsForbidden"),
+			ExpectedBucketResp: nil,
+			ExpectedError:      errors.New("ListBucketsForbidden"),
 		},
 
 		{
@@ -129,8 +384,8 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationError: errors.New("GetBucketLocationError"),
 
-			ExpectedResp:  []*model.MetaBucket{},
-			ExpectedError: nil,
+			ExpectedBucketResp: []*model.MetaBucket{},
+			ExpectedError:      nil,
 		},
 
 		{
@@ -141,36 +396,16 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(0), StorageClass: aws.String("STANDARD")},
-				{Key: aws.String("object2"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
 			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "abc",
 					Region:          "ap-south-1",
-					NumberOfObjects: 2,
-					TotalSize:       415,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             0,
-							StorageClass:     "STANDARD",
-						},
-						{
-							ObjectName:       "object2",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-						},
-					},
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -185,30 +420,17 @@ func TestBucketList(t *testing.T) {
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingResp:  &s3.GetBucketTaggingOutput{},
 			GetBucketTaggingError: errors.New("NoSuchTagSet"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(1533), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
 			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "abc",
 					Region:          "ap-south-1",
-					NumberOfObjects: 1,
-					TotalSize:       1533,
+					NumberOfObjects: 0,
+					TotalSize:       0,
 					BucketTags:      map[string]string{},
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             1533,
-							StorageClass:     "STANDARD",
-						},
-					},
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -222,13 +444,9 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp:     &s3.ListObjectsV2Output{},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
 			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "abc",
@@ -250,8 +468,8 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-northeast-1")},
 
-			ExpectedResp:  []*model.MetaBucket{},
-			ExpectedError: nil,
+			ExpectedBucketResp: []*model.MetaBucket{},
+			ExpectedError:      nil,
 		},
 
 		{
@@ -262,57 +480,16 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectResp: &s3.HeadObjectOutput{
-				ServerSideEncryption:    aws.String("AE256"),
-				ContentType:             aws.String("msword"),
-				Expires:                 aws.String("2023-02-12T09:23:34.000000045Z"),
-				ReplicationStatus:       aws.String("confirmed"),
-				WebsiteRedirectLocation: aws.String("/something"),
-				Metadata: map[string]*string{
-					"k1": aws.String("v1"),
-					"k2": aws.String("v2"),
-				}},
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
 			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "ghi",
 					Region:          "ap-south-1",
-					NumberOfObjects: 2,
-					TotalSize:       830,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:           "object1",
-							LastModifiedDate:     &TIMEVAL,
-							Size:                 415,
-							StorageClass:         "STANDARD",
-							ServerSideEncryption: "AE256",
-							ObjectType:           "msword",
-							ExpiresDate:          &TIMEVAL,
-							ReplicationStatus:    "confirmed",
-							RedirectLocation:     "/something",
-							Metadata:             map[string]string{"k1": "v1", "k2": "v2"},
-						},
-						{
-							ObjectName:           "object1",
-							LastModifiedDate:     &TIMEVAL,
-							Size:                 415,
-							StorageClass:         "STANDARD",
-							ServerSideEncryption: "AE256",
-							ObjectType:           "msword",
-							ExpiresDate:          &TIMEVAL,
-							ReplicationStatus:    "confirmed",
-							RedirectLocation:     "/something",
-							Metadata:             map[string]string{"k1": "v1", "k2": "v2"},
-						},
-					},
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -326,43 +503,16 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectResp: &s3.HeadObjectOutput{
-				Expires:                 aws.String("2022-11-.000Z"),
-				WebsiteRedirectLocation: aws.String("/something"),
-			},
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
 			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "vui",
 					Region:          "ap-south-1",
-					NumberOfObjects: 2,
-					TotalSize:       830,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-							RedirectLocation: "/something",
-							Metadata:         map[string]string{},
-						},
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-							RedirectLocation: "/something",
-							Metadata:         map[string]string{},
-						},
-					},
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -376,54 +526,50 @@ func TestBucketList(t *testing.T) {
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Error:    errors.New("ListObjectsForbidden"),
+			GetBucketAclResp:      &s3.GetBucketAclOutput{Grants: []*s3.Grant{{Grantee: &s3.Grantee{ID: aws.String("ewwiubibu")}, Permission: aws.String("FULL_CONTROL")}}},
 
-			ExpectedResp:  []*model.MetaBucket{},
+			ExpectedBucketResp: []*model.MetaBucket{
+				{
+					CreationDate:    &TIMEVAL,
+					Name:            "abc",
+					Region:          "ap-south-1",
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					BucketAcl:       []*model.Access{{ID: "ewwiubibu", Permission: "FULL_CONTROL"}},
+					Objects:         []*model.MetaObject{},
+				},
+			},
 			ExpectedError: nil,
 		},
 
 		{
 			TestNumber: 10,
 			ListBucketsResp: &s3.ListBucketsOutput{Buckets: []*s3.Bucket{
-				{CreationDate: &TIMEVAL, Name: aws.String("xyz")},
+				{CreationDate: &TIMEVAL, Name: aws.String("abc")},
+				{CreationDate: &TIMEVAL, Name: aws.String("qqq")},
+				{CreationDate: &TIMEVAL, Name: aws.String("ghi")},
 			},
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:      errors.New("HeadObjectError"),
-			GetObjectTaggingResp: &s3.GetObjectTaggingOutput{TagSet: []*s3.Tag{{Key: aws.String("key1"), Value: aws.String("val1")}}, VersionId: aws.String("dubwvnkewv.fewvbib")},
-			GetObjectAclError:    errors.New("GetObjectAclError"),
-			GetBucketAclError:    errors.New("GetBucketAclError"),
+			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
-					Name:            "xyz",
+					Name:            "abc",
 					Region:          "ap-south-1",
-					NumberOfObjects: 2,
-					TotalSize:       830,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-							ObjectTags:       map[string]string{"key1": "val1"},
-							VersionId:        "dubwvnkewv.fewvbib",
-						},
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-							ObjectTags:       map[string]string{"key1": "val1"},
-							VersionId:        "dubwvnkewv.fewvbib",
-						},
-					},
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					Objects:         []*model.MetaObject{},
+				},
+				{
+					CreationDate:    &TIMEVAL,
+					Name:            "ghi",
+					Region:          "ap-south-1",
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -433,126 +579,22 @@ func TestBucketList(t *testing.T) {
 			TestNumber: 11,
 			ListBucketsResp: &s3.ListBucketsOutput{Buckets: []*s3.Bucket{
 				{CreationDate: &TIMEVAL, Name: aws.String("abc")},
-			},
-			},
-			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
-			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			GetBucketAclResp:      &s3.GetBucketAclOutput{Grants: []*s3.Grant{{Grantee: &s3.Grantee{ID: aws.String("ewwiubibu")}, Permission: aws.String("FULL_CONTROL")}}},
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
-			GetObjectAclResp:      &s3.GetObjectAclOutput{Grants: []*s3.Grant{{Grantee: &s3.Grantee{ID: aws.String("ewwiubibu")}, Permission: aws.String("FULL_CONTROL")}}},
-
-			ExpectedResp: []*model.MetaBucket{
-				{
-					CreationDate:    &TIMEVAL,
-					Name:            "abc",
-					Region:          "ap-south-1",
-					NumberOfObjects: 1,
-					TotalSize:       415,
-					BucketAcl:       []*model.Access{{ID: "ewwiubibu", Permission: "FULL_CONTROL"}},
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-							ObjectAcl:        []*model.Access{{ID: "ewwiubibu", Permission: "FULL_CONTROL"}},
-						},
-					},
-				},
-			},
-			ExpectedError: nil,
-		},
-
-		{
-			TestNumber: 12,
-			ListBucketsResp: &s3.ListBucketsOutput{Buckets: []*s3.Bucket{
-				{CreationDate: &TIMEVAL, Name: aws.String("abc")},
-				{CreationDate: &TIMEVAL, Name: aws.String("qqq")},
-				{CreationDate: &TIMEVAL, Name: aws.String("ghi")},
-			},
-			},
-			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
-			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
-			GetBucketAclError:     errors.New("GetBucketAclError"),
-
-			ExpectedResp: []*model.MetaBucket{
-				{
-					CreationDate:    &TIMEVAL,
-					Name:            "abc",
-					Region:          "ap-south-1",
-					NumberOfObjects: 1,
-					TotalSize:       415,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-						},
-					},
-				},
-				{
-					CreationDate:    &TIMEVAL,
-					Name:            "ghi",
-					Region:          "ap-south-1",
-					NumberOfObjects: 1,
-					TotalSize:       415,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-						},
-					},
-				},
-			},
-			ExpectedError: nil,
-		},
-
-		{
-			TestNumber: 13,
-			ListBucketsResp: &s3.ListBucketsOutput{Buckets: []*s3.Bucket{
-				{CreationDate: &TIMEVAL, Name: aws.String("abc")},
 				{CreationDate: &TIMEVAL, Name: aws.String("qqq")},
 				{CreationDate: &TIMEVAL, Name: aws.String("ppp")},
 			},
 			},
 			GetBucketLocationResp: &s3.GetBucketLocationOutput{LocationConstraint: aws.String("ap-south-1")},
 			GetBucketTaggingError: errors.New("GetBucketTaggingError"),
-			ListObjectsV2Resp: &s3.ListObjectsV2Output{Contents: []*s3.Object{
-				{Key: aws.String("object1"), LastModified: &TIMEVAL, Size: aws.Int64(415), StorageClass: aws.String("STANDARD")},
-			}},
-			HeadObjectError:       errors.New("HeadObjectError"),
-			GetObjectAclError:     errors.New("GetObjectAclError"),
-			GetObjectTaggingError: errors.New("GetObjectTaggingError"),
 			GetBucketAclError:     errors.New("GetBucketAclError"),
 
-			ExpectedResp: []*model.MetaBucket{
+			ExpectedBucketResp: []*model.MetaBucket{
 				{
 					CreationDate:    &TIMEVAL,
 					Name:            "abc",
 					Region:          "ap-south-1",
-					NumberOfObjects: 1,
-					TotalSize:       415,
-					Objects: []*model.MetaObject{
-						{
-							ObjectName:       "object1",
-							LastModifiedDate: &TIMEVAL,
-							Size:             415,
-							StorageClass:     "STANDARD",
-						},
-					},
+					NumberOfObjects: 0,
+					TotalSize:       0,
+					Objects:         []*model.MetaObject{},
 				},
 			},
 			ExpectedError: nil,
@@ -579,9 +621,10 @@ func TestBucketList(t *testing.T) {
 			GetObjectTaggingResp:   test.GetObjectTaggingResp,
 			GetObjectTaggingError:  test.GetObjectTaggingError,
 		}
+		ObjectList = MockObjectList
 		bucketArray, err := BucketList(mockSvc, &backendRegion)
 
-		assert.Equal(t, test.ExpectedResp, bucketArray, test.TestNumber)
+		assert.Equal(t, test.ExpectedBucketResp, bucketArray, test.TestNumber)
 		assert.Equal(t, test.ExpectedError, err, test.TestNumber)
 	}
 }
