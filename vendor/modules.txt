@@ -389,7 +389,7 @@ github.com/jbenet/go-context/io
 # github.com/jmespath/go-jmespath v0.3.0
 ## explicit; go 1.14
 github.com/jmespath/go-jmespath
-# github.com/journeymidnight/radoshttpd v0.0.0-20190617133011-609666b51136
+# github.com/journeymidnight/radoshttpd v0.0.7
 ## explicit
 github.com/journeymidnight/radoshttpd/rados
 # github.com/journeymidnight/yig v2.0.0+incompatible
