@@ -30,6 +30,26 @@ import (
 func MockObjectList(svc s3iface.S3API, bucketName string) ([]*model.MetaObject, int64, error) {
 	if bucketName == "ppp" {
 		return nil, 0, errors.New("ListObjectsV2Error")
+	} else if bucketName == "vui" {
+		objectArray := []*model.MetaObject{
+			{
+				ObjectName:       "object1",
+				LastModifiedDate: &TIMEVAL,
+				Size:             415,
+				StorageClass:     "STANDARD",
+				RedirectLocation: "/something",
+				Metadata:         map[string]string{},
+			},
+			{
+				ObjectName:       "object1",
+				LastModifiedDate: &TIMEVAL,
+				Size:             415,
+				StorageClass:     "STANDARD",
+				RedirectLocation: "/something",
+				Metadata:         map[string]string{},
+			},
+		}
+		return objectArray, 830, nil
 	}
 	return []*model.MetaObject{}, 0, nil
 }
@@ -510,9 +530,26 @@ func TestBucketList(t *testing.T) {
 					CreationDate:    &TIMEVAL,
 					Name:            "vui",
 					Region:          "ap-south-1",
-					NumberOfObjects: 0,
-					TotalSize:       0,
-					Objects:         []*model.MetaObject{},
+					NumberOfObjects: 2,
+					TotalSize:       830,
+					Objects: []*model.MetaObject{
+						{
+							ObjectName:       "object1",
+							LastModifiedDate: &TIMEVAL,
+							Size:             415,
+							StorageClass:     "STANDARD",
+							RedirectLocation: "/something",
+							Metadata:         map[string]string{},
+						},
+						{
+							ObjectName:       "object1",
+							LastModifiedDate: &TIMEVAL,
+							Size:             415,
+							StorageClass:     "STANDARD",
+							RedirectLocation: "/something",
+							Metadata:         map[string]string{},
+						},
+					},
 				},
 			},
 			ExpectedError: nil,
