@@ -64,7 +64,8 @@ type MetaObject struct {
 
 //easyjson:json
 type ListMetaDataResponse []*MetaBackend
-=======
+
+//easyjson:json
 type Access struct {
 	DisplayName  string `json:"displayName,omitempty" bson:"displayName,omitempty"`
 	EmailAddress string `json:"emailAddress,omitempty" bson:"emailAddress,omitempty"`

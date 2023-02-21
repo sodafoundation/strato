@@ -75,8 +75,37 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel(in *jlexer
 					in.AddError((*out.ExpiresDate).UnmarshalJSON(data))
 				}
 			}
-		case "grantControl":
-			out.GrantControl = string(in.String())
+		case "objectAcl":
+			if in.IsNull() {
+				in.Skip()
+				out.ObjectAcl = nil
+			} else {
+				in.Delim('[')
+				if out.ObjectAcl == nil {
+					if !in.IsDelim(']') {
+						out.ObjectAcl = make([]*Access, 0, 8)
+					} else {
+						out.ObjectAcl = []*Access{}
+					}
+				} else {
+					out.ObjectAcl = (out.ObjectAcl)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v1 *Access
+					if in.IsNull() {
+						in.Skip()
+						v1 = nil
+					} else {
+						if v1 == nil {
+							v1 = new(Access)
+						}
+						(*v1).UnmarshalEasyJSON(in)
+					}
+					out.ObjectAcl = append(out.ObjectAcl, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
 		case "objectTags":
 			if in.IsNull() {
 				in.Skip()
@@ -90,9 +119,9 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel(in *jlexer
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v1 string
-					v1 = string(in.String())
-					(out.ObjectTags)[key] = v1
+					var v2 string
+					v2 = string(in.String())
+					(out.ObjectTags)[key] = v2
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -110,9 +139,9 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel(in *jlexer
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v2 string
-					v2 = string(in.String())
-					(out.Metadata)[key] = v2
+					var v3 string
+					v3 = string(in.String())
+					(out.Metadata)[key] = v3
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -182,26 +211,39 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel(out *jwrit
 		out.RawString(prefix)
 		out.Raw((*in.ExpiresDate).MarshalJSON())
 	}
-	if in.GrantControl != "" {
-		const prefix string = ",\"grantControl\":"
+	if len(in.ObjectAcl) != 0 {
+		const prefix string = ",\"objectAcl\":"
 		out.RawString(prefix)
-		out.String(string(in.GrantControl))
+		{
+			out.RawByte('[')
+			for v4, v5 := range in.ObjectAcl {
+				if v4 > 0 {
+					out.RawByte(',')
+				}
+				if v5 == nil {
+					out.RawString("null")
+				} else {
+					(*v5).MarshalEasyJSON(out)
+				}
+			}
+			out.RawByte(']')
+		}
 	}
 	if len(in.ObjectTags) != 0 {
 		const prefix string = ",\"objectTags\":"
 		out.RawString(prefix)
 		{
 			out.RawByte('{')
-			v3First := true
-			for v3Name, v3Value := range in.ObjectTags {
-				if v3First {
-					v3First = false
+			v6First := true
+			for v6Name, v6Value := range in.ObjectTags {
+				if v6First {
+					v6First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v3Name))
+				out.String(string(v6Name))
 				out.RawByte(':')
-				out.String(string(v3Value))
+				out.String(string(v6Value))
 			}
 			out.RawByte('}')
 		}
@@ -211,16 +253,16 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel(out *jwrit
 		out.RawString(prefix)
 		{
 			out.RawByte('{')
-			v4First := true
-			for v4Name, v4Value := range in.Metadata {
-				if v4First {
-					v4First = false
+			v7First := true
+			for v7Name, v7Value := range in.Metadata {
+				if v7First {
+					v7First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v4Name))
+				out.String(string(v7Name))
 				out.RawByte(':')
-				out.String(string(v4Value))
+				out.String(string(v7Value))
 			}
 			out.RawByte('}')
 		}
@@ -293,8 +335,37 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel1(in *jlexe
 			out.Type = string(in.String())
 		case "region":
 			out.Region = string(in.String())
-		case "access":
-			out.Access = string(in.String())
+		case "bucketAcl":
+			if in.IsNull() {
+				in.Skip()
+				out.BucketAcl = nil
+			} else {
+				in.Delim('[')
+				if out.BucketAcl == nil {
+					if !in.IsDelim(']') {
+						out.BucketAcl = make([]*Access, 0, 8)
+					} else {
+						out.BucketAcl = []*Access{}
+					}
+				} else {
+					out.BucketAcl = (out.BucketAcl)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v8 *Access
+					if in.IsNull() {
+						in.Skip()
+						v8 = nil
+					} else {
+						if v8 == nil {
+							v8 = new(Access)
+						}
+						(*v8).UnmarshalEasyJSON(in)
+					}
+					out.BucketAcl = append(out.BucketAcl, v8)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
 		case "numberOfObjects":
 			out.NumberOfObjects = int(in.Int())
 		case "numberOfFilteredObjects":
@@ -315,17 +386,17 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel1(in *jlexe
 					out.Objects = (out.Objects)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v5 *MetaObject
+					var v9 *MetaObject
 					if in.IsNull() {
 						in.Skip()
-						v5 = nil
+						v9 = nil
 					} else {
-						if v5 == nil {
-							v5 = new(MetaObject)
+						if v9 == nil {
+							v9 = new(MetaObject)
 						}
-						(*v5).UnmarshalEasyJSON(in)
+						(*v9).UnmarshalEasyJSON(in)
 					}
-					out.Objects = append(out.Objects, v5)
+					out.Objects = append(out.Objects, v9)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -334,7 +405,7 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel1(in *jlexe
 			out.TotalSize = int64(in.Int64())
 		case "filteredBucketSize":
 			out.FilteredBucketSize = int64(in.Int64())
-		case "tags":
+		case "bucketTags":
 			if in.IsNull() {
 				in.Skip()
 			} else {
@@ -347,9 +418,9 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel1(in *jlexe
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v6 string
-					v6 = string(in.String())
-					(out.BucketTags)[key] = v6
+					var v10 string
+					v10 = string(in.String())
+					(out.BucketTags)[key] = v10
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -394,10 +465,23 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel1(out *jwri
 		out.RawString(prefix)
 		out.String(string(in.Region))
 	}
-	if in.Access != "" {
-		const prefix string = ",\"access\":"
+	if len(in.BucketAcl) != 0 {
+		const prefix string = ",\"bucketAcl\":"
 		out.RawString(prefix)
-		out.String(string(in.Access))
+		{
+			out.RawByte('[')
+			for v11, v12 := range in.BucketAcl {
+				if v11 > 0 {
+					out.RawByte(',')
+				}
+				if v12 == nil {
+					out.RawString("null")
+				} else {
+					(*v12).MarshalEasyJSON(out)
+				}
+			}
+			out.RawByte(']')
+		}
 	}
 	{
 		const prefix string = ",\"numberOfObjects\":"
@@ -416,14 +500,14 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel1(out *jwri
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v7, v8 := range in.Objects {
-				if v7 > 0 {
+			for v13, v14 := range in.Objects {
+				if v13 > 0 {
 					out.RawByte(',')
 				}
-				if v8 == nil {
+				if v14 == nil {
 					out.RawString("null")
 				} else {
-					(*v8).MarshalEasyJSON(out)
+					(*v14).MarshalEasyJSON(out)
 				}
 			}
 			out.RawByte(']')
@@ -440,20 +524,20 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel1(out *jwri
 		out.Int64(int64(in.FilteredBucketSize))
 	}
 	if len(in.BucketTags) != 0 {
-		const prefix string = ",\"tags\":"
+		const prefix string = ",\"bucketTags\":"
 		out.RawString(prefix)
 		{
 			out.RawByte('{')
-			v9First := true
-			for v9Name, v9Value := range in.BucketTags {
-				if v9First {
-					v9First = false
+			v15First := true
+			for v15Name, v15Value := range in.BucketTags {
+				if v15First {
+					v15First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v9Name))
+				out.String(string(v15Name))
 				out.RawByte(':')
-				out.String(string(v9Value))
+				out.String(string(v15Value))
 			}
 			out.RawByte('}')
 		}
@@ -527,17 +611,17 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel2(in *jlexe
 					out.Buckets = (out.Buckets)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v10 *MetaBucket
+					var v16 *MetaBucket
 					if in.IsNull() {
 						in.Skip()
-						v10 = nil
+						v16 = nil
 					} else {
-						if v10 == nil {
-							v10 = new(MetaBucket)
+						if v16 == nil {
+							v16 = new(MetaBucket)
 						}
-						(*v10).UnmarshalEasyJSON(in)
+						(*v16).UnmarshalEasyJSON(in)
 					}
-					out.Buckets = append(out.Buckets, v10)
+					out.Buckets = append(out.Buckets, v16)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -587,14 +671,14 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel2(out *jwri
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v11, v12 := range in.Buckets {
-				if v11 > 0 {
+			for v17, v18 := range in.Buckets {
+				if v17 > 0 {
 					out.RawByte(',')
 				}
-				if v12 == nil {
+				if v18 == nil {
 					out.RawString("null")
 				} else {
-					(*v12).MarshalEasyJSON(out)
+					(*v18).MarshalEasyJSON(out)
 				}
 			}
 			out.RawByte(']')
@@ -653,17 +737,17 @@ func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel3(in *jlexe
 			*out = (*out)[:0]
 		}
 		for !in.IsDelim(']') {
-			var v13 *MetaBackend
+			var v19 *MetaBackend
 			if in.IsNull() {
 				in.Skip()
-				v13 = nil
+				v19 = nil
 			} else {
-				if v13 == nil {
-					v13 = new(MetaBackend)
+				if v19 == nil {
+					v19 = new(MetaBackend)
 				}
-				(*v13).UnmarshalEasyJSON(in)
+				(*v19).UnmarshalEasyJSON(in)
 			}
-			*out = append(*out, v13)
+			*out = append(*out, v19)
 			in.WantComma()
 		}
 		in.Delim(']')
@@ -677,14 +761,14 @@ func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel3(out *jwri
 		out.RawString("null")
 	} else {
 		out.RawByte('[')
-		for v14, v15 := range in {
-			if v14 > 0 {
+		for v20, v21 := range in {
+			if v20 > 0 {
 				out.RawByte(',')
 			}
-			if v15 == nil {
+			if v21 == nil {
 				out.RawString("null")
 			} else {
-				(*v15).MarshalEasyJSON(out)
+				(*v21).MarshalEasyJSON(out)
 			}
 		}
 		out.RawByte(']')
@@ -713,4 +797,131 @@ func (v *ListMetaDataResponse) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ListMetaDataResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel3(l, v)
+}
+func easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel4(in *jlexer.Lexer, out *Access) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "displayName":
+			out.DisplayName = string(in.String())
+		case "emailAddress":
+			out.EmailAddress = string(in.String())
+		case "id":
+			out.ID = string(in.String())
+		case "type":
+			out.Type = string(in.String())
+		case "uri":
+			out.URI = string(in.String())
+		case "permission":
+			out.Permission = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel4(out *jwriter.Writer, in Access) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.DisplayName != "" {
+		const prefix string = ",\"displayName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.DisplayName))
+	}
+	if in.EmailAddress != "" {
+		const prefix string = ",\"emailAddress\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.EmailAddress))
+	}
+	if in.ID != "" {
+		const prefix string = ",\"id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.ID))
+	}
+	if in.Type != "" {
+		const prefix string = ",\"type\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Type))
+	}
+	if in.URI != "" {
+		const prefix string = ",\"uri\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.URI))
+	}
+	if in.Permission != "" {
+		const prefix string = ",\"permission\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Permission))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v Access) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel4(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Access) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonC80ae7adEncodeGithubComOpensdsMultiCloudMetadataPkgModel4(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *Access) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel4(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Access) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonC80ae7adDecodeGithubComOpensdsMultiCloudMetadataPkgModel4(l, v)
 }
