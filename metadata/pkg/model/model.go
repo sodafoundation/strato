@@ -66,3 +66,13 @@ type Access struct {
 	URI          string `json:"uri,omitempty" bson:"uri,omitempty"`
 	Permission   string `json:"permission,omitempty" bson:"permission,omitempty"`
 }
+
+//ServerSideEncryption string            `json:"serverSideEncryption" bson:"serverSideEncryption"` --need help in setting up
+//	VersionId            string            `json:"versionId,omitempty" bson:"versionId,omitempty"` -- seems gcp to support only bucket versioning
+//	StorageClass         string            `json:"storageClass,omitempty" bson:"storageClass,omitempty"` --not able to fetch
+//	RedirectLocation     string            `json:"redirectLocation,omitempty" bson:"redirectLocation,omitempty"` -- need to find equivalent, doubtful if it exists
+//	ReplicationStatus    string            `json:"replicationStatus,omitempty" bson:"replicationStatus,omitempty"` -- region not matching, not able to fetch
+
+//expires date --wrong ??
+
+//BucketAcl - always getting access denied
