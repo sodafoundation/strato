@@ -17,22 +17,21 @@ package autorest
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
 	"strings"
 	"time"
 
 	"github.com/Azure/go-autorest/logger"
-	"github.com/Azure/go-autorest/tracing"
 )
 
 const (
 	// DefaultPollingDelay is a reasonable delay between polling requests.
-	DefaultPollingDelay = 60 * time.Second
+	DefaultPollingDelay = 30 * time.Second
 
 	// DefaultPollingDuration is a reasonable total polling duration.
 	DefaultPollingDuration = 15 * time.Minute
@@ -167,7 +166,8 @@ type Client struct {
 	// Setting this to zero will use the provided context to control the duration.
 	PollingDuration time.Duration
 
-	// RetryAttempts sets the default number of retry attempts for client.
+	// RetryAttempts sets the total number of times the client will attempt to make an HTTP request.
+	// Set the value to 1 to disable retries.  DO NOT set the value to less than 1.
 	RetryAttempts int
 
 	// RetryDuration sets the delay duration for retries.
@@ -181,6 +181,11 @@ type Client struct {
 
 	// Set to true to skip attempted registration of resource providers (false by default).
 	SkipResourceProviderRegistration bool
+
+	// SendDecorators can be used to override the default chain of SendDecorators.
+	// This can be used to specify things like a custom retry SendDecorator.
+	// Set this to an empty slice to use no SendDecorators.
+	SendDecorators []SendDecorator
 }
 
 // NewClientWithUserAgent returns an instance of a Client with the UserAgent set to the passed
@@ -256,6 +261,9 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 		},
 	})
 	resp, err := SendWithSender(c.sender(tls.RenegotiateNever), r)
+	if resp == nil && err == nil {
+		err = errors.New("autorest: received nil response and error")
+	}
 	logger.Instance.WriteResponse(resp, logger.Filter{})
 	Respond(resp, c.ByInspecting())
 	return resp, err
@@ -264,30 +272,8 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 // sender returns the Sender to which to send requests.
 func (c Client) sender(renengotiation tls.RenegotiationSupport) Sender {
 	if c.Sender == nil {
-		// Use behaviour compatible with DefaultTransport, but require TLS minimum version.
-		var defaultTransport = http.DefaultTransport.(*http.Transport)
-		transport := tracing.Transport
-		// for non-default values of TLS renegotiation create a new tracing transport.
-		// updating tracing.Transport affects all clients which is not what we want.
-		if renengotiation != tls.RenegotiateNever {
-			transport = tracing.NewTransport()
-		}
-		transport.Base = &http.Transport{
-			Proxy:                 defaultTransport.Proxy,
-			DialContext:           defaultTransport.DialContext,
-			MaxIdleConns:          defaultTransport.MaxIdleConns,
-			IdleConnTimeout:       defaultTransport.IdleConnTimeout,
-			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
-			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
-			TLSClientConfig: &tls.Config{
-				MinVersion:    tls.VersionTLS12,
-				Renegotiation: renengotiation,
-			},
-		}
-		j, _ := cookiejar.New(nil)
-		return &http.Client{Jar: j, Transport: transport}
+		return sender(renengotiation)
 	}
-
 	return c.Sender
 }
 
@@ -321,4 +307,22 @@ func (c Client) ByInspecting() RespondDecorator {
 		return ByIgnoring()
 	}
 	return c.ResponseInspector
+}
+
+// Send sends the provided http.Request using the client's Sender or the default sender.
+// It returns the http.Response and possible error. It also accepts a, possibly empty,
+// default set of SendDecorators used when sending the request.
+// SendDecorators have the following precedence:
+// 1. In a request's context via WithSendDecorators()
+// 2. Specified on the client in SendDecorators
+// 3. The default values specified in this method
+func (c Client) Send(req *http.Request, decorators ...SendDecorator) (*http.Response, error) {
+	if c.SendDecorators != nil {
+		decorators = c.SendDecorators
+	}
+	inCtx := req.Context().Value(ctxSendDecorators{})
+	if sd, ok := inCtx.([]SendDecorator); ok {
+		decorators = sd
+	}
+	return SendWithSender(c, req, decorators...)
 }
