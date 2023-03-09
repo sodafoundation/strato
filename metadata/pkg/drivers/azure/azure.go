@@ -41,7 +41,7 @@ var ObjectList = func(containerURL azblob.ContainerURL, bucketName string) ([]*m
 	blobResponse, err := containerURL.ListBlobsFlatSegment(context.Background(), azblob.Marker{}, azblob.ListBlobsSegmentOptions{})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("unable to list objects. failed with error: %v", err)
 	}
 
 	for _, blob := range blobResponse.Segment.BlobItems {
@@ -59,14 +59,33 @@ var ObjectList = func(containerURL azblob.ContainerURL, bucketName string) ([]*m
 			obj.RedirectLocation = *blob.Properties.DestinationSnapshot
 		}
 
+		if blob.VersionID != nil {
+			obj.VersionId = *blob.VersionID
+		}
+
+		tagset := map[string]string{}
+
+		if blob.BlobTags != nil {
+			for _, tag := range blob.BlobTags.BlobTagSet {
+				tagset[tag.Key] = tag.Value
+			}
+			obj.ObjectTags = tagset
+		}
+
+		obj.ExpiresDate = blob.Properties.ExpiresOn
+
+		if blob.Properties.EncryptionScope != nil {
+			obj.ServerSideEncryption = *blob.Properties.EncryptionScope
+		}
+
 		obj.ReplicationStatus = string(blob.Properties.CopyStatus)
 
 		if blob.Properties.ContentType != nil {
 			obj.ObjectType = *blob.Properties.ContentType
 		}
-		props, err := blobURL.GetProperties(context.Background(), azblob.BlobAccessConditions{})
+		props, err := blobURL.GetProperties(context.Background(), azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 		if err != nil {
-			log.Error("get properties failed", err)
+			log.Error("unable to get properties for object %v. failed with error: %v", obj.ObjectName, err)
 		}
 
 		obj.Metadata = props.NewMetadata()
@@ -101,7 +120,7 @@ func GetBucketMeta(idx int, container azblob.ContainerItem, serviceURL azblob.Se
 	props, err := containerURL.GetProperties(context.Background(), azblob.LeaseAccessConditions{})
 
 	if err != nil {
-		log.Errorf("failed to get bucket tags. failed wth error: %v", err)
+		log.Errorf("unable to get bucket tags. failed wth error: %v", err)
 	} else {
 		buck.BucketTags = props.NewMetadata()
 	}
@@ -116,7 +135,7 @@ func GetBucketMeta(idx int, container azblob.ContainerItem, serviceURL azblob.Se
 		for _, item := range acl.Items {
 			acc := &model.Access{}
 			acc.ID = item.ID
-			acc.Permission = item.AccessPolicy.Permission
+			acc.Permission = *item.AccessPolicy.Permission
 			access = append(access, acc)
 		}
 		buck.BucketAcl = access
