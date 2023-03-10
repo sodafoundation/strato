@@ -21,11 +21,11 @@ import (
 )
 
 type ValidationError struct {
-	errMsg string
+	ErrMsg string
 }
 
 func (e *ValidationError) Error() string {
-	return e.errMsg
+	return e.ErrMsg
 }
 
 func ValidateInput(in *pb.ListMetadataRequest) (okie bool, err error) {
@@ -62,7 +62,7 @@ func isSortParamValid(sortOrder string) (bool, error) {
 	if sortOrder == "" || sortOrder == constants.ASC || sortOrder == constants.DESC {
 		return true, nil
 	}
-	return false, &ValidationError{errMsg: "Invalid sort order"}
+	return false, &ValidationError{ErrMsg: "Invalid sort order"}
 }
 
 func isSizeParamsValid(sizeInBytes int64, operator string) (bool, error) {
@@ -83,11 +83,11 @@ func isSizeParamsValid(sizeInBytes int64, operator string) (bool, error) {
 	case constants.GREATER_THAN_OPERATOR:
 
 	default:
-		return false, &ValidationError{errMsg: "Operator for size should be  lte, gt, eq, gte or lt"}
+		return false, &ValidationError{ErrMsg: "Operator for size should be  lte, gt, eq, gte or lt"}
 	}
 
 	if sizeInBytes < constants.ZERO {
-		return false, &ValidationError{errMsg: "Size should be always positive."}
+		return false, &ValidationError{ErrMsg: "Size should be always positive."}
 	}
 
 	return true, nil
@@ -105,7 +105,7 @@ func isValidRegion(region string, cloudType string) (bool, error) {
 		return true, nil
 
 	default:
-		return false, &ValidationError{errMsg: "Not a valid cloud type"}
+		return false, &ValidationError{ErrMsg: "Not a valid cloud type"}
 	}
 
 	if region == "" {
@@ -117,5 +117,5 @@ func isValidRegion(region string, cloudType string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, &ValidationError{errMsg: "Not a valid " + cloudType + " region"}
+	return false, &ValidationError{ErrMsg: "Not a valid " + cloudType + " region"}
 }
