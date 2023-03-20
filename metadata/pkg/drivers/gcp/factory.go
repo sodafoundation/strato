@@ -15,12 +15,13 @@
 package gcp
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/webrtcn/s3client"
-
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/opensds/multi-cloud/backend/pkg/utils/constants"
 	backendpb "github.com/opensds/multi-cloud/backend/proto"
 	driver "github.com/opensds/multi-cloud/metadata/pkg/drivers/cloudfactory"
+	log "github.com/sirupsen/logrus"
 )
 
 type GcpDriverFactory struct {
@@ -28,11 +29,26 @@ type GcpDriverFactory struct {
 
 func (cdf *GcpDriverFactory) CreateDriver(backend *backendpb.BackendDetail) (driver.CloudDriver, error) {
 	log.Infoln("got the request to create driver in gcp factory")
-	endpoint := backend.Endpoint
 	AccessKeyID := backend.Access
 	AccessKeySecret := backend.Security
-	sess := s3client.NewClient(endpoint, AccessKeyID, AccessKeySecret)
-	adap := &GcpAdapter{backend: backend, session: sess}
+	region := backend.Region
+	enpoint := backend.Endpoint
+
+	s3aksk := S3Cred{Ak: AccessKeyID, Sk: AccessKeySecret}
+	creds := credentials.NewCredentials(&s3aksk)
+
+	disableSSL := true
+	sess, err := session.NewSession(&aws.Config{
+		Region:      &region,
+		Credentials: creds,
+		DisableSSL:  &disableSSL,
+		Endpoint:    &enpoint,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	adap := &GcpAdapter{Backend: backend, Session: sess}
 
 	return adap, nil
 }
