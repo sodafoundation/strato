@@ -85,7 +85,6 @@ func (myc *S3Cred) Retrieve() (credentials.Value, error) {
 }
 
 func Sync(ctx context.Context, backend *backend.BackendDetail, in *pb.SyncMetadataRequest) error {
-	log.Debugln("the backend we got now....:%+v", backend)
 	sd, err := driver.CreateStorageDriver(backend.Type, backend)
 	if err != nil {
 		log.Errorln("failed to create driver. err:", err)
@@ -101,7 +100,6 @@ func Sync(ctx context.Context, backend *backend.BackendDetail, in *pb.SyncMetada
 }
 
 func (f *metadataService) SyncMetadata(ctx context.Context, in *pb.SyncMetadataRequest, out *pb.BaseResponse) error {
-	log.Infoln("received sncMetadata request in metadata service:%+v", in)
 	if in.Id != "" {
 		backend, err := utils.GetBackend(ctx, f.backendClient, in.Id)
 		if err != nil {
