@@ -183,7 +183,7 @@ func (ad *AzureAdapter) Put(ctx context.Context, stream io.Reader, object *pb.Ob
 	}
 
 	// Currently, only support Hot
-	_, err = blobURL.SetTier(ctx, azblob.AccessTierType(storClass), azblob.LeaseAccessConditions{})
+	_, err = blobURL.SetTier(ctx, azblob.AccessTierType(storClass), azblob.LeaseAccessConditions{}, azblob.RehydratePriorityNone)
 	if err != nil {
 		log.Errorf("set azure blob tier[%s] failed:%v\n", object.Tier, err)
 		return result, ErrPutToBackendFailed
@@ -207,7 +207,7 @@ func (ad *AzureAdapter) Get(ctx context.Context, object *pb.Object, start int64,
 
 	count := end - start + 1
 	log.Infof("blobURL:%v, size:%d, start=%d, end=%d, count=%d\n", blobURL, object.Size, start, end, count)
-	downloadResp, err := blobURL.Download(ctx, start, count, azblob.BlobAccessConditions{}, false)
+	downloadResp, err := blobURL.Download(ctx, start, count, azblob.BlobAccessConditions{}, false, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
 		log.Errorf("get object[Azure Blob] failed, objectId:%s, err:%v\n", object.ObjectId, err)
 		return nil, ErrGetFromBackendFailed
@@ -266,11 +266,11 @@ func (ad *AzureAdapter) ChangeStorageClass(ctx context.Context, object *pb.Objec
 	var err error
 	switch *newClass {
 	case string(azblob.AccessTierHot):
-		res, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{})
+		res, err = blobURL.SetTier(ctx, azblob.AccessTierHot, azblob.LeaseAccessConditions{}, azblob.RehydratePriorityNone)
 	case string(azblob.AccessTierCool):
-		res, err = blobURL.SetTier(ctx, azblob.AccessTierCool, azblob.LeaseAccessConditions{})
+		res, err = blobURL.SetTier(ctx, azblob.AccessTierCool, azblob.LeaseAccessConditions{}, azblob.RehydratePriorityNone)
 	case string(azblob.AccessTierArchive):
-		res, err = blobURL.SetTier(ctx, azblob.AccessTierArchive, azblob.LeaseAccessConditions{})
+		res, err = blobURL.SetTier(ctx, azblob.AccessTierArchive, azblob.LeaseAccessConditions{}, azblob.RehydratePriorityNone)
 	default:
 		log.Errorf("change storage class[Azure Blob] of object[%s] to %s failed, err: invalid storage class.",
 			object.ObjectKey, newClass)
@@ -337,7 +337,7 @@ func (ad *AzureAdapter) UploadPart(ctx context.Context, stream io.Reader, multip
 	base64ID := ad.Int64ToBase64(partNumber)
 	bytess, _ := ioutil.ReadAll(stream)
 	log.Debugf("BlobURL=%+v", blobURL)
-	rsp, err := blobURL.StageBlock(ctx, base64ID, bytes.NewReader(bytess), azblob.LeaseAccessConditions{}, nil)
+	rsp, err := blobURL.StageBlock(ctx, base64ID, bytes.NewReader(bytess), azblob.LeaseAccessConditions{}, nil, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
 		log.Errorf("stage block[#%d,base64ID:%s] failed:%v", partNumber, base64ID, err)
 		return nil, ErrPutToBackendFailed
@@ -371,7 +371,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUp
 		completeParts = append(completeParts, base64ID)
 	}
 	log.Debugf("Commit block list, blobURL:%+v, completeParts:%+v", blobURL, completeParts)
-	_, err := blobURL.CommitBlockList(ctx, completeParts, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{})
+	_, err := blobURL.CommitBlockList(ctx, completeParts, azblob.BlobHTTPHeaders{}, azblob.Metadata{}, azblob.BlobAccessConditions{}, azblob.AccessTierHot, azblob.BlobTagsMap{}, azblob.ClientProvidedKeyOptions{}, azblob.ImmutabilityPolicyOptions{})
 	if err != nil {
 		log.Errorf("commit blocks[bucket:%s, objectId:%s] failed:%v", bucket, multipartUpload.ObjectId, err)
 		return nil, ErrBackendCompleteMultipartFailed
@@ -383,7 +383,7 @@ func (ad *AzureAdapter) CompleteMultipartUpload(ctx context.Context, multipartUp
 		}
 
 		// set tier
-		_, err = blobURL.SetTier(ctx, azblob.AccessTierType(storClass), azblob.LeaseAccessConditions{})
+		_, err = blobURL.SetTier(ctx, azblob.AccessTierType(storClass), azblob.LeaseAccessConditions{}, azblob.RehydratePriorityNone)
 		if err != nil {
 			log.Errorf("set blob[objectId:%s] tier failed:%v\n", multipartUpload.ObjectId, err)
 			return nil, ErrBackendCompleteMultipartFailed
