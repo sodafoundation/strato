@@ -86,23 +86,23 @@ func (a Adapter) StoreData(ctx context.Context, result []*model.MetaBackend, que
 }
 
 func (a Adapter) FetchData(ctx context.Context, query interface{}) ([]*model.MetaBackend, error) {
-	queryStr, err := json.Marshal(query)
+	queryStr, cacheErr := json.Marshal(query)
 	var result model.ListMetaDataResponse
-	if err != nil {
-		return nil, err
+	if cacheErr != nil {
+		return nil, cacheErr
 	}
 	cachedResult := a.session.HGet(CACHE_HASH, string(queryStr))
-	cachedResultStr, err := cachedResult.Result()
-	if err == redis.Nil {
+	cachedResultStr, cacheErr := cachedResult.Result()
+	if cacheErr == redis.Nil {
 		// redis returns redis.Nil error msg when its not present in cache
 		return nil, nil
-	} else if err != nil {
-		return nil, err
+	} else if cacheErr != nil {
+		return nil, cacheErr
 	}
 
-	err = result.UnmarshalJSON([]byte(cachedResultStr))
-	if err != nil {
-		return nil, err
+	cacheErr = result.UnmarshalJSON([]byte(cachedResultStr))
+	if cacheErr != nil {
+		return nil, cacheErr
 	}
 	return result, nil
 }
