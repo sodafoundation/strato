@@ -98,3 +98,11 @@ const (
 	ASC  = "asc"
 	DESC = "desc"
 )
+
+const (
+	//* CACHE_LIMIT 100mb
+	CACHE_LIMIT          = 100 * 1024 * 1024
+	CACHE_TTL_IN_SECONDS = 60 * 10
+	HSET                 = "HSET"
+	EXPIREMEMBER         = "EXPIREMEMBER"
+)

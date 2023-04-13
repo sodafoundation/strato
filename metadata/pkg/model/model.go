@@ -15,9 +15,11 @@
 package model
 
 import (
+	_ "github.com/mailru/easyjson/gen"
 	"time"
 )
 
+//easyjson:json
 type MetaBackend struct {
 	Id                      string        `json:"id" bson:"_id"`
 	BackendName             string        `json:"backendName" bson:"backendName"`
@@ -28,6 +30,7 @@ type MetaBackend struct {
 	NumberOfFilteredBuckets int32         `json:"numberOFilteredBuckets" bson:"numberOFilteredBuckets"`
 }
 
+//easyjson:json
 type MetaBucket struct {
 	CreationDate            *time.Time        `type:"timestamp" json:"creationDate,omitempty" bson:"creationDate,omitempty"`
 	Name                    string            `type:"string" json:"name" bson:"name"`
@@ -42,6 +45,7 @@ type MetaBucket struct {
 	BucketTags              map[string]string `json:"bucketTags,omitempty" bson:"bucketTags,omitempty"`
 }
 
+//easyjson:json
 type MetaObject struct {
 	ObjectName           string            `json:"name" bson:"name"`
 	LastModifiedDate     *time.Time        `type:"timestamp" json:"lastModifiedDate" bson:"lastModifiedDate"`
@@ -58,6 +62,10 @@ type MetaObject struct {
 	ObjectType           string            `json:"objectType,omitempty" bson:"objectType,omitempty"`
 }
 
+//easyjson:json
+type ListMetaDataResponse []*MetaBackend
+
+//easyjson:json
 type Access struct {
 	DisplayName  string `json:"displayName,omitempty" bson:"displayName,omitempty"`
 	EmailAddress string `json:"emailAddress,omitempty" bson:"emailAddress,omitempty"`

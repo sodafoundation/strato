@@ -27,6 +27,7 @@ require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.0.16-beta
 	github.com/journeymidnight/radoshttpd v0.0.7
 	github.com/journeymidnight/yig v2.0.0+incompatible
+	github.com/mailru/easyjson v0.7.7
 	github.com/micro/go-log v0.1.0
 	github.com/micro/go-micro/v2 v2.9.1
 	github.com/micro/go-plugins/registry/kubernetes/v2 v2.9.1
@@ -95,6 +96,7 @@ require (
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd // indirect
 	github.com/klauspost/compress v1.13.6 // indirect

@@ -43,6 +43,11 @@ func main() {
 	db.Init(dbStore)
 	defer db.Exit(dbStore)
 
+	keyDbURI := os.Getenv("KEY_DB_URI")
+	cacheStore := &config.Database{Credential: "unkonwn", Driver: "keydb", Endpoint: keyDbURI}
+	db.InitCache(cacheStore)
+	defer db.ExitCache(cacheStore)
+
 	metadataService := metadataService_Docker
 
 	if os.Getenv(MICRO_ENVIRONMENT) == K8S {
