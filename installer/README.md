@@ -24,6 +24,25 @@ export HOST_IP=<your_host_ip>
 ```bash
 ansible-playbook site.yml -i local.hosts
 ```
+Ensure that the playbook finishes the installation without any failed steps. 
+
+In case of any failure, run the following command to clear the installation:
+```bash
+ansible-playbook clean.yml -i local.hosts
+```
+Now, retry again:
+```bash
+ansible-playbook site.yml -i local.hosts
+```
+
+### Verify installation of Multi-cloud
+Run the below command to list the containers running:
+```bash
+docker ps
+```
+![Screenshot from 2023-04-13 10-34-50](https://user-images.githubusercontent.com/45416272/231659142-f8f1153b-c77a-4874-82c5-7d97510a13c0.png)
+
+Ensure that all the above mentioned containers are up and running successfully. This confirms that multi-cloud has been installed successfully.
 
 ### Uninstall and Purge
 ```bash
