@@ -16,6 +16,8 @@ package service
 
 import (
 	"context"
+	"github.com/opensds/multi-cloud/metadata/pkg/model"
+	"go.mongodb.org/mongo-driver/bson"
 	"os"
 
 	"github.com/opensds/multi-cloud/metadata/pkg/db"
@@ -135,16 +137,42 @@ func (f *metadataService) ListMetadata(ctx context.Context, in *pb.ListMetadataR
 	//* translates the query into database understood language
 	translatedQuery := querymanager.Translate(in)
 
-	//* executes the translated query in the database and returns the result
-	unPaginatedResult, err := db.DbAdapter.ListMetadata(ctx, translatedQuery)
-	if err != nil {
-		log.Errorf("Failed to execute query in database: %v", err)
-		return err
+	//* Fetches the result if present in cache
+	result := fetchQueryResultFromCache(ctx, err, translatedQuery)
+	if result == nil {
+		//* executes the translated query in the database and returns the result
+		unPaginatedResult, err := db.DbAdapter.ListMetadata(ctx, translatedQuery)
+		if err != nil {
+			log.Errorf("Failed to execute query in database: %v", err)
+			return err
+		}
+
+		//* store query result in cache
+		storeQueryResultInCache(ctx, err, unPaginatedResult, translatedQuery)
+		result = unPaginatedResult
+	} else {
+		log.Infoln("result fetched from Cache")
 	}
 
-	paginatedResult := querymanager.Paginate(unPaginatedResult, in.GetLimit(), in.GetOffset())
+	paginatedResult := querymanager.Paginate(result, in.GetLimit(), in.GetOffset())
 	backends := utils.GetBackends(paginatedResult)
 	out.Backends = backends
 
 	return nil
+}
+
+func fetchQueryResultFromCache(ctx context.Context, err error, translatedQuery []bson.D) []*model.MetaBackend {
+	result, err := db.Cacheadapter.FetchData(ctx, translatedQuery)
+	if err != nil {
+		log.Errorf("Failed to fetch query result in cache: %v", err)
+	}
+	return result
+}
+
+func storeQueryResultInCache(ctx context.Context, err error, unPaginatedResult []*model.MetaBackend, translatedQuery []bson.D) {
+	if err = db.Cacheadapter.StoreData(ctx, unPaginatedResult, translatedQuery); err != nil {
+		log.Errorf("Failed to store query result in cache: %v", err)
+	} else {
+		log.Infoln("result of query stored in cache")
+	}
 }
