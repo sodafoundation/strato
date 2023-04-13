@@ -3,9 +3,9 @@ module github.com/opensds/multi-cloud
 go 1.17
 
 require (
-	github.com/Azure/azure-pipeline-go v0.2.2
+	github.com/Azure/azure-pipeline-go v0.2.3
 	github.com/Azure/azure-sdk-for-go v32.4.0+incompatible
-	github.com/Azure/azure-storage-blob-go v0.8.0
+	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/Azure/azure-storage-file-go v0.7.0
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Shopify/sarama v1.19.0
@@ -27,6 +27,7 @@ require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.0.16-beta
 	github.com/journeymidnight/radoshttpd v0.0.7
 	github.com/journeymidnight/yig v2.0.0+incompatible
+	github.com/mailru/easyjson v0.7.7
 	github.com/micro/go-log v0.1.0
 	github.com/micro/go-micro/v2 v2.9.1
 	github.com/micro/go-plugins/registry/kubernetes/v2 v2.9.1
@@ -44,7 +45,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.14.0
 	google.golang.org/protobuf v1.22.0
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/apimachinery v0.18.5
 )
@@ -52,11 +53,12 @@ require (
 require (
 	cloud.google.com/go v0.50.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.4.12 // indirect
-	github.com/Azure/go-autorest/autorest v0.5.0 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.2.0 // indirect
-	github.com/Azure/go-autorest/autorest/date v0.1.0 // indirect
-	github.com/Azure/go-autorest/logger v0.1.0 // indirect
-	github.com/Azure/go-autorest/tracing v0.1.0 // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.18 // indirect
+	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
+	github.com/Azure/go-autorest/logger v0.2.1 // indirect
+	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/coreos/etcd v3.3.18+incompatible // indirect
@@ -69,14 +71,16 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
+	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.0.0 // indirect
 	github.com/go-git/go-git/v5 v5.1.0 // indirect
 	github.com/go-log/log v0.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/uuid v1.1.1 // indirect
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.5 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
@@ -92,13 +96,15 @@ require (
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
+	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
-	github.com/mattn/go-ieproxy v0.0.0-20190702010315-6dee0af9227d // indirect
+	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/micro/cli/v2 v2.1.2 // indirect
 	github.com/miekg/dns v1.1.27 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
