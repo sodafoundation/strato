@@ -42,7 +42,7 @@ github.com/Shopify/sarama
 # github.com/aliyun/aliyun-oss-go-sdk v2.0.8+incompatible
 ## explicit
 github.com/aliyun/aliyun-oss-go-sdk/oss
-# github.com/aws/aws-sdk-go v1.30.26
+# github.com/aws/aws-sdk-go v1.34.0
 ## explicit; go 1.11
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/arn
@@ -73,6 +73,7 @@ github.com/aws/aws-sdk-go/internal/sdkuri
 github.com/aws/aws-sdk-go/internal/shareddefaults
 github.com/aws/aws-sdk-go/internal/strings
 github.com/aws/aws-sdk-go/internal/sync/singleflight
+github.com/aws/aws-sdk-go/private/checksum
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/ec2query
 github.com/aws/aws-sdk-go/private/protocol/eventstream
@@ -389,7 +390,7 @@ github.com/jbenet/go-context/io
 # github.com/jmespath/go-jmespath v0.3.0
 ## explicit; go 1.14
 github.com/jmespath/go-jmespath
-# github.com/journeymidnight/radoshttpd v0.0.0-20190617133011-609666b51136
+# github.com/journeymidnight/radoshttpd v0.0.7
 ## explicit
 github.com/journeymidnight/radoshttpd/rados
 # github.com/journeymidnight/yig v2.0.0+incompatible

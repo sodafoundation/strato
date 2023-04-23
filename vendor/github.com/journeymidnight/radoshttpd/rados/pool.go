@@ -7,7 +7,9 @@ package rados
 // #include "rados_extension.h"
 import "C"
 
-import "unsafe"
+import (
+    "unsafe"
+)
 import "reflect"
 // Pool represents a context for performing I/O within a pool.
 type Pool struct {
@@ -67,6 +69,25 @@ func (p *Pool) Delete(oid string) error {
         return nil
     } else {
         return RadosError(int(ret))
+    }
+}
+
+// Stat object and get size and update time
+func (p *Pool) Stat(oid string) (uint64, uint64, error) {
+    c_oid := C.CString(oid)
+    defer C.free(unsafe.Pointer(c_oid))
+    var c_psize C.uint64_t
+    var c_ptime C.time_t
+    var c_prval C.int
+    readOp := C.rados_create_read_op()
+    defer C.rados_release_read_op(readOp)
+    C.rados_read_op_stat(readOp, &c_psize, &c_ptime, &c_prval)
+    ret := C.rados_read_op_operate(readOp, p.ioctx, c_oid, 0)
+
+    if ret == 0 {
+        return uint64(c_psize), uint64(c_ptime), nil
+    } else {
+        return 0, 0, RadosError(int(ret))
     }
 }
 
