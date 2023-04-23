@@ -14,7 +14,7 @@ require (
 	github.com/bsm/sarama-cluster v2.1.15+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.1.0
 	github.com/dustin/go-humanize v1.0.0
-	github.com/emicklei/go-restful v2.12.0+incompatible
+	github.com/emicklei/go-restful v2.16.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-ini/ini v1.56.0
