@@ -16,6 +16,7 @@ package autorest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -37,6 +38,27 @@ const (
 	headerContentType      = "Content-Type"
 	headerUserAgent        = "User-Agent"
 )
+
+// used as a key type in context.WithValue()
+type ctxPrepareDecorators struct{}
+
+// WithPrepareDecorators adds the specified PrepareDecorators to the provided context.
+// If no PrepareDecorators are provided the context is unchanged.
+func WithPrepareDecorators(ctx context.Context, prepareDecorator []PrepareDecorator) context.Context {
+	if len(prepareDecorator) == 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxPrepareDecorators{}, prepareDecorator)
+}
+
+// GetPrepareDecorators returns the PrepareDecorators in the provided context or the provided default PrepareDecorators.
+func GetPrepareDecorators(ctx context.Context, defaultPrepareDecorators ...PrepareDecorator) []PrepareDecorator {
+	inCtx := ctx.Value(ctxPrepareDecorators{})
+	if pd, ok := inCtx.([]PrepareDecorator); ok {
+		return pd
+	}
+	return defaultPrepareDecorators
+}
 
 // Preparer is the interface that wraps the Prepare method.
 //
@@ -105,10 +127,7 @@ func WithHeader(header string, value string) PrepareDecorator {
 		return PreparerFunc(func(r *http.Request) (*http.Request, error) {
 			r, err := p.Prepare(r)
 			if err == nil {
-				if r.Header == nil {
-					r.Header = make(http.Header)
-				}
-				r.Header.Set(http.CanonicalHeaderKey(header), value)
+				setHeader(r, http.CanonicalHeaderKey(header), value)
 			}
 			return r, err
 		})
@@ -208,7 +227,7 @@ func AsPost() PrepareDecorator { return WithMethod("POST") }
 func AsPut() PrepareDecorator { return WithMethod("PUT") }
 
 // WithBaseURL returns a PrepareDecorator that populates the http.Request with a url.URL constructed
-// from the supplied baseUrl.
+// from the supplied baseUrl.  Query parameters will be encoded as required.
 func WithBaseURL(baseURL string) PrepareDecorator {
 	return func(p Preparer) Preparer {
 		return PreparerFunc(func(r *http.Request) (*http.Request, error) {
@@ -219,11 +238,18 @@ func WithBaseURL(baseURL string) PrepareDecorator {
 					return r, err
 				}
 				if u.Scheme == "" {
-					err = fmt.Errorf("autorest: No scheme detected in URL %s", baseURL)
+					return r, fmt.Errorf("autorest: No scheme detected in URL %s", baseURL)
 				}
-				if err == nil {
-					r.URL = u
+				if u.RawQuery != "" {
+					// handle unencoded semicolons (ideally the server would send them already encoded)
+					u.RawQuery = strings.Replace(u.RawQuery, ";", "%3B", -1)
+					q, err := url.ParseQuery(u.RawQuery)
+					if err != nil {
+						return r, err
+					}
+					u.RawQuery = q.Encode()
 				}
+				r.URL = u
 			}
 			return r, err
 		})
@@ -268,10 +294,7 @@ func WithFormData(v url.Values) PrepareDecorator {
 			if err == nil {
 				s := v.Encode()
 
-				if r.Header == nil {
-					r.Header = make(http.Header)
-				}
-				r.Header.Set(http.CanonicalHeaderKey(headerContentType), mimeTypeFormPost)
+				setHeader(r, http.CanonicalHeaderKey(headerContentType), mimeTypeFormPost)
 				r.ContentLength = int64(len(s))
 				r.Body = ioutil.NopCloser(strings.NewReader(s))
 			}
@@ -307,10 +330,7 @@ func WithMultiPartFormData(formDataParameters map[string]interface{}) PrepareDec
 				if err = writer.Close(); err != nil {
 					return r, err
 				}
-				if r.Header == nil {
-					r.Header = make(http.Header)
-				}
-				r.Header.Set(http.CanonicalHeaderKey(headerContentType), writer.FormDataContentType())
+				setHeader(r, http.CanonicalHeaderKey(headerContentType), writer.FormDataContentType())
 				r.Body = ioutil.NopCloser(bytes.NewReader(body.Bytes()))
 				r.ContentLength = int64(body.Len())
 				return r, err
@@ -415,6 +435,7 @@ func WithXML(v interface{}) PrepareDecorator {
 					bytesWithHeader := []byte(withHeader)
 
 					r.ContentLength = int64(len(bytesWithHeader))
+					setHeader(r, headerContentLength, fmt.Sprintf("%d", len(bytesWithHeader)))
 					r.Body = ioutil.NopCloser(bytes.NewReader(bytesWithHeader))
 				}
 			}
@@ -501,7 +522,7 @@ func parseURL(u *url.URL, path string) (*url.URL, error) {
 // WithQueryParameters returns a PrepareDecorators that encodes and applies the query parameters
 // given in the supplied map (i.e., key=value).
 func WithQueryParameters(queryParameters map[string]interface{}) PrepareDecorator {
-	parameters := ensureValueStrings(queryParameters)
+	parameters := MapToValues(queryParameters)
 	return func(p Preparer) Preparer {
 		return PreparerFunc(func(r *http.Request) (*http.Request, error) {
 			r, err := p.Prepare(r)
@@ -509,14 +530,16 @@ func WithQueryParameters(queryParameters map[string]interface{}) PrepareDecorato
 				if r.URL == nil {
 					return r, NewError("autorest", "WithQueryParameters", "Invoked with a nil URL")
 				}
-
 				v := r.URL.Query()
 				for key, value := range parameters {
-					d, err := url.QueryUnescape(value)
-					if err != nil {
-						return r, err
+					for i := range value {
+						d, err := url.QueryUnescape(value[i])
+						if err != nil {
+							return r, err
+						}
+						value[i] = d
 					}
-					v.Add(key, d)
+					v[key] = value
 				}
 				r.URL.RawQuery = v.Encode()
 			}

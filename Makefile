@@ -20,11 +20,11 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
              --always --dirty --abbrev=8)
 BUILD_TGT := soda-multicloud-$(VERSION)-linux-amd64
 
-.PHONY: all build prebuild api aksk backend s3 dataflow block file docker clean
+.PHONY: all build prebuild api aksk backend s3 dataflow block file metadata docker clean
 
 all: build
 
-build: api aksk backend s3 dataflow datamover block file
+build: api aksk backend s3 dataflow datamover block file metadata
 
 prebuild:
 	mkdir -p  $(BUILD_DIR)
@@ -53,6 +53,9 @@ file: prebuild
 block: prebuild
 	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/block github.com/opensds/multi-cloud/block/cmd
 
+metadata: prebuild
+	CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s -extldflags "-static"' -o $(BUILD_DIR)/metadata github.com/opensds/multi-cloud/metadata/cmd
+
 docker: build
 
 	cp $(BUILD_DIR)/api api
@@ -74,6 +77,10 @@ docker: build
 	cp $(BUILD_DIR)/block block
 	chmod 755 block/block
 	docker build block -t sodafoundation/multi-cloud-block:latest
+
+	cp $(BUILD_DIR)/metadata metadata
+	chmod 755 metadata/metadata
+	docker build metadata -t sodafoundation/multi-cloud-metadata:latest
 
 	cp $(BUILD_DIR)/s3 s3
 	chmod 755 s3/s3
@@ -119,6 +126,7 @@ dist: build
 	cp ../datamover $(BUILD_TGT)/bin/ && \
 	cp ../block $(BUILD_TGT)/bin/ && \
 	cp ../file $(BUILD_TGT)/bin/ && \
+	cp ../metadata $(BUILD_TGT)/bin/ && \
 	cp $(BASE_DIR)/LICENSE $(BUILD_TGT) && \
 	zip -r $(DIST_DIR)/$(BUILD_TGT).zip $(BUILD_TGT) && \
 	tar zcvf $(DIST_DIR)/$(BUILD_TGT).tar.gz $(BUILD_TGT)

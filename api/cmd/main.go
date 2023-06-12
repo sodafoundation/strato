@@ -26,6 +26,7 @@ import (
 	"github.com/opensds/multi-cloud/api/pkg/filters/context"
 	"github.com/opensds/multi-cloud/api/pkg/filters/logging"
 	"github.com/opensds/multi-cloud/api/pkg/filters/signature/signer"
+	"github.com/opensds/multi-cloud/api/pkg/metadata"
 	"github.com/opensds/multi-cloud/api/pkg/s3"
 	"github.com/opensds/multi-cloud/api/pkg/utils/obs"
 
@@ -82,6 +83,7 @@ func main() {
 		block.RegisterRouter(ws)
 		file.RegisterRouter(ws)
 		aksk.RegisterRouter(ws)
+		metadata.RegisterRouter(ws)
 		// add filter for authentication context
 		ws.Filter(logging.FilterFactory())
 		ws.Filter(context.FilterFactory())

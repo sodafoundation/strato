@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+option go_package = "proto";
+
+service Metadata {
+    rpc SyncMetadata(SyncMetadataRequest) returns (BaseResponse) {}
+    rpc ListMetadata(ListMetadataRequest) returns (ListMetadataResponse) {}
+}
+
+message MetadataDetail {
+    string project_id = 1;
+    string user_id = 2;
+    string type = 3;
+}
+
+message SyncMetadataRequest {
+    string id = 1;
+}
+
+message ListMetadataRequest {
+    // the number of records at max which can be there in response
+    int32 limit = 1;
+    // the index of the first record to be returned
+    int32 offset = 2;
+    //used to denote the type of cloud provider
+    string type = 3;
+    //name of the backend
+    string backendName = 4;
+    string region = 5;
+    // name of the bucket
+    string bucketName = 6;
+    // name of the object
+    string objectName = 7;
+    // the size of the object in bytes
+    int64 sizeOfObjectInBytes = 8;
+    // the size of the bucket in bytes
+    int64 sizeOfBucketInBytes = 9;
+    // operator is eq, gte,gt,lte,lt
+    string bucketSizeOperator = 10;
+    // operator is eq, gte,gt,lte,lt
+    string objectSizeOperator = 11;
+    // can have values desc or asc
+    string sortOrder = 12;
+}
+
+message BaseResponse {
+    int32 errorCode = 1;
+    string msg = 2;
+}
+
+message SyncMetadataResponse {
+    repeated MetadataDetail MetadataDetail = 1;
+}
+
+message ListMetadataResponse {
+    repeated BackendMetadata backends = 1;
+}
+
+message BackendMetadata {
+    string id = 1;
+    string backendName = 2;
+    string region = 3;
+    string type = 4;
+    int32 numberOfBuckets = 5;
+    int32 numberOfFilteredBuckets = 6;
+    repeated BucketMetadata buckets = 7;
+}
+
+message BucketMetadata {
+    // The createdAt representing the server time when the bucket was created.
+    string creationDate = 1;
+    // The name of the bucket.
+    string name = 2;
+    string region = 3;
+    string type = 4;
+    repeated access bucketAcl = 5;
+    // The number of objects in the bucket
+    int32 numberOfObjects = 6;
+    int32 numberOfFilteredObjects = 7;
+    // The total size occupied by the bucket
+    int64 bucketSizeInBytes = 8;
+    int64 filteredBucketSize = 9;
+    // The tags of the bucket
+    map<string, string> bucketTags = 10;
+    repeated ObjectMetadata objects = 11;
+}
+
+message ObjectMetadata {
+    // The date of the last modification on the object
+    string lastModifiedDate = 1;
+    // The name of the object
+    string name = 2;
+    // The name of the bucket to which the object belongs
+    string bucketName = 3;
+    // The size o the object in bytes
+    int32 objectSizeInBytes = 4;
+    // extension of the object
+    string type = 5;
+    // true if server side encyption is enabled
+    string serverSideEncryption = 6;
+    // used to store the version info of the object
+    string versionId = 7;
+    // used to denote the storage class of the object in the cloud vendor
+    string storageClass = 8;
+    string redirectLocation = 9;
+    string replicationStatus = 10;
+    string expiresDate = 11;
+    repeated access objectAcl = 12;
+    map<string, string> objectTags = 13;
+    map<string, string> metadata = 14;
+}
+
+message access {
+    string displayName = 1;
+    string emailAddress = 2;
+    string id = 3;
+    string type = 4;
+    string uri = 5;
+    string permission = 6;
+}
