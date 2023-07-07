@@ -75,6 +75,7 @@
     - { regexp: 'sodafoundation/multi-cloud-file.*$', replace: 'sodafoundation/multi-cloud-file:{{ gelato_image_tag }}'}
     - { regexp: 'sodafoundation/multi-cloud-block.*$', replace: 'sodafoundation/multi-cloud-block:{{ gelato_image_tag }}'}
     - { regexp: 'sodafoundation/multi-cloud-aksk.*$', replace: 'sodafoundation/multi-cloud-aksk:{{ gelato_image_tag }}'}
+    - { regexp: 'sodafoundation/multi-cloud-metadata.*$', replace: 'sodafoundation/multi-cloud-metadata:{{ gelato_image_tag }}'}
   when: install_from == "release" or install_from == "container"
 
 - name: start service
