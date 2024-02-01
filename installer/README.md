@@ -17,7 +17,7 @@ chmod +x install_dependencies.sh && . install_dependencies.sh
 ### Set Host IP
 ```bash
 cd ansible
-export HOST_IP=<your_host_ip>
+export HOST_IP=<your_host_ip> #note: make sure HOST_IP is either public ip or 192.x.x.x series ip
 ```
 
 ### Run the Ansible Playbook to install Multi-cloud
@@ -48,6 +48,11 @@ Ensure that all the above mentioned containers are up and running successfully. 
 ```bash
 ansible-playbook clean.yml -i local.hosts
 ```
+### Demo video of Installation steps
+Demo [video](https://www.youtube.com/watch?v=Jhmx3aiZuU0).
+
+<img width="1242" alt="strato-installation-guide" src="https://github.com/sodafoundation/strato/assets/41313813/b400b8e9-07c7-45b8-8123-bdf72edc3d4c">
+
 ### Using Multi-cloud with dashboard
 * Install multi-cloud with dashboard by following the installation guide [here](https://github.com/sodafoundation/installer/blob/master/README.md).
 * For experiencing the features of multi-cloud, follow the user guide [here](https://docs.sodafoundation.io/guides/user-guides/multi-cloud/).
