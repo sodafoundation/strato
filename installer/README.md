@@ -17,7 +17,7 @@ chmod +x install_dependencies.sh && . install_dependencies.sh
 ### Set Host IP
 ```bash
 cd ansible
-export HOST_IP=<your_host_ip>
+export HOST_IP=<your_host_ip> #note: make sure HOST_IP is either public ip or 192.x.x.x series ip
 ```
 
 ### Run the Ansible Playbook to install Multi-cloud
