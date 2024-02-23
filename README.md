@@ -1,13 +1,10 @@
-# multi-cloud
+![STRATO](./strato.png)
 
 [![Releases](https://img.shields.io/github/release/sodafoundation/multi-cloud/all.svg?style=flat-square)](https://github.com/sodafoundation/multi-cloud/releases)
 [![Build Status](https://github.com/sodafoundation/multi-cloud/actions/workflows/ci.yml/badge.svg)](https://github.com/sodafoundation/multi-cloud/actions/workflows/ci.yml)
 [![LICENSE](https://img.shields.io/github/license/sodafoundation/multi-cloud.svg?style=flat-square)](https://github.com/sodafoundation/multi-cloud/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sodafoundation/multi-cloud?branch=master)](https://goreportcard.com/report/github.com/sodafoundation/multi-cloud)
 [![codecov.io](https://codecov.io/github/sodafoundation/multi-cloud/coverage.svg?branch=master)](https://codecov.io/github/sodafoundation/multi-cloud?branch=master)
-
-<img src="https://sodafoundation.io/wp-content/uploads/2020/01/SODA_logo_outline_color_800x800.png" width="200" height="200">
-
 ## Introduction
 
 SODA Multi-cloud project provides a cloud vendor agnostic data management for hybrid cloud, intercloud or intracloud. It provides an s3-compatible interface. It can be hosted on prem or cloud native.
