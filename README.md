@@ -1,4 +1,4 @@
-# multi-cloud
+# multi-cloud(strato)
 
 [![Releases](https://img.shields.io/github/release/sodafoundation/multi-cloud/all.svg?style=flat-square)](https://github.com/sodafoundation/multi-cloud/releases)
 [![Build Status](https://github.com/sodafoundation/multi-cloud/actions/workflows/ci.yml/badge.svg)](https://github.com/sodafoundation/multi-cloud/actions/workflows/ci.yml)
