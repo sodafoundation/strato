@@ -50,7 +50,7 @@ func parseListBuckets(list *s3.ListBucketsResponse) ListBucketsResponse {
 			}
 		}
 		bucket := Bucket{Name: value.Name, CreationDate: ctime, LocationConstraint: value.DefaultLocation,
-			VersionOpts: versionOpts, SSEOpts: sseOpts}
+			VersionOpts: versionOpts, SSEOpts: sseOpts, TenantId: value.TenantId}
 		buckets = append(buckets, bucket)
 	}
 	resp.Buckets.Buckets = buckets
